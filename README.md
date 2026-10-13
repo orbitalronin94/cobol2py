@@ -1,4 +1,4 @@
-# cobol2py# cobol2py
+# cobol2py
 
 > Traductor mínimo de COBOL a Python. Un archivo. Cero dependencias. Solo stdlib.
 
