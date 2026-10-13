@@ -182,7 +182,7 @@ cobol2py/
 │   ├── hello.cbl        # ejemplo mínimo
 │   └── realtest.cbl     # ejemplo con OCCURS, IFs, PERFORM
 └── docs/
-    └── CHANGELOG.md     # evolución por versión
+    
 ```
 
 ---
