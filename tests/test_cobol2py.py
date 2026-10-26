@@ -225,6 +225,49 @@ class TranslationTests(unittest.TestCase):
         self.assertEqual([item.value for item in variables], ["-12", "+12.50"])
         self.assertEqual([item.py_default() for item in variables], ["-12", "+12.50"])
 
+    def test_accept_converts_numeric_input_and_fits_alphanumeric_input(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+        from unittest.mock import patch
+
+        source = "\\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. ACCEPTTEST.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-NUM PIC 9(3).",
+            "01 WS-TEXT PIC X(3).",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "ACCEPT WS-NUM.",
+            "ADD 1 TO WS-NUM.",
+            "DISPLAY WS-NUM.",
+            "ACCEPT WS-TEXT.",
+            "DISPLAY WS-TEXT.",
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<accept-output>", "exec"), namespace)
+        output = StringIO()
+        with patch("builtins.input", side_effect=["12", "ABCD"]), redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "013\\nABC\\n", generated)
+
+    def test_java_accept_applies_numeric_and_alphanumeric_receiving_types(self):
+        variables = {
+            "WS-NUM": cobol2py.CobolVar(level=1, name="WS-NUM", pic="9(3)"),
+            "WS-TEXT": cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(3)"),
+        }
+        self.assertIn(
+            "Integer.parseInt(SCANNER.nextLine())",
+            "\\n".join(cobol2py.translate_java_statement("ACCEPT WS-NUM", set(), variables)),
+        )
+        self.assertIn(
+            "fit(SCANNER.nextLine(), 3)",
+            "\\n".join(cobol2py.translate_java_statement("ACCEPT WS-TEXT", set(), variables)),
+        )
+
     def test_display_of_implied_decimal_pic_emits_digits_without_point(self):
         variables = {
             "WS-RATE": cobol2py.CobolVar(level=1, name="WS-RATE", pic="9(3)V99")
