@@ -69,3 +69,6 @@ Cada caso pesa lo mismo, independientemente de su tamaño o complejidad. Por ell
 
 
 El benchmark también registra los errores de lanzamiento o timeout al ejecutar la referencia COBOL (`reference_ok: false`) y termina con error de forma controlada. Un código de salida no cero producido por el programa COBOL no se considera por sí solo un fallo de referencia: forma parte del resultado esperado y se compara con el traductor.
+
+
+El modo estricto también señala `ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE` y `COMPUTE`, ya que el tamaño del campo receptor y `ON SIZE ERROR` no están implementados de forma completa. Es una advertencia conservadora sobre la cobertura, no una afirmación de que cada operación concreta produzca un desbordamiento.
