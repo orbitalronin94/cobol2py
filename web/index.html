@@ -1055,7 +1055,7 @@ def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = No
         base = re.match(r"[a-z_][a-z0-9_]*", left)
         if base is None:
             return match.group(0)
-        field_keys = re.findall(r"\['([a-z_][a-z0-9_]*)'\]", left)
+        field_keys = re.findall(r"\[['\"]([a-z_][a-z0-9_]*)['\"]\]", left)
         lookup_name = field_keys[-1] if field_keys else base.group(0)
         variable = next(
             (item for item in variables.values()
@@ -1101,7 +1101,7 @@ def translate_display_item(token: str, variables: dict[str, CobolVar]) -> str:
             if scale:
                 # V is an implied decimal point in COBOL storage; DISPLAY emits
                 # the digit positions, not a visible decimal separator.
-                return f"format(float({name}), '.{scale}f').replace('.', '').zfill({digits})"
+                return f"format(float({name}), '0{digits + 1}.{scale}f')"
             return f"str(int(float({name}))).zfill({digits})"
     return f"str({translate_literal(token, variables)})"
 
@@ -1498,7 +1498,7 @@ def translate_java_expr(expr: str, variables: dict[str, CobolVar]) -> str:
 def translate_java_condition(condition: str, variables: dict[str, CobolVar]) -> str:
     text = condition.strip()
     string_comparison = re.fullmatch(
-        r"""(?:(NOT)\s+)?(.+?)\s*(IS\s+NOT\s+EQUAL\s+TO|NOT\s+EQUAL\s+TO|IS\s+EQUAL\s+TO|EQUAL\s+TO|==|=|!=|<>)\s*("(?:[^"]|"")*"|'(?:[^']|'')*')""",
+        r"""(?:(NOT)\s+)?([A-Za-z][A-Za-z0-9-]*(?:\([A-Za-z0-9_-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*)?)\s*(IS\s+NOT\s+EQUAL\s+TO|NOT\s+EQUAL\s+TO|IS\s+EQUAL\s+TO|EQUAL\s+TO|==|=|!=|<>)\s*("(?:[^"]|"")*"|'(?:[^']|'')*')""",
         text,
         re.IGNORECASE,
     )
