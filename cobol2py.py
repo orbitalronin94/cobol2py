@@ -1736,14 +1736,31 @@ def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
                         "message": node.text,
                         "paragraph": paragraph,
                     })
-            elif node.kind == "evaluate" and not any(child.kind == "when" for child in node.body):
-                diagnostics.append({
-                    "code": "EVALUATE_WITHOUT_WHEN",
-                    "severity": "warning",
-                    "line": node.line,
-                    "message": node.text,
-                    "paragraph": paragraph,
-                })
+            elif node.kind == "evaluate":
+                if not any(child.kind == "when" for child in node.body):
+                    diagnostics.append({
+                        "code": "EVALUATE_WITHOUT_WHEN",
+                        "severity": "warning",
+                        "line": node.line,
+                        "message": node.text,
+                        "paragraph": paragraph,
+                    })
+                subject = node.text[len("EVALUATE"):].strip()
+                also_branch = next(
+                    (
+                        child.text for child in node.body
+                        if child.kind == "when" and re.search(r"\\bALSO\\b", child.text, re.IGNORECASE)
+                    ),
+                    None,
+                )
+                if re.search(r"\\bALSO\\b", subject, re.IGNORECASE) or also_branch:
+                    diagnostics.append({
+                        "code": "UNSUPPORTED_EVALUATE_ALSO",
+                        "severity": "warning",
+                        "line": node.line,
+                        "message": also_branch or node.text,
+                        "paragraph": paragraph,
+                    })
 
             visit(node.then_branch, paragraph)
             visit(node.else_branch, paragraph)
