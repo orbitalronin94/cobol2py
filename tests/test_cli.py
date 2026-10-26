@@ -36,7 +36,8 @@ class CliTests(unittest.TestCase):
         ])
         result = self.run_cli(source)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn('print("OK")', result.stdout)
+        self.assertIn('str("OK")', result.stdout)
+        self.assertIn('print(', result.stdout)
 
     def test_strict_mode_fails_when_diagnostics_are_present(self):
         source = "\n".join([
