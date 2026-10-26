@@ -27,10 +27,18 @@ from typing import Optional
 
 def preprocess(source: str) -> list[tuple[int, str]]:
     lines = source.splitlines()
-    free_format = any(re.match(r"^\s*[A-Za-z]", ln) for ln in lines[:20])
+    # COBOL fixed format uses columns 1-6 for sequence numbers, column 7
+    # for the indicator, and columns 8-72 for source. Do not infer free
+    # format merely because a fixed-format line has leading spaces.
+    def looks_fixed(line: str) -> bool:
+        if len(line) < 8 or not re.fullmatch(r"[ 0-9]{6}", line[:6]):
+            return False
+        return line[6] in (" ", "*", "/", "D", "d", "-")
+
+    fixed_format = any(looks_fixed(line) for line in lines[:20])
     out: list[tuple[int, str]] = []
     for i, raw in enumerate(lines, 1):
-        if free_format:
+        if not fixed_format:
             line = raw.split("*>")[0].rstrip()
             if line.strip():
                 out.append((i, line))
@@ -44,7 +52,6 @@ def preprocess(source: str) -> list[tuple[int, str]]:
         if code.strip():
             out.append((i, code))
     return out
-
 
 # ============================================================================
 # 2. MODELOS
