@@ -1223,12 +1223,12 @@ def translate_java_expr(expr: str, variables: dict[str, CobolVar]) -> str:
 def translate_java_condition(condition: str, variables: dict[str, CobolVar]) -> str:
     text = condition.strip()
     string_comparison = re.fullmatch(
-        r"""(.+?)\s*(IS\s+NOT\s+EQUAL\s+TO|NOT\s+EQUAL\s+TO|IS\s+EQUAL\s+TO|EQUAL\s+TO|==|=|!=|<>)\s*("(?:[^"]|"")*"|'(?:[^']|'')*')""",
+        r"""(?:(NOT)\s+)?(.+?)\s*(IS\s+NOT\s+EQUAL\s+TO|NOT\s+EQUAL\s+TO|IS\s+EQUAL\s+TO|EQUAL\s+TO|==|=|!=|<>)\s*("(?:[^"]|"")*"|'(?:[^']|'')*')""",
         text,
         re.IGNORECASE,
     )
     if string_comparison:
-        left, operator, literal_token = string_comparison.groups()
+        negation, left, operator, literal_token = string_comparison.groups()
         literal = decode_cobol_quoted_literal(literal_token)
         if literal is None:
             literal = literal_token[1:-1]
@@ -1241,7 +1241,8 @@ def translate_java_condition(condition: str, variables: dict[str, CobolVar]) -> 
             positive = operator in ("=", "==") or operator.upper().split() in (
                 ["EQUAL", "TO"], ["IS", "EQUAL", "TO"]
             )
-            return equality if positive else "!(" + equality + ")"
+            result = equality if positive else "!(" + equality + ")"
+            return "!(" + result + ")" if negation else result
     def rewrite(chunk: str) -> str:
         text = re.sub(r"\bIS\s+NOT\s+EQUAL\s+TO\b|\bNOT\s+EQUAL\s+TO\b", "!=", chunk, flags=re.IGNORECASE)
         text = re.sub(r"\bIS\s+EQUAL\s+TO\b|\bEQUAL\s+TO\b", "==", text, flags=re.IGNORECASE)
