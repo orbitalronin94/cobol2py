@@ -14,6 +14,7 @@ Cambios v0.0.4 sobre v0.0.3:
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from dataclasses import dataclass, field
@@ -1007,6 +1008,412 @@ def translate_paragraph(
     variables: Optional[dict[str, CobolVar]] = None,
 ) -> list[str]:
     return translate_nodes(nodes, paragraphs, indent=1, variables=variables)
+
+
+def java_group_class_name(variable: CobolVar, variables: dict[str, CobolVar]) -> str:
+    names = [variable.name]
+    parent_name = variable.parent_name
+    while parent_name and parent_name in variables:
+        parent = variables[parent_name]
+        names.append(parent.name)
+        parent_name = parent.parent_name
+    suffix = "".join(
+        part[:1].upper() + part[1:].lower()
+        for name in reversed(names)
+        for part in re.split(r"[-_]+", name)
+        if part
+    )
+    return "CobolGroup" + suffix
+
+
+def java_data_reference(name: str, variables: dict[str, CobolVar]) -> str:
+    text = name.strip()
+    match = re.fullmatch(
+        r"([A-Za-z0-9-]+)(?:\(([A-Za-z0-9_-]+)\))?(?:\s+(?:OF|IN)\s+([A-Za-z0-9-]+))?",
+        text,
+        re.IGNORECASE,
+    )
+    if not match:
+        return normalize_name(text)
+    field_name, subscript, qualifier = match.groups()
+    if qualifier:
+        expr = java_data_reference(qualifier, variables) + "." + normalize_name(field_name)
+    else:
+        variable = variables.get(field_name.upper())
+        if variable is not None and variable.parent_name:
+            expr = java_data_reference(variable.parent_name, variables) + "." + normalize_name(field_name)
+        else:
+            expr = normalize_name(field_name)
+    if subscript:
+        index = str(int(subscript) - 1) if subscript.isdigit() else f"{normalize_name(subscript)} - 1"
+        expr += f".get({index})"
+    return expr
+
+
+def java_string_literal(value: str) -> str:
+    return json.dumps(value, ensure_ascii=False)
+
+
+def translate_java_literal(token: str, variables: dict[str, CobolVar]) -> str:
+    t = token.strip()
+    if not t:
+        return '""'
+    all_literal = re.fullmatch(r"""ALL\s+(["'])(.*?)\1""", t, re.IGNORECASE)
+    if all_literal:
+        return java_string_literal(all_literal.group(2))
+    if (t.startswith('"') and t.endswith('"')) or (t.startswith("'") and t.endswith("'")):
+        return java_string_literal(t[1:-1])
+    if re.match(r"^[+-]?\d+(?:\.\d+)?$", t):
+        return t
+    if t.upper() in ("SPACE", "SPACES"):
+        return '""'
+    if t.upper() in ("ZERO", "ZEROS", "ZEROES"):
+        return "0"
+    if t.upper() in ("LOW-VALUE", "LOW-VALUES"):
+        return '"\\u0000"'
+    if t.upper() in ("HIGH-VALUE", "HIGH-VALUES"):
+        return '"\\u00ff"'
+    if t.upper() in ("QUOTE", "QUOTES"):
+        return '"\\\""'
+    if t.upper() == "TRUE":
+        return "true"
+    if t.upper() == "FALSE":
+        return "false"
+    return java_data_reference(t, variables)
+
+
+def translate_java_expr(expr: str, variables: dict[str, CobolVar]) -> str:
+    expr = re.sub(
+        r"\b[A-Za-z][A-Za-z0-9-]*(?:\([A-Za-z0-9_-]+\))?\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*",
+        lambda match: java_data_reference(match.group(0), variables),
+        expr,
+        flags=re.IGNORECASE,
+    )
+    expr = re.sub(
+        r"\b([A-Za-z][A-Za-z0-9-]*)\(([A-Za-z0-9_-]+)\)",
+        lambda match: java_data_reference(match.group(0), variables),
+        expr,
+    )
+    token_pattern = r"""("[^"]*"|'[^']*'|[A-Za-z][A-Za-z0-9-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&\[\]-]|\s+|.)"""
+    out: list[str] = []
+    for token in re.findall(token_pattern, expr):
+        if re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", token):
+            out.append(translate_java_literal(token, variables))
+        else:
+            out.append(token)
+    return "".join(out).strip()
+
+
+def translate_java_condition(condition: str, variables: dict[str, CobolVar]) -> str:
+    text = condition.strip()
+    text = re.sub(r"\bIS\s+NOT\s+EQUAL\s+TO\b|\bNOT\s+EQUAL\s+TO\b", "!=", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bIS\s+EQUAL\s+TO\b|\bEQUAL\s+TO\b", "==", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bIS\s+GREATER\s+THAN\b|\bGREATER\s+THAN\b", ">", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bIS\s+LESS\s+THAN\b|\bLESS\s+THAN\b", "<", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bAND\b", "&&", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bOR\b", "||", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bNOT\b", "!", text, flags=re.IGNORECASE)
+    text = re.sub(r"(?<![<>=])=(?!=)", "==", text).replace("<>", "!=")
+    return translate_java_expr(text, variables)
+
+
+def java_type(variable: CobolVar, variables: dict[str, CobolVar]) -> str:
+    if variable.is_group:
+        base = java_group_class_name(variable, variables)
+    elif variable.pic and "V" in variable.pic.upper():
+        base = "double"
+    elif variable.pic and any(char in variable.pic.upper() for char in ("X", "A")):
+        base = "String"
+    elif variable.pic and "9" in variable.pic.upper():
+        base = "int"
+    else:
+        base = "Object"
+    return f"List<{base}>" if variable.is_array else base
+
+
+def java_field_default(variable: CobolVar, variables: dict[str, CobolVar]) -> str:
+    if variable.is_array:
+        count = variable.occurs or 0
+        if count <= 0:
+            return "new ArrayList<>()"
+        element = CobolVar(
+            level=variable.level,
+            name=variable.name,
+            pic=variable.pic,
+            value=variable.value,
+            is_group=variable.is_group,
+        )
+        item = java_field_default(element, variables)
+        return "new ArrayList<>(Arrays.asList(" + ", ".join(item for _ in range(count)) + "))"
+    if variable.is_group:
+        return f"new {java_group_class_name(variable, variables)}()"
+    pic = (variable.pic or "").upper()
+    if any(char in pic for char in ("X", "A")):
+        width = pic_character_count(pic)
+        if variable.value is None:
+            value = '""'
+        else:
+            all_literal = re.fullmatch(r"""ALL\s+(["'])(.*?)\1""", variable.value, re.IGNORECASE)
+            if all_literal:
+                value = java_string_literal((all_literal.group(2) * width)[:width])
+            elif variable.value.upper() in ("SPACE", "SPACES"):
+                value = java_string_literal(" " * width)
+            elif variable.value.upper() in ("LOW-VALUE", "LOW-VALUES"):
+                value = java_string_literal("\x00" * width)
+            elif variable.value.upper() in ("HIGH-VALUE", "HIGH-VALUES"):
+                value = java_string_literal("\xff" * width)
+            else:
+                value = translate_java_literal(variable.value, variables)
+        return f"fit({value}, {width})" if width else value
+    if variable.value is not None:
+        return translate_java_literal(variable.value, variables)
+    return "0.0" if "V" in pic else "0"
+
+
+def translate_java_display_item(token: str, variables: dict[str, CobolVar]) -> str:
+    base_match = re.match(r"[A-Za-z0-9-]+", token)
+    variable = variables.get(base_match.group(0).upper()) if base_match else None
+    value = translate_java_literal(token, variables)
+    if variable is not None and variable.pic and "9" in variable.pic.upper():
+        pic = variable.pic.upper()
+        digits = pic_digit_count(pic)
+        scale = pic_digit_count(pic.split("V", 1)[1]) if "V" in pic else 0
+        return f"formatNumeric(((Number)({value})).doubleValue(), {digits}, {scale})"
+    return f"String.valueOf({value})"
+
+
+def translate_java_statement(
+    stmt: str,
+    paragraphs: set[str],
+    variables: dict[str, CobolVar],
+) -> list[str]:
+    text = stmt.strip().rstrip(".").strip()
+    upper = text.upper()
+    if not text:
+        return []
+    if upper in ("STOP RUN", "GOBACK", "EXIT PROGRAM"):
+        return ["return;"]
+    if upper.startswith("DISPLAY "):
+        args = split_cobol_items(text[len("DISPLAY "):])
+        values = ", ".join(translate_java_display_item(arg, variables) for arg in args)
+        return [f"System.out.println(String.join(\\"\\", Arrays.asList({values})));"]
+    if upper.startswith("ACCEPT "):
+        match = re.match(rf"ACCEPT\s+({DATA_REF_PATTERN})$", text, re.IGNORECASE)
+        if match:
+            target = match.group(1)
+            variable = variables.get(re.match(r"[A-Za-z0-9-]+", target).group(0).upper())
+            if variable and variable.pic and "9" in variable.pic.upper():
+                parser = "Double.parseDouble" if "V" in variable.pic.upper() else "Integer.parseInt"
+                return [f"{java_data_reference(target, variables)} = {parser}(SCANNER.nextLine());"]
+            return [f"{java_data_reference(target, variables)} = SCANNER.nextLine();"]
+    move = re.match(rf"MOVE\s+(.+?)\s+TO\s+({DATA_REF_PATTERN})$", text, re.IGNORECASE)
+    if move:
+        source, target = move.groups()
+        value = translate_java_literal(source, variables)
+        base = re.match(r"[A-Za-z0-9-]+", target)
+        variable = variables.get(base.group(0).upper()) if base else None
+        target_expr = java_data_reference(target, variables)
+        if variable and variable.pic and any(char in variable.pic.upper() for char in ("X", "A")):
+            width = pic_character_count(variable.pic)
+            all_literal = re.fullmatch(r"""ALL\s+(["'])(.*?)\1""", source.strip(), re.IGNORECASE)
+            if all_literal:
+                value = java_string_literal((all_literal.group(2) * width)[:width])
+            return [f"{target_expr} = fit(String.valueOf({value}), {width});"]
+        if variable and variable.pic and "9" in variable.pic.upper():
+            digits = pic_digit_count(variable.pic)
+            scale = pic_digit_count(variable.pic.upper().split("V", 1)[1]) if "V" in variable.pic.upper() else 0
+            moved = f"moveNumeric(((Number)({value})).doubleValue(), {digits}, {scale})"
+            if "V" not in variable.pic.upper():
+                moved = f"(int){moved}"
+            return [f"{target_expr} = {moved};"]
+        return [f"{target_expr} = {value};"]
+    compute = re.match(rf"COMPUTE\s+({DATA_REF_PATTERN})\s*=\s*(.+)", text, re.IGNORECASE)
+    if compute:
+        return [f"{java_data_reference(compute.group(1), variables)} = {translate_java_expr(compute.group(2), variables)};"]
+    for verb, delim, op in (("ADD", "TO", "+="), ("SUBTRACT", "FROM", "-=")):
+        match = re.match(rf"{verb}\s+(.+?)\s+{delim}\s+({DATA_REF_PATTERN})$", text, re.IGNORECASE)
+        if match:
+            operands = split_cobol_items(match.group(1))
+            value = " + ".join(translate_java_literal(item, variables) for item in operands)
+            return [f"{java_data_reference(match.group(2), variables)} {op} {value};"]
+    match = re.match(rf"MULTIPLY\s+(.+?)\s+BY\s+({DATA_REF_PATTERN})$", text, re.IGNORECASE)
+    if match:
+        return [f"{java_data_reference(match.group(2), variables)} *= {translate_java_literal(match.group(1), variables)};"]
+    match = re.match(rf"DIVIDE\s+(.+?)\s+INTO\s+({DATA_REF_PATTERN})$", text, re.IGNORECASE)
+    if match:
+        return [f"{java_data_reference(match.group(2), variables)} /= {translate_java_literal(match.group(1), variables)};"]
+    match = re.match(r"PERFORM\s+([A-Za-z0-9-]+)\s+(\d+)\s+TIMES", text, re.IGNORECASE)
+    if match and match.group(1).upper() in paragraphs:
+        return [f"for (int _i = 0; _i < {match.group(2)}; _i++) {{ {normalize_name(match.group(1))}(); }}"]
+    match = re.match(r"PERFORM\s+([A-Za-z0-9-]+)\s+UNTIL\s+(.+)", text, re.IGNORECASE)
+    if match and match.group(1).upper() in paragraphs:
+        return [f"while (!({translate_java_condition(match.group(2), variables)})) {{ {normalize_name(match.group(1))}(); }}"]
+    match = re.match(r"PERFORM\s+([A-Za-z0-9-]+)", text, re.IGNORECASE)
+    if match and match.group(1).upper() in paragraphs:
+        return [f"{normalize_name(match.group(1))}();"]
+    return [f"// COBOL no traducido: {text}"]
+
+
+def translate_java_nodes(
+    nodes: list[Node],
+    paragraphs: set[str],
+    variables: dict[str, CobolVar],
+    indent: int = 0,
+) -> list[str]:
+    out: list[str] = []
+    pad = "    " * indent
+    for node in nodes:
+        if node.kind == "stmt":
+            out.extend(pad + line for line in translate_java_statement(node.text, paragraphs, variables))
+        elif node.kind == "if":
+            match = RE_IF_OPEN.match(node.text)
+            if not match:
+                out.append(pad + "// IF malformado: " + node.text)
+                continue
+            out.append(pad + f"if ({translate_java_condition(match.group(1), variables)}) {{")
+            body = translate_java_nodes(node.then_branch, paragraphs, variables, indent + 1)
+            out.extend(body if any(line.strip() and not line.strip().startswith("//") for line in body) else body + ["    " * (indent + 1) + ";"])
+            if node.else_branch:
+                out.append(pad + "} else {")
+                body = translate_java_nodes(node.else_branch, paragraphs, variables, indent + 1)
+                out.extend(body if any(line.strip() and not line.strip().startswith("//") for line in body) else body + ["    " * (indent + 1) + ";"])
+            out.append(pad + "}")
+        elif node.kind in ("perform_inline", "perform_times_inline"):
+            if node.kind == "perform_times_inline":
+                match = re.match(r"PERFORM\s+(\d+)\s+TIMES", node.text, re.IGNORECASE)
+                count = match.group(1) if match else "0"
+                out.append(pad + f"for (int _i_{node.line} = 0; _i_{node.line} < {count}; _i_{node.line}++) {{")
+            else:
+                out.append(pad + "// PERFORM inline body")
+                out.append(pad + "{")
+            body = translate_java_nodes(node.body, paragraphs, variables, indent + 1)
+            out.extend(body if any(line.strip() and not line.strip().startswith("//") for line in body) else body + ["    " * (indent + 1) + ";"])
+            out.append(pad + "}")
+        elif node.kind == "evaluate":
+            subject = node.text[len("EVALUATE"):].strip()
+            boolean_subject = subject.upper() in ("TRUE", "FALSE")
+            temp = f"_cobolEvaluate{node.line}"
+            if not boolean_subject:
+                out.append(pad + f"Object {temp} = {translate_java_expr(subject, variables)};")
+            emitted = 0
+            for branch in node.body:
+                if branch.kind != "when":
+                    out.append(pad + "// Unsupported EVALUATE branch: " + branch.text)
+                    continue
+                choice = branch.text.strip()
+                if choice.upper() == "OTHER":
+                    prefix = "if (true) {" if emitted == 0 else "} else {"
+                else:
+                    if boolean_subject:
+                        condition = translate_java_condition(choice, variables)
+                        if subject.upper() == "FALSE":
+                            condition = "!(" + condition + ")"
+                        test = condition
+                    elif re.search(r"\s+(?:THRU|THROUGH)\s+", choice, re.IGNORECASE):
+                        low, high = re.split(r"\s+(?:THRU|THROUGH)\s+", choice, maxsplit=1, flags=re.IGNORECASE)
+                        test = f"evalCompare({temp}, {translate_java_literal(low, variables)}) >= 0 && evalCompare({temp}, {translate_java_literal(high, variables)}) <= 0"
+                    else:
+                        test = f"evalEquals({temp}, {translate_java_literal(choice, variables)})"
+                    prefix = ("if (" if emitted == 0 else "} else if (") + test + ") {"
+                out.append(pad + prefix)
+                body = translate_java_nodes(branch.then_branch, paragraphs, variables, indent + 1)
+                out.extend(body if any(line.strip() and not line.strip().startswith("//") for line in body) else body + ["    " * (indent + 1) + ";"])
+                emitted += 1
+            if emitted:
+                out.append(pad + "}")
+            else:
+                out.append(pad + "// EVALUATE without WHEN: " + node.text)
+        elif node.kind == "malformed":
+            out.append(pad + "// COBOL structure malformed: " + node.text)
+    return out
+
+
+def emit_java(prog: Program) -> str:
+    variables = {variable.name.upper(): variable for variable in prog.variables}
+    children_by_parent: dict[str, list[CobolVar]] = {}
+    for variable in prog.variables:
+        if variable.parent_name:
+            children_by_parent.setdefault(variable.parent_name.upper(), []).append(variable)
+
+    lines = [
+        "import java.util.*;",
+        "",
+        "class Cobol2PyProgram {",
+        "    private static final Scanner SCANNER = new Scanner(System.in);",
+    ]
+    groups = [variable for variable in prog.variables if variable.is_group]
+    for group in groups:
+        lines.append(f"    private static class {java_group_class_name(group, variables)} {{")
+        children = children_by_parent.get(group.name.upper(), [])
+        if not children:
+            lines.append("        // Empty COBOL group")
+        for child in children:
+            lines.append(
+                f"        {java_type(child, variables)} {normalize_name(child.name)} = "
+                f"{java_field_default(child, variables)};"
+            )
+        lines.append("    }")
+    if groups:
+        lines.append("")
+    for variable in prog.variables:
+        if variable.parent_name:
+            continue
+        lines.append(
+            f"    private static {java_type(variable, variables)} {normalize_name(variable.name)} = "
+            f"{java_field_default(variable, variables)};"
+        )
+    lines.extend([
+        "",
+        "    private static String fit(String value, int width) {",
+        "        String text = value == null ? \\"\\" : value;",
+        "        if (text.length() > width) return text.substring(0, width);",
+        "        return String.format(Locale.ROOT, \\"%-\\" + width + \\"s\\", text);",
+        "    }",
+        "",
+        "    private static String formatNumeric(double value, int digits, int scale) {",
+        "        String text = String.format(Locale.ROOT, \\"%.\\" + scale + \\"f\\", value).replace(\\".\\", \\"\\");",
+        "        return text.length() < digits ? \\"0\\".repeat(digits - text.length()) + text : text;",
+        "    }",
+        "",
+        "    private static double moveNumeric(double value, int digits, int scale) {",
+        "        double factor = Math.pow(10, scale);",
+        "        long magnitude = (long) (Math.abs(value) * factor);",
+        "        long modulus = (long) Math.pow(10, digits);",
+        "        double result = (magnitude % modulus) / factor;",
+        "        return value < 0 ? -result : result;",
+        "    }",
+        "",
+        "    private static boolean evalEquals(Object left, Object right) {",
+        "        if (left instanceof Number && right instanceof Number) return ((Number) left).doubleValue() == ((Number) right).doubleValue();",
+        "        return Objects.equals(left, right);",
+        "    }",
+        "",
+        "    private static int evalCompare(Object left, Object right) {",
+        "        if (left instanceof Number && right instanceof Number) return Double.compare(((Number) left).doubleValue(), ((Number) right).doubleValue());",
+        "        return String.valueOf(left).compareTo(String.valueOf(right));",
+        "    }",
+        "",
+    ])
+    paragraph_names = set(prog.paragraphs)
+    order = [name for name in prog.paragraph_order if name != "__MAIN__"]
+    if "__MAIN__" in prog.paragraphs and prog.paragraphs["__MAIN__"]:
+        order = ["__MAIN__"] + order
+    for paragraph in order:
+        method_name = "mainParagraph" if paragraph == "__MAIN__" else normalize_name(paragraph)
+        lines.append(f"    private static void {method_name}() {{")
+        body = translate_java_nodes(prog.paragraphs.get(paragraph, []), paragraph_names, variables, indent=2)
+        lines.extend(body if body else ["        ;"])
+        lines.append("    }")
+        lines.append("")
+    lines.append("    public static void main(String[] args) {")
+    if "__MAIN__" in prog.paragraphs and prog.paragraphs["__MAIN__"]:
+        lines.append("        mainParagraph();")
+    elif order:
+        first = "mainParagraph" if order[0] == "__MAIN__" else normalize_name(order[0])
+        lines.append(f"        {first}();")
+    lines.append("    }")
+    lines.append("}")
+    return "\n".join(lines)
 
 
 # ============================================================================
