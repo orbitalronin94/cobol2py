@@ -445,7 +445,7 @@ def parse_procedure(lines: list[tuple[int, str]]) -> tuple[dict[str, list[Node]]
     for num, text in lines:
         stripped = text.strip()
         m = RE_PARAGRAPH.match(stripped)
-        if m:
+        if m and m.group(1).upper() not in {"GOBACK", "CONTINUE", "EXIT"}:
             current = m.group(1).upper()
             if current not in paragraph_lines:
                 paragraph_lines[current] = []
@@ -947,6 +947,8 @@ def translate_statement(
         return ["raise _CobolStopRun"]
     if upper.startswith("EXIT PROGRAM") or upper == "GOBACK":
         return ["return"]
+    if upper in ("CONTINUE", "EXIT"):
+        return ["pass"]
 
     m = re.match(r"DISPLAY\s+(.+)", s, re.IGNORECASE)
     if m:
@@ -1362,6 +1364,8 @@ def translate_java_statement(
         return ["System.exit(0);"]
     if upper in ("GOBACK", "EXIT PROGRAM"):
         return ["return;"]
+    if upper in ("CONTINUE", "EXIT"):
+        return [";"]
     if upper.startswith("DISPLAY "):
         args = split_cobol_items(text[len("DISPLAY "):])
         values = ", ".join(translate_java_display_item(arg, variables) for arg in args)
