@@ -202,7 +202,7 @@ class EndToEndTests(unittest.TestCase):
         from contextlib import redirect_stdout
         from io import StringIO
 
-        source = "\\n".join([
+        source = "\n".join([
             "       IDENTIFICATION DIVISION.",
             "       PROGRAM-ID. MOVEPADDING.",
             "       DATA DIVISION.",
@@ -222,7 +222,7 @@ class EndToEndTests(unittest.TestCase):
         output = StringIO()
         with redirect_stdout(output):
             namespace["main"]()
-        self.assertEqual(output.getvalue(), "ABCDE\\nA    \\n", generated)
+        self.assertEqual(output.getvalue(), "ABCDE\nA    \n", generated)
 
     def test_fixed_format_program_generates_valid_python(self):
         source = "\n".join([
