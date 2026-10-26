@@ -174,6 +174,7 @@ class EndToEndTests(unittest.TestCase):
             "CODIGO ALTO\n"
             "TOTAL FINAL: 30\n"
             "STATUS ACTIVO\n",
+            generated,
         )
 
     def test_fixed_format_program_generates_valid_python(self):
