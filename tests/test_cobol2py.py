@@ -123,6 +123,33 @@ class EndToEndTests(unittest.TestCase):
         # COBOL DISPLAY concatenates its operands without Python's print separator.
         self.assertEqual(output.getvalue(), "COUNT=3\n")
 
+
+    def test_generated_program_executes_perform_times_against_shared_storage(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\n".join([
+            "       IDENTIFICATION DIVISION.",
+            "       PROGRAM-ID. LOOPBEHAVIOR.",
+            "       DATA DIVISION.",
+            "       WORKING-STORAGE SECTION.",
+            "       01 WS-TOTAL PIC 9(3) VALUE 0.",
+            "       PROCEDURE DIVISION.",
+            "       MAIN.",
+            "           PERFORM INCREMENT 3 TIMES.",
+            '           DISPLAY "TOTAL=" WS-TOTAL.',
+            "           STOP RUN.",
+            "       INCREMENT.",
+            "           ADD 1 TO WS-TOTAL.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<perform-behavior-output>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "TOTAL=3\n")
+
     def test_fixed_format_program_generates_valid_python(self):
         source = "\n".join([
             "       IDENTIFICATION DIVISION.",
