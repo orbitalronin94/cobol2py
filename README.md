@@ -230,7 +230,7 @@ python cobol2py.py programa.cbl --format free
 python cobol2py.py programa.cbl --copybook-path ./copybooks
 ```
 
-Para convertir advertencias de traducción en un error y evitar usar una salida incompleta por accidente:
+Para convertir advertencias conocidas —sentencias no soportadas, copybooks sin resolver, bloques malformados, `REDEFINES` y ciertas cláusulas `PIC` numéricas— en un error y evitar usar una salida incompleta por accidente:
 
 ```bash
 python cobol2py.py programa.cbl --strict
