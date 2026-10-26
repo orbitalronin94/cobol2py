@@ -927,6 +927,22 @@ class EndToEndTests(unittest.TestCase):
 
 
 class DiagnosticTests(unittest.TestCase):
+    def test_collect_diagnostics_warns_on_alphanumeric_order_comparison(self):
+        program = cobol2py.Program(
+            variables=[cobol2py.CobolVar(level=1, name="WS-NAME", pic="X(5)")],
+            paragraphs={
+                "MAIN": [
+                    cobol2py.Node(kind="if", text='IF WS-NAME < "M"', line=8)
+                ]
+            },
+            paragraph_order=["MAIN"],
+        )
+        diagnostics = cobol2py.collect_diagnostics(program)
+        self.assertIn(
+            "ALPHANUMERIC_ORDER_COMPARISON_UNSUPPORTED",
+            {item["code"] for item in diagnostics},
+        )
+
     def test_collect_diagnostics_warns_on_evaluate_also(self):
         program = cobol2py.Program(
             paragraphs={
