@@ -273,6 +273,11 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
             units.append((num, "ELSE"))
             continue
 
+        if upper.startswith("WHEN "):
+            flush()
+            units.append((num, text.strip()))
+            continue
+
         # Scope terminators must be standalone parser units. Otherwise a
         # preceding DISPLAY without a period can absorb END-IF as an operand.
         if upper in ("END-IF", "END-PERFORM", "END-EVALUATE"):
@@ -852,7 +857,7 @@ def emit_python(prog: Program) -> str:
     lines.append('"""')
     lines.append("Traducción automática de COBOL a Python.")
     lines.append(f"Programa original: {prog.program_id}")
-    lines.append("Generado por cobol2py.py — v0.0.4")
+    lines.append("Generado por cobol2py.py — v0.0.6")
     lines.append('"""')
     lines.append("")
 
@@ -919,7 +924,7 @@ def emit_python(prog: Program) -> str:
 # ============================================================================
 
 def main() -> int:
-    ap = argparse.ArgumentParser(prog="cobol2py", description="Traductor COBOL → Python v0.0.4")
+    ap = argparse.ArgumentParser(prog="cobol2py", description="Traductor COBOL → Python v0.0.6")
     ap.add_argument("input", type=Path, help="Archivo .cbl o .cob")
     ap.add_argument("--out", type=Path, default=None, help="Archivo de salida")
     ap.add_argument("--format", dest="source_format", choices=("auto", "fixed", "free"), default="auto", help="Formato fuente COBOL (por defecto: auto)")
