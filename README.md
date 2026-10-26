@@ -155,7 +155,7 @@ Todo lo que no se traduce sale con un comentario `# COBOL no traducido: ...` en 
 Estas son las que quedan pendientes y que sabes que existen antes de encontrártelas:
 
 **1. La semántica de datos solo está cubierta en un subconjunto.**
-`MOVE` aplica relleno con espacios y truncamiento por la derecha de campos alfanuméricos `PIC X/A`, y conserva los dígitos menos significativos al mover a un `PIC 9(n)` entero sin signo. Hay comparación diferencial con GnuCOBOL para estos casos. No se emulan aún los campos numéricos con signo, las escalas decimales, todos los valores figurativos ni toda la semántica de almacenamiento COBOL. La salida no debe considerarse equivalente ni lista para producción.
+`MOVE` aplica relleno con espacios y truncamiento por la derecha de campos alfanuméricos `PIC X/A`; los valores iniciales de esos campos también respetan su ancho. Para `PIC 9(n)` entero sin signo, `MOVE` conserva los dígitos menos significativos si el valor de origen excede el ancho. Hay comparación diferencial con GnuCOBOL para estos casos. No se emulan aún los campos numéricos con signo, las escalas decimales, todos los valores figurativos ni toda la semántica de almacenamiento COBOL. La salida no debe considerarse equivalente ni lista para producción.
 
 **2. `EVALUATE` no se traduce.**
 Se marca con un comentario y se deja para v0.0.5.
