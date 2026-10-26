@@ -1224,8 +1224,9 @@ def translate_java_expr(expr: str, variables: dict[str, CobolVar]) -> str:
 def translate_java_condition(condition: str, variables: dict[str, CobolVar]) -> str:
     text = condition.strip()
     string_comparison = re.fullmatch(
-        r"""(.+?)\s*(==|=|!=|<>)\s*("(?:[^"]|"")*"|'(?:[^']|'')*')""",
+        r"""(.+?)\s*(IS\s+NOT\s+EQUAL\s+TO|NOT\s+EQUAL\s+TO|IS\s+EQUAL\s+TO|EQUAL\s+TO|==|=|!=|<>)\s*("(?:[^"]|"")*"|'(?:[^']|'')*')""",
         text,
+        re.IGNORECASE,
     )
     if string_comparison:
         left, operator, literal_token = string_comparison.groups()
@@ -1238,7 +1239,10 @@ def translate_java_condition(condition: str, variables: dict[str, CobolVar]) -> 
             width = pic_character_count(variable.pic)
             padded = literal.ljust(max(width, len(literal)))
             equality = f"Objects.equals({java_data_reference(left, variables)}, {java_string_literal(padded)})"
-            return equality if operator in ("=", "==") else "!(" + equality + ")"
+            positive = operator in ("=", "==") or bool(
+                re.fullmatch(r"(?:IS\\s+)?EQUAL\\s+TO", operator, re.IGNORECASE)
+            )
+            return equality if positive else "!(" + equality + ")"
     def rewrite(chunk: str) -> str:
         text = re.sub(r"\bIS\s+NOT\s+EQUAL\s+TO\b|\bNOT\s+EQUAL\s+TO\b", "!=", chunk, flags=re.IGNORECASE)
         text = re.sub(r"\bIS\s+EQUAL\s+TO\b|\bEQUAL\s+TO\b", "==", text, flags=re.IGNORECASE)
