@@ -223,3 +223,13 @@ Añadir una sección con:
 - **Contexto:** la traducción directa de `NOT WS-X = valor` como `!ws_x == valor` no es Java válido para operandos numéricos y no representa la negación del predicado completo.
 - **Consecuencias:** se corrige la precedencia para las condiciones simples cubiertas; condiciones abreviadas y gramáticas complejas siguen requiriendo pruebas adicionales.
 - **Validación:** prueba unitaria para `NOT WS-B = 2`; la suite completa todavía no se ha confirmado en CI.
+
+
+## D-026 — Advertir sobre ordenación alfanumérica incompleta
+
+- **Fecha:** 2026-10-26.
+- **Estado:** aceptada para comparaciones detectadas en IF.
+- **Decisión:** emitir `ALPHANUMERIC_ORDER_COMPARISON_UNSUPPORTED` cuando una condición `IF` compara un campo `PIC X/A` con un literal mediante `<`, `>`, `<=` o `>=`.
+- **Contexto:** la comparación COBOL aplica reglas de ancho y relleno; el backend Java además no puede usar operadores relacionales directamente sobre `String`.
+- **Consecuencias:** `--strict` bloquea estas condiciones detectadas hasta implementar comparaciones relacionales compatibles en ambos backends. El diagnóstico actual no cubre todas las expresiones compuestas o contextos distintos de IF.
+- **Validación:** prueba unitaria de detección para un campo `PIC X`; la suite completa no se ha confirmado en CI.
