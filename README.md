@@ -238,7 +238,7 @@ GitHub Actions ejecuta las pruebas con Python 3.10–3.13 y compara, mediante el
 
 ## Benchmark diferencial y evolución objetiva
 
-El workflow `differential-benchmark.yml` compara el snapshot inicial del traductor (`02fde4b`) y el traductor actual contra el mismo corpus versionado; ambos se contrastan con el programa compilado por GnuCOBOL. En cada push a `main`, pull request o ejecución manual, publica un informe Markdown en el resumen de GitHub Actions y conserva los informes JSON/Markdown como artefactos durante 90 días.
+El workflow `differential-benchmark.yml` falla si cualquier caso del candidato no coincide exactamente con GnuCOBOL; usa `--report-only` solo para análisis exploratorio. Compara el snapshot inicial del traductor (`02fde4b`) y el traductor actual contra el mismo corpus versionado; ambos se contrastan con el programa compilado por GnuCOBOL. En cada push a `main`, pull request o ejecución manual, publica un informe Markdown en el resumen de GitHub Actions y conserva los informes JSON/Markdown como artefactos durante 90 días.
 
 - **Métrica principal:** porcentaje de programas cuyo `stdout` y código de salida coinciden exactamente con GnuCOBOL.
 - **Comparación entre versiones:** ejecuta el snapshot inicial fijado en `02fde4b` y el candidato actual sobre el mismo corpus de la revisión evaluada, y muestra el cambio en puntos porcentuales.
