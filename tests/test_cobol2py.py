@@ -800,6 +800,35 @@ class EndToEndTests(unittest.TestCase):
         self.assertIn("def main_para():", generated)
 
 
+    def test_evaluate_resolves_unqualified_group_child(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. EVALUATEGROUP.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-CUSTOMER.",
+            '05 WS-NAME PIC X(3) VALUE "BOB".',
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "EVALUATE WS-NAME",
+            'WHEN "BOB"',
+            'DISPLAY "MATCH".',
+            "WHEN OTHER",
+            'DISPLAY "MISS".',
+            "END-EVALUATE.",
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<evaluate-group-output>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "MATCH\\n", generated)
+
     def test_evaluate_when_and_when_other_execute_matching_branch(self):
         from contextlib import redirect_stdout
         from io import StringIO
