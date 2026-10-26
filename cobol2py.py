@@ -26,6 +26,31 @@ from typing import Optional
 # 1. PREPROCESADO
 # ============================================================================
 
+def strip_inline_comment(line: str) -> str:
+    """Remove a COBOL *> comment only when it appears outside a quoted literal.
+
+    COBOL escapes a quote inside a literal by doubling it ("" or ''). Keeping
+    this scan small avoids treating comment markers inside DISPLAY/MOVE strings
+    as comments without introducing a dependency or pretending to parse COBOL.
+    """
+    quote: Optional[str] = None
+    i = 0
+    while i < len(line):
+        char = line[i]
+        if quote is not None:
+            if char == quote:
+                if i + 1 < len(line) and line[i + 1] == quote:
+                    i += 2
+                    continue
+                quote = None
+        elif char in ("'", '"'):
+            quote = char
+        elif line.startswith("*>", i):
+            return line[:i].rstrip()
+        i += 1
+    return line.rstrip()
+
+
 def preprocess(source: str, source_format: str = "auto") -> list[tuple[int, str]]:
     if source_format not in ("auto", "fixed", "free"):
         raise ValueError("source_format debe ser 'auto', 'fixed' o 'free'")
@@ -46,7 +71,7 @@ def preprocess(source: str, source_format: str = "auto") -> list[tuple[int, str]
     out: list[tuple[int, str]] = []
     for i, raw in enumerate(lines, 1):
         if not fixed_format:
-            line = raw.split("*>")[0].rstrip()
+            line = strip_inline_comment(raw)
             if line.strip():
                 out.append((i, line))
             continue
@@ -55,7 +80,7 @@ def preprocess(source: str, source_format: str = "auto") -> list[tuple[int, str]
         if indicator in ("*", "/", "D", "d"):
             continue
         code = line[7:72].rstrip()
-        code = code.split("*>")[0].rstrip()
+        code = strip_inline_comment(code)
         if code.strip():
             out.append((i, code))
     return out
@@ -240,7 +265,9 @@ def split_concat_statements(text: str) -> list[str]:
     Heurística: un nuevo statement empieza donde aparece un verbo COBOL
     que no es el primero del buffer.
     """
-    tokens = text.split()
+    # Keep quoted literals atomic: they may contain spaces, verbs, terminators,
+    # or the inline-comment marker, none of which should split a statement.
+    tokens = re.findall(r"""'(?:''|[^'])*'|"(?:\"\"|[^"])*"|\S+""", text)
     if not tokens:
         return []
     statements: list[str] = []
@@ -479,7 +506,7 @@ def resolve_copybooks(
     def expand(text: str, search_roots: list[Path], stack: list[Path]) -> list[str]:
         output: list[str] = []
         for line in text.splitlines():
-            code_line = line.split("*>", 1)[0].rstrip()
+            code_line = strip_inline_comment(line)
             # Accept free-format COPY and the common six-column fixed-format
             # sequence prefix. Other COPY syntax is left visible as a warning.
             match = re.match(
