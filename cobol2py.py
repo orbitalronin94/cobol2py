@@ -1982,6 +1982,39 @@ def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
                         "message": also_branch or node.text,
                         "paragraph": paragraph,
                     })
+                subject_base = re.match(r"[A-Za-z][A-Za-z0-9-]*", subject)
+                subject_variable = (
+                    next(
+                        (item for item in prog.variables if item.name.upper() == subject_base.group(0).upper()),
+                        None,
+                    )
+                    if subject_base else None
+                )
+                if (
+                    subject_variable and subject_variable.pic
+                    and any(char in subject_variable.pic.upper() for char in ("X", "A"))
+                ):
+                    width = pic_character_count(subject_variable.pic)
+                    mismatched_literal = next(
+                        (
+                            child.text.strip() for child in node.body
+                            if child.kind == "when" and child.text.strip().upper() != "OTHER"
+                            and (literal := decode_cobol_quoted_literal(child.text.strip())) is not None
+                            and len(literal) != width
+                        ),
+                        None,
+                    )
+                    if mismatched_literal is not None:
+                        diagnostics.append({
+                            "code": "EVALUATE_ALPHANUMERIC_PADDING_UNSUPPORTED",
+                            "severity": "warning",
+                            "line": node.line,
+                            "message": (
+                                f"{subject}: {mismatched_literal} has a different width from "
+                                f"PIC {subject_variable.pic}; COBOL comparison padding is not applied"
+                            ),
+                            "paragraph": paragraph,
+                        })
 
             visit(node.then_branch, paragraph)
             visit(node.else_branch, paragraph)
