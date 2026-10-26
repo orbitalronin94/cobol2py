@@ -1590,6 +1590,31 @@ def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
             "message": message,
         })
 
+    for line_number, source_line in prog.raw_lines:
+        if re.search(r"\bREDEFINES\b", source_line, re.IGNORECASE):
+            diagnostics.append({
+                "code": "UNSUPPORTED_STORAGE_OVERLAY",
+                "severity": "warning",
+                "line": line_number,
+                "message": source_line.strip(),
+            })
+
+    for variable in prog.variables:
+        if variable.pic and any(code in variable.pic.upper() for code in ("S", "V", "P")):
+            declaration_line = next(
+                (
+                    line_number for line_number, source_line in prog.raw_lines
+                    if re.search(rf"\b{re.escape(variable.name)}\b", source_line, re.IGNORECASE)
+                ),
+                None,
+            )
+            diagnostics.append({
+                "code": "PARTIAL_NUMERIC_PIC_SEMANTICS",
+                "severity": "warning",
+                "line": declaration_line,
+                "message": f"{variable.name} PIC {variable.pic}: sign, scale, or scaling semantics are not generally guaranteed",
+            })
+
     def visit(nodes: list[Node], paragraph: str) -> None:
         for node in nodes:
             if node.kind == "malformed":
@@ -1648,7 +1673,7 @@ def main() -> int:
     ap.add_argument("--lang", choices=("python", "java"), default="python", help="Lenguaje de salida (por defecto: python)")
     ap.add_argument(
         "--strict", action="store_true",
-        help="Falla si hay sentencias no soportadas, copybooks sin resolver o bloques malformados",
+        help="Falla si hay construcciones no soportadas, copybooks sin resolver o semántica de datos parcialmente cubierta",
     )
     ap.add_argument(
         "--diagnostics-json", action="store_true",
