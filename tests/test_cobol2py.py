@@ -1077,6 +1077,27 @@ class DiagnosticTests(unittest.TestCase):
         diagnostics = cobol2py.collect_diagnostics(program)
         self.assertIn("PYTHON_IDENTIFIER_COLLISION", {item["code"] for item in diagnostics})
 
+    def test_collect_diagnostics_warns_on_evaluate_alphanumeric_width_mismatch(self):
+        program = cobol2py.Program(
+            variables=[cobol2py.CobolVar(level=1, name="WS-NAME", pic="X(5)")],
+            paragraphs={
+                "MAIN": [
+                    cobol2py.Node(
+                        kind="evaluate",
+                        text="EVALUATE WS-NAME",
+                        line=3,
+                        body=[cobol2py.Node(kind="when", text='"BOB"', line=4)],
+                    )
+                ]
+            },
+            paragraph_order=["MAIN"],
+        )
+        diagnostics = cobol2py.collect_diagnostics(program)
+        self.assertIn(
+            "EVALUATE_ALPHANUMERIC_PADDING_UNSUPPORTED",
+            {item["code"] for item in diagnostics},
+        )
+
     def test_collect_diagnostics_warns_on_evaluate_also(self):
         program = cobol2py.Program(
             paragraphs={
