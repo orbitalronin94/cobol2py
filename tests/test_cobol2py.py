@@ -56,7 +56,7 @@ class TranslationTests(unittest.TestCase):
 
 class EndToEndTests(unittest.TestCase):
     def test_perform_times_body_is_nested_in_loop(self):
-        source = "\\n".join([
+        source = "\n".join([
             "       IDENTIFICATION DIVISION.",
             "       PROGRAM-ID. LOOPTEST.",
             "       PROCEDURE DIVISION.",
@@ -68,7 +68,7 @@ class EndToEndTests(unittest.TestCase):
         ])
         generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
         compile(generated, "<perform-times-output>", "exec")
-        self.assertRegex(generated, r"for _ in range\\(3\\):\\n\\s+work_para\\(\\)")
+        self.assertRegex(generated, r"for _ in range\(3\):\n\s+work_para\(\)")
 
     def test_repository_samples_generate_syntactically_valid_python(self):
         from pathlib import Path
