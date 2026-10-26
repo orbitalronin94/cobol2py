@@ -150,6 +150,32 @@ class EndToEndTests(unittest.TestCase):
             namespace["main"]()
         self.assertEqual(output.getvalue(), "TOTAL=3\n")
 
+
+    def test_realtest_sample_matches_expected_console_output(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+        from pathlib import Path
+
+        root = Path(__file__).resolve().parents[1]
+        source = (root / "samples" / "realtest.cbl").read_text(encoding="utf-8")
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<realtest-output>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["inicio"]()
+        self.assertEqual(
+            output.getvalue(),
+            "INICIO DEL PROGRAMA\n"
+            "PROCESANDO...\n"
+            "ACUMULADO: 10\n"
+            "ACUMULADO: 20\n"
+            "ACUMULADO: 30\n"
+            "CODIGO ALTO\n"
+            "TOTAL FINAL: 30\n"
+            "STATUS ACTIVO\n",
+        )
+
     def test_fixed_format_program_generates_valid_python(self):
         source = "\n".join([
             "       IDENTIFICATION DIVISION.",
