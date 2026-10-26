@@ -95,11 +95,15 @@ class CobolVar:
         return self._base_py_type()
 
     def py_default(self) -> str:
+        # Preserve simple VALUE literals instead of silently replacing them
+        # with a generic default. This remains a readability-oriented mapping;
+        # COBOL storage padding and numeric picture semantics are not emulated.
+        initial = translate_literal(self.value) if self.value is not None else self._base_default()
         if self.is_array:
             if self.occurs:
-                return f"[{self._base_default()}] * {self.occurs}"
+                return f"[{initial}] * {self.occurs}"
             return "[]"
-        return self._base_default()
+        return initial
 
     def java_type(self) -> str:
         if self.is_array:
