@@ -281,7 +281,9 @@ python benchmarks/run_benchmark.py --translator cobol2py.py
 - [ ] La cobertura de Java sigue siendo un subconjunto; revisar construcciones no soportadas antes de usarlo.
 
 **v0.2.0 — Ejecución con GnuCOBOL**
-Compilar el COBOL con GnuCOBOL y ejecutarlo con trace. Mostrar el valor de cada variable por línea.
+- [x] Añadir `tools/gnucobol_trace.py`: compila con GnuCOBOL (`-ftraceall`) y ejecuta con trace habilitado.
+- [x] Inyectar snapshots `TRACE_VAR|nombre|valor` por variable escalar antes de salir; los valores los formatea GnuCOBOL.
+- [ ] Las tablas `OCCURS` y grupos se informan como no trazados; instrumentar todos sus elementos requiere soporte de subíndices y cualificación.
 
 ---
 
