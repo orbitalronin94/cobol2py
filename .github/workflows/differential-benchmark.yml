@@ -55,11 +55,12 @@ jobs:
           fi
           exit "$benchmark_status"
       - name: Upload machine-readable and human-readable reports
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: baseline-vs-current-benchmark-${{ github.run_number }}
           path: |
             benchmark-report.json
             benchmark-report.md
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 90
