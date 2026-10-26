@@ -53,6 +53,19 @@ class TranslationTests(unittest.TestCase):
             "12",
         )
 
+    def test_move_pads_and_truncates_alphanumeric_receiving_pic(self):
+        variables = {
+            "WS-CODE": cobol2py.CobolVar(level=1, name="WS-CODE", pic="X(5)")
+        }
+        self.assertEqual(
+            cobol2py.translate_move_value('"A"', "WS-CODE", variables),
+            'str("A")[:5].ljust(5)',
+        )
+        self.assertEqual(
+            cobol2py.translate_move_value('"ABCDEFG"', "WS-CODE", variables),
+            'str("ABCDEFG")[:5].ljust(5)',
+        )
+
     def test_hyphenated_identifier_and_subtraction_are_tokenized(self):
         self.assertEqual(cobol2py.translate_expr("WS-NUM - 1"), "ws_num - 1")
         self.assertEqual(cobol2py.translate_expr("WS-NUM + WS-TOTAL"), "ws_num + ws_total")
@@ -184,6 +197,32 @@ class EndToEndTests(unittest.TestCase):
             "STATUS ACTIVO\n",
             generated,
         )
+
+    def test_move_alphanumeric_pic_matches_fixed_width_display(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\\n".join([
+            "       IDENTIFICATION DIVISION.",
+            "       PROGRAM-ID. MOVEPADDING.",
+            "       DATA DIVISION.",
+            "       WORKING-STORAGE SECTION.",
+            "       01 WS-CODE PIC X(5).",
+            "       PROCEDURE DIVISION.",
+            "       MAIN.",
+            '           MOVE "ABCDEFG" TO WS-CODE.',
+            '           DISPLAY WS-CODE.',
+            "           MOVE " + '"A"' + " TO WS-CODE.",
+            '           DISPLAY WS-CODE.',
+            "           STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<move-padding-output>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "ABCDE\\nA    \\n", generated)
 
     def test_fixed_format_program_generates_valid_python(self):
         source = "\n".join([
