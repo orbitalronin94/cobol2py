@@ -76,6 +76,19 @@ class TranslationTests(unittest.TestCase):
             'str("ABCDEFG")[:5].ljust(5)',
         )
 
+    def test_value_all_literal_repeats_to_fill_alphanumeric_pic(self):
+        variable = cobol2py.CobolVar(level=1, name="WS-FLAG", pic="X(4)", value='ALL "Y"')
+        self.assertEqual(variable.py_default(), "'YYYY'")
+
+    def test_move_all_literal_repeats_to_fill_alphanumeric_pic(self):
+        variables = {"WS-FLAG": cobol2py.CobolVar(level=1, name="WS-FLAG", pic="X(4)")}
+        self.assertEqual(cobol2py.translate_move_value('ALL "Y"', "WS-FLAG", variables), "'YYYY'")
+
+    def test_value_space_zero_and_low_value_figuratives(self):
+        self.assertEqual(cobol2py.translate_literal("ZEROES"), "0")
+        self.assertEqual(cobol2py.translate_literal("LOW-VALUES"), '"\\\\x00"')
+        self.assertEqual(cobol2py.translate_literal("HIGH-VALUES"), '"\\\\xff"')
+
     def test_move_keeps_rightmost_digits_for_unsigned_integer_pic(self):
         variables = {
             "WS-NUM": cobol2py.CobolVar(level=1, name="WS-NUM", pic="9(3)")
