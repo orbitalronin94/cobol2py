@@ -45,3 +45,8 @@ python benchmarks/run_benchmark.py --translator cobol2py.py
 ```
 
 El benchmark requiere GnuCOBOL instalado. Las pruebas unitarias comprueban comportamientos específicos; el benchmark compara los casos versionados contra el programa COBOL compilado. Ninguna de estas comprobaciones demuestra equivalencia general.
+
+
+## Diagnósticos
+
+`collect_diagnostics()` inspecciona el AST y las referencias de copybooks para reportar construcciones no soportadas o malformadas. La CLI permite mostrar JSON estructurado y rechazar esos casos con `--strict`. El análisis es deliberadamente conservador y no sustituye a una validación semántica con GnuCOBOL.
