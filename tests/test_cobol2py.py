@@ -34,6 +34,26 @@ class PreprocessTests(unittest.TestCase):
             [(1, "IDENTIFICATION DIVISION."), (2, 'DISPLAY "A *> B".')],
         )
 
+    def test_display_preserves_doubled_quote_literal_end_to_end(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. QUOTEDDISPLAY.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            'DISPLAY "DON""T".',
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<quoted-display>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), 'DON"T\\n')
+
     def test_split_cobol_items_keeps_doubled_quote_literals_atomic(self):
         self.assertEqual(
             cobol2py.split_cobol_items('"DON""T" \'IT\'\'S OK\''),
