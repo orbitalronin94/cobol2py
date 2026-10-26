@@ -293,3 +293,13 @@ Añadir una sección con:
 - **Contexto:** las referencias no cualificadas a campos hijos de grupos podían generarse como variables globales inexistentes.
 - **Consecuencias:** se conserva la resolución básica de campos anidados en `EVALUATE`; la selección múltiple `ALSO` y las reglas completas de comparación siguen fuera de cobertura.
 - **Validación:** prueba end-to-end para `EVALUATE` sobre un campo hijo no cualificado; la suite completa no se ha confirmado en CI.
+
+
+## D-034 — Advertir sobre padding de cadenas en EVALUATE
+
+- **Fecha:** 2026-10-26.
+- **Estado:** aceptada para sujetos PIC X/A y alternativas WHEN literales detectadas.
+- **Decisión:** emitir `EVALUATE_ALPHANUMERIC_PADDING_UNSUPPORTED` cuando una alternativa literal tiene una longitud distinta al ancho PIC del sujeto alfanumérico.
+- **Contexto:** la comparación COBOL rellena el operando más corto con espacios; la comparación escalar generada actualmente puede comparar cadenas de longitudes distintas sin padding.
+- **Consecuencias:** `--strict` señala los casos directos detectados. El diagnóstico no cubre todas las alternativas variables, sujetos cualificados complejos ni reglas de dialecto.
+- **Validación:** prueba unitaria con `PIC X(5)` frente a un literal de tres caracteres; la suite completa sigue sin confirmación en CI.
