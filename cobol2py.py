@@ -1663,6 +1663,22 @@ def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
             })
 
     for variable in prog.variables:
+        if variable.is_group and variable.is_array:
+            diagnostics.append({
+                "code": "OCCURS_GROUP_UNSUPPORTED",
+                "severity": "warning",
+                "line": next(
+                    (
+                        line_number for line_number, source_line in prog.raw_lines
+                        if re.search(rf"^\\s*0*{variable.level}\\s+{re.escape(variable.name)}\\b", source_line, re.IGNORECASE)
+                    ),
+                    None,
+                ),
+                "message": (
+                    f"{variable.name} is a group with OCCURS; repeated nested group storage "
+                    "is not represented as a list of records"
+                ),
+            })
         if variable.depending_on:
             diagnostics.append({
                 "code": "OCCURS_DEPENDING_ON_UNSUPPORTED",
