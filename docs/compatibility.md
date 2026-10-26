@@ -91,3 +91,6 @@ Los grupos de datos con `OCCURS` tampoco se representan todavía como listas de 
 
 
 Para un `DISPLAY` simple de un campo numérico con `V` implícita, el backend Python emite las posiciones de dígitos sin punto decimal visible. Esto no implica que todas las reglas de redondeo, signo, aritmética o PIC editadas estén cubiertas.
+
+
+Las comparaciones relacionales de campos `PIC X/A` con literales en condiciones `IF` no están garantizadas. El modo estricto emite `ALPHANUMERIC_ORDER_COMPARISON_UNSUPPORTED` para los casos directos detectados; la cobertura de expresiones compuestas y otros contextos es incompleta.
