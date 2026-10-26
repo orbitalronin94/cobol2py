@@ -163,6 +163,14 @@ class TranslationTests(unittest.TestCase):
             cobol2py.translate_java_condition('WS-NAME = "DON""T"', variables),
             'Objects.equals(ws_name, "DON\\\"T")',
         )
+        self.assertEqual(
+            cobol2py.translate_condition('WS-NAME = "NOT"', variables),
+            "ws_name.ljust(5) == 'NOT  '",
+        )
+        self.assertEqual(
+            cobol2py.translate_java_condition('WS-NAME = "AND"', variables),
+            'Objects.equals(ws_name, "AND  ")',
+        )
 
     def test_value_space_zero_and_low_value_figuratives(self):
         self.assertEqual(cobol2py.translate_literal("ZEROES"), "0")
