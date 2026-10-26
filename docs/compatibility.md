@@ -18,6 +18,7 @@ Consulta la lista autoritativa en [`benchmarks/cases.json`](../benchmarks/cases.
 - `PERFORM TIMES` y llamadas a párrafos.
 - `EVALUATE` escalar con `WHEN`, `WHEN OTHER`, `EVALUATE TRUE/FALSE` y rangos `THRU` en casos acotados.
 - `COPY` simple con expansión recursiva, búsqueda por directorios explícitos y diagnósticos de faltantes/ciclos.
+- Grupos de datos como diccionarios anidados y referencias básicas a campos hijos.
 - Tablas `OCCURS` y acceso por subíndice en ejemplos acotados.
 
 La lista exacta de características por caso está en el manifiesto; este resumen no amplía por sí mismo el soporte.
@@ -30,6 +31,7 @@ Un resultado favorable no implica automáticamente soporte para:
 
 - campos con signo, decimales, formatos numéricos editados o todas las reglas de redondeo;
 - todas las variantes de `MOVE`, `INITIALIZE`, `REDEFINES`, `RENAMES`, `OCCURS DEPENDING ON` o cláusulas de almacenamiento;
+- equivalencia de overlays `REDEFINES`, `RENAMES` o grupos complejos con `OCCURS`;
 - todo el lenguaje de condiciones, abreviaturas COBOL o precedencia de operadores;
 - `EVALUATE ALSO`, selección múltiple avanzada y todos los matices de ámbito/dialecto;
 - `COPY ... REPLACING`, bibliotecas calificadas y reglas avanzadas de sustitución;
