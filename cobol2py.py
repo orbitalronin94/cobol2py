@@ -1648,6 +1648,21 @@ def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
                     "paragraph": paragraph,
                 })
             elif node.kind == "stmt":
+                if re.match(
+                    r"^(?:ADD|SUBTRACT|MULTIPLY|DIVIDE|COMPUTE)\b",
+                    node.text.strip(),
+                    re.IGNORECASE,
+                ):
+                    diagnostics.append({
+                        "code": "ARITHMETIC_SIZE_ERROR_UNSUPPORTED",
+                        "severity": "warning",
+                        "line": node.line,
+                        "message": (
+                            f"{node.text}: receiving PIC overflow and ON SIZE ERROR "
+                            "semantics are not fully implemented"
+                        ),
+                        "paragraph": paragraph,
+                    })
                 translated = translate_statement(
                     node.text,
                     set(prog.paragraphs),
