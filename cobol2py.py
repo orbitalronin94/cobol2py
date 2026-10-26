@@ -427,7 +427,16 @@ def parse_cobol(source: str, source_format: str = "auto") -> Program:
 
 def normalize_name(name: str) -> str:
     name = name.replace("-", "_").lower()
-    return name.replace("(", "[").replace(")", "]")
+
+    # COBOL table subscripts are 1-based; Python lists are 0-based.
+    # Translate a simple literal or data-name subscript accordingly.
+    def normalize_subscript(match: re.Match[str]) -> str:
+        subscript = match.group(1)
+        if subscript.isdigit():
+            return f"[{int(subscript) - 1}]"
+        return f"[{subscript.replace('-', '_').lower()} - 1]"
+
+    return re.sub(r"\(([A-Za-z0-9-]+)\)", normalize_subscript, name)
 
 
 def translate_literal(token: str) -> str:
