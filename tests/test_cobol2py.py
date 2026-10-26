@@ -176,6 +176,12 @@ class TranslationTests(unittest.TestCase):
             '!(Objects.equals(ws_name, "AND  "))',
         )
 
+    def test_space_figurative_constant_emits_one_space(self):
+        self.assertEqual(cobol2py.translate_literal("SPACE"), '" "')
+        self.assertEqual(cobol2py.translate_literal("SPACES"), '" "')
+        self.assertEqual(cobol2py.translate_java_literal("SPACE", {}), '" "')
+        self.assertEqual(cobol2py.translate_java_literal("SPACES", {}), '" "')
+
     def test_value_space_zero_and_low_value_figuratives(self):
         self.assertEqual(cobol2py.translate_literal("ZEROES"), "0")
         self.assertEqual(cobol2py.translate_literal("LOW-VALUES"), repr("\x00"))
