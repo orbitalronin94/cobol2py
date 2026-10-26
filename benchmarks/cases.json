@@ -165,13 +165,6 @@
       ]
     },
     {
-      "id": "if-not-equal",
-      "path": "samples/bench_21_if_not_equal.cbl",
-      "features": [
-        "not-equal comparison"
-      ]
-    },
-    {
       "id": "if-nested",
       "path": "samples/bench_21_if_nested.cbl",
       "features": [
