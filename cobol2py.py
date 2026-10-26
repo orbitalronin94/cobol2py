@@ -702,9 +702,11 @@ def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = No
         base = re.match(r"[a-z_][a-z0-9_]*", left)
         if base is None:
             return match.group(0)
+        field_key = re.search(r"\['([a-z_][a-z0-9_]*)'\]", left)
+        lookup_name = field_key.group(1) if field_key else base.group(0)
         variable = next(
             (item for item in variables.values()
-             if normalize_name(item.name) == base.group(0)),
+             if normalize_name(item.name) == lookup_name),
             None,
         )
         if variable is None or not variable.pic:
@@ -735,7 +737,8 @@ def pic_digit_count(pic: str) -> int:
 
 def translate_display_item(token: str, variables: dict[str, CobolVar]) -> str:
     """Emit a string expression matching basic COBOL DISPLAY formatting."""
-    variable = variables.get(token.upper())
+    base_match = re.match(r"[A-Za-z0-9-]+", token)
+    variable = variables.get(base_match.group(0).upper()) if base_match else None
     if variable is not None and variable.pic:
         pic = variable.pic.upper()
         if "9" in pic:
