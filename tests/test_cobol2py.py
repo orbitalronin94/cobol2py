@@ -826,6 +826,7 @@ class DiagnosticTests(unittest.TestCase):
             paragraphs={
                 "MAIN": [
                     cobol2py.Node(kind="stmt", text="FOO BAR", line=4),
+                    cobol2py.Node(kind="stmt", text="ADD 1 TO WS-DEC", line=7),
                     cobol2py.Node(kind="malformed", text="END-IF without matching open block", line=9),
                 ]
             },
@@ -844,6 +845,7 @@ class DiagnosticTests(unittest.TestCase):
             {
                 "UNSUPPORTED_STATEMENT", "MALFORMED_CONTROL_FLOW", "COPYBOOK_RESOLUTION",
                 "UNSUPPORTED_STORAGE_OVERLAY", "PARTIAL_NUMERIC_PIC_SEMANTICS",
+                "ARITHMETIC_SIZE_ERROR_UNSUPPORTED",
             },
         )
         malformed = next(item for item in diagnostics if item["code"] == "MALFORMED_CONTROL_FLOW")
