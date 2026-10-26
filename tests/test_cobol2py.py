@@ -1025,6 +1025,16 @@ class DiagnosticTests(unittest.TestCase):
             {item["code"] for item in diagnostics},
         )
 
+    def test_collect_diagnostics_warns_on_normalization_collisions(self):
+        program = cobol2py.Program(
+            variables=[
+                cobol2py.CobolVar(level=1, name="PRINT", pic="X"),
+                cobol2py.CobolVar(level=1, name="COBOL-PRINT", pic="X"),
+            ]
+        )
+        diagnostics = cobol2py.collect_diagnostics(program)
+        self.assertIn("PYTHON_IDENTIFIER_COLLISION", {item["code"] for item in diagnostics})
+
     def test_collect_diagnostics_warns_on_python_identifier_collisions(self):
         program = cobol2py.Program(
             variables=[cobol2py.CobolVar(level=1, name="MAIN", pic="9")],
