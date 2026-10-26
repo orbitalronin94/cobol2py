@@ -1079,6 +1079,19 @@ class EndToEndTests(unittest.TestCase):
 
 
 class DiagnosticTests(unittest.TestCase):
+    def test_collect_diagnostics_warns_on_literal_left_string_comparison(self):
+        program = cobol2py.Program(
+            variables=[cobol2py.CobolVar(level=1, name="WS-NAME", pic="X(3)")],
+            paragraphs={
+                "MAIN": [
+                    cobol2py.Node(kind="if", text='IF "A" = WS-NAME', line=7)
+                ]
+            },
+            paragraph_order=["MAIN"],
+        )
+        codes = {item["code"] for item in cobol2py.collect_diagnostics(program)}
+        self.assertIn("ALPHANUMERIC_LITERAL_LEFT_COMPARISON_UNSUPPORTED", codes)
+
     def test_collect_diagnostics_warns_on_alphanumeric_field_comparison(self):
         program = cobol2py.Program(
             variables=[
