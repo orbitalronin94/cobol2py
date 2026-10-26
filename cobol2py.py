@@ -1237,14 +1237,18 @@ def translate_java_condition(condition: str, variables: dict[str, CobolVar]) -> 
             padded = literal.ljust(max(width, len(literal)))
             equality = f"Objects.equals({java_data_reference(left, variables)}, {java_string_literal(padded)})"
             return equality if operator in ("=", "==") else "!(" + equality + ")"
-    text = re.sub(r"\bIS\s+NOT\s+EQUAL\s+TO\b|\bNOT\s+EQUAL\s+TO\b", "!=", text, flags=re.IGNORECASE)
-    text = re.sub(r"\bIS\s+EQUAL\s+TO\b|\bEQUAL\s+TO\b", "==", text, flags=re.IGNORECASE)
-    text = re.sub(r"\bIS\s+GREATER\s+THAN\b|\bGREATER\s+THAN\b", ">", text, flags=re.IGNORECASE)
-    text = re.sub(r"\bIS\s+LESS\s+THAN\b|\bLESS\s+THAN\b", "<", text, flags=re.IGNORECASE)
-    text = re.sub(r"\bAND\b", "&&", text, flags=re.IGNORECASE)
-    text = re.sub(r"\bOR\b", "||", text, flags=re.IGNORECASE)
-    text = re.sub(r"\bNOT\b", "!", text, flags=re.IGNORECASE)
-    text = re.sub(r"(?<![<>=])=(?!=)", "==", text).replace("<>", "!=")
+    def rewrite(chunk: str) -> str:
+        text = re.sub(r"\bIS\s+NOT\s+EQUAL\s+TO\b|\bNOT\s+EQUAL\s+TO\b", "!=", chunk, flags=re.IGNORECASE)
+        text = re.sub(r"\bIS\s+EQUAL\s+TO\b|\bEQUAL\s+TO\b", "==", text, flags=re.IGNORECASE)
+        text = re.sub(r"\bIS\s+GREATER\s+THAN\b|\bGREATER\s+THAN\b", ">", text, flags=re.IGNORECASE)
+        text = re.sub(r"\bIS\s+LESS\s+THAN\b|\bLESS\s+THAN\b", "<", text, flags=re.IGNORECASE)
+        text = re.sub(r"\bAND\b", "&&", text, flags=re.IGNORECASE)
+        text = re.sub(r"\bOR\b", "||", text, flags=re.IGNORECASE)
+        text = re.sub(r"\bNOT\b", "!", text, flags=re.IGNORECASE)
+        text = re.sub(r"(?<![<>=])=(?!=)", "==", text).replace("<>", "!=")
+        return text
+
+    text = rewrite_outside_literals(text, rewrite)
     return translate_java_expr(text, variables)
 
 
