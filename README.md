@@ -151,7 +151,7 @@ Y lo dice. No falla en silencio.
 | `CICS`, `DB2`, `IMS` | Fuera de alcance. |
 | COBOL antiguo con varias sentencias por línea | Puede fallar. |
 
-Todo lo que no se traduce sale con un comentario `# COBOL no traducido: ...` en el Python. Nunca se pierde silenciosamente. Nunca se inventa.
+Las sentencias de procedimiento que no se traducen suelen quedar como comentarios `# COBOL no traducido: ...`; las declaraciones de datos omitidas o aproximadas se señalan mediante diagnósticos cuando se usa `--strict` o `--diagnostics-json`. El modo normal no detecta todas las construcciones no soportadas, por lo que no debe asumirse que la ausencia de comentarios garantiza una traducción completa.
 
 ---
 
