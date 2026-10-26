@@ -218,7 +218,7 @@ Añadir una sección con:
 ## D-025 — Aplicar NOT al predicado en el backend Java
 
 - **Fecha:** 2026-10-26.
-- **Estado:** aceptada para predicados simples y condiciones compuestas separadas por AND/OR.
+- **Estado:** aceptada para predicados simples; las combinaciones con cadenas y AND/OR siguen siendo parciales.
 - **Decisión:** agrupar la negación como `!(predicado)` antes de emitir la condición Java, en vez de anteponer `!` al primer operando.
 - **Contexto:** la traducción directa de `NOT WS-X = valor` como `!ws_x == valor` no es Java válido para operandos numéricos y no representa la negación del predicado completo.
 - **Consecuencias:** se corrige la precedencia para las condiciones simples cubiertas; condiciones abreviadas y gramáticas complejas siguen requiriendo pruebas adicionales.
