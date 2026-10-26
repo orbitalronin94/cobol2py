@@ -228,6 +228,11 @@ class TranslationTests(unittest.TestCase):
             "int(1234) % (10 ** 3)",
         )
 
+    def test_reserved_words_are_normalized_for_both_backends(self):
+        self.assertEqual(cobol2py.normalize_name("CLASS"), "cobol_class")
+        self.assertEqual(cobol2py.normalize_name("WS-CLASS(1)"), "ws_class[0]")
+        self.assertEqual(cobol2py.normalize_name("WS-ITEM(INT)"), "ws_item[cobol_int - 1]")
+
     def test_hyphenated_identifier_and_subtraction_are_tokenized(self):
         self.assertEqual(cobol2py.translate_expr("WS-NUM - 1"), "ws_num - 1")
         self.assertEqual(cobol2py.translate_expr("WS-NUM + WS-TOTAL"), "ws_num + ws_total")
