@@ -163,3 +163,13 @@ Añadir una sección con:
 - **Contexto:** el parser omitía algunas declaraciones o conservaba solo la capacidad máxima de una tabla, lo que podía aparentar soporte completo.
 - **Consecuencias:** `--strict` falla cuando se detectan estas construcciones; los diagnósticos ayudan a localizar la brecha, pero no implementan la semántica omitida.
 - **Validación:** se añadieron pruebas de regresión para los tres códigos de diagnóstico; la ejecución real de la suite aún está pendiente de confirmación en CI.
+
+
+## D-017 — Diagnosticar EVALUATE ALSO no soportado
+
+- **Fecha:** 2026-10-26.
+- **Estado:** aceptada.
+- **Decisión:** emitir `UNSUPPORTED_EVALUATE_ALSO` cuando el sujeto de `EVALUATE` o una alternativa `WHEN` contiene `ALSO`.
+- **Contexto:** el backend actual no implementa la selección múltiple `ALSO`; traducirla como una comparación escalar puede producir código incorrecto o inválido.
+- **Consecuencias:** `--strict` rechaza estos casos detectados en lugar de aparentar compatibilidad. Otras formas de selección no soportadas pueden requerir diagnósticos separados.
+- **Validación:** prueba unitaria de `collect_diagnostics`; la ejecución completa de la suite todavía no está confirmada.
