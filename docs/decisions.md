@@ -233,3 +233,13 @@ Añadir una sección con:
 - **Contexto:** la comparación COBOL aplica reglas de ancho y relleno; el backend Java además no puede usar operadores relacionales directamente sobre `String`.
 - **Consecuencias:** `--strict` bloquea estas condiciones detectadas hasta implementar comparaciones relacionales compatibles en ambos backends. El diagnóstico actual no cubre todas las expresiones compuestas o contextos distintos de IF.
 - **Validación:** prueba unitaria de detección para un campo `PIC X`; la suite completa no se ha confirmado en CI.
+
+
+## D-027 — No confundir verbos aislados con etiquetas de párrafo
+
+- **Fecha:** 2026-10-26.
+- **Estado:** aceptada para GOBACK, CONTINUE y EXIT.
+- **Decisión:** excluir estos verbos de la detección heurística de nombres de párrafo cuando aparecen solos con punto, y traducir CONTINUE/EXIT como no-ops.
+- **Contexto:** la expresión regular de etiquetas podía interpretar `GOBACK.` como un párrafo nuevo y descartar la sentencia, alterando el flujo de control.
+- **Consecuencias:** se preserva el retorno local de GOBACK y se evita que CONTINUE/EXIT desaparezcan. Otros nombres de una sola palabra que colisionen con verbos pueden requerir tratamiento específico.
+- **Validación:** prueba de regresión para GOBACK seguido de una sentencia que no debe ejecutarse; la suite completa sigue sin resultado verificable.
