@@ -1141,6 +1141,30 @@ class DiagnosticTests(unittest.TestCase):
             {item["code"] for item in diagnostics},
         )
 
+    def test_diagnostics_ignore_operator_words_inside_literals(self):
+        program = cobol2py.Program(
+            variables=[
+                cobol2py.CobolVar(level=1, name="WS-NAME", pic="X(20)"),
+                cobol2py.CobolVar(level=1, name="WS-A", pic="X"),
+                cobol2py.CobolVar(level=1, name="WS-B", pic="X"),
+            ],
+            paragraphs={
+                "MAIN": [
+                    cobol2py.Node(kind="if", text='IF WS-NAME = "WS-A = WS-B"', line=3),
+                    cobol2py.Node(
+                        kind="evaluate",
+                        text='EVALUATE WS-NAME',
+                        line=5,
+                        body=[cobol2py.Node(kind="when", text='"ALSO"', line=6)],
+                    ),
+                ]
+            },
+            paragraph_order=["MAIN"],
+        )
+        codes = {item["code"] for item in cobol2py.collect_diagnostics(program)}
+        self.assertNotIn("ALPHANUMERIC_FIELD_COMPARISON_UNSUPPORTED", codes)
+        self.assertNotIn("UNSUPPORTED_EVALUATE_ALSO", codes)
+
     def test_collect_diagnostics_warns_on_evaluate_also(self):
         program = cobol2py.Program(
             paragraphs={
