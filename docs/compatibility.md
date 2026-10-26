@@ -62,4 +62,4 @@ Cada caso pesa lo mismo, independientemente de su tamaño o complejidad. Por ell
 
 ## Modo estricto y diagnósticos
 
-`--strict` termina con código 2 cuando el traductor detecta sentencias no soportadas, copybooks sin resolver o bloques de control malformados. `--diagnostics-json` emite una lista JSON por stderr con `code`, `severity`, `line` y `message`. Estos diagnósticos son una ayuda para automatizar revisiones, no una prueba de que una traducción sin advertencias sea semánticamente equivalente a COBOL.
+`--strict` termina con código 2 cuando el traductor detecta sentencias no soportadas, copybooks sin resolver, bloques de control malformados, overlays `REDEFINES` o semántica numérica `PIC` parcialmente cubierta. `--diagnostics-json` emite una lista JSON por stderr con `code`, `severity`, `line` y `message`. Estos diagnósticos son una ayuda para automatizar revisiones, no una prueba de que una traducción sin advertencias sea semánticamente equivalente a COBOL.
