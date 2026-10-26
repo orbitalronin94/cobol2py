@@ -1860,6 +1860,33 @@ def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
                             "message": node.text,
                             "paragraph": paragraph,
                         })
+                field_comparison = re.search(
+                    r"\\b([A-Za-z][A-Za-z0-9-]*)\\b\\s*(?:=|==|!=|<>|<=|>=|<|>)\\s*([A-Za-z][A-Za-z0-9-]*)\\b",
+                    condition,
+                    re.IGNORECASE,
+                )
+                if field_comparison:
+                    left_var = next(
+                        (item for item in prog.variables if item.name.upper() == field_comparison.group(1).upper()),
+                        None,
+                    )
+                    right_var = next(
+                        (item for item in prog.variables if item.name.upper() == field_comparison.group(2).upper()),
+                        None,
+                    )
+                    if (
+                        left_var and right_var
+                        and left_var.pic and right_var.pic
+                        and any(char in left_var.pic.upper() for char in ("X", "A"))
+                        and any(char in right_var.pic.upper() for char in ("X", "A"))
+                    ):
+                        diagnostics.append({
+                            "code": "ALPHANUMERIC_FIELD_COMPARISON_UNSUPPORTED",
+                            "severity": "warning",
+                            "line": node.line,
+                            "message": node.text,
+                            "paragraph": paragraph,
+                        })
             elif node.kind == "evaluate":
                 if not any(child.kind == "when" for child in node.body):
                     diagnostics.append({
