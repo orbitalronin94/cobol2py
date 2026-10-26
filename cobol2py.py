@@ -858,7 +858,7 @@ def translate_statement(
     upper = s.upper()
 
     if upper in ("STOP RUN", "STOP RUN."):
-        return ["return"]
+        return ["raise _CobolStopRun"]
     if upper.startswith("EXIT PROGRAM") or upper == "GOBACK":
         return ["return"]
 
@@ -1256,7 +1256,9 @@ def translate_java_statement(
     upper = text.upper()
     if not text:
         return []
-    if upper in ("STOP RUN", "GOBACK", "EXIT PROGRAM"):
+    if upper == "STOP RUN":
+        return ["System.exit(0);"]
+    if upper in ("GOBACK", "EXIT PROGRAM"):
         return ["return;"]
     if upper.startswith("DISPLAY "):
         args = split_cobol_items(text[len("DISPLAY "):])
@@ -1499,6 +1501,10 @@ def emit_python(prog: Program) -> str:
     lines.append("Generado por cobol2py.py — v0.0.8")
     lines.append('"""')
     lines.append("")
+    lines.append("class _CobolStopRun(Exception):")
+    lines.append('    """Internal signal for COBOL STOP RUN; caught by the entry paragraph."""')
+    lines.append("    pass")
+    lines.append("")
     for warning in prog.unresolved_copybooks:
         lines.append(f"# COPYBOOK RESOLUTION WARNING: {warning}")
     if prog.unresolved_copybooks:
@@ -1547,6 +1553,11 @@ def emit_python(prog: Program) -> str:
     order = [p for p in prog.paragraph_order if p != "__MAIN__"]
     if "__MAIN__" in prog.paragraphs and prog.paragraphs["__MAIN__"]:
         order = ["__MAIN__"] + order
+    entrypoint = (
+        "__MAIN__"
+        if "__MAIN__" in prog.paragraphs and prog.paragraphs["__MAIN__"]
+        else (order[0] if order else None)
+    )
 
     for para_name in order:
         nodes = prog.paragraphs.get(para_name, [])
@@ -1564,7 +1575,14 @@ def emit_python(prog: Program) -> str:
         if global_vars:
             lines.append("    global " + ", ".join(global_vars))
         body = translate_paragraph(nodes, para_names, variables_by_name)
-        lines.extend(body if body else ["    pass"])
+        body = body if body else ["    pass"]
+        if para_name == entrypoint:
+            lines.append("    try:")
+            lines.extend("    " + line if line else line for line in body)
+            lines.append("    except _CobolStopRun:")
+            lines.append("        return")
+        else:
+            lines.extend(body)
         lines.append("")
 
     lines.append('if __name__ == "__main__":')
