@@ -47,6 +47,7 @@ Eso imprime la traducción por stdout. Si quieres guardarla en un archivo:
 python cobol2py.py programa.cbl --out programa.py
 python cobol2py.py programa.cbl --lang java --out Cobol2PyProgram.java
 javac Cobol2PyProgram.java
+python tools/gnucobol_trace.py programa.cbl --format auto
 ```
 
 Y si quieres comprobar que la salida es Python válido:
