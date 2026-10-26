@@ -696,7 +696,7 @@ def translate_literal(
     if re.match(r"^[+-]?\d+\.\d+$", t):
         return t
     if t.upper() in ("SPACES", "SPACE"):
-        return '""'
+        return json.dumps(" ")
     if t.upper() in ("ZEROS", "ZERO", "ZEROES", "ZEROES"):
         return "0"
     if t.upper() in ("LOW-VALUE", "LOW-VALUES"):
@@ -1181,7 +1181,7 @@ def translate_java_literal(token: str, variables: dict[str, CobolVar]) -> str:
     if re.match(r"^[+-]?\d+(?:\.\d+)?$", t):
         return t
     if t.upper() in ("SPACE", "SPACES"):
-        return '""'
+        return java_string_literal(" ")
     if t.upper() in ("ZERO", "ZEROS", "ZEROES"):
         return "0"
     if t.upper() in ("LOW-VALUE", "LOW-VALUES"):
