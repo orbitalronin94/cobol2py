@@ -173,3 +173,13 @@ Añadir una sección con:
 - **Contexto:** el backend actual no implementa la selección múltiple `ALSO`; traducirla como una comparación escalar puede producir código incorrecto o inválido.
 - **Consecuencias:** `--strict` rechaza estos casos detectados en lugar de aparentar compatibilidad. Otras formas de selección no soportadas pueden requerir diagnósticos separados.
 - **Validación:** prueba unitaria de `collect_diagnostics`; la ejecución completa de la suite todavía no está confirmada.
+
+
+## D-018 — Diagnosticar OCCURS sobre grupos
+
+- **Fecha:** 2026-10-26.
+- **Estado:** aceptada.
+- **Decisión:** emitir `OCCURS_GROUP_UNSUPPORTED` cuando un grupo de datos tenga `OCCURS`, porque el backend no representa cada ocurrencia como un registro anidado independiente.
+- **Contexto:** la generación actual de valores por defecto puede colapsar el grupo a un único diccionario en vez de una lista de grupos.
+- **Consecuencias:** el modo estricto detecta esta forma de almacenamiento y evita sugerir equivalencia; la implementación de tablas de grupos queda pendiente.
+- **Validación:** prueba unitaria que comprueba el diagnóstico y su línea de origen; la suite completa todavía no está confirmada en CI.
