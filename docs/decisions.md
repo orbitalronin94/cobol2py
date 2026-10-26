@@ -313,3 +313,13 @@ Añadir una sección con:
 - **Contexto:** asignar siempre `input()`/`Scanner.nextLine()` dejaba strings en variables numéricas y no respetaba el ancho de campos alfanuméricos.
 - **Consecuencias:** los casos sencillos de ACCEPT son utilizables con operaciones posteriores; reglas completas de validación de entrada, signo, escala y errores de conversión siguen pendientes.
 - **Validación:** pruebas end-to-end Python y unitarias de generación Java; la suite completa no se ha confirmado en CI.
+
+
+## D-036 — Diagnosticar comparaciones alfanuméricas con literal a la izquierda
+
+- **Fecha:** 2026-10-26.
+- **Estado:** aceptada para comparaciones directas detectadas en IF.
+- **Decisión:** emitir `ALPHANUMERIC_LITERAL_LEFT_COMPARISON_UNSUPPORTED` si un literal aparece a la izquierda de una comparación con un campo `PIC X/A`.
+- **Contexto:** el backend Python no aplica todavía padding al literal de la izquierda y el backend Java no convierte todas esas formas a comparación por valor.
+- **Consecuencias:** `--strict` señala los casos directos detectados; expresiones compuestas o cualificadas pueden quedar fuera del patrón.
+- **Validación:** prueba unitaria con literal a la izquierda; la suite completa aún no se ha confirmado en CI.
