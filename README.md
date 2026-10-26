@@ -129,7 +129,8 @@ No es Python perfecto. Es Python **legible**. Y eso es lo que importa.
 | `PERFORM párrafo` | llamada a función |
 | `PERFORM párrafo N TIMES` | `for _ in range(N)` |
 | `PERFORM párrafo UNTIL X` | `while not X` |
-| `STOP RUN`, `GOBACK`, `EXIT PROGRAM` | `return` |
+| `STOP RUN` | Termina el programa; señal propagada en Python y `System.exit(0)` en Java |
+| `GOBACK`, `EXIT PROGRAM` | `return` local |
 | `--lang java` | Backend Java básico que consume el mismo árbol de bloques; compila en el subset probado |
 
 ---
