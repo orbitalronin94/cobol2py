@@ -2196,7 +2196,7 @@ def collect_diagnostics(prog: Program, target_language: str = "python") -> list[
                             if variable.name in source_names
                             for line_number, source_line in prog.raw_lines
                             if re.search(
-                                rf"^\\s*0*{variable.level}\\s+{re.escape(variable.name)}\\b",
+                                rf"^\s*0*{variable.level}\s+{re.escape(variable.name)}\b",
                                 source_line,
                                 re.IGNORECASE,
                             )
