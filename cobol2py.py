@@ -664,7 +664,7 @@ def translate_literal(
         return repr(all_literal.group(2))
     quoted = decode_cobol_quoted_literal(t)
     if quoted is not None:
-        return repr(quoted)
+        return json.dumps(quoted, ensure_ascii=False)
     if re.match(r"^[+-]?\d+$", t):
         return t
     if re.match(r"^[+-]?\d+\.\d+$", t):
