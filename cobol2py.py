@@ -167,7 +167,10 @@ RE_PROGRAM_ID = re.compile(r"PROGRAM-ID\.\s*([A-Za-z0-9\-]+)", re.IGNORECASE)
 RE_WORKING_STORAGE = re.compile(r"WORKING-STORAGE\s+SECTION", re.IGNORECASE)
 RE_VAR = re.compile(r"^\s*(\d{1,2})\s+([A-Za-z0-9\-]+)\s*(.*?)(?:\.|$)", re.IGNORECASE)
 RE_PIC = re.compile(r"PIC(?:TURE)?\s+(?:IS\s+)?([A-Za-z0-9\(\)VSPX]+)", re.IGNORECASE)
-RE_VALUE = re.compile(r"VALUE\s+(?:IS\s+)?(\"[^\"]*\"|'[^']*'|[^\s\.]+)", re.IGNORECASE)
+RE_VALUE = re.compile(
+    r"""VALUE\s+(?:IS\s+)?((?:ALL\s+)?(?:"[^"]*"|'[^']*'|[+-]?\d+(?:\.\d+)?|[A-Za-z][A-Za-z0-9-]*))""",
+    re.IGNORECASE,
+)
 # Patch 2: OCCURS dinámico
 RE_OCCURS = re.compile(
     r"OCCURS\s+(?:\d+\s+TO\s+)?(\d+)\s+TIMES"
@@ -465,16 +468,25 @@ def translate_literal(token: str) -> str:
     t = token.strip()
     if not t:
         return '""'
+    all_literal = re.fullmatch(r"""ALL\s+(["'])(.*?)\1""", t, re.IGNORECASE)
+    if all_literal:
+        return repr(all_literal.group(2))
     if (t.startswith('"') and t.endswith('"')) or (t.startswith("'") and t.endswith("'")):
-        return '"' + t[1:-1] + '"'
-    if re.match(r"^-?\d+$", t):
+        return repr(t[1:-1])
+    if re.match(r"^[+-]?\d+$", t):
         return t
-    if re.match(r"^-?\d+\.\d+$", t):
+    if re.match(r"^[+-]?\d+\.\d+$", t):
         return t
     if t.upper() in ("SPACES", "SPACE"):
         return '""'
-    if t.upper() in ("ZEROS", "ZERO"):
+    if t.upper() in ("ZEROS", "ZERO", "ZEROES", "ZEROES"):
         return "0"
+    if t.upper() in ("LOW-VALUE", "LOW-VALUES"):
+        return repr("\x00")
+    if t.upper() in ("HIGH-VALUE", "HIGH-VALUES"):
+        return repr("\xff")
+    if t.upper() in ("QUOTE", "QUOTES"):
+        return repr('"')
     return normalize_name(t)
 
 
