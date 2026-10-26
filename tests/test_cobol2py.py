@@ -122,10 +122,33 @@ class TranslationTests(unittest.TestCase):
             '"IT\'S OK"',
         )
 
+        self.assertEqual(
+            cobol2py.translate_expr('"DON""T"'),
+            cobol2py.translate_literal('"DON""T"'),
+        )
+        self.assertEqual(
+            cobol2py.translate_java_expr('"DON""T"', {}),
+            cobol2py.translate_java_literal('"DON""T"', {}),
+        )
+
     def test_value_space_zero_and_low_value_figuratives(self):
         self.assertEqual(cobol2py.translate_literal("ZEROES"), "0")
         self.assertEqual(cobol2py.translate_literal("LOW-VALUES"), repr("\x00"))
         self.assertEqual(cobol2py.translate_literal("HIGH-VALUES"), repr("\xff"))
+
+    def test_value_clause_parses_doubled_quote_literal(self):
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. QUOTEVALUE.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            '01 WS-TEXT PIC X(6) VALUE "DON""T".',
+            "PROCEDURE DIVISION.",
+            "STOP RUN.",
+        ])
+        variable = cobol2py.parse_cobol(source, source_format="free").variables[0]
+        self.assertEqual(variable.value, '"DON""T"')
+        self.assertIn('DON"T', variable.py_default())
 
     def test_value_clause_parses_signed_and_decimal_literals(self):
         source = "\n".join([
