@@ -114,6 +114,12 @@ class CobolVar:
                     if all_literal:
                         repeated = (all_literal.group(2) * width)[:width]
                         initial = repr(repeated)
+                    elif self.value.upper() in ("LOW-VALUE", "LOW-VALUES"):
+                        initial = repr("\x00" * width)
+                    elif self.value.upper() in ("HIGH-VALUE", "HIGH-VALUES"):
+                        initial = repr("\xff" * width)
+                    elif self.value.upper() in ("SPACE", "SPACES"):
+                        initial = repr(" " * width)
                     else:
                         initial = f"str({initial})[:{width}].ljust({width})"
         if self.is_array:
@@ -165,7 +171,7 @@ RE_DATA = re.compile(r"DATA\s+DIVISION", re.IGNORECASE)
 RE_PROC = re.compile(r"PROCEDURE\s+DIVISION", re.IGNORECASE)
 RE_PROGRAM_ID = re.compile(r"PROGRAM-ID\.\s*([A-Za-z0-9\-]+)", re.IGNORECASE)
 RE_WORKING_STORAGE = re.compile(r"WORKING-STORAGE\s+SECTION", re.IGNORECASE)
-RE_VAR = re.compile(r"^\s*(\d{1,2})\s+([A-Za-z0-9\-]+)\s*(.*?)(?:\.|$)", re.IGNORECASE)
+RE_VAR = re.compile(r"^\s*(\d{1,2})\s+([A-Za-z0-9\-]+)\s*(.*?)(?:\.\s*)?$", re.IGNORECASE)
 RE_PIC = re.compile(r"PIC(?:TURE)?\s+(?:IS\s+)?([A-Za-z0-9\(\)VSPX]+)", re.IGNORECASE)
 RE_VALUE = re.compile(
     r"""VALUE\s+(?:IS\s+)?((?:ALL\s+)?(?:"[^"]*"|'[^']*'|[+-]?\d+(?:\.\d+)?|[A-Za-z][A-Za-z0-9-]*))""",
@@ -621,12 +627,21 @@ def translate_move_value(source: str, target: str, variables: dict[str, CobolVar
                 if source.strip().upper() in ("HIGH-VALUE", "HIGH-VALUES"):
                     return repr("\xff" * width)
                 return f"str({value})[:{width}].ljust({width})"
-        # For unsigned integer receiving fields, COBOL MOVE keeps the
-        # rightmost digits when the sending value is wider than the PIC.
-        # Signed and implied-decimal pictures need separate semantics.
-        if "9" in pic and not any(mark in pic for mark in ("V", "S", "P")):
+        # Numeric MOVE keeps the low-order receiving digits. For implied
+        # decimal pictures, scale first, truncate excess fractional digits,
+        # then retain the receiving picture's total digit capacity.
+        if "9" in pic and "P" not in pic:
             digits = pic_digit_count(pic)
-            if digits:
+            if "V" in pic:
+                scale = pic_digit_count(pic.split("V", 1)[1])
+                if digits:
+                    factor = 10 ** scale
+                    magnitude = f"int(abs(float({value})) * {factor}) % (10 ** {digits})"
+                    sign = f"(-1 if float({value}) < 0 else 1)"
+                    return f"{sign} * ({magnitude} / {factor})"
+            elif digits:
+                if "S" in pic:
+                    return f"(-1 if int({value}) < 0 else 1) * (abs(int({value})) % (10 ** {digits}))"
                 return f"int({value}) % (10 ** {digits})"
     return value
 
