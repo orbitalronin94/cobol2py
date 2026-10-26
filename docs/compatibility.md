@@ -77,3 +77,8 @@ El modo estricto también señala `ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE` y `COM
 ## Literales y comillas escapadas
 
 Los literales completos entre comillas simples o dobles decodifican las comillas delimitadoras duplicadas de COBOL, incluso en operandos y expresiones. Por ejemplo, `"DON""T"` representa el texto `DON"T`. Se han añadido regresiones para Python, Java y cláusulas `VALUE`. El splitter y el parser siguen siendo heurísticos; no debe inferirse soporte de todas las construcciones de literal ni de todos los dialectos.
+
+
+## Declaraciones de datos omitidas o aproximadas
+
+`OCCURS DEPENDING ON` se reserva con el máximo de ocurrencias, pero la longitud activa no se actualiza según el contador; `--strict` emite `OCCURS_DEPENDING_ON_UNSUPPORTED`. Los niveles `66 RENAMES` y `88` se omiten del modelo de variables y ahora generan `UNSUPPORTED_RENAMES` y `UNSUPPORTED_CONDITION_NAME_88`. No se deben tratar estos programas como equivalentes aunque el resto del código se traduzca.
