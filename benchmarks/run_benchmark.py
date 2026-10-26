@@ -2,9 +2,9 @@
 """Differential COBOL/Python benchmark against GnuCOBOL.
 
 A case passes only when translated Python has the same stdout and exit status
-as the compiled COBOL program. Mismatches are reported, not treated as a CI
-infrastructure failure; this keeps the report useful while the translator is
-still incomplete.
+as the compiled COBOL program. Mismatches are included in the report and make the command fail by default,
+so CI cannot go green when the candidate regresses. Use --report-only only for
+exploratory runs where a non-zero exit status is undesirable.
 """
 from __future__ import annotations
 
@@ -53,6 +53,14 @@ def run_translator(translator: Path, source: Path, work: Path, reference_returnc
     }
 
 
+def has_candidate_failures(report: dict[str, Any]) -> bool:
+    """Return whether any reference failed to compile or candidate case mismatched."""
+    return any(
+        not case.get("compile_ok") or not (case.get("candidate") or {}).get("matched", False)
+        for case in report.get("cases", [])
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifest", type=Path, default=Path("benchmarks/cases.json"))
@@ -63,6 +71,10 @@ def main() -> int:
     parser.add_argument("--markdown", type=Path, default=Path("benchmark-report.md"))
     parser.add_argument("--baseline-label", default="baseline")
     parser.add_argument("--candidate-label", default="candidate")
+    parser.add_argument(
+        "--report-only", action="store_true",
+        help="Write the report but return success even when candidate cases fail",
+    )
     args = parser.parse_args()
 
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
@@ -183,6 +195,13 @@ def main() -> int:
     args.markdown.parent.mkdir(parents=True, exist_ok=True)
     args.markdown.write_text("\n".join(lines), encoding="utf-8")
     print("\n".join(lines))
+    if not args.report_only and has_candidate_failures(report):
+        print(
+            f"benchmark failed: {cand['passed']}/{cand['total']} candidate cases matched; "
+            "see the report for details",
+            file=sys.stderr,
+        )
+        return 1
     return 0
 
 
