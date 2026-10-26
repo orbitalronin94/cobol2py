@@ -94,6 +94,35 @@ class EndToEndTests(unittest.TestCase):
                 generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
                 compile(generated, f"<{sample}-output>", "exec")
 
+
+    def test_generated_program_matches_cobol_output_for_add_and_if(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\n".join([
+            "       IDENTIFICATION DIVISION.",
+            "       PROGRAM-ID. BEHAVIOR.",
+            "       DATA DIVISION.",
+            "       WORKING-STORAGE SECTION.",
+            "       01 WS-COUNT PIC 9(3) VALUE 0.",
+            "       PROCEDURE DIVISION.",
+            "       MAIN.",
+            "           ADD 1 TO WS-COUNT.",
+            "           ADD 2 TO WS-COUNT.",
+            "           IF WS-COUNT = 3 THEN",
+            '               DISPLAY "COUNT=" WS-COUNT',
+            "           END-IF.",
+            "           STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<behavior-output>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        # COBOL DISPLAY concatenates its operands without Python's print separator.
+        self.assertEqual(output.getvalue(), "COUNT=3\n")
+
     def test_fixed_format_program_generates_valid_python(self):
         source = "\n".join([
             "       IDENTIFICATION DIVISION.",
