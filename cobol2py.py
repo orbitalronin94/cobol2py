@@ -590,7 +590,7 @@ def normalize_data_reference(
     """Map a COBOL data-name (including OF/IN qualification) into nested dicts."""
     text = name.strip()
     match = re.fullmatch(
-        r"([A-Za-z0-9-]+)(?:\\(([A-Za-z0-9_-]+)\\))?(?:\\s+(?:OF|IN)\\s+([A-Za-z0-9-]+))?",
+        r"([A-Za-z0-9-]+)(?:\(([A-Za-z0-9_-]+)\))?(?:\s+(?:OF|IN)\\s+([A-Za-z0-9-]+))?",
         text,
         re.IGNORECASE,
     )
@@ -616,7 +616,10 @@ def normalize_data_reference(
     return expr
 
 
-def translate_literal(token: str) -> str:
+def translate_literal(
+    token: str,
+    variables: Optional[dict[str, CobolVar]] = None,
+) -> str:
     t = token.strip()
     if not t:
         return '""'
@@ -639,31 +642,36 @@ def translate_literal(token: str) -> str:
         return repr("\xff")
     if t.upper() in ("QUOTE", "QUOTES"):
         return repr('"')
-    return normalize_name(t)
+    return normalize_data_reference(t, variables)
 
 
-def translate_expr(expr: str) -> str:
-    # Match COBOL identifiers before arithmetic operators so hyphenated
-    # names (WS-NUM) become Python identifiers (ws_num), not subtraction.
-    # COBOL arithmetic using '-' should be separated from identifiers by
-    # whitespace when the token could otherwise be a hyphenated data-name.
-    token_pattern = r"""("[^"]*"|'[^']*'|[A-Za-z][A-Za-z0-9-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&-]|\s+|.)"""
-    # Normalize simple COBOL table references before tokenizing identifiers.
-    # COBOL subscripts are 1-based; normalize_name converts them to Python indexes.
+def translate_expr(
+    expr: str,
+    variables: Optional[dict[str, CobolVar]] = None,
+) -> str:
+    # Rewrite qualified data-names first; unqualified child names are resolved
+    # through the parsed hierarchy when they are unambiguous in the model.
+    expr = re.sub(
+        r"\b[A-Za-z][A-Za-z0-9-]*(?:\([A-Za-z0-9_-]+\))?\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*",
+        lambda match: normalize_data_reference(match.group(0), variables),
+        expr,
+        flags=re.IGNORECASE,
+    )
     expr = re.sub(
         r"\b([A-Za-z][A-Za-z0-9-]*)\(([A-Za-z0-9_-]+)\)",
-        lambda match: normalize_name(f"{match.group(1)}({match.group(2)})"),
+        lambda match: normalize_data_reference(match.group(0), variables),
         expr,
     )
-    token_pattern = token_pattern.replace("[A-Za-z0-9-]*", "[A-Za-z0-9_-]*")
+    token_pattern = r"""("[^"]*"|'[^']*'|[A-Za-z][A-Za-z0-9-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&\[\]-]|\s+|.)"""
     tokens = re.findall(token_pattern, expr)
     out = []
     for tok in tokens:
-        if re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*", tok):
-            out.append(normalize_name(tok))
+        if re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", tok):
+            out.append(normalize_data_reference(tok, variables))
         else:
             out.append(tok)
     return "".join(out).strip()
+
 
 # Patch 1: normalización de operadores
 def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = None) -> str:
@@ -683,7 +691,7 @@ def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = No
     c = re.sub(r"(?<![<>=])=(?!=)", "==", c)
     c = c.replace("<>", "!=")
 
-    translated = translate_expr(c)
+    translated = translate_expr(c, variables)
     if not variables:
         return translated
 
@@ -733,12 +741,12 @@ def translate_display_item(token: str, variables: dict[str, CobolVar]) -> str:
         if "9" in pic:
             digits = pic_digit_count(pic)
             scale = pic_digit_count(pic.split("V", 1)[1]) if "V" in pic else 0
-            name = normalize_name(token)
+            name = normalize_data_reference(token, variables)
             return (
                 f'f"{{float({name}):.{scale}f}}".replace(".", "")'
                 f".zfill({digits})"
             )
-    return f"str({translate_literal(token)})"
+    return f"str({translate_literal(token, variables)})"
 
 def pic_character_count(pic: str) -> int:
     """Count positions in a simple alphanumeric PIC such as X(10) or XX."""
