@@ -111,3 +111,11 @@ Añadir una sección con:
 - **Decisión:** el benchmark devuelve un código distinto de cero si el candidato no coincide con GnuCOBOL en todos los casos o si una referencia no compila. `--report-only` queda disponible para análisis exploratorio.
 - **Contexto:** un informe que muestra discrepancias pero termina con código cero puede dejar pasar regresiones en integración continua.
 - **Consecuencias:** CI falla de forma visible ante cambios incompatibles; las métricas siguen limitadas al corpus versionado y no prueban equivalencia general de COBOL.
+
+
+## D-011 — Modo estricto y diagnósticos estructurados
+
+- **Estado:** aceptada.
+- **Decisión:** exponer `--strict` para rechazar sentencias no soportadas, copybooks no resueltos y estructuras de control malformadas; `--diagnostics-json` emite diagnósticos con código, severidad, línea y mensaje por stderr.
+- **Contexto:** comentarios de advertencia en el código generado son útiles para lectura, pero pueden pasar inadvertidos en automatizaciones.
+- **Consecuencias:** los consumidores pueden distinguir una traducción parcial de una salida sin los diagnósticos conocidos. El modo estricto solo cubre las limitaciones detectables por el parser actual; no garantiza equivalencia semántica.
