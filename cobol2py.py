@@ -1636,6 +1636,20 @@ def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
         })
 
     for line_number, source_line in prog.raw_lines:
+        if re.match(r"^\s*66\s+[A-Za-z0-9-]+\s+.*\bRENAMES\b", source_line, re.IGNORECASE):
+            diagnostics.append({
+                "code": "UNSUPPORTED_RENAMES",
+                "severity": "warning",
+                "line": line_number,
+                "message": source_line.strip(),
+            })
+        if re.match(r"^\s*88\s+[A-Za-z0-9-]+\b", source_line, re.IGNORECASE):
+            diagnostics.append({
+                "code": "UNSUPPORTED_CONDITION_NAME_88",
+                "severity": "warning",
+                "line": line_number,
+                "message": source_line.strip(),
+            })
         if re.match(
             r"^\s*\d{1,2}\s+[A-Za-z0-9-]+\s+.*\bREDEFINES\b",
             source_line,
@@ -1649,6 +1663,22 @@ def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
             })
 
     for variable in prog.variables:
+        if variable.depending_on:
+            diagnostics.append({
+                "code": "OCCURS_DEPENDING_ON_UNSUPPORTED",
+                "severity": "warning",
+                "line": next(
+                    (
+                        line_number for line_number, source_line in prog.raw_lines
+                        if re.search(rf"^\\s*{variable.level}\\s+{re.escape(variable.name)}\\b", source_line, re.IGNORECASE)
+                    ),
+                    None,
+                ),
+                "message": (
+                    f"{variable.name} OCCURS DEPENDING ON {variable.depending_on}: "
+                    "dynamic active length is not implemented; storage uses the maximum occurrence count"
+                ),
+            })
         if variable.pic and any(code in variable.pic.upper() for code in ("S", "V", "P")):
             declaration_line = next(
                 (
