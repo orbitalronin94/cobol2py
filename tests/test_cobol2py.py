@@ -318,6 +318,23 @@ class TranslationTests(unittest.TestCase):
         self.assertEqual(cobol2py.translate_expr("WS-NUM - 1"), "ws_num - 1")
         self.assertEqual(cobol2py.translate_expr("WS-NUM + WS-TOTAL"), "ws_num + ws_total")
 
+    def test_java_compound_string_comparisons_use_value_equality(self):
+        variables = {
+            "WS-A": cobol2py.CobolVar(level=1, name="WS-A", pic="X(3)"),
+            "WS-B": cobol2py.CobolVar(level=1, name="WS-B", pic="X(3)"),
+        }
+        self.assertEqual(
+            cobol2py.translate_java_condition('WS-A = "ONE" AND WS-B = "TWO"', variables),
+            'Objects.equals(ws_a, "ONE") && Objects.equals(ws_b, "TWO")',
+        )
+
+    def test_java_string_comparison_pads_left_field_when_literal_is_longer(self):
+        variables = {"WS-A": cobol2py.CobolVar(level=1, name="WS-A", pic="X(3)")}
+        self.assertEqual(
+            cobol2py.translate_java_condition('WS-A = "LONGER"', variables),
+            'Objects.equals(fit(String.valueOf(ws_a), 6), "LONGER")',
+        )
+
     def test_java_not_can_wrap_a_predicate_with_a_string_literal(self):
         variables = {
             "WS-NAME": cobol2py.CobolVar(level=1, name="WS-NAME", pic="X(3)")
