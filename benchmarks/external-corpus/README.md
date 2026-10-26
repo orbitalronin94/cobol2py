@@ -1,8 +1,8 @@
 # External COBOL candidate ledger
 
-`candidates.json` is a machine-readable companion to the preliminary source audit in
-`docs/external-corpus-audit.md`. It currently contains six externally hosted
-candidate units. It is **not** the final 100-program corpus.
+`candidates.json` is the machine-readable ledger for six externally hosted
+candidate units. The ledger records provenance and audit status, but it is **not**
+the final 100-program corpus and does not claim that those candidates have been run.
 
 Each entry records the upstream repository, immutable source commit, source path,
 blob SHA, line count, declared license and audit status. Sources are not copied
