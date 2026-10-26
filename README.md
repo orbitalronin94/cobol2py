@@ -154,8 +154,8 @@ Todo lo que no se traduce sale con un comentario `# COBOL no traducido: ...` en 
 
 Estas son las que quedan pendientes y que sabes que existen antes de encontrártelas:
 
-**1. Las cláusulas `VALUE` solo cubren literales simples.**
-Los valores iniciales simples se preservan, pero no se emula el relleno de campos alfanuméricos, la precisión/escala de `PIC` ni toda la semántica de almacenamiento COBOL. La salida sigue orientada a lectura; no debe considerarse equivalente ni lista para producción.
+**1. La semántica de datos solo está cubierta en un subconjunto.**
+`MOVE` aplica relleno con espacios y truncamiento por la derecha de campos alfanuméricos `PIC X/A`, y conserva los dígitos menos significativos al mover a un `PIC 9(n)` entero sin signo. Hay comparación diferencial con GnuCOBOL para estos casos. No se emulan aún los campos numéricos con signo, las escalas decimales, todos los valores figurativos ni toda la semántica de almacenamiento COBOL. La salida no debe considerarse equivalente ni lista para producción.
 
 **2. `EVALUATE` no se traduce.**
 Se marca con un comentario y se deja para v0.0.5.
@@ -205,7 +205,7 @@ python cobol2py.py programa.cbl --format free
 
 `--format auto` es el valor predeterminado; como las columnas de secuencia en blanco pueden aparecer tanto en formato fijo como en fuentes libres indentadas, no siempre es posible inferir el formato con certeza.
 
-GitHub Actions ejecuta las pruebas con Python 3.10–3.13 y compila `samples/realtest.cbl` con GnuCOBOL para comparar la salida real del ejecutable COBOL con la salida Python traducida. También hay regresiones para `ADD`, `IF`, `DISPLAY` con varios operandos, `PERFORM ... TIMES` y subíndices de tablas. La cobertura se limita a este programa y a fixtures pequeños del subconjunto soportado; no demuestra equivalencia semántica general ni certifica una migración. La compilación sintáctica de la salida, por sí sola, tampoco prueba equivalencia.
+GitHub Actions ejecuta las pruebas con Python 3.10–3.13 y compara, mediante `diff -u`, la salida de GnuCOBOL con la de Python traducido para `samples/realtest.cbl` y `samples/move_semantics.cbl`. Este segundo fixture verifica relleno/truncamiento de `PIC X(n)` y truncamiento de dígitos en `PIC 9(n)`. También hay regresiones de runtime para `ADD`, `IF`, `DISPLAY` con varios operandos, `PERFORM ... TIMES` y subíndices de tablas. La cobertura sigue limitada a estos fixtures y al subconjunto probado; no demuestra equivalencia semántica general ni certifica una migración. La compilación sintáctica de la salida, por sí sola, tampoco prueba equivalencia.
 
 ---
 
@@ -213,7 +213,7 @@ GitHub Actions ejecuta las pruebas con Python 3.10–3.13 y compila `samples/rea
 
 **v0.0.5 — Semántica de datos y regresiones**
 - Ampliar `VALUE` más allá de literales simples y cubrir valores figurativos y casos límite.
-- Hacer que `MOVE` tenga en cuenta el `PIC` del destino, sin ocultar conversiones o truncamientos.
+- Ampliar `MOVE` para campos numéricos con signo y escala decimal, manteniendo comparaciones diferenciales con GnuCOBOL.
 - Añadir pruebas de semántica para campos alfanuméricos, precisión numérica, arrays y condiciones.
 
 **v0.0.6 — Control de flujo**
