@@ -738,6 +738,9 @@ class EndToEndTests(unittest.TestCase):
 class DiagnosticTests(unittest.TestCase):
     def test_collect_diagnostics_reports_unsupported_and_malformed_constructs(self):
         program = cobol2py.Program(
+            variables=[
+                cobol2py.CobolVar(level=1, name="WS-DEC", pic="9(3)V99"),
+            ],
             paragraphs={
                 "MAIN": [
                     cobol2py.Node(kind="stmt", text="FOO BAR", line=4),
@@ -745,6 +748,10 @@ class DiagnosticTests(unittest.TestCase):
                 ]
             },
             paragraph_order=["MAIN"],
+            raw_lines=[
+                (5, "01 WS-ALT REDEFINES WS-A PIC X(3)."),
+                (6, "01 WS-DEC PIC 9(3)V99."),
+            ],
             unresolved_copybooks=["COPYBOOK NOT FOUND: MISSING"],
         )
 
@@ -752,7 +759,10 @@ class DiagnosticTests(unittest.TestCase):
         codes = {item["code"] for item in diagnostics}
         self.assertEqual(
             codes,
-            {"UNSUPPORTED_STATEMENT", "MALFORMED_CONTROL_FLOW", "COPYBOOK_RESOLUTION"},
+            {
+                "UNSUPPORTED_STATEMENT", "MALFORMED_CONTROL_FLOW", "COPYBOOK_RESOLUTION",
+                "UNSUPPORTED_STORAGE_OVERLAY", "PARTIAL_NUMERIC_PIC_SEMANTICS",
+            },
         )
         malformed = next(item for item in diagnostics if item["code"] == "MALFORMED_CONTROL_FLOW")
         self.assertEqual(malformed["line"], 9)
