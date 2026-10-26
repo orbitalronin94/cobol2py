@@ -127,3 +127,11 @@ Añadir una sección con:
 - **Decisión:** Python propaga una señal interna de terminación hasta el párrafo de entrada, que la captura para no ejecutar sentencias posteriores; Java emite `System.exit(0)`. `GOBACK` y `EXIT PROGRAM` siguen siendo retornos del ámbito actual.
 - **Contexto:** traducir `STOP RUN` como un `return` local permite que el párrafo llamador continúe, a diferencia del comportamiento de terminación del programa.
 - **Consecuencias:** la regresión cubre `STOP RUN` dentro de un párrafo invocado. El modelo sigue siendo el de un programa independiente; no pretende modelar todos los casos de subprogramas COBOL ni cláusulas de código de retorno.
+
+
+## D-013 — Registrar fallos de ejecución de la referencia del benchmark
+
+- **Estado:** aceptada.
+- **Decisión:** si el ejecutable de referencia GnuCOBOL no puede iniciarse o excede el timeout, el benchmark registra `reference_ok: false`, conserva el detalle en el informe y devuelve un estado de fallo en vez de abortar sin artefactos.
+- **Contexto:** un corpus puede contener un bucle infinito o un entorno de ejecución defectuoso; un fallo abrupto dificulta diagnosticarlo y puede impedir publicar el informe.
+- **Consecuencias:** los fallos de referencia quedan diferenciados de las discrepancias del traductor, aunque ambos bloquean la barrera por defecto. Un código de salida no cero normal del programa COBOL sigue siendo una referencia válida y se compara exactamente.
