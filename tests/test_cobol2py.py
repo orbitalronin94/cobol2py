@@ -86,11 +86,11 @@ class TranslationTests(unittest.TestCase):
 
     def test_value_space_zero_and_low_value_figuratives(self):
         self.assertEqual(cobol2py.translate_literal("ZEROES"), "0")
-        self.assertEqual(cobol2py.translate_literal("LOW-VALUES"), repr("\\x00"))
-        self.assertEqual(cobol2py.translate_literal("HIGH-VALUES"), repr("\\xff"))
+        self.assertEqual(cobol2py.translate_literal("LOW-VALUES"), repr("\x00"))
+        self.assertEqual(cobol2py.translate_literal("HIGH-VALUES"), repr("\xff"))
 
     def test_value_clause_parses_signed_and_decimal_literals(self):
-        source = "\\n".join([
+        source = "\n".join([
             "       IDENTIFICATION DIVISION.",
             "       PROGRAM-ID. VALUEDECIMAL.",
             "       DATA DIVISION.",
