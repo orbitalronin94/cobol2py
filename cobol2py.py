@@ -702,8 +702,8 @@ def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = No
         base = re.match(r"[a-z_][a-z0-9_]*", left)
         if base is None:
             return match.group(0)
-        field_key = re.search(r"\['([a-z_][a-z0-9_]*)'\]", left)
-        lookup_name = field_key.group(1) if field_key else base.group(0)
+        field_keys = re.findall(r"\['([a-z_][a-z0-9_]*)'\]", left)
+        lookup_name = field_keys[-1] if field_keys else base.group(0)
         variable = next(
             (item for item in variables.values()
              if normalize_name(item.name) == lookup_name),
@@ -722,7 +722,7 @@ def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = No
         return f"{left}.ljust({compare_width}) {operator} {padded!r}"
 
     return re.sub(
-        r"""([a-z_][a-z0-9_]*(?:\[[^\]]+\])?)\s*(==|!=)\s*(["'])(.*?)\3""",
+        r"""([a-z_][a-z0-9_]*(?:\[[^\]]+\])*)\s*(==|!=)\s*(["'])(.*?)\3""",
         pad_literal,
         translated,
     )
