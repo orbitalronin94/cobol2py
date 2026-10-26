@@ -73,6 +73,7 @@ class CobolVar:
     is_array: bool = False
     occurs: Optional[int] = None
     depending_on: Optional[str] = None
+    parent_name: Optional[str] = None
 
     def _base_py_type(self) -> str:
         if self.pic is None:
@@ -189,6 +190,7 @@ RE_PARAGRAPH = re.compile(r"^(?!END-)([A-Za-z][A-Za-z0-9\-]*)\.\s*$")
 
 def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
     variables: list[CobolVar] = []
+    hierarchy: list[CobolVar] = []
     for _, text in lines:
         m = RE_VAR.match(text)
         if not m:
@@ -196,23 +198,29 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
         level = int(m.group(1))
         if level == 88 or level >= 50:
             continue
+        while hierarchy and hierarchy[-1].level >= level:
+            hierarchy.pop()
         name = m.group(2).upper()
         rest = m.group(3)
         pic_m = RE_PIC.search(rest)
         val_m = RE_VALUE.search(rest)
         occ_m = RE_OCCURS.search(rest)
-        variables.append(CobolVar(
+        is_group = pic_m is None
+        parent = next((item for item in reversed(hierarchy) if item.is_group), None)
+        variable = CobolVar(
             level=level,
             name=name,
             pic=pic_m.group(1) if pic_m else None,
             value=val_m.group(1) if val_m else None,
-            is_group=pic_m is None,
+            is_group=is_group,
             is_array=occ_m is not None,
             occurs=int(occ_m.group(1)) if occ_m else None,
             depending_on=occ_m.group(2) if occ_m and occ_m.group(2) else None,
-        ))
+            parent_name=parent.name if parent else None,
+        )
+        variables.append(variable)
+        hierarchy.append(variable)
     return variables
-
 
 # Patch 3: verbos que abren sentencia. Se usan para partir buffers concatenados.
 STATEMENT_VERBS = frozenset({
@@ -575,8 +583,43 @@ def normalize_name(name: str) -> str:
 
     return re.sub(r"\(([A-Za-z0-9_-]+)\)", normalize_subscript, name)
 
+def normalize_data_reference(
+    name: str,
+    variables: Optional[dict[str, CobolVar]] = None,
+) -> str:
+    """Map a COBOL data-name (including OF/IN qualification) into nested dicts."""
+    text = name.strip()
+    match = re.fullmatch(
+        r"([A-Za-z0-9-]+)(?:\(([A-Za-z0-9_-]+)\))?(?:\s+(?:OF|IN)\s+([A-Za-z0-9-]+))?",
+        text,
+        re.IGNORECASE,
+    )
+    if not match:
+        return normalize_name(text)
+    field_name, subscript, qualifier = match.groups()
+    variable_map = variables or {}
+    if qualifier:
+        parent_expr = normalize_data_reference(qualifier, variable_map)
+        expr = f"{parent_expr}[{normalize_name(field_name)!r}]"
+    else:
+        variable = variable_map.get(field_name.upper())
+        if variable is not None and variable.parent_name:
+            parent_expr = normalize_data_reference(variable.parent_name, variable_map)
+            expr = f"{parent_expr}[{normalize_name(field_name)!r}]"
+        else:
+            expr = normalize_name(field_name)
+    if subscript:
+        if subscript.isdigit():
+            expr += f"[{int(subscript) - 1}]"
+        else:
+            expr += f"[{normalize_name(subscript)} - 1]"
+    return expr
 
-def translate_literal(token: str) -> str:
+
+def translate_literal(
+    token: str,
+    variables: Optional[dict[str, CobolVar]] = None,
+) -> str:
     t = token.strip()
     if not t:
         return '""'
@@ -599,31 +642,36 @@ def translate_literal(token: str) -> str:
         return repr("\xff")
     if t.upper() in ("QUOTE", "QUOTES"):
         return repr('"')
-    return normalize_name(t)
+    return normalize_data_reference(t, variables)
 
 
-def translate_expr(expr: str) -> str:
-    # Match COBOL identifiers before arithmetic operators so hyphenated
-    # names (WS-NUM) become Python identifiers (ws_num), not subtraction.
-    # COBOL arithmetic using '-' should be separated from identifiers by
-    # whitespace when the token could otherwise be a hyphenated data-name.
-    token_pattern = r"""("[^"]*"|'[^']*'|[A-Za-z][A-Za-z0-9-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&-]|\s+|.)"""
-    # Normalize simple COBOL table references before tokenizing identifiers.
-    # COBOL subscripts are 1-based; normalize_name converts them to Python indexes.
+def translate_expr(
+    expr: str,
+    variables: Optional[dict[str, CobolVar]] = None,
+) -> str:
+    # Rewrite qualified data-names first; unqualified child names are resolved
+    # through the parsed hierarchy when they are unambiguous in the model.
+    expr = re.sub(
+        r"\b[A-Za-z][A-Za-z0-9-]*(?:\([A-Za-z0-9_-]+\))?\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*",
+        lambda match: normalize_data_reference(match.group(0), variables),
+        expr,
+        flags=re.IGNORECASE,
+    )
     expr = re.sub(
         r"\b([A-Za-z][A-Za-z0-9-]*)\(([A-Za-z0-9_-]+)\)",
-        lambda match: normalize_name(f"{match.group(1)}({match.group(2)})"),
+        lambda match: normalize_data_reference(match.group(0), variables),
         expr,
     )
-    token_pattern = token_pattern.replace("[A-Za-z0-9-]*", "[A-Za-z0-9_-]*")
+    token_pattern = r"""("[^"]*"|'[^']*'|[A-Za-z][A-Za-z0-9-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&\[\]-]|\s+|.)"""
     tokens = re.findall(token_pattern, expr)
     out = []
     for tok in tokens:
-        if re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*", tok):
-            out.append(normalize_name(tok))
+        if re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", tok):
+            out.append(normalize_data_reference(tok, variables))
         else:
             out.append(tok)
     return "".join(out).strip()
+
 
 # Patch 1: normalización de operadores
 def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = None) -> str:
@@ -643,7 +691,7 @@ def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = No
     c = re.sub(r"(?<![<>=])=(?!=)", "==", c)
     c = c.replace("<>", "!=")
 
-    translated = translate_expr(c)
+    translated = translate_expr(c, variables)
     if not variables:
         return translated
 
@@ -654,9 +702,11 @@ def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = No
         base = re.match(r"[a-z_][a-z0-9_]*", left)
         if base is None:
             return match.group(0)
+        field_keys = re.findall(r"\['([a-z_][a-z0-9_]*)'\]", left)
+        lookup_name = field_keys[-1] if field_keys else base.group(0)
         variable = next(
             (item for item in variables.values()
-             if normalize_name(item.name) == base.group(0)),
+             if normalize_name(item.name) == lookup_name),
             None,
         )
         if variable is None or not variable.pic:
@@ -672,7 +722,7 @@ def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = No
         return f"{left}.ljust({compare_width}) {operator} {padded!r}"
 
     return re.sub(
-        r"""([a-z_][a-z0-9_]*(?:\[[^\]]+\])?)\s*(==|!=)\s*(["'])(.*?)\3""",
+        r"""([a-z_][a-z0-9_]*(?:\[[^\]]+\])*)\s*(==|!=)\s*(["'])(.*?)\3""",
         pad_literal,
         translated,
     )
@@ -687,18 +737,19 @@ def pic_digit_count(pic: str) -> int:
 
 def translate_display_item(token: str, variables: dict[str, CobolVar]) -> str:
     """Emit a string expression matching basic COBOL DISPLAY formatting."""
-    variable = variables.get(token.upper())
+    base_match = re.match(r"[A-Za-z0-9-]+", token)
+    variable = variables.get(base_match.group(0).upper()) if base_match else None
     if variable is not None and variable.pic:
         pic = variable.pic.upper()
         if "9" in pic:
             digits = pic_digit_count(pic)
             scale = pic_digit_count(pic.split("V", 1)[1]) if "V" in pic else 0
-            name = normalize_name(token)
+            name = normalize_data_reference(token, variables)
             return (
                 f'f"{{float({name}):.{scale}f}}".replace(".", "")'
                 f".zfill({digits})"
             )
-    return f"str({translate_literal(token)})"
+    return f"str({translate_literal(token, variables)})"
 
 def pic_character_count(pic: str) -> int:
     """Count positions in a simple alphanumeric PIC such as X(10) or XX."""
@@ -715,7 +766,7 @@ def translate_move_value(source: str, target: str, variables: dict[str, CobolVar
     truncates values that exceed the receiving field. Other PIC categories
     retain the existing simple assignment behavior.
     """
-    value = translate_literal(source)
+    value = translate_literal(source, variables)
     target_base = re.match(r"([A-Za-z0-9-]+)", target)
     variable = variables.get(target_base.group(1).upper()) if target_base else None
     if variable is not None and variable.pic:
@@ -752,7 +803,10 @@ def translate_move_value(source: str, target: str, variables: dict[str, CobolVar
     return value
 
 
-COBOL_TOKEN_RE = re.compile(r'"[^"]*"|\'[^\']*\'|,?\s*|(?:\S+)')
+COBOL_TOKEN_RE = re.compile(
+    r'"[^"]*"|\'[^\']*\'|[A-Za-z][A-Za-z0-9-]*(?:\([A-Za-z0-9_-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*)?|,?\s*|(?:\S+)',
+    re.IGNORECASE,
+)
 
 
 def split_cobol_items(s: str) -> list[str]:
@@ -762,6 +816,9 @@ def split_cobol_items(s: str) -> list[str]:
         if tok:
             tokens.append(tok)
     return tokens
+
+
+DATA_REF_PATTERN = r"[A-Za-z0-9-]+(?:\([A-Za-z0-9_-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?"
 
 
 def translate_statement(
@@ -789,40 +846,40 @@ def translate_statement(
         )
         return [f'print("".join([{items}]))']
 
-    m = re.match(r"ACCEPT\s+([A-Za-z0-9\-\(\)]+)", s, re.IGNORECASE)
+    m = re.match(rf"ACCEPT\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
-        return [f"{normalize_name(m.group(1))} = input()"]
+        return [f"{normalize_data_reference(m.group(1), variables)} = input()"]
 
-    m = re.match(r"MOVE\s+(.+?)\s+TO\s+([A-Za-z0-9\-\(\)]+)", s, re.IGNORECASE)
+    m = re.match(rf"MOVE\s+(.+?)\s+TO\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
         target = m.group(2)
         value = translate_move_value(m.group(1), target, variables or {})
-        return [f"{normalize_name(target)} = {value}"]
+        return [f"{normalize_data_reference(target, variables)} = {value}"]
 
-    m = re.match(r"COMPUTE\s+([A-Za-z0-9\-\(\)]+)\s*=\s*(.+)", s, re.IGNORECASE)
+    m = re.match(rf"COMPUTE\s+({DATA_REF_PATTERN})\s*=\s*(.+)", s, re.IGNORECASE)
     if m:
-        return [f"{normalize_name(m.group(1))} = {translate_expr(m.group(2))}"]
+        return [f"{normalize_data_reference(m.group(1), variables)} = {translate_expr(m.group(2), variables)}"]
 
     # Patch 4: ADD con múltiples operandos
-    m = re.match(r"ADD\s+(.+?)\s+TO\s+([A-Za-z0-9\-\(\)]+)", s, re.IGNORECASE)
+    m = re.match(rf"ADD\s+(.+?)\s+TO\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
         operands = split_cobol_items(m.group(1))
-        sum_expr = " + ".join(translate_literal(o) for o in operands)
-        return [f"{normalize_name(m.group(2))} += {sum_expr}"]
+        sum_expr = " + ".join(translate_literal(o, variables) for o in operands)
+        return [f"{normalize_data_reference(m.group(2), variables)} += {sum_expr}"]
 
-    m = re.match(r"SUBTRACT\s+(.+?)\s+FROM\s+([A-Za-z0-9\-\(\)]+)", s, re.IGNORECASE)
+    m = re.match(rf"SUBTRACT\s+(.+?)\s+FROM\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
         operands = split_cobol_items(m.group(1))
-        sum_expr = " + ".join(translate_literal(o) for o in operands)
-        return [f"{normalize_name(m.group(2))} -= {sum_expr}"]
+        sum_expr = " + ".join(translate_literal(o, variables) for o in operands)
+        return [f"{normalize_data_reference(m.group(2), variables)} -= {sum_expr}"]
 
-    m = re.match(r"MULTIPLY\s+(.+?)\s+BY\s+([A-Za-z0-9\-\(\)]+)", s, re.IGNORECASE)
+    m = re.match(rf"MULTIPLY\s+(.+?)\s+BY\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
-        return [f"{normalize_name(m.group(2))} *= {translate_literal(m.group(1))}"]
+        return [f"{normalize_data_reference(m.group(2), variables)} *= {translate_literal(m.group(1), variables)}"]
 
-    m = re.match(r"DIVIDE\s+(.+?)\s+INTO\s+([A-Za-z0-9\-\(\)]+)", s, re.IGNORECASE)
+    m = re.match(rf"DIVIDE\s+(.+?)\s+INTO\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
-        return [f"{normalize_name(m.group(2))} /= {translate_literal(m.group(1))}"]
+        return [f"{normalize_data_reference(m.group(2), variables)} /= {translate_literal(m.group(1), variables)}"]
 
     m = re.match(r"PERFORM\s+([A-Za-z0-9\-]+)\s+(\d+)\s+TIMES", s, re.IGNORECASE)
     if m and m.group(1).upper() in paragraphs:
@@ -962,7 +1019,7 @@ def emit_python(prog: Program) -> str:
     lines.append('"""')
     lines.append("Traducción automática de COBOL a Python.")
     lines.append(f"Programa original: {prog.program_id}")
-    lines.append("Generado por cobol2py.py — v0.0.6")
+    lines.append("Generado por cobol2py.py — v0.0.8")
     lines.append('"""')
     lines.append("")
     for warning in prog.unresolved_copybooks:
@@ -972,28 +1029,44 @@ def emit_python(prog: Program) -> str:
 
     if prog.variables:
         lines.append("# VARIABLES (WORKING-STORAGE)")
-        for v in prog.variables:
-            if v.is_group:
-                lines.append(f"# Grupo nivel {v.level:02d}: {v.name}")
-            else:
-                t = v.py_type()
-                default = v.py_default()
-                comment = f"  # COBOL: {v.level:02d} {v.name} PIC {v.pic}"
-                if v.occurs:
-                    comment += f" OCCURS {v.occurs} TIMES"
-                if v.depending_on:
-                    comment += f" DEPENDING ON {v.depending_on}"
-                if v.value:
-                    comment += f" VALUE {v.value}"
-                lines.append(f"{normalize_name(v.name)}: {t} = {default}{comment}")
+        children_by_parent: dict[str, list[CobolVar]] = {}
+        for variable in prog.variables:
+            if variable.parent_name:
+                children_by_parent.setdefault(variable.parent_name.upper(), []).append(variable)
+
+        def nested_default(variable: CobolVar) -> str:
+            if not variable.is_group:
+                return variable.py_default()
+            children = children_by_parent.get(variable.name.upper(), [])
+            if not children:
+                return "{}"
+            fields = ", ".join(
+                f"{normalize_name(child.name)!r}: {nested_default(child)}"
+                for child in children
+            )
+            return "{" + fields + "}"
+
+        root_variables = [variable for variable in prog.variables if not variable.parent_name]
+        for variable in root_variables:
+            default = nested_default(variable)
+            if variable.is_group:
+                lines.append(
+                    f"{normalize_name(variable.name)}: dict = {default}  "
+                    f"# COBOL group: {variable.level:02d} {variable.name}"
+                )
+                continue
+            comment = f"  # COBOL: {variable.level:02d} {variable.name} PIC {variable.pic}"
+            if variable.occurs:
+                comment += f" OCCURS {variable.occurs} TIMES"
+            if variable.depending_on:
+                comment += f" DEPENDING ON {variable.depending_on}"
+            if variable.value:
+                comment += f" VALUE {variable.value}"
+            lines.append(f"{normalize_name(variable.name)}: {variable.py_type()} = {default}{comment}")
         lines.append("")
 
     para_names = set(prog.paragraphs.keys())
-    variables_by_name = {
-        variable.name.upper(): variable
-        for variable in prog.variables
-        if not variable.is_group
-    }
+    variables_by_name = {variable.name.upper(): variable for variable in prog.variables}
     order = [p for p in prog.paragraph_order if p != "__MAIN__"]
     if "__MAIN__" in prog.paragraphs and prog.paragraphs["__MAIN__"]:
         order = ["__MAIN__"] + order
@@ -1010,7 +1083,7 @@ def emit_python(prog: Program) -> str:
         # Working-Storage variables live outside paragraph functions in the
         # generated module. Declare them global so statements mutate shared
         # COBOL storage instead of creating Python locals.
-        global_vars = [normalize_name(v.name) for v in prog.variables if not v.is_group]
+        global_vars = [normalize_name(v.name) for v in prog.variables if not v.parent_name]
         if global_vars:
             lines.append("    global " + ", ".join(global_vars))
         body = translate_paragraph(nodes, para_names, variables_by_name)
@@ -1033,7 +1106,7 @@ def emit_python(prog: Program) -> str:
 # ============================================================================
 
 def main() -> int:
-    ap = argparse.ArgumentParser(prog="cobol2py", description="Traductor COBOL → Python v0.0.6")
+    ap = argparse.ArgumentParser(prog="cobol2py", description="Traductor COBOL → Python v0.0.8")
     ap.add_argument("input", type=Path, help="Archivo .cbl o .cob")
     ap.add_argument("--out", type=Path, default=None, help="Archivo de salida")
     ap.add_argument("--format", dest="source_format", choices=("auto", "fixed", "free"), default="auto", help="Formato fuente COBOL (por defecto: auto)")

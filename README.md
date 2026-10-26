@@ -111,7 +111,7 @@ No es Python perfecto. Es Python **legible**. Y eso es lo que importa.
 |---|---|
 | `IDENTIFICATION DIVISION` | (cabecera) |
 | `PROGRAM-ID. X.` | nombre del módulo |
-| `WORKING-STORAGE SECTION` | variables con tipo inferido del `PIC` |
+| `WORKING-STORAGE SECTION` | variables con tipo inferido del `PIC`; grupos de datos como diccionarios anidados |
 | `PIC X(n)` | `str` |
 | `PIC 9(n)` | `int` |
 | `PIC 9(n)V9(m)` | `float` |
@@ -166,8 +166,8 @@ La pila de bloques ahora conserva ámbitos anidados de `IF`, `PERFORM` y `EVALUA
 **4. Copybooks: solo expansión básica.**
 Se resuelve `COPY nombre.` o `COPY nombre.CPY.` buscando primero junto al archivo fuente y después en cada `--copybook-path`. Se expanden dependencias anidadas y se detectan ciclos; faltantes, errores de lectura y cláusulas no soportadas quedan en comentarios de advertencia. `COPY ... REPLACING`, bibliotecas y reglas avanzadas de reemplazo siguen pendientes.
 
-**5. Los grupos (nivel 01 con hijos 05) no se expanden.**
-Salen como comentario. `# Grupo nivel 01: WS-REGISTRO`. No se genera un dataclass ni un modelo.
+**5. La jerarquía de grupos es una representación simplificada.**
+Los grupos COBOL se emiten como diccionarios anidados y los campos se leen/escriben mediante nombres no cualificados o `OF/IN` básico. No se modelan `REDEFINES`, `RENAMES`, overlays de almacenamiento, todos los calificadores ni las reglas completas de inicialización de grupos.
 
 ---
 
@@ -267,7 +267,9 @@ python benchmarks/run_benchmark.py --translator cobol2py.py
 - [ ] `COPY ... REPLACING` y bibliotecas calificadas siguen fuera del alcance.
 
 **v0.0.8 — Jerarquía de datos**
-Modelar los grupos COBOL y sus campos hijos sin aplanarlos ni simular una equivalencia que todavía no existe.
+- [x] Modelar grupos COBOL y campos hijos como diccionarios anidados, preservando la relación padre/hijo.
+- [x] Traducir referencias básicas a campos anidados y cualificación `OF/IN`.
+- [ ] `REDEFINES`, `RENAMES`, overlays y grupos `OCCURS` complejos siguen fuera del alcance.
 
 **v0.1.0 — Salida Java**
 Reactivar el backend de Java con el mismo AST. `--lang java`.

@@ -243,6 +243,59 @@ class EndToEndTests(unittest.TestCase):
         compile(generated, "<perform-times-output>", "exec")
         self.assertRegex(generated, r"for _ in range\(3\):\n\s+work_para\(\)")
 
+    def test_group_fields_are_nested_and_can_be_read_or_written(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. GROUPTEST.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-CUSTOMER.",
+            '   05 WS-NAME PIC X(5) VALUE "AL".',
+            "   05 WS-DETAILS.",
+            "      10 WS-AGE PIC 9(3) VALUE 7.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            '   MOVE "BOB" TO WS-NAME OF WS-CUSTOMER.',
+            "   MOVE 42 TO WS-AGE.",
+            '   DISPLAY WS-NAME OF WS-CUSTOMER.',
+            "   DISPLAY WS-AGE.",
+            '   IF WS-NAME = "BOB"',
+            '      DISPLAY "MATCH".',
+            "   END-IF.",
+            "   STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(
+            cobol2py.parse_cobol(source, source_format="free")
+        )
+        compile(generated, "<group-output>", "exec")
+        self.assertIn("ws_customer: dict = {'ws_name':", generated)
+        self.assertNotIn("ws_name: str =", generated)
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<group-output>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "BOB  \n042\nMATCH\n", generated)
+        self.assertEqual(namespace["ws_customer"]["ws_details"]["ws_age"], 42)
+
+    def test_variable_model_tracks_group_parent_names(self):
+        source = "\n".join([
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-RECORD.",
+            "   05 WS-ADDRESS.",
+            "      10 WS-ZIP PIC 9(5).",
+            "PROCEDURE DIVISION.",
+        ])
+        variables = cobol2py.parse_cobol(source, source_format="free").variables
+        by_name = {variable.name: variable for variable in variables}
+        self.assertIsNone(by_name["WS-RECORD"].parent_name)
+        self.assertEqual(by_name["WS-ADDRESS"].parent_name, "WS-RECORD")
+        self.assertEqual(by_name["WS-ZIP"].parent_name, "WS-ADDRESS")
+
     def test_repository_samples_generate_syntactically_valid_python(self):
         from pathlib import Path
 
