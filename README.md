@@ -283,7 +283,7 @@ python benchmarks/run_benchmark.py --translator cobol2py.py
 **v0.2.0 — Ejecución con GnuCOBOL**
 - [x] Añadir `tools/gnucobol_trace.py`: compila con GnuCOBOL (`-ftraceall`) y ejecuta con trace habilitado.
 - [x] Inyectar snapshots `TRACE_VAR|nombre|valor` por variable escalar antes de salir; los valores los formatea GnuCOBOL.
-- [ ] Las tablas `OCCURS` y grupos se informan como no trazados; instrumentar todos sus elementos requiere soporte de subíndices y cualificación.
+- [x] Trazar grupos y cada elemento de `OCCURS` hasta `--max-table-items` (por defecto 1000); nombres duplicados o tablas mayores se informan como no resueltos.
 
 ---
 
