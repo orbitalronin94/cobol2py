@@ -24,10 +24,13 @@ def run(command: list[str], *, timeout: int = 15) -> subprocess.CompletedProcess
     )
 
 
-def run_translator(translator: Path, source: Path, work: Path, reference_returncode: int) -> dict[str, Any]:
+def run_translator(translator: Path, source: Path, work: Path, reference_returncode: int, *, format_flag: bool = True) -> dict[str, Any]:
     generated = work / (source.stem + ".py")
+    command = [sys.executable, str(translator), str(source)]
+    if format_flag:
+        command.extend(["--format", "auto"])
     try:
-        result = run([sys.executable, str(translator), str(source), "--format", "auto"])
+        result = run(command)
     except (OSError, subprocess.TimeoutExpired) as exc:
         return {"matched": False, "reason": f"translator launch failed: {exc}"}
     if result.returncode != 0:
@@ -55,6 +58,7 @@ def main() -> int:
     parser.add_argument("--manifest", type=Path, default=Path("benchmarks/cases.json"))
     parser.add_argument("--translator", type=Path, required=True, help="Candidate translator")
     parser.add_argument("--baseline-translator", type=Path, help="Optional previous-version translator")
+    parser.add_argument("--baseline-no-format-flag", action="store_true", help="Run baseline without --format (for historical versions predating that option)")
     parser.add_argument("--json", dest="json_path", type=Path, default=Path("benchmark-report.json"))
     parser.add_argument("--markdown", type=Path, default=Path("benchmark-report.md"))
     parser.add_argument("--baseline-label", default="baseline")
@@ -103,7 +107,7 @@ def main() -> int:
                 item["reference_returncode"] = reference.returncode
                 (work / "reference.out").write_text(reference.stdout, encoding="utf-8")
                 if args.baseline_translator:
-                    item["baseline"] = run_translator(args.baseline_translator.resolve(), source.resolve(), work, reference.returncode)
+                    item["baseline"] = run_translator(args.baseline_translator.resolve(), source.resolve(), work, reference.returncode, format_flag=not args.baseline_no_format_flag)
                     # Preserve reference output if translator execution changed no file; run_translator only reads it.
                 else:
                     item["baseline"] = None

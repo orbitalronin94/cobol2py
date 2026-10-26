@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>cobol2py · Traductor de prueba</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0b1020; --panel:#121a2d; --line:#2b3853; --text:#edf2ff; --muted:#a5b2cc; --accent:#8dd6c6; --danger:#ffb4a8; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:radial-gradient(ellipse at top,#172644 0%,var(--bg) 55%); color:var(--text); font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif; }
+    main { max-width:1400px; margin:auto; padding:32px 22px 48px; }
+    header { margin-bottom:24px; }
+    .eyebrow { color:var(--accent); text-transform:uppercase; letter-spacing:.14em; font-size:.78rem; font-weight:700; }
+    h1 { margin:.3rem 0; font-size:clamp(2rem,5vw,3.5rem); line-height:1.1; letter-spacing:-.04em; }
+    .sub { color:var(--muted); max-width:720px; }
+    .toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin:18px 0; }
+    label { color:var(--muted); font-size:.9rem; }
+    select,button { font:inherit; border-radius:10px; padding:10px 14px; border:1px solid var(--line); }
+    select { background:var(--panel); color:var(--text); }
+    button { cursor:pointer; font-weight:700; }
+    .primary { background:var(--accent); color:#071a1a; border-color:transparent; }
+    .secondary { background:var(--panel); color:var(--text); }
+    button:disabled { opacity:.55; cursor:wait; }
+    .panes { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .pane { min-width:0; background:rgba(18,26,45,.88); border:1px solid var(--line); border-radius:16px; overflow:hidden; }
+    .panehead { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:14px 16px; border-bottom:1px solid var(--line); }
+    .panehead strong { font-size:.95rem; }
+    .panehead span { color:var(--muted); font-size:.8rem; }
+    textarea,pre { display:block; width:100%; min-height:460px; margin:0; padding:18px; border:0; background:#0a0f1c; color:#e5edff; font:13px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace; tab-size:4; white-space:pre; overflow:auto; }
+    textarea { resize:vertical; outline:none; }
+    textarea:focus { box-shadow:inset 0 0 0 1px var(--accent); }
+    pre { white-space:pre; }
+    .status { min-height:28px; margin:12px 0 0; color:var(--muted); }
+    .status.error { color:var(--danger); }
+    .note { color:var(--muted); font-size:.88rem; margin-top:18px; }
+    @media(max-width:850px) { .panes { grid-template-columns:1fr; } textarea,pre { min-height:320px; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">COBOL → Python · laboratorio</div>
+    <h1>Pega COBOL. Obtén Python.</h1>
+    <p class="sub">Demo local para probar el traductor real del repositorio. La traducción se ejecuta en tu equipo con Python; el código pegado no se envía a ningún servicio externo.</p>
+  </header>
+  <div class="toolbar">
+    <label for="format">Formato de origen</label>
+    <select id="format">
+      <option value="auto">Auto (predeterminado)</option>
+      <option value="fixed">Fixed format</option>
+      <option value="free">Free format</option>
+    </select>
+    <button class="primary" id="translate">Traducir a Python</button>
+    <button class="secondary" id="example">Cargar ejemplo</button>
+    <button class="secondary" id="copy" disabled>Copiar Python</button>
+  </div>
+  <div class="panes">
+    <section class="pane">
+      <div class="panehead"><strong>Entrada COBOL</strong><span id="input-count">0 caracteres</span></div>
+      <textarea id="source" spellcheck="false" aria-label="Código fuente COBOL" placeholder="Pega aquí tu programa COBOL..."></textarea>
+    </section>
+    <section class="pane">
+      <div class="panehead"><strong>Salida Python</strong><span id="output-count">Esperando traducción</span></div>
+      <pre id="output" aria-live="polite">La traducción aparecerá aquí.</pre>
+    </section>
+  </div>
+  <p class="status" id="status" role="status">Listo. La demo escucha solo en localhost.</p>
+  <p class="note">Alcance: es una herramienta experimental, no una migración certificada. Las construcciones COBOL no soportadas pueden quedar comentadas o traducirse de forma incompleta. Revisa y prueba siempre el resultado antes de usarlo.</p>
+</main>
+<script>
+const source = document.querySelector('#source');
+const output = document.querySelector('#output');
+const status = document.querySelector('#status');
+const translateButton = document.querySelector('#translate');
+const copyButton = document.querySelector('#copy');
+const example = `       IDENTIFICATION DIVISION.
+       PROGRAM-ID. HOLA.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 MENSAJE PIC X(20) VALUE "HOLA MUNDO".
+       01 CONTADOR PIC 9(3) VALUE 0.
+       PROCEDURE DIVISION.
+       PRINCIPAL.
+           DISPLAY MENSAJE.
+           MOVE 5 TO CONTADOR.
+           ADD 10 TO CONTADOR.
+           IF CONTADOR > 10
+               DISPLAY "GRANDE"
+           ELSE
+               DISPLAY "PEQUENO"
+           END-IF.
+           STOP RUN.`;
+function setStatus(message, isError=false) {
+  status.textContent = message;
+  status.classList.toggle('error', isError);
+}
+function updateCounts() {
+  document.querySelector('#input-count').textContent = source.value.length + ' caracteres';
+}
+source.addEventListener('input', updateCounts);
+document.querySelector('#example').addEventListener('click', () => {
+  source.value = example;
+  updateCounts();
+  setStatus('Ejemplo cargado. Pulsa «Traducir a Python».');
+});
+translateButton.addEventListener('click', async () => {
+  if (!source.value.trim()) { setStatus('Pega un programa COBOL primero.', true); source.focus(); return; }
+  translateButton.disabled = true;
+  copyButton.disabled = true;
+  output.textContent = 'Traduciendo…';
+  document.querySelector('#output-count').textContent = 'Procesando';
+  setStatus('Ejecutando el traductor local…');
+  try {
+    const response = await fetch('/api/translate', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({source:source.value, format:document.querySelector('#format').value})
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      output.textContent = data.output || data.details || data.error || 'Error desconocido';
+      document.querySelector('#output-count').textContent = 'Error';
+      setStatus(data.error || 'La traducción falló.', true);
+      return;
+    }
+    output.textContent = data.python || '# El traductor no generó salida.';
+    document.querySelector('#output-count').textContent = (data.python || '').split('\n').length + ' líneas';
+    copyButton.disabled = !data.python;
+    setStatus('Traducción terminada. Revisa las construcciones no soportadas antes de usar el resultado.');
+  } catch (err) {
+    output.textContent = 'No se pudo conectar con la demo local. Comprueba que ejecutaste: python web_demo.py';
+    setStatus('Error de conexión con el servidor local.', true);
+  } finally {
+    translateButton.disabled = false;
+  }
+});
+copyButton.addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(output.textContent); setStatus('Python copiado al portapapeles.'); }
+  catch { setStatus('El navegador no permitió copiar. Selecciona el texto manualmente.', true); }
+});
+updateCounts();
+</script>
+</body>
+</html>
