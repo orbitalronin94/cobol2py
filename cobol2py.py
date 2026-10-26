@@ -478,7 +478,7 @@ def translate_literal(token: str) -> str:
     if all_literal:
         return repr(all_literal.group(2))
     if (t.startswith('"') and t.endswith('"')) or (t.startswith("'") and t.endswith("'")):
-        return repr(t[1:-1])
+        return '"' + t[1:-1] + '"'
     if re.match(r"^[+-]?\d+$", t):
         return t
     if re.match(r"^[+-]?\d+\.\d+$", t):
