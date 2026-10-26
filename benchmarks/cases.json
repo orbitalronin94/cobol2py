@@ -23,6 +23,342 @@
         "PIC 9 overflow truncation",
         "DISPLAY"
       ]
+    },
+    {
+      "id": "display-hello",
+      "path": "samples/bench_01_display_hello.cbl",
+      "features": [
+        "DISPLAY literal"
+      ]
+    },
+    {
+      "id": "display-number-literal",
+      "path": "samples/bench_02_display_number_literal.cbl",
+      "features": [
+        "DISPLAY numeric-looking literal"
+      ]
+    },
+    {
+      "id": "display-two-literals",
+      "path": "samples/bench_03_display_two_literals.cbl",
+      "features": [
+        "DISPLAY multiple operands"
+      ]
+    },
+    {
+      "id": "display-punctuation",
+      "path": "samples/bench_04_display_punctuation.cbl",
+      "features": [
+        "DISPLAY punctuation"
+      ]
+    },
+    {
+      "id": "picx-value",
+      "path": "samples/bench_05_picx_value.cbl",
+      "features": [
+        "PIC X VALUE"
+      ]
+    },
+    {
+      "id": "picx-move-short",
+      "path": "samples/bench_06_picx_move_short.cbl",
+      "features": [
+        "MOVE text padding"
+      ]
+    },
+    {
+      "id": "picx-move-long",
+      "path": "samples/bench_07_picx_move_long.cbl",
+      "features": [
+        "MOVE text truncation"
+      ]
+    },
+    {
+      "id": "picx-overwrite",
+      "path": "samples/bench_08_picx_overwrite.cbl",
+      "features": [
+        "overwrite alphanumeric"
+      ]
+    },
+    {
+      "id": "picx-two-moves",
+      "path": "samples/bench_09_picx_two_moves.cbl",
+      "features": [
+        "sequential MOVE"
+      ]
+    },
+    {
+      "id": "picx-two-fields",
+      "path": "samples/bench_10_picx_two_fields.cbl",
+      "features": [
+        "multiple working-storage fields"
+      ]
+    },
+    {
+      "id": "numeric-move-small",
+      "path": "samples/bench_11_numeric_move_small.cbl",
+      "features": [
+        "numeric MOVE and IF"
+      ]
+    },
+    {
+      "id": "numeric-add",
+      "path": "samples/bench_12_numeric_add.cbl",
+      "features": [
+        "ADD"
+      ]
+    },
+    {
+      "id": "numeric-subtract",
+      "path": "samples/bench_13_numeric_subtract.cbl",
+      "features": [
+        "SUBTRACT"
+      ]
+    },
+    {
+      "id": "numeric-multiply",
+      "path": "samples/bench_14_numeric_multiply.cbl",
+      "features": [
+        "MULTIPLY"
+      ]
+    },
+    {
+      "id": "numeric-compute",
+      "path": "samples/bench_15_numeric_compute.cbl",
+      "features": [
+        "COMPUTE addition"
+      ]
+    },
+    {
+      "id": "numeric-compute-expression",
+      "path": "samples/bench_16_numeric_compute_expression.cbl",
+      "features": [
+        "COMPUTE expression"
+      ]
+    },
+    {
+      "id": "if-true",
+      "path": "samples/bench_17_if_true.cbl",
+      "features": [
+        "IF true branch"
+      ]
+    },
+    {
+      "id": "if-false",
+      "path": "samples/bench_18_if_false.cbl",
+      "features": [
+        "IF false branch"
+      ]
+    },
+    {
+      "id": "if-greater",
+      "path": "samples/bench_19_if_greater.cbl",
+      "features": [
+        "greater-than comparison"
+      ]
+    },
+    {
+      "id": "if-less-equal",
+      "path": "samples/bench_20_if_less_equal.cbl",
+      "features": [
+        "less-than-or-equal comparison"
+      ]
+    },
+    {
+      "id": "if-nested",
+      "path": "samples/bench_21_if_nested.cbl",
+      "features": [
+        "nested IF"
+      ]
+    },
+    {
+      "id": "if-string-equal",
+      "path": "samples/bench_22_if_string_equal.cbl",
+      "features": [
+        "alphanumeric comparison"
+      ]
+    },
+    {
+      "id": "if-string-else",
+      "path": "samples/bench_23_if_string_else.cbl",
+      "features": [
+        "alphanumeric ELSE"
+      ]
+    },
+    {
+      "id": "perform-times-1",
+      "path": "samples/bench_24_perform_times_1.cbl",
+      "features": [
+        "PERFORM TIMES count 1"
+      ]
+    },
+    {
+      "id": "perform-times-3",
+      "path": "samples/bench_25_perform_times_3.cbl",
+      "features": [
+        "PERFORM TIMES count 3"
+      ]
+    },
+    {
+      "id": "perform-times-5",
+      "path": "samples/bench_26_perform_times_5.cbl",
+      "features": [
+        "PERFORM TIMES count 5"
+      ]
+    },
+    {
+      "id": "paragraph-call",
+      "path": "samples/bench_27_paragraph_call.cbl",
+      "features": [
+        "paragraph call"
+      ]
+    },
+    {
+      "id": "paragraph-twice",
+      "path": "samples/bench_28_paragraph_twice.cbl",
+      "features": [
+        "repeated paragraph call"
+      ]
+    },
+    {
+      "id": "paragraph-chain",
+      "path": "samples/bench_29_paragraph_chain.cbl",
+      "features": [
+        "paragraph chain"
+      ]
+    },
+    {
+      "id": "multiple-displays",
+      "path": "samples/bench_30_multiple_displays.cbl",
+      "features": [
+        "multiple DISPLAY statements"
+      ]
+    },
+    {
+      "id": "move-literal-condition",
+      "path": "samples/bench_31_move_literal_condition.cbl",
+      "features": [
+        "single-character flag"
+      ]
+    },
+    {
+      "id": "move-flag-change",
+      "path": "samples/bench_32_move_flag_change.cbl",
+      "features": [
+        "flag update"
+      ]
+    },
+    {
+      "id": "numeric-increment",
+      "path": "samples/bench_33_numeric_increment.cbl",
+      "features": [
+        "repeated increment"
+      ]
+    },
+    {
+      "id": "numeric-decrement",
+      "path": "samples/bench_34_numeric_decrement.cbl",
+      "features": [
+        "repeated decrement"
+      ]
+    },
+    {
+      "id": "numeric-overflow",
+      "path": "samples/bench_35_numeric_overflow.cbl",
+      "features": [
+        "numeric MOVE truncation"
+      ]
+    },
+    {
+      "id": "numeric-zero",
+      "path": "samples/bench_36_numeric_zero.cbl",
+      "features": [
+        "numeric zero VALUE"
+      ]
+    },
+    {
+      "id": "numeric-initial-value",
+      "path": "samples/bench_37_numeric_initial_value.cbl",
+      "features": [
+        "numeric VALUE"
+      ]
+    },
+    {
+      "id": "compute-subtract",
+      "path": "samples/bench_38_compute_subtract.cbl",
+      "features": [
+        "COMPUTE subtraction"
+      ]
+    },
+    {
+      "id": "compute-multiply",
+      "path": "samples/bench_39_compute_multiply.cbl",
+      "features": [
+        "COMPUTE multiplication"
+      ]
+    },
+    {
+      "id": "compute-divide-exact",
+      "path": "samples/bench_40_compute_divide_exact.cbl",
+      "features": [
+        "COMPUTE exact division"
+      ]
+    },
+    {
+      "id": "if-and-equivalent",
+      "path": "samples/bench_41_if_and_equivalent.cbl",
+      "features": [
+        "compound AND condition"
+      ]
+    },
+    {
+      "id": "if-or-equivalent",
+      "path": "samples/bench_42_if_or_equivalent.cbl",
+      "features": [
+        "compound OR condition"
+      ]
+    },
+    {
+      "id": "table-first",
+      "path": "samples/bench_43_table_first.cbl",
+      "features": [
+        "table element 1"
+      ]
+    },
+    {
+      "id": "table-second",
+      "path": "samples/bench_44_table_second.cbl",
+      "features": [
+        "table element 2"
+      ]
+    },
+    {
+      "id": "table-index-variable",
+      "path": "samples/bench_45_table_index_variable.cbl",
+      "features": [
+        "variable table subscript"
+      ]
+    },
+    {
+      "id": "picx-default",
+      "path": "samples/bench_46_picx_default.cbl",
+      "features": [
+        "PIC X default spaces"
+      ]
+    },
+    {
+      "id": "literal-spaces",
+      "path": "samples/bench_47_literal_spaces.cbl",
+      "features": [
+        "literal embedded spaces"
+      ]
+    },
+    {
+      "id": "multiple-conditions",
+      "path": "samples/bench_48_multiple_conditions.cbl",
+      "features": [
+        "variable-to-variable comparison"
+      ]
     }
   ]
 }
