@@ -4,7 +4,7 @@
 This is a diagnostic helper, not a full COBOL debugger. It injects DISPLAY
 statements immediately before standalone program-exit statements (or at the
 end of the source when no explicit exit is found). Elementary non-table data
-items are traced; groups and OCCURS items are reported as skipped.
+items, group records, and bounded OCCURS elements are traced; ambiguous names and over-limit tables are reported as skipped.
 """
 from __future__ import annotations
 
