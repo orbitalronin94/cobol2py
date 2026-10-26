@@ -792,7 +792,7 @@ def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = No
         c = re.sub(r"\bIS\s+LESS\s+THAN\b", "<", c, flags=re.IGNORECASE)
         c = re.sub(r"\bLESS\s+THAN\b", "<", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\b", "==", c, flags=re.IGNORECASE)
-        c = re.sub(r"(?<![<>=])=(?!=)", "==", c)
+        c = re.sub(r"(?<![!<>=])=(?!=)", "==", c)
         return c.replace("<>", "!=")
 
     c = rewrite_outside_literals(cond.strip(), rewrite)
@@ -1253,7 +1253,7 @@ def translate_java_condition(condition: str, variables: dict[str, CobolVar]) -> 
         text = re.sub(r"\bAND\b", "&&", text, flags=re.IGNORECASE)
         text = re.sub(r"\bOR\b", "||", text, flags=re.IGNORECASE)
         text = re.sub(r"\bNOT\b", "!", text, flags=re.IGNORECASE)
-        text = re.sub(r"(?<![<>=])=(?!=)", "==", text).replace("<>", "!=")
+        text = re.sub(r"(?<![!<>=])=(?!=)", "==", text).replace("<>", "!=")
         return text
 
     text = rewrite_outside_literals(text, rewrite)
