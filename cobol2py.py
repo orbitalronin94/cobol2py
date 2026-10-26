@@ -25,12 +25,26 @@ from typing import Optional
 # 1. PREPROCESADO
 # ============================================================================
 
-def preprocess(source: str) -> list[tuple[int, str]]:
+def preprocess(source: str, source_format: str = "auto") -> list[tuple[int, str]]:
+    if source_format not in ("auto", "fixed", "free"):
+        raise ValueError("source_format debe ser 'auto', 'fixed' o 'free'")
     lines = source.splitlines()
-    free_format = any(re.match(r"^\s*[A-Za-z]", ln) for ln in lines[:20])
+    # COBOL fixed format uses columns 1-6 for sequence numbers, column 7
+    # for the indicator, and columns 8-72 for source. Do not infer free
+    # format merely because a fixed-format line has leading spaces.
+    def looks_fixed(line: str) -> bool:
+        if len(line) < 8 or not re.fullmatch(r"[ 0-9]{6}", line[:6]):
+            return False
+        return line[6] in (" ", "*", "/", "D", "d", "-")
+
+    # Blank sequence areas make fixed/free format inherently ambiguous. Allow
+    # callers to override the heuristic explicitly when source layout is known.
+    fixed_format = source_format == "fixed" or (
+        source_format == "auto" and any(looks_fixed(line) for line in lines[:20])
+    )
     out: list[tuple[int, str]] = []
     for i, raw in enumerate(lines, 1):
-        if free_format:
+        if not fixed_format:
             line = raw.split("*>")[0].rstrip()
             if line.strip():
                 out.append((i, line))
@@ -44,7 +58,6 @@ def preprocess(source: str) -> list[tuple[int, str]]:
         if code.strip():
             out.append((i, code))
     return out
-
 
 # ============================================================================
 # 2. MODELOS
@@ -88,11 +101,15 @@ class CobolVar:
         return self._base_py_type()
 
     def py_default(self) -> str:
+        # Preserve simple VALUE literals instead of silently replacing them
+        # with a generic default. This remains a readability-oriented mapping;
+        # COBOL storage padding and numeric picture semantics are not emulated.
+        initial = translate_literal(self.value) if self.value is not None else self._base_default()
         if self.is_array:
             if self.occurs:
-                return f"[{self._base_default()}] * {self.occurs}"
+                return f"[{initial}] * {self.occurs}"
             return "[]"
-        return self._base_default()
+        return initial
 
     def java_type(self) -> str:
         if self.is_array:
@@ -360,8 +377,8 @@ def parse_procedure(lines: list[tuple[int, str]]) -> tuple[dict[str, list[Node]]
     return paragraphs, order
 
 
-def parse_cobol(source: str) -> Program:
-    lines = preprocess(source)
+def parse_cobol(source: str, source_format: str = "auto") -> Program:
+    lines = preprocess(source, source_format=source_format)
     prog = Program()
     prog.raw_lines = lines
 
@@ -424,15 +441,19 @@ def translate_literal(token: str) -> str:
 
 
 def translate_expr(expr: str) -> str:
-    tokens = re.split(r"(\s+|\+|\-|\*|/|=|<|>|\(|\))", expr)
+    # Match COBOL identifiers before arithmetic operators so hyphenated
+    # names (WS-NUM) become Python identifiers (ws_num), not subtraction.
+    # COBOL arithmetic using '-' should be separated from identifiers by
+    # whitespace when the token could otherwise be a hyphenated data-name.
+    token_pattern = r"""("[^"]*"|'[^']*'|[A-Za-z][A-Za-z0-9-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&-]|\s+|.)"""
+    tokens = re.findall(token_pattern, expr)
     out = []
     for tok in tokens:
-        if re.match(r"^[A-Za-z][A-Za-z0-9\-]*$", tok):
+        if re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", tok):
             out.append(normalize_name(tok))
         else:
             out.append(tok)
     return "".join(out).strip()
-
 
 # Patch 1: normalización de operadores
 def translate_condition(cond: str) -> str:
@@ -544,8 +565,10 @@ def translate_nodes(nodes: list[Node], paragraphs: set[str], indent: int) -> lis
         if node.kind == "stmt":
             lines = translate_statement(node.text, paragraphs)
             if lines:
-                for line in lines:
-                    out.append("    " * indent + line.strip())
+                opens_block = lines[0].rstrip().endswith(":")
+                for i, line in enumerate(lines):
+                    line_indent = indent + 1 if opens_block and i > 0 else indent
+                    out.append("    " * line_indent + line.strip())
 
         elif node.kind == "if":
             m = RE_IF_OPEN.match(node.text)
@@ -645,6 +668,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(prog="cobol2py", description="Traductor COBOL → Python v0.0.4")
     ap.add_argument("input", type=Path, help="Archivo .cbl o .cob")
     ap.add_argument("--out", type=Path, default=None, help="Archivo de salida")
+    ap.add_argument("--format", dest="source_format", choices=("auto", "fixed", "free"), default="auto", help="Formato fuente COBOL (por defecto: auto)")
     args = ap.parse_args()
 
     if not args.input.exists():
@@ -652,7 +676,7 @@ def main() -> int:
         return 1
 
     source = args.input.read_text(encoding="utf-8", errors="replace")
-    prog = parse_cobol(source)
+    prog = parse_cobol(source, source_format=args.source_format)
     output = emit_python(prog)
 
     if args.out:

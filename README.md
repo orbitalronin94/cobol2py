@@ -89,7 +89,7 @@ contador: int = 0  # COBOL: 01 CONTADOR PIC 9(3) VALUE 0
 # PÁRRAFO: PRINCIPAL
 def principal():
     print("HOLA MUNDO")
-    contador = "5"
+    contador = 5
     contador = contador + 10
     if contador > 10:
         print("GRANDE")
@@ -154,8 +154,8 @@ Todo lo que no se traduce sale con un comentario `# COBOL no traducido: ...` en 
 
 Estas son las que quedan pendientes y que sabes que existen antes de encontrártelas:
 
-**1. Los literales numéricos salen entrecomillados.**
-`MOVE 123 TO WS-CODIGO` genera `ws_codigo = "123"`. El traductor no consulta el tipo del destino al emitir el literal. Requiere pasar la tabla de variables a `translate_statement`. Es el siguiente bug grande de la lista.
+**1. Las cláusulas `VALUE` solo cubren literales simples.**
+Los valores iniciales simples se preservan, pero no se emula el relleno de campos alfanuméricos, la precisión/escala de `PIC` ni toda la semántica de almacenamiento COBOL. La salida sigue orientada a lectura; no debe considerarse equivalente ni lista para producción.
 
 **2. `EVALUATE` no se traduce.**
 Se marca con un comentario y se deja para v0.0.5.
@@ -175,31 +175,56 @@ Salen como comentario. `# Grupo nivel 01: WS-REGISTRO`. No se genera un dataclas
 
 ```
 cobol2py/
-├── cobol2py.py          # el motor. un archivo. sin dependencias.
-├── README.md            # este documento
-├── LICENSE              # MIT
+├── cobol2py.py
+├── README.md
+├── LICENSE
 ├── samples/
 │   ├── hello.cbl        # ejemplo mínimo
-│   └── realtest.cbl     # ejemplo con OCCURS, IFs, PERFORM
-└── docs/
-    
+│   └── realtest.cbl     # ejemplo con OCCURS, IF anidados y PERFORM
+├── tests/
+│   └── test_cobol2py.py
+└── .github/workflows/
+    └── tests.yml
 ```
+
+## Pruebas
+
+No requiere instalar dependencias:
+
+```bash
+python -m unittest discover -s tests -v
+python -m py_compile cobol2py.py
+```
+
+El formato de origen puede indicarse explícitamente cuando la detección automática sea ambigua:
+
+```bash
+python cobol2py.py programa.cbl --format fixed
+python cobol2py.py programa.cbl --format free
+```
+
+`--format auto` es el valor predeterminado; como las columnas de secuencia en blanco pueden aparecer tanto en formato fijo como en fuentes libres indentadas, no siempre es posible inferir el formato con certeza.
+
+GitHub Actions ejecuta estas comprobaciones con Python 3.10–3.13. La compilación sintáctica de la salida no demuestra equivalencia semántica con COBOL; las pruebas actuales son una base de regresión, no una certificación de migración.
 
 ---
 
 ## Hoja de ruta
 
-**v0.0.5 — Tipado de literales**
-Pasar la tabla de variables a `translate_statement`. `MOVE 123 TO WS-CODIGO` genera `ws_codigo = 123`. Firma modificada.
+**v0.0.5 — Semántica de datos y regresiones**
+- Ampliar `VALUE` más allá de literales simples y cubrir valores figurativos y casos límite.
+- Hacer que `MOVE` tenga en cuenta el `PIC` del destino, sin ocultar conversiones o truncamientos.
+- Añadir pruebas de semántica para campos alfanuméricos, precisión numérica, arrays y condiciones.
 
-**v0.0.6 — `EVALUATE`**
-Mapear las ramas `WHEN` a `if/elif` en Python.
+**v0.0.6 — Control de flujo**
+- Implementar `EVALUATE/WHEN` con pruebas para `WHEN`, `WHEN OTHER` y anidamiento.
+- Sustituir el estado global del árbol por una pila de bloques coherente; cubrir IF anidados y cierres malformados.
 
 **v0.0.7 — Copybook resolver**
-Preprocesador que localiza `COPY nombre.CPY.` en el directorio actual y expande su contenido antes del parseo.
+Localizar `COPY nombre.CPY.` en rutas explícitas y expandirlo antes del parseo. Detectar ciclos y dejar constancia de los archivos no resueltos.
 
-**v0.0.8 — Grupos como dataclasses**
-Los niveles `01` con hijos se convierten en `@dataclass` de Python, con los hijos como atributos tipados.
+**v0.0.8 — Jerarquía de datos**
+Modelar los grupos COBOL y sus campos hijos sin aplanarlos ni simular una equivalencia que todavía no existe.
 
 **v0.1.0 — Salida Java**
 Reactivar el backend de Java con el mismo AST. `--lang java`.
