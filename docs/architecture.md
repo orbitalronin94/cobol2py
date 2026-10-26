@@ -61,3 +61,8 @@ El modo estricto también advierte sobre operaciones aritméticas (`ADD`, `SUBTR
 ## Literales COBOL
 
 La conversión de literales reconoce las comillas delimitadoras duplicadas de COBOL y serializa el valor decodificado con el escape del lenguaje destino. Los patrones de tokenización de operandos y expresiones deben mantener el literal completo como un único token. Esta regla no sustituye un lexer COBOL completo.
+
+
+## Normalización de identificadores
+
+Los nombres COBOL se normalizan de forma consistente en declaraciones, referencias cualificadas y subíndices. Si el nombre coincide con una palabra reservada de Python o Java, se antepone `cobol_` para evitar código de destino sintácticamente inválido. Esta transformación cambia el identificador generado, no el nombre del campo en el programa COBOL original.
