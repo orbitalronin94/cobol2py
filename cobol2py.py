@@ -1578,6 +1578,63 @@ def emit_python(prog: Program) -> str:
     return "\n".join(lines)
 
 
+def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
+    """Return structured diagnostics for unsupported or malformed source constructs."""
+    diagnostics: list[dict[str, object]] = []
+
+    for message in prog.unresolved_copybooks:
+        diagnostics.append({
+            "code": "COPYBOOK_RESOLUTION",
+            "severity": "warning",
+            "line": None,
+            "message": message,
+        })
+
+    def visit(nodes: list[Node], paragraph: str) -> None:
+        for node in nodes:
+            if node.kind == "malformed":
+                diagnostics.append({
+                    "code": "MALFORMED_CONTROL_FLOW",
+                    "severity": "error",
+                    "line": node.line,
+                    "message": node.text,
+                    "paragraph": paragraph,
+                })
+            elif node.kind == "stmt":
+                translated = translate_statement(
+                    node.text,
+                    set(prog.paragraphs),
+                    {v.name.upper(): v for v in prog.variables},
+                ) or []
+                if any(
+                    line.lstrip().startswith(("# COBOL no traducido:", "# PERFORM no traducido:"))
+                    for line in translated
+                ):
+                    diagnostics.append({
+                        "code": "UNSUPPORTED_STATEMENT",
+                        "severity": "warning",
+                        "line": node.line,
+                        "message": node.text,
+                        "paragraph": paragraph,
+                    })
+            elif node.kind == "evaluate" and not any(child.kind == "when" for child in node.body):
+                diagnostics.append({
+                    "code": "EVALUATE_WITHOUT_WHEN",
+                    "severity": "warning",
+                    "line": node.line,
+                    "message": node.text,
+                    "paragraph": paragraph,
+                })
+
+            visit(node.then_branch, paragraph)
+            visit(node.else_branch, paragraph)
+            visit(node.body, paragraph)
+
+    for paragraph, nodes in prog.paragraphs.items():
+        visit(nodes, paragraph)
+    return diagnostics
+
+
 # ============================================================================
 # 6. CLI
 # ============================================================================
@@ -1589,6 +1646,14 @@ def main() -> int:
     ap.add_argument("--format", dest="source_format", choices=("auto", "fixed", "free"), default="auto", help="Formato fuente COBOL (por defecto: auto)")
     ap.add_argument("--copybook-path", action="append", type=Path, default=[], help="Directorio de copybooks (se puede repetir)")
     ap.add_argument("--lang", choices=("python", "java"), default="python", help="Lenguaje de salida (por defecto: python)")
+    ap.add_argument(
+        "--strict", action="store_true",
+        help="Falla si hay sentencias no soportadas, copybooks sin resolver o bloques malformados",
+    )
+    ap.add_argument(
+        "--diagnostics-json", action="store_true",
+        help="Emite diagnósticos estructurados JSON por stderr",
+    )
     args = ap.parse_args()
 
     if not args.input.exists():
@@ -1602,6 +1667,19 @@ def main() -> int:
         copybook_paths=args.copybook_path,
         source_path=args.input,
     )
+    diagnostics = collect_diagnostics(prog)
+    if args.diagnostics_json:
+        print(json.dumps(diagnostics, ensure_ascii=False), file=sys.stderr)
+    elif diagnostics and args.strict:
+        for diagnostic in diagnostics:
+            print(
+                f"{diagnostic['severity'].upper()} {diagnostic['code']}"
+                f" line={diagnostic['line']}: {diagnostic['message']}",
+                file=sys.stderr,
+            )
+    if args.strict and diagnostics:
+        return 2
+
     output = emit_java(prog) if args.lang == "java" else emit_python(prog)
 
     if args.out:
