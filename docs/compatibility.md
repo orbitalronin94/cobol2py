@@ -16,6 +16,7 @@ Consulta la lista autoritativa en [`benchmarks/cases.json`](../benchmarks/cases.
 - Operaciones aritméticas básicas.
 - Comparaciones y condiciones `IF/ELSE`, incluidas algunas condiciones compuestas y anidadas.
 - `PERFORM TIMES` y llamadas a párrafos.
+- `EVALUATE` escalar con `WHEN`, `WHEN OTHER`, `EVALUATE TRUE/FALSE` y rangos `THRU` en casos acotados.
 - Tablas `OCCURS` y acceso por subíndice en ejemplos acotados.
 
 La lista exacta de características por caso está en el manifiesto; este resumen no amplía por sí mismo el soporte.
@@ -29,6 +30,7 @@ Un resultado favorable no implica automáticamente soporte para:
 - campos con signo, decimales, formatos numéricos editados o todas las reglas de redondeo;
 - todas las variantes de `MOVE`, `INITIALIZE`, `REDEFINES`, `RENAMES`, `OCCURS DEPENDING ON` o cláusulas de almacenamiento;
 - todo el lenguaje de condiciones, abreviaturas COBOL o precedencia de operadores;
+- `EVALUATE ALSO`, selección múltiple avanzada y todos los matices de ámbito/dialecto;
 - `READ`/`WRITE`, archivos, bases de datos, transacciones, llamadas externas o comportamiento de entorno;
 - todas las variantes de `EVALUATE`, `SEARCH`, `STRING`, `UNSTRING`, `INSPECT`, `CALL`, `COPY`, `EXEC SQL` o extensiones de dialecto;
 - equivalencia en mensajes de error, salida estándar de error, archivos producidos, estado global externo o efectos secundarios no medidos.
