@@ -35,6 +35,16 @@ class TranslationTests(unittest.TestCase):
             ["ws_codigo = 123"],
         )
 
+    def test_simple_value_clause_initializes_variable(self):
+        self.assertEqual(
+            cobol2py.CobolVar(level=1, name="WS-STATUS", pic="X", value='"A"').py_default(),
+            '"A"',
+        )
+        self.assertEqual(
+            cobol2py.CobolVar(level=1, name="WS-TOTAL", pic="9(3)", value="12").py_default(),
+            "12",
+        )
+
     def test_equality_condition_uses_python_operator(self):
         self.assertEqual(
             cobol2py.translate_condition("WS-NUM = 10"),
@@ -47,6 +57,16 @@ class TranslationTests(unittest.TestCase):
 
 
 class EndToEndTests(unittest.TestCase):
+    def test_repository_samples_generate_syntactically_valid_python(self):
+        from pathlib import Path
+
+        root = Path(__file__).resolve().parents[1]
+        for sample in ("hello.cbl", "realtest.cbl"):
+            with self.subTest(sample=sample):
+                source = (root / "samples" / sample).read_text(encoding="utf-8")
+                generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
+                compile(generated, f"<{sample}-output>", "exec")
+
     def test_fixed_format_program_generates_valid_python(self):
         source = "\n".join([
             "       IDENTIFICATION DIVISION.",
