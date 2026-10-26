@@ -17,11 +17,21 @@ The 100 entries are distinct COBOL program units, not 100 independent applicatio
 - [x] Exactly 100 distinct `PROGRAM-ID` values in the manifest.
 - [x] Source files copied from one pinned snapshot; original MIT license included.
 - [x] Source blob SHA and line count recorded per source file in the manifest.
+- [x] Added `tools/audit_mit100.py` to inventory source files, list `COPY` dependencies and static `CALL` targets, and emit JSON/Markdown reports.
 - [ ] Dependency/copybook closure completed.
-- [ ] GnuCOBOL compilation executed in a pinned environment.
+- [ ] GnuCOBOL compilation executed in a pinned environment and results reviewed.
 - [ ] Translator output and runtime behavior differentially compared.
 
-**No compilation or equivalence pass rate is claimed by this PR.** This change adds the requested licensed source corpus first; the next step is the harness and per-program result classification. Missing copybooks/platform requirements must be reported as blocked, not counted as translator failures.
+Run the current static/dependency audit with:
+
+```bash
+python tools/validate_mit100_manifest.py
+python tools/audit_mit100.py --json mit100-audit.json --markdown mit100-audit.md
+```
+
+When GnuCOBOL is installed, add `--compile` to attempt syntax checks for source files whose copybooks are present in the vendored corpus. The report distinguishes missing-copybook blockers from syntax errors; it does not run a behavioral differential test.
+
+**No compilation or equivalence pass rate is claimed.** Missing copybooks/platform requirements must be reported as blocked, not counted as translator failures.
 
 ## Attribution
 
