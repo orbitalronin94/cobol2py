@@ -119,7 +119,7 @@ No es Python perfecto. Es Python **legible**. Y eso es lo que importa.
 | `PIC 9(n)` | `int` |
 | `PIC 9(n)V9(m)` | `float` |
 | `OCCURS n TIMES` | `list[T]` con tamaño fijo |
-| `OCCURS n DEPENDING ON X` | `list[T]` dinámica |
+| `OCCURS n DEPENDING ON X` | Lista con tamaño máximo; la longitud activa dinámica no está implementada y se advierte en `--strict` |
 | `DISPLAY` | `print()` |
 | `ACCEPT` | `input()` |
 | `MOVE` | asignación |
@@ -174,7 +174,7 @@ La pila de bloques ahora conserva ámbitos anidados de `IF`, `PERFORM` y `EVALUA
 Se resuelve `COPY nombre.` o `COPY nombre.CPY.` buscando primero junto al archivo fuente y después en cada `--copybook-path`. Se expanden dependencias anidadas y se detectan ciclos; faltantes, errores de lectura y cláusulas no soportadas quedan en comentarios de advertencia. `COPY ... REPLACING`, bibliotecas y reglas avanzadas de reemplazo siguen pendientes.
 
 **6. La jerarquía de grupos es una representación simplificada.**
-Los grupos COBOL se emiten como diccionarios anidados y los campos se leen/escriben mediante nombres no cualificados o `OF/IN` básico. No se modelan `REDEFINES`, `RENAMES`, overlays de almacenamiento, todos los calificadores ni las reglas completas de inicialización de grupos.
+Los grupos COBOL se emiten como diccionarios anidados y los campos se leen/escriben mediante nombres no cualificados o `OF/IN` básico. No se modelan `REDEFINES`, `RENAMES`, nombres de condición de nivel 88, la longitud activa de `OCCURS DEPENDING ON`, overlays de almacenamiento, todos los calificadores ni las reglas completas de inicialización de grupos.
 
 ---
 
