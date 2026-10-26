@@ -20,6 +20,7 @@ Consulta la lista autoritativa en [`benchmarks/cases.json`](../benchmarks/cases.
 - `COPY` simple con expansión recursiva, búsqueda por directorios explícitos y diagnósticos de faltantes/ciclos.
 - Grupos de datos como diccionarios anidados y referencias básicas a campos hijos.
 - Backend Java sobre el mismo AST para el subconjunto cubierto por sus fixtures de compilación/salida.
+- Herramienta de diagnóstico GnuCOBOL con `-ftraceall` y snapshots de campos escalares, grupos y elementos `OCCURS` antes de terminar.
 - Tablas `OCCURS` y acceso por subíndice en ejemplos acotados.
 
 La lista exacta de características por caso está en el manifiesto; este resumen no amplía por sí mismo el soporte.
