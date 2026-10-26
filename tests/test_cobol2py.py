@@ -27,6 +27,20 @@ class PreprocessTests(unittest.TestCase):
             [(1, "IDENTIFICATION DIVISION."), (2, "DISPLAY 'OK'.")],
         )
 
+    def test_inline_comment_marker_inside_quoted_literal_is_preserved(self):
+        source = 'IDENTIFICATION DIVISION.\nDISPLAY "A *> B". *> actual comment\n'
+        self.assertEqual(
+            cobol2py.preprocess(source),
+            [(1, "IDENTIFICATION DIVISION."), (2, 'DISPLAY "A *> B".')],
+        )
+
+    def test_split_concat_statements_keeps_quoted_text_atomic(self):
+        source = 'DISPLAY "MOVE END-IF *> inside" MOVE WS-A TO WS-B'
+        self.assertEqual(
+            cobol2py.split_concat_statements(source),
+            ['DISPLAY "MOVE END-IF *> inside"', "MOVE WS-A TO WS-B"],
+        )
+
     def test_explicit_free_format_preserves_seven_space_indentation(self):
         source = "       DISPLAY 'OK'."
         self.assertEqual(
