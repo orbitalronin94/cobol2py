@@ -193,6 +193,10 @@ cobol2py/
     └── differential-benchmark.yml
 ```
 
+## Documentación de ingeniería
+
+La documentación de arquitectura, decisiones de diseño, alcance de compatibilidad y proceso de cambios está en [`docs/`](docs/README.md). Los cambios semánticos deben incluir pruebas y, cuando sea posible, una comparación diferencial con GnuCOBOL. El porcentaje del benchmark mide únicamente los casos versionados; no demuestra equivalencia general.
+
 ## Pruebas
 
 No requiere instalar dependencias:
