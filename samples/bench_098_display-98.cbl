@@ -1,0 +1,10 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. B098.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       PROCEDURE DIVISION.
+       MAIN-PARA.
+           DISPLAY "ONE".
+           DISPLAY "TWO".
+           DISPLAY "THREE".
+           STOP RUN.

@@ -5,10 +5,10 @@
        01 WS-NUM PIC 9(3) VALUE 0.
        PROCEDURE DIVISION.
        MAIN-PARA.
-       COMPUTE WS-NUM = (3 * 4) + 2.
-       IF WS-NUM = 14
-          DISPLAY "FOURTEEN"
-       ELSE
-          DISPLAY "OTHER"
-       END-IF.
-       STOP RUN.
+           COMPUTE WS-NUM = (3 * 4) + 2.
+           IF WS-NUM = 14
+               DISPLAY "FOURTEEN"
+           ELSE
+               DISPLAY "OTHER"
+           END-IF.
+           STOP RUN.

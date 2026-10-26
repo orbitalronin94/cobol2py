@@ -73,6 +73,16 @@ Este registro recoge decisiones que explican el comportamiento actual. No preten
 - **Motivación:** reduce errores de anidamiento y permite generar bloques Python más consistentes.
 - **Consecuencias:** añadir pruebas para anidamiento, sentencias posteriores al cierre y combinaciones de cierres.
 
+## D-011 — Mantener un corpus diferencial de 100 programas
+
+- **Fecha:** 2026-10-26.
+- **Estado:** aceptada para la revisión del corpus; los resultados se deben volver a medir en cada cambio.
+- **Contexto:** el corpus previo de 50 casos no ofrecía suficiente variedad para evaluar regresiones y se añadieron 50 programas, además de corregir fixtures que no compilaban con GnuCOBOL.
+- **Decisión:** versionar los 100 casos en `benchmarks/cases.json` y exigir comparación diferencial contra GnuCOBOL, además de pruebas de regresión unitarias para nuevas reglas de traducción.
+- **Validación observada en PR #9:** candidato 100/100 (100%) y snapshot inicial 16/100 (16%) en el mismo corpus; las 100 referencias compilaron.
+- **Consecuencias:** el porcentaje solo representa este conjunto de programas. Se debe ampliar la diversidad y dificultad de los casos, mantener los casos fallidos y evitar presentar la puntuación como equivalencia COBOL general.
+- **Revisión:** añadir casos de estrés y revaluar cuando se incorporen construcciones como `EVALUATE`, escalas decimales, condiciones abreviadas y estructuras anidadas.
+
 ## Plantilla para nuevas decisiones
 
 Añadir una sección con:

@@ -7,11 +7,11 @@
           05 WS-ITEM PIC X(4) OCCURS 3 TIMES.
        PROCEDURE DIVISION.
        MAIN-PARA.
-       MOVE "RED" TO WS-ITEM(1).
-       MOVE "BLU" TO WS-ITEM(2).
-       IF WS-ITEM(WS-IDX) = "BLU"
-          DISPLAY "INDEX-OK"
-       ELSE
-          DISPLAY "INDEX-NO"
-       END-IF.
-       STOP RUN.
+           MOVE "RED" TO WS-ITEM(1).
+           MOVE "BLU" TO WS-ITEM(2).
+           IF WS-ITEM(WS-IDX) = "BLU"
+               DISPLAY "INDEX-OK"
+           ELSE
+               DISPLAY "INDEX-NO"
+           END-IF.
+           STOP RUN.

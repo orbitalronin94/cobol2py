@@ -1,0 +1,13 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. B073.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       PROCEDURE DIVISION.
+       MAIN-PARA.
+           PERFORM FIRST-PARA.
+           STOP RUN.
+       FIRST-PARA.
+           DISPLAY "A".
+           PERFORM SECOND-PARA.
+       SECOND-PARA.
+           DISPLAY "B".
