@@ -139,9 +139,9 @@ class CobolVar:
                 if self.value is None:
                     initial = repr(" " * width)
                 else:
-                    all_literal = re.fullmatch(r"""ALL\s+(["'])(.*?)\1""", self.value, re.IGNORECASE)
-                    if all_literal:
-                        repeated = (all_literal.group(2) * width)[:width]
+                    all_literal = decode_cobol_all_literal(self.value)
+                    if all_literal is not None:
+                        repeated = (all_literal * width)[:width]
                         initial = repr(repeated)
                     elif self.value.upper() in ("LOW-VALUE", "LOW-VALUES"):
                         initial = repr("\x00" * width)
@@ -667,6 +667,16 @@ def normalize_data_reference(
     return expr
 
 
+def decode_cobol_all_literal(token: str) -> Optional[str]:
+    """Decode ALL followed by a COBOL quoted literal, including doubled quotes."""
+    match = re.fullmatch(
+        r"""ALL\s+("(?:[^"]|"")*"|'(?:[^']|'')*')""",
+        token.strip(),
+        re.IGNORECASE,
+    )
+    return decode_cobol_quoted_literal(match.group(1)) if match else None
+
+
 def decode_cobol_quoted_literal(token: str) -> Optional[str]:
     """Decode a complete COBOL quoted literal, including doubled quote escapes."""
     text = token.strip()
@@ -685,9 +695,9 @@ def translate_literal(
     t = token.strip()
     if not t:
         return '""'
-    all_literal = re.fullmatch(r"""ALL\s+(["'])(.*?)\1""", t, re.IGNORECASE)
-    if all_literal:
-        return repr(all_literal.group(2))
+    all_literal = decode_cobol_all_literal(t)
+    if all_literal is not None:
+        return repr(all_literal)
     quoted = decode_cobol_quoted_literal(t)
     if quoted is not None:
         return json.dumps(quoted, ensure_ascii=False)
@@ -885,9 +895,9 @@ def translate_move_value(source: str, target: str, variables: dict[str, CobolVar
         if "X" in pic or "A" in pic:
             width = pic_character_count(pic)
             if width:
-                all_literal = re.fullmatch(r"""ALL\s+(["'])(.*?)\1""", source.strip(), re.IGNORECASE)
-                if all_literal:
-                    return repr((all_literal.group(2) * width)[:width])
+                all_literal = decode_cobol_all_literal(source.strip())
+                if all_literal is not None:
+                    return repr((all_literal * width)[:width])
                 if source.strip().upper() in ("SPACE", "SPACES"):
                     return repr(" " * width)
                 if source.strip().upper() in ("LOW-VALUE", "LOW-VALUES"):
@@ -1171,9 +1181,9 @@ def translate_java_literal(token: str, variables: dict[str, CobolVar]) -> str:
     t = token.strip()
     if not t:
         return '""'
-    all_literal = re.fullmatch(r"""ALL\s+(["'])(.*?)\1""", t, re.IGNORECASE)
-    if all_literal:
-        return java_string_literal(all_literal.group(2))
+    all_literal = decode_cobol_all_literal(t)
+    if all_literal is not None:
+        return java_string_literal(all_literal)
     quoted = decode_cobol_quoted_literal(t)
     if quoted is not None:
         return java_string_literal(quoted)
@@ -1300,9 +1310,9 @@ def java_field_default(variable: CobolVar, variables: dict[str, CobolVar]) -> st
         if variable.value is None:
             value = '""'
         else:
-            all_literal = re.fullmatch(r"""ALL\s+(["'])(.*?)\1""", variable.value, re.IGNORECASE)
-            if all_literal:
-                value = java_string_literal((all_literal.group(2) * width)[:width])
+            all_literal = decode_cobol_all_literal(variable.value)
+            if all_literal is not None:
+                value = java_string_literal((all_literal * width)[:width])
             elif variable.value.upper() in ("SPACE", "SPACES"):
                 value = java_string_literal(" " * width)
             elif variable.value.upper() in ("LOW-VALUE", "LOW-VALUES"):
@@ -1392,9 +1402,9 @@ def translate_java_statement(
         target_expr = java_data_reference(target, variables)
         if variable and variable.pic and any(char in variable.pic.upper() for char in ("X", "A")):
             width = pic_character_count(variable.pic)
-            all_literal = re.fullmatch(r"""ALL\s+(["'])(.*?)\1""", source.strip(), re.IGNORECASE)
-            if all_literal:
-                value = java_string_literal((all_literal.group(2) * width)[:width])
+            all_literal = decode_cobol_all_literal(source.strip())
+            if all_literal is not None:
+                value = java_string_literal((all_literal * width)[:width])
             return [java_assignment_statement(target, "=", f"fit(String.valueOf({value}), {width})", variables)]
         if variable and variable.pic and "9" in variable.pic.upper():
             digits = pic_digit_count(variable.pic)
