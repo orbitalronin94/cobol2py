@@ -110,7 +110,18 @@ class CobolVar:
                 if self.value is None:
                     initial = repr(" " * width)
                 else:
-                    initial = f"str({initial})[:{width}].ljust({width})"
+                    all_literal = re.fullmatch(r"""ALL\s+(["'])(.*?)\1""", self.value, re.IGNORECASE)
+                    if all_literal:
+                        repeated = (all_literal.group(2) * width)[:width]
+                        initial = repr(repeated)
+                    elif self.value.upper() in ("LOW-VALUE", "LOW-VALUES"):
+                        initial = repr("\x00" * width)
+                    elif self.value.upper() in ("HIGH-VALUE", "HIGH-VALUES"):
+                        initial = repr("\xff" * width)
+                    elif self.value.upper() in ("SPACE", "SPACES"):
+                        initial = repr(" " * width)
+                    else:
+                        initial = f"str({initial})[:{width}].ljust({width})"
         if self.is_array:
             if self.occurs:
                 return f"[{initial}] * {self.occurs}"
@@ -160,9 +171,12 @@ RE_DATA = re.compile(r"DATA\s+DIVISION", re.IGNORECASE)
 RE_PROC = re.compile(r"PROCEDURE\s+DIVISION", re.IGNORECASE)
 RE_PROGRAM_ID = re.compile(r"PROGRAM-ID\.\s*([A-Za-z0-9\-]+)", re.IGNORECASE)
 RE_WORKING_STORAGE = re.compile(r"WORKING-STORAGE\s+SECTION", re.IGNORECASE)
-RE_VAR = re.compile(r"^\s*(\d{1,2})\s+([A-Za-z0-9\-]+)\s*(.*?)(?:\.|$)", re.IGNORECASE)
+RE_VAR = re.compile(r"^\s*(\d{1,2})\s+([A-Za-z0-9\-]+)\s*(.*?)(?:\.\s*)?$", re.IGNORECASE)
 RE_PIC = re.compile(r"PIC(?:TURE)?\s+(?:IS\s+)?([A-Za-z0-9\(\)VSPX]+)", re.IGNORECASE)
-RE_VALUE = re.compile(r"VALUE\s+(?:IS\s+)?(\"[^\"]*\"|'[^']*'|[^\s\.]+)", re.IGNORECASE)
+RE_VALUE = re.compile(
+    r"""VALUE\s+(?:IS\s+)?((?:ALL\s+)?(?:"[^"]*"|'[^']*'|[+-]?\d+(?:\.\d+)?|[A-Za-z][A-Za-z0-9-]*))""",
+    re.IGNORECASE,
+)
 # Patch 2: OCCURS dinámico
 RE_OCCURS = re.compile(
     r"OCCURS\s+(?:\d+\s+TO\s+)?(\d+)\s+TIMES"
@@ -460,16 +474,25 @@ def translate_literal(token: str) -> str:
     t = token.strip()
     if not t:
         return '""'
+    all_literal = re.fullmatch(r"""ALL\s+(["'])(.*?)\1""", t, re.IGNORECASE)
+    if all_literal:
+        return repr(all_literal.group(2))
     if (t.startswith('"') and t.endswith('"')) or (t.startswith("'") and t.endswith("'")):
         return '"' + t[1:-1] + '"'
-    if re.match(r"^-?\d+$", t):
+    if re.match(r"^[+-]?\d+$", t):
         return t
-    if re.match(r"^-?\d+\.\d+$", t):
+    if re.match(r"^[+-]?\d+\.\d+$", t):
         return t
     if t.upper() in ("SPACES", "SPACE"):
         return '""'
-    if t.upper() in ("ZEROS", "ZERO"):
+    if t.upper() in ("ZEROS", "ZERO", "ZEROES", "ZEROES"):
         return "0"
+    if t.upper() in ("LOW-VALUE", "LOW-VALUES"):
+        return repr("\x00")
+    if t.upper() in ("HIGH-VALUE", "HIGH-VALUES"):
+        return repr("\xff")
+    if t.upper() in ("QUOTE", "QUOTES"):
+        return repr('"')
     return normalize_name(t)
 
 
@@ -594,13 +617,31 @@ def translate_move_value(source: str, target: str, variables: dict[str, CobolVar
         if "X" in pic or "A" in pic:
             width = pic_character_count(pic)
             if width:
+                all_literal = re.fullmatch(r"""ALL\s+(["'])(.*?)\1""", source.strip(), re.IGNORECASE)
+                if all_literal:
+                    return repr((all_literal.group(2) * width)[:width])
+                if source.strip().upper() in ("SPACE", "SPACES"):
+                    return repr(" " * width)
+                if source.strip().upper() in ("LOW-VALUE", "LOW-VALUES"):
+                    return repr("\x00" * width)
+                if source.strip().upper() in ("HIGH-VALUE", "HIGH-VALUES"):
+                    return repr("\xff" * width)
                 return f"str({value})[:{width}].ljust({width})"
-        # For unsigned integer receiving fields, COBOL MOVE keeps the
-        # rightmost digits when the sending value is wider than the PIC.
-        # Signed and implied-decimal pictures need separate semantics.
-        if "9" in pic and not any(mark in pic for mark in ("V", "S", "P")):
+        # Numeric MOVE keeps the low-order receiving digits. For implied
+        # decimal pictures, scale first, truncate excess fractional digits,
+        # then retain the receiving picture's total digit capacity.
+        if "9" in pic and "P" not in pic:
             digits = pic_digit_count(pic)
-            if digits:
+            if "V" in pic:
+                scale = pic_digit_count(pic.split("V", 1)[1])
+                if digits:
+                    factor = 10 ** scale
+                    magnitude = f"int(abs(float({value})) * {factor}) % (10 ** {digits})"
+                    sign = f"(-1 if float({value}) < 0 else 1)"
+                    return f"{sign} * ({magnitude} / {factor})"
+            elif digits:
+                if "S" in pic:
+                    return f"(-1 if int({value}) < 0 else 1) * (abs(int({value})) % (10 ** {digits}))"
                 return f"int({value}) % (10 ** {digits})"
     return value
 
