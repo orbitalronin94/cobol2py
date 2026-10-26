@@ -252,6 +252,13 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
             units.append((num, "ELSE"))
             continue
 
+        # Scope terminators must be standalone parser units. Otherwise a
+        # preceding DISPLAY without a period can absorb END-IF as an operand.
+        if upper in ("END-IF", "END-PERFORM", "END-EVALUATE"):
+            flush()
+            units.append((num, upper))
+            continue
+
         if not buffer:
             buffer_start = num
         buffer.append(text)
