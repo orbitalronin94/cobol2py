@@ -1,7 +1,15 @@
 """Tests for the differential benchmark's CI exit policy."""
+import importlib.util
 import unittest
+from pathlib import Path
 
-from benchmarks.run_benchmark import has_candidate_failures
+_spec = importlib.util.spec_from_file_location(
+    "cobol2py_run_benchmark", Path(__file__).resolve().parents[1] / "benchmarks" / "run_benchmark.py"
+)
+_benchmark = importlib.util.module_from_spec(_spec)
+assert _spec.loader is not None
+_spec.loader.exec_module(_benchmark)
+has_candidate_failures = _benchmark.has_candidate_failures
 
 
 class BenchmarkExitPolicyTests(unittest.TestCase):
