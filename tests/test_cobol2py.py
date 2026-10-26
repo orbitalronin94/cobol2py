@@ -52,7 +52,7 @@ class PreprocessTests(unittest.TestCase):
         output = StringIO()
         with redirect_stdout(output):
             namespace["main"]()
-        self.assertEqual(output.getvalue(), 'DON"T\\n')
+        self.assertEqual(output.getvalue(), 'DON"T\n')
 
     def test_split_cobol_items_keeps_doubled_quote_literals_atomic(self):
         self.assertEqual(
@@ -252,7 +252,7 @@ class TranslationTests(unittest.TestCase):
         output = StringIO()
         with patch("builtins.input", side_effect=["12", "ABCD"]), redirect_stdout(output):
             namespace["main"]()
-        self.assertEqual(output.getvalue(), "013\\nABC\\n", generated)
+        self.assertEqual(output.getvalue(), "013\nABC\n", generated)
 
     def test_java_accept_applies_numeric_and_alphanumeric_receiving_types(self):
         variables = {
@@ -268,13 +268,13 @@ class TranslationTests(unittest.TestCase):
             "\n".join(cobol2py.translate_java_statement("ACCEPT WS-TEXT", set(), variables)),
         )
 
-    def test_display_of_implied_decimal_pic_emits_digits_without_point(self):
+    def test_display_of_implied_decimal_pic_preserves_decimal_point(self):
         variables = {
             "WS-RATE": cobol2py.CobolVar(level=1, name="WS-RATE", pic="9(3)V99")
         }
         self.assertEqual(
             cobol2py.translate_display_item("WS-RATE", variables),
-            "format(float(ws_rate), '.2f').replace('.', '').zfill(5)",
+            "format(float(ws_rate), '06.2f'),
         )
 
     def test_move_truncates_signed_and_implied_decimal_receiving_fields(self):
@@ -603,7 +603,7 @@ class EndToEndTests(unittest.TestCase):
         output = StringIO()
         with redirect_stdout(output):
             namespace["main"]()
-        self.assertEqual(output.getvalue(), "BEFORE\\n", generated)
+        self.assertEqual(output.getvalue(), "BEFORE\n", generated)
 
     def test_stop_run_in_called_paragraph_stops_entry_paragraph(self):
         from contextlib import redirect_stdout
@@ -887,7 +887,7 @@ class EndToEndTests(unittest.TestCase):
         output = StringIO()
         with redirect_stdout(output):
             namespace["main"]()
-        self.assertEqual(output.getvalue(), "MATCH\\n", generated)
+        self.assertEqual(output.getvalue(), "MATCH\n", generated)
 
     def test_evaluate_when_and_when_other_execute_matching_branch(self):
         from contextlib import redirect_stdout
