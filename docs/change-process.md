@@ -20,10 +20,12 @@
 
 ```bash
 python -m unittest discover -s tests -v
+python -m py_compile cobol2py.py
+python cobol2py.py programa.cbl --strict
 python benchmarks/run_benchmark.py --translator cobol2py.py
 ```
 
-El segundo comando requiere GnuCOBOL. Revisa el informe caso por caso, no solo el porcentaje. En CI, consulta tanto el workflow de tests como el de benchmark diferencial.
+El benchmark requiere GnuCOBOL y falla con código distinto de cero si alguna referencia no compila o el candidato no coincide exactamente. Usa `--report-only` solo para exploración. Revisa el informe caso por caso, no solo el porcentaje. En CI, consulta tanto el workflow de tests como el de benchmark diferencial.
 
 ## Qué registrar en cada mejora
 
