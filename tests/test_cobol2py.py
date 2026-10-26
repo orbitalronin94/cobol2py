@@ -260,6 +260,16 @@ class TranslationTests(unittest.TestCase):
             "!(ws_b == 2)",
         )
 
+    def test_not_equal_to_does_not_become_invalid_operator(self):
+        self.assertEqual(
+            cobol2py.translate_condition("WS-A NOT EQUAL TO 2"),
+            "ws_a != 2",
+        )
+        self.assertEqual(
+            cobol2py.translate_java_condition("WS-A NOT EQUAL TO 2", {}),
+            "ws_a != 2",
+        )
+
     def test_logical_operators_remain_python_operators(self):
         self.assertEqual(
             cobol2py.translate_condition("WS-A = 1 AND NOT WS-B = 2"),
