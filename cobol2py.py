@@ -110,7 +110,7 @@ class CobolVar:
                 if self.value is None:
                     initial = repr(" " * width)
                 else:
-                    all_literal = re.fullmatch(r"""ALL\\s+(["'])(.*?)\\1""", self.value, re.IGNORECASE)
+                    all_literal = re.fullmatch(r"""ALL\s+(["'])(.*?)\1""", self.value, re.IGNORECASE)
                     if all_literal:
                         repeated = (all_literal.group(2) * width)[:width]
                         initial = repr(repeated)
@@ -611,15 +611,15 @@ def translate_move_value(source: str, target: str, variables: dict[str, CobolVar
         if "X" in pic or "A" in pic:
             width = pic_character_count(pic)
             if width:
-                all_literal = re.fullmatch(r"""ALL\\s+(["'])(.*?)\\1""", source.strip(), re.IGNORECASE)
+                all_literal = re.fullmatch(r"""ALL\s+(["'])(.*?)\1""", source.strip(), re.IGNORECASE)
                 if all_literal:
                     return repr((all_literal.group(2) * width)[:width])
                 if source.strip().upper() in ("SPACE", "SPACES"):
                     return repr(" " * width)
                 if source.strip().upper() in ("LOW-VALUE", "LOW-VALUES"):
-                    return repr("\\x00" * width)
+                    return repr("\x00" * width)
                 if source.strip().upper() in ("HIGH-VALUE", "HIGH-VALUES"):
-                    return repr("\\xff" * width)
+                    return repr("\xff" * width)
                 return f"str({value})[:{width}].ljust({width})"
         # For unsigned integer receiving fields, COBOL MOVE keeps the
         # rightmost digits when the sending value is wider than the PIC.
