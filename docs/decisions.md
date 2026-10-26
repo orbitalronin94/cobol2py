@@ -253,3 +253,13 @@ Añadir una sección con:
 - **Contexto:** la normalización secuencial podía transformar `!=` en el operador inválido `!==`.
 - **Consecuencias:** las condiciones de desigualdad vuelven a generar operadores válidos en ambos backends.
 - **Validación:** pruebas unitarias para `NOT EQUAL TO` en Python y Java; ejecución completa de la suite aún pendiente.
+
+
+## D-029 — Preservar el carácter de SPACE en contextos sin tamaño receptor
+
+- **Fecha:** 2026-10-26.
+- **Estado:** aceptada para DISPLAY y literales sin contexto de campo receptor.
+- **Decisión:** traducir `SPACE`/`SPACES` como un carácter de espacio cuando se usa como literal independiente; `MOVE` a campos alfanuméricos sigue rellenando el ancho del receptor.
+- **Contexto:** traducir ambos figurativos a cadena vacía eliminaba un carácter observable en `DISPLAY`.
+- **Consecuencias:** el espacio se conserva en ambos backends; las reglas de longitud de figurativos en todos los contextos COBOL siguen siendo más amplias que este caso.
+- **Validación:** pruebas unitarias para los dos figurativos en Python y Java; la suite completa aún no está confirmada en CI.
