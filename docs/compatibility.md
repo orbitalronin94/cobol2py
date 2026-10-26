@@ -1,0 +1,50 @@
+# Alcance de compatibilidad COBOL
+
+## Qué significa «compatible» aquí
+
+La compatibilidad se debe expresar por construcción y por caso de prueba, no como una etiqueta absoluta. Una traducción puede ser sintácticamente válida y aun así cambiar resultados, formato de datos, flujo de control, efectos de E/S o códigos de salida.
+
+El benchmark actual considera que un caso coincide cuando el `stdout` y el código de retorno del Python generado son iguales a los del ejecutable COBOL compilado por GnuCOBOL. El manifiesto actual contiene 50 programas, pero el corpus es pequeño y sesgado hacia construcciones concretas. No mide todos los dialectos, cláusulas, estados de error ni combinaciones de sentencias.
+
+## Áreas cubiertas por el corpus actual
+
+Consulta la lista autoritativa en [`benchmarks/cases.json`](../benchmarks/cases.json). A nivel general, incluye:
+
+- `DISPLAY` con literales y variables.
+- Declaraciones sencillas de `PIC X` y `PIC 9`, valores iniciales y campos de ancho fijo.
+- `MOVE`, relleno/truncamiento alfanumérico y casos básicos de truncamiento numérico.
+- Operaciones aritméticas básicas.
+- Comparaciones y condiciones `IF/ELSE`, incluidas algunas condiciones compuestas y anidadas.
+- `PERFORM TIMES` y llamadas a párrafos.
+- Tablas `OCCURS` y acceso por subíndice en ejemplos acotados.
+
+La lista exacta de características por caso está en el manifiesto; este resumen no amplía por sí mismo el soporte.
+
+## Qué no se debe inferir
+
+Un resultado favorable no implica automáticamente soporte para:
+
+- campos con signo, decimales, formatos numéricos editados o todas las reglas de redondeo;
+- todas las variantes de `MOVE`, `INITIALIZE`, `REDEFINES`, `RENAMES`, `OCCURS DEPENDING ON` o cláusulas de almacenamiento;
+- todo el lenguaje de condiciones, abreviaturas COBOL o precedencia de operadores;
+- `READ`/`WRITE`, archivos, bases de datos, transacciones, llamadas externas o comportamiento de entorno;
+- todas las variantes de `EVALUATE`, `SEARCH`, `STRING`, `UNSTRING`, `INSPECT`, `CALL`, `COPY`, `EXEC SQL` o extensiones de dialecto;
+- equivalencia en mensajes de error, salida estándar de error, archivos producidos, estado global externo o efectos secundarios no medidos.
+
+Esta lista no afirma que cada elemento esté completamente ausente del código; indica que el corpus actual no basta para declarar equivalencia general de esas áreas.
+
+## Política para añadir casos
+
+1. Crear un programa mínimo y autónomo que aísle una semántica concreta.
+2. Confirmar que GnuCOBOL lo compila y guardar la salida esperada en la comparación, no como una expectativa copiada a mano.
+3. Añadirlo a `benchmarks/cases.json` con un ID estable y características precisas.
+4. Mantener el caso aunque falle el traductor; el fallo representa una brecha real de cobertura.
+5. Cuando se corrija la brecha, añadir o conservar un test de regresión unitario que falle si la regresión reaparece.
+6. Evitar casos duplicados que inflen el número sin añadir un comportamiento nuevo.
+7. Registrar limitaciones y cualquier diferencia específica de dialecto.
+
+## Interpretación del porcentaje
+
+`casos coincidentes / casos ejecutados × 100`
+
+Cada caso pesa lo mismo, independientemente de su tamaño o complejidad. Por ello, el porcentaje es una métrica de regresión del corpus, no una estimación estadística de equivalencia para programas COBOL arbitrarios. Cambiar el corpus puede cambiar la puntuación aunque el traductor no cambie; las comparaciones entre versiones deben usar el mismo manifiesto.

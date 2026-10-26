@@ -1,0 +1,44 @@
+# Arquitectura actual
+
+## Objetivo y no objetivos
+
+`cobol2py` es un traductor pequeño de COBOL a Python legible, implementado en un solo archivo y sin dependencias externas de Python. Su propósito principal es ayudar a inspeccionar y entender lógica COBOL. Que una salida parezca Python válida no significa que preserve toda la semántica del programa original.
+
+El soporte es incremental: se incorporan construcciones cuando hay implementación y pruebas que las respaldan. No se debe presentar el proyecto como compilador COBOL completo ni como herramienta que certifique una migración de sistemas críticos.
+
+## Flujo de procesamiento
+
+La implementación actual en `cobol2py.py` sigue, de forma simplificada, estas etapas:
+
+1. **Preprocesado** — `preprocess()` detecta o aplica el formato de fuente y normaliza las líneas útiles, conservando números de línea para diagnóstico y análisis.
+2. **Modelo de datos** — `CobolVar`, `Node` y `Program` representan variables, unidades de procedimiento y el programa analizado.
+3. **Variables** — `parse_variables()` interpreta las declaraciones de almacenamiento que el traductor reconoce, incluidos usos básicos de `PIC`, `VALUE` y `OCCURS`.
+4. **Procedimientos** — `split_paragraph_into_units()`, `build_tree()` y `parse_procedure()` separan sentencias y construyen una estructura de control para las construcciones soportadas.
+5. **Expresiones y sentencias** — funciones como `translate_expr()`, `translate_condition()` y `translate_statement()` traducen nombres, expresiones y verbos COBOL a Python.
+6. **Emisión** — `emit_python()` genera el archivo Python final y el punto de entrada.
+
+Estos pasos describen la organización actual, no una gramática COBOL formal. No se debe asumir que cualquier programa aceptado por un compilador COBOL puede analizarse correctamente aquí.
+
+## Decisiones de implementación relevantes
+
+- Se prioriza una implementación compacta y fácil de inspeccionar frente a una arquitectura con dependencias y un parser completo.
+- La detección de formato fijo/libre existe porque el formato de fuente cambia cómo deben interpretarse columnas, comentarios y sentencias.
+- Los nombres COBOL se normalizan a identificadores Python, preservando una correspondencia legible; las palabras reservadas requieren tratamiento especial.
+- El almacenamiento `WORKING-STORAGE` debe seguir siendo accesible desde los párrafos que lo usan.
+- La traducción de sentencias respeta los cierres explícitos reconocidos, como `END-IF`, `END-PERFORM` y `END-EVALUATE`, en las estructuras que soporta.
+- Los índices de tablas COBOL son normalmente base 1; al emitir acceso a estructuras Python, hay que ajustar el índice sin cambiar la semántica visible.
+
+## Errores y límites
+
+El traductor no es un sustituto de un compilador COBOL. Las construcciones no implementadas, las cláusulas complejas y las diferencias entre dialectos pueden generar errores o traducciones que no son equivalentes. Antes de extender una regla compartida, añade un caso de regresión pequeño y una comparación diferencial cuando GnuCOBOL pueda servir de referencia.
+
+## Cómo validar una modificación
+
+Desde la raíz del repositorio:
+
+```bash
+python -m unittest discover -s tests -v
+python benchmarks/run_benchmark.py --translator cobol2py.py
+```
+
+El benchmark requiere GnuCOBOL instalado. Las pruebas unitarias comprueban comportamientos específicos; el benchmark compara los casos versionados contra el programa COBOL compilado. Ninguna de estas comprobaciones demuestra equivalencia general.
