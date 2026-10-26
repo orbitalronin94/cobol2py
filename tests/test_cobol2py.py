@@ -909,6 +909,22 @@ class DiagnosticTests(unittest.TestCase):
         diagnostics = cobol2py.collect_diagnostics(program)
         self.assertIn("UNSUPPORTED_EVALUATE_ALSO", {item["code"] for item in diagnostics})
 
+    def test_collect_diagnostics_warns_on_occurs_group(self):
+        source = "\\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. GROUPTABLE.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-ROWS OCCURS 2 TIMES.",
+            "05 WS-CODE PIC X(3).",
+            "PROCEDURE DIVISION.",
+            "STOP RUN.",
+        ])
+        program = cobol2py.parse_cobol(source, source_format="free")
+        diagnostics = cobol2py.collect_diagnostics(program)
+        item = next(item for item in diagnostics if item["code"] == "OCCURS_GROUP_UNSUPPORTED")
+        self.assertEqual(item["line"], 5)
+
     def test_collect_diagnostics_warns_on_unsupported_data_declarations(self):
         source = "\\n".join([
             "IDENTIFICATION DIVISION.",
