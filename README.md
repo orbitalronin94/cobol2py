@@ -55,6 +55,15 @@ Y si quieres comprobar que la salida es Python válido:
 ```bash
 python -m py_compile programa.py && echo "OK"
 python -m unittest discover -s tests -v
+
+To exercise the standalone HTML in a real browser (requires Chromium and internet access for the Pyodide CDN):
+
+```bash
+python -m pip install playwright==1.56.0
+python -m playwright install chromium
+python tests/browser_smoke.py
+```
+
 ```
 
 ---
