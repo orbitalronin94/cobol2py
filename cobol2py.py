@@ -1749,11 +1749,11 @@ def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
                 also_branch = next(
                     (
                         child.text for child in node.body
-                        if child.kind == "when" and re.search(r"\\bALSO\\b", child.text, re.IGNORECASE)
+                        if child.kind == "when" and re.search(r"\bALSO\b", child.text, re.IGNORECASE)
                     ),
                     None,
                 )
-                if re.search(r"\\bALSO\\b", subject, re.IGNORECASE) or also_branch:
+                if re.search(r"\bALSO\b", subject, re.IGNORECASE) or also_branch:
                     diagnostics.append({
                         "code": "UNSUPPORTED_EVALUATE_ALSO",
                         "severity": "warning",
