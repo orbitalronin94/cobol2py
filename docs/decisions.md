@@ -283,3 +283,13 @@ Añadir una sección con:
 - **Contexto:** Python comparte el espacio de nombres de variables globales y funciones; una colisión puede sobrescribir una variable o la función de entrada.
 - **Consecuencias:** `--strict` detecta los casos heurísticos; la generación normal todavía requiere renombrar el código fuente o resolver manualmente la colisión.
 - **Validación:** pruebas unitarias con variable/párrafo `MAIN` y nombres `PRINT`/`COBOL-PRINT` que colisionan tras normalizar; la suite completa no se ha confirmado en CI.
+
+
+## D-033 — Resolver referencias de datos en EVALUATE Python
+
+- **Fecha:** 2026-10-26.
+- **Estado:** aceptada para el subconjunto escalar soportado.
+- **Decisión:** pasar el mapa de variables al traducir el sujeto de `EVALUATE` y las alternativas `WHEN`, igual que en las condiciones `IF`.
+- **Contexto:** las referencias no cualificadas a campos hijos de grupos podían generarse como variables globales inexistentes.
+- **Consecuencias:** se conserva la resolución básica de campos anidados en `EVALUATE`; la selección múltiple `ALSO` y las reglas completas de comparación siguen fuera de cobertura.
+- **Validación:** prueba end-to-end para `EVALUATE` sobre un campo hijo no cualificado; la suite completa no se ha confirmado en CI.
