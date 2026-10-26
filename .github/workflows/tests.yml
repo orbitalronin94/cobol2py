@@ -63,3 +63,12 @@ jobs:
           python -m py_compile /tmp/evaluate_semantics.py
           python /tmp/evaluate_semantics.py > /tmp/evaluate-python.out
           diff -u /tmp/evaluate-cobol.out /tmp/evaluate-python.out
+
+      - name: Compare nested group data semantics
+        run: |
+          cobc -x -o /tmp/group_semantics samples/group_semantics.cbl
+          /tmp/group_semantics > /tmp/group-cobol.out
+          python cobol2py.py samples/group_semantics.cbl > /tmp/group_semantics.py
+          python -m py_compile /tmp/group_semantics.py
+          python /tmp/group_semantics.py > /tmp/group-python.out
+          diff -u /tmp/group-cobol.out /tmp/group-python.out
