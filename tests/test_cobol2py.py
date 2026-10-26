@@ -138,7 +138,7 @@ class EndToEndTests(unittest.TestCase):
 
         generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
         compile(generated, "<cobol2py-output>", "exec")
-        self.assertIn('print("".join(str(x) for in', generated)
+        self.assertIn('print("".join(str(x) for x in ["OK"])', generated)
         self.assertIn("def main_para():", generated)
 
 
