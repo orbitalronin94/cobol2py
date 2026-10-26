@@ -1313,13 +1313,92 @@ def translate_java_condition(condition: str, variables: dict[str, CobolVar]) -> 
         variable = variables.get(base.group(0).upper()) if base else None
         if variable is not None and variable.pic and any(char in variable.pic.upper() for char in ("X", "A")):
             width = pic_character_count(variable.pic)
-            padded = literal.ljust(max(width, len(literal)))
-            equality = f"Objects.equals({java_data_reference(left, variables)}, {java_string_literal(padded)})"
+            comparison_width = max(width, len(literal))
+            padded = literal.ljust(comparison_width)
+            left_expr = java_data_reference(left, variables)
+            if comparison_width > width:
+                left_expr = f"fit(String.valueOf({left_expr}), {comparison_width})"
+            equality = f"Objects.equals({left_expr}, {java_string_literal(padded)})"
             positive = operator in ("=", "==") or operator.upper().split() in (
                 ["EQUAL", "TO"], ["IS", "EQUAL", "TO"]
             )
             result = equality if positive else "!(" + equality + ")"
             return "!(" + result + ")" if negation else result
+
+    java_expressions: dict[str, str] = {}
+    output_parts: list[str] = []
+    code_chunk: list[str] = []
+    i = 0
+    while i < len(text):
+        if text[i] not in ("'", '"'):
+            code_chunk.append(text[i])
+            i += 1
+            continue
+        quote = text[i]
+        literal_start = i
+        i += 1
+        while i < len(text):
+            if text[i] == quote:
+                if i + 1 < len(text) and text[i + 1] == quote:
+                    i += 2
+                    continue
+                i += 1
+                break
+            i += 1
+        literal_token = text[literal_start:i]
+        prefix = "".join(code_chunk)
+        comparison = re.search(
+            r"""(?:(NOT)\\s+)?(?P<left>[A-Za-z][A-Za-z0-9-]*(?:\\([A-Za-z0-9_-]+\\))?(?:\\s+(?:OF|IN)\\s+[A-Za-z][A-Za-z0-9-]*)?)\\s*(?P<op>IS\\s+NOT\\s+EQUAL\\s+TO|NOT\\s+EQUAL\\s+TO|IS\\s+EQUAL\\s+TO|EQUAL\\s+TO|IS\\s+GREATER\\s+THAN|GREATER\\s+THAN|IS\\s+LESS\\s+THAN|LESS\\s+THAN|==|=|!=|<>|<=|>=|<|>)\\s*$""",
+            prefix,
+            re.IGNORECASE,
+        )
+        variable = None
+        if comparison:
+            base = re.match(r"[A-Za-z][A-Za-z0-9-]*", comparison.group("left"))
+            variable = variables.get(base.group(0).upper()) if base else None
+        if comparison and variable and variable.pic and any(char in variable.pic.upper() for char in ("X", "A")):
+            left = comparison.group("left")
+            operator_text = " ".join(comparison.group("op").upper().split())
+            negation = bool(comparison.group(1))
+            literal = decode_cobol_quoted_literal(literal_token)
+            if literal is None:
+                literal = literal_token[1:-1]
+            width = pic_character_count(variable.pic)
+            comparison_width = max(width, len(literal))
+            left_expr = java_data_reference(left, variables)
+            if comparison_width > width:
+                left_expr = f"fit(String.valueOf({left_expr}), {comparison_width})"
+            right_expr = java_string_literal(literal.ljust(comparison_width))
+            positive = operator_text in ("=", "==", "EQUAL TO", "IS EQUAL TO")
+            negative = operator_text in ("!=", "<>", "NOT EQUAL TO", "IS NOT EQUAL TO")
+            if positive or negative:
+                expression = f"Objects.equals({left_expr}, {right_expr})"
+                if negative:
+                    expression = "!(" + expression + ")"
+            else:
+                relation = {
+                    "<": "<", "LESS THAN": "<", "IS LESS THAN": "<",
+                    ">": ">", "GREATER THAN": ">", "IS GREATER THAN": ">",
+                    "<=": "<=", ">=": ">=",
+                }.get(operator_text)
+                if relation:
+                    expression = f"{left_expr}.compareTo({right_expr}) {relation} 0"
+                else:
+                    expression = f"Objects.equals({left_expr}, {right_expr})"
+            if negation:
+                expression = "!(" + expression + ")"
+            marker = f"COBOLJAVAEXPRTOKEN{len(java_expressions)}"
+            java_expressions[marker.lower()] = expression
+            output_parts.append(prefix[:comparison.start()])
+            output_parts.append(marker)
+            code_chunk = []
+        else:
+            output_parts.append(prefix)
+            output_parts.append(literal_token)
+            code_chunk = []
+    output_parts.append("".join(code_chunk))
+    text = "".join(output_parts)
+
     def rewrite(chunk: str) -> str:
         text = re.sub(r"\bIS\s+NOT\s+EQUAL\s+TO\b|\bNOT\s+EQUAL\s+TO\b", "!=", chunk, flags=re.IGNORECASE)
         text = re.sub(r"\bIS\s+EQUAL\s+TO\b|\bEQUAL\s+TO\b", "==", text, flags=re.IGNORECASE)
@@ -1338,7 +1417,10 @@ def translate_java_condition(condition: str, variables: dict[str, CobolVar]) -> 
         return text
 
     text = rewrite_outside_literals(text, rewrite)
-    return translate_java_expr(text, variables)
+    translated = translate_java_expr(text, variables)
+    for marker, expression in java_expressions.items():
+        translated = translated.replace(marker, expression)
+    return translated
 
 
 def java_type(variable: CobolVar, variables: dict[str, CobolVar]) -> str:
