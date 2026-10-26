@@ -73,6 +73,10 @@ class CliTests(unittest.TestCase):
         diagnostics = json.loads(result.stderr)
         self.assertTrue(diagnostics)
         self.assertIn("OCCURS_DEPENDING_ON_UNSUPPORTED", {item["code"] for item in diagnostics})
+        depending_on = next(
+            item for item in diagnostics if item["code"] == "OCCURS_DEPENDING_ON_UNSUPPORTED"
+        )
+        self.assertEqual(depending_on["line"], 6)
         self.assertEqual(result.stdout, "")
 
 
