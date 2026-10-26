@@ -273,3 +273,13 @@ Añadir una sección con:
 - **Contexto:** COBOL puede rellenar el operando más corto con espacios; comparar directamente strings Python/Java de longitudes distintas puede cambiar igualdad y orden.
 - **Consecuencias:** el modo estricto señala esta diferencia en vez de afirmar equivalencia; otras expresiones compuestas y referencias cualificadas aún pueden escapar al patrón heurístico.
 - **Validación:** prueba unitaria para campos de ancho distinto; la suite completa no se ha confirmado en CI.
+
+
+## D-032 — Detectar colisiones entre nombres de párrafo y datos
+
+- **Fecha:** 2026-10-26.
+- **Estado:** aceptada como diagnóstico conservador.
+- **Decisión:** emitir `PYTHON_IDENTIFIER_COLLISION` cuando los nombres de función de párrafo generados colisionan entre sí o con una variable de `WORKING-STORAGE`.
+- **Contexto:** Python comparte el espacio de nombres de variables globales y funciones; una colisión puede sobrescribir una variable o la función de entrada.
+- **Consecuencias:** `--strict` detecta los casos heurísticos; la generación normal todavía requiere renombrar el código fuente o resolver manualmente la colisión.
+- **Validación:** prueba unitaria con variable y párrafo `MAIN`; la suite completa no se ha confirmado en CI.
