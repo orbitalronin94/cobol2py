@@ -134,12 +134,11 @@ def instrument_source(
     source_path: Optional[str | Path] = None,
     max_table_items: int = 1000,
 ) -> tuple[str, list[str], list[str], list[str], str]:
-    """Expand COPYs and inject one DISPLAY snapshot per scalar variable."""
+    """Expand COPYs and inject snapshots for scalar fields, groups and OCCURS entries."""
     expanded, unresolved_copybooks = cobol2py.resolve_copybooks(
         source,
         copybook_paths=copybook_paths,
         source_path=source_path,
-        max_table_items=max_table_items,
     )
     actual_format = detect_source_format(expanded) if source_format == "auto" else source_format
     trace_entries, skipped = collect_trace_variables(expanded, actual_format, max_table_items)
@@ -190,6 +189,7 @@ def run_trace(
         source_format=source_format,
         copybook_paths=copybook_paths,
         source_path=source_path,
+        max_table_items=max_table_items,
     )
     if unresolved:
         print("WARNING: copybook resolution diagnostics:", file=sys.stderr)
@@ -246,7 +246,7 @@ def run_trace(
             for item in skipped:
                 print(f"  - {item}", file=sys.stderr)
         print(
-            f"Trace summary: {len(variables)} scalar variable(s); "
+            f"Trace summary: {len(variables)} trace item(s); "
             f"{len(skipped)} skipped item(s).",
             file=sys.stderr,
         )
