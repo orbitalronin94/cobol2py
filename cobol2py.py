@@ -1348,7 +1348,7 @@ def translate_java_condition(condition: str, variables: dict[str, CobolVar]) -> 
         literal_token = text[literal_start:i]
         prefix = "".join(code_chunk)
         comparison = re.search(
-            r"""(?:(NOT)\\s+)?(?P<left>[A-Za-z][A-Za-z0-9-]*(?:\\([A-Za-z0-9_-]+\\))?(?:\\s+(?:OF|IN)\\s+[A-Za-z][A-Za-z0-9-]*)?)\\s*(?P<op>IS\\s+NOT\\s+EQUAL\\s+TO|NOT\\s+EQUAL\\s+TO|IS\\s+EQUAL\\s+TO|EQUAL\\s+TO|IS\\s+GREATER\\s+THAN|GREATER\\s+THAN|IS\\s+LESS\\s+THAN|LESS\\s+THAN|==|=|!=|<>|<=|>=|<|>)\\s*$""",
+            r"""(?:(NOT)\s+)?(?P<left>[A-Za-z][A-Za-z0-9-]*(?:\([A-Za-z0-9_-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*)?)\s*(?P<op>IS\s+NOT\s+EQUAL\s+TO|NOT\s+EQUAL\s+TO|IS\s+EQUAL\s+TO|EQUAL\s+TO|IS\s+GREATER\s+THAN|GREATER\s+THAN|IS\s+LESS\s+THAN|LESS\s+THAN|==|=|!=|<>|<=|>=|<|>)\s*$""",
             prefix,
             re.IGNORECASE,
         )
