@@ -482,6 +482,29 @@ class CopybookTests(unittest.TestCase):
 
 
 class EndToEndTests(unittest.TestCase):
+    def test_goback_is_not_mistaken_for_a_paragraph_label(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. GOBACKTEST.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            'DISPLAY "BEFORE".',
+            "GOBACK.",
+            'DISPLAY "AFTER".',
+        ])
+        program = cobol2py.parse_cobol(source, source_format="free")
+        self.assertNotIn("GOBACK", program.paragraphs)
+        generated = cobol2py.emit_python(program)
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<goback-output>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "BEFORE\\n", generated)
+
     def test_stop_run_in_called_paragraph_stops_entry_paragraph(self):
         from contextlib import redirect_stdout
         from io import StringIO
