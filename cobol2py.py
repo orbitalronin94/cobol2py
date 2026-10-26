@@ -1877,7 +1877,7 @@ def emit_python(prog: Program) -> str:
     return "\n".join(lines)
 
 
-def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
+def collect_diagnostics(prog: Program, target_language: str = "python") -> list[dict[str, object]]:
     """Return structured diagnostics for unsupported or malformed source constructs."""
     diagnostics: list[dict[str, object]] = []
 
@@ -1964,50 +1964,51 @@ def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
                 "message": f"{variable.name} PIC {variable.pic}: sign, scale, or scaling semantics are not generally guaranteed",
             })
 
-    normalized_variable_names: dict[str, list[str]] = {}
-    for variable in prog.variables:
-        normalized_variable_names.setdefault(normalize_name(variable.name), []).append(variable.name)
-    variable_names = {
-        normalize_name(variable.name)
-        for variable in prog.variables
-        if not variable.parent_name
-    }
-    for generated_name, source_names in normalized_variable_names.items():
-        if len(source_names) > 1:
-            diagnostics.append({
-                "code": "PYTHON_IDENTIFIER_COLLISION",
-                "severity": "warning",
-                "line": None,
-                "message": (
-                    f"Multiple COBOL data-names map to {generated_name!r}: "
-                    + ", ".join(source_names)
-                ),
-            })
-    generated_paragraph_names: dict[str, list[str]] = {}
-    if prog.paragraphs.get("__MAIN__"):
-        generated_paragraph_names.setdefault("main", []).append("__MAIN__")
-    for paragraph_name in prog.paragraphs:
-        if paragraph_name == "__MAIN__":
-            continue
-        generated_paragraph_names.setdefault(normalize_name(paragraph_name), []).append(paragraph_name)
-    for generated_name, source_names in generated_paragraph_names.items():
-        if len(source_names) > 1 or generated_name in variable_names:
-            diagnostics.append({
-                "code": "PYTHON_IDENTIFIER_COLLISION",
-                "severity": "warning",
-                "line": next(
-                    (
-                        line_number for line_number, source_line in prog.raw_lines
-                        if (match := RE_PARAGRAPH.match(source_line.strip()))
-                        and match.group(1).upper() in source_names
+    if target_language.lower() == "python":
+        normalized_variable_names: dict[str, list[str]] = {}
+        for variable in prog.variables:
+            normalized_variable_names.setdefault(normalize_name(variable.name), []).append(variable.name)
+        variable_names = {
+            normalize_name(variable.name)
+            for variable in prog.variables
+            if not variable.parent_name
+        }
+        for generated_name, source_names in normalized_variable_names.items():
+            if len(source_names) > 1:
+                diagnostics.append({
+                    "code": "PYTHON_IDENTIFIER_COLLISION",
+                    "severity": "warning",
+                    "line": None,
+                    "message": (
+                        f"Multiple COBOL data-names map to {generated_name!r}: "
+                        + ", ".join(source_names)
                     ),
-                    None,
-                ),
-                "message": (
-                    f"Generated paragraph name {generated_name!r} collides with "
-                    f"another paragraph or a WORKING-STORAGE name: {', '.join(source_names)}"
-                ),
-            })
+                })
+        generated_paragraph_names: dict[str, list[str]] = {}
+        if prog.paragraphs.get("__MAIN__"):
+            generated_paragraph_names.setdefault("main", []).append("__MAIN__")
+        for paragraph_name in prog.paragraphs:
+            if paragraph_name == "__MAIN__":
+                continue
+            generated_paragraph_names.setdefault(normalize_name(paragraph_name), []).append(paragraph_name)
+        for generated_name, source_names in generated_paragraph_names.items():
+            if len(source_names) > 1 or generated_name in variable_names:
+                diagnostics.append({
+                    "code": "PYTHON_IDENTIFIER_COLLISION",
+                    "severity": "warning",
+                    "line": next(
+                        (
+                            line_number for line_number, source_line in prog.raw_lines
+                            if (match := RE_PARAGRAPH.match(source_line.strip()))
+                            and match.group(1).upper() in source_names
+                        ),
+                        None,
+                    ),
+                    "message": (
+                        f"Generated paragraph name {generated_name!r} collides with "
+                        f"another paragraph or a WORKING-STORAGE name: {', '.join(source_names)}"
+                    ),
+                })
 
     def visit(nodes: list[Node], paragraph: str) -> None:
         for node in nodes:
@@ -2223,7 +2224,7 @@ def main() -> int:
         copybook_paths=args.copybook_path,
         source_path=args.input,
     )
-    diagnostics = collect_diagnostics(prog)
+    diagnostics = collect_diagnostics(prog, target_language=args.lang)
     if args.diagnostics_json:
         print(json.dumps(diagnostics, ensure_ascii=False), file=sys.stderr)
     elif diagnostics and args.strict:
