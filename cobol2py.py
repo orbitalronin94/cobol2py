@@ -1051,7 +1051,8 @@ def java_data_reference(name: str, variables: dict[str, CobolVar]) -> str:
 
 
 def java_string_literal(value: str) -> str:
-    # Java processes Unicode escapes before tokenization; use an octal escape for NUL.\n    return json.dumps(value, ensure_ascii=False).replace(r"\\u0000", r"\\000")
+    # Java processes Unicode escapes before tokenization; use an octal escape for NUL.
+    return json.dumps(value, ensure_ascii=False).replace(r"\u0000", r"\000")
 
 
 def translate_java_literal(token: str, variables: dict[str, CobolVar]) -> str:
