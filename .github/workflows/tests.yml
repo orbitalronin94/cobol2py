@@ -54,3 +54,12 @@ jobs:
           python -m py_compile /tmp/numeric_semantics.py
           python /tmp/numeric_semantics.py > /tmp/numeric-python.out
           diff -u /tmp/numeric-cobol.out /tmp/numeric-python.out
+
+      - name: Compare EVALUATE control flow
+        run: |
+          cobc -x -o /tmp/evaluate_semantics samples/evaluate_semantics.cbl
+          /tmp/evaluate_semantics > /tmp/evaluate-cobol.out
+          python cobol2py.py samples/evaluate_semantics.cbl > /tmp/evaluate_semantics.py
+          python -m py_compile /tmp/evaluate_semantics.py
+          python /tmp/evaluate_semantics.py > /tmp/evaluate-python.out
+          diff -u /tmp/evaluate-cobol.out /tmp/evaluate-python.out

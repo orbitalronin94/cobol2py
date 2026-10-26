@@ -335,6 +335,117 @@ class EndToEndTests(unittest.TestCase):
         self.assertIn("def main_para():", generated)
 
 
+    def test_evaluate_when_and_when_other_execute_matching_branch(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\n".join([
+            "       IDENTIFICATION DIVISION.",
+            "       PROGRAM-ID. EVALUATETEST.",
+            "       DATA DIVISION.",
+            "       WORKING-STORAGE SECTION.",
+            "       01 WS-CODE PIC 9 VALUE 2.",
+            "       PROCEDURE DIVISION.",
+            "       MAIN.",
+            "           EVALUATE WS-CODE",
+            "               WHEN 1",
+            '                   DISPLAY "ONE".',
+            "               WHEN 2",
+            '                   DISPLAY "TWO".',
+            "               WHEN OTHER",
+            '                   DISPLAY "OTHER".',
+            "           END-EVALUATE.",
+            "           STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<evaluate-output>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "TWO\\n", generated)
+
+    def test_evaluate_true_supports_nested_if_and_else(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\n".join([
+            "       IDENTIFICATION DIVISION.",
+            "       PROGRAM-ID. EVALUATENESTED.",
+            "       DATA DIVISION.",
+            "       WORKING-STORAGE SECTION.",
+            "       01 WS-NUM PIC 9 VALUE 2.",
+            "       PROCEDURE DIVISION.",
+            "       MAIN.",
+            "           EVALUATE TRUE",
+            "               WHEN WS-NUM > 1",
+            "                   IF WS-NUM < 4",
+            '                       DISPLAY "IN".',
+            "                   ELSE",
+            '                       DISPLAY "OUT".',
+            "                   END-IF",
+            "               WHEN OTHER",
+            '                   DISPLAY "OTHER".',
+            "           END-EVALUATE.",
+            "           STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<evaluate-nested-output>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "IN\\n", generated)
+
+    def test_three_level_nested_if_preserves_each_else_scope(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\n".join([
+            "       IDENTIFICATION DIVISION.",
+            "       PROGRAM-ID. DEEPNEST.",
+            "       DATA DIVISION.",
+            "       WORKING-STORAGE SECTION.",
+            "       01 WS-A PIC 9 VALUE 1.",
+            "       01 WS-B PIC 9 VALUE 1.",
+            "       01 WS-C PIC 9 VALUE 1.",
+            "       PROCEDURE DIVISION.",
+            "       MAIN.",
+            "           IF WS-A = 1",
+            "               IF WS-B = 1",
+            "                   IF WS-C = 1",
+            '                       DISPLAY "DEEP".',
+            "                   ELSE",
+            '                       DISPLAY "C".',
+            "                   END-IF",
+            "               ELSE",
+            '                   DISPLAY "B".',
+            "               END-IF",
+            "           ELSE",
+            '               DISPLAY "A".',
+            "           END-IF.",
+            "           STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<deep-if-output>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "DEEP\\n", generated)
+
+    def test_unclosed_if_generates_valid_python_and_explicit_comment(self):
+        source = "\n".join([
+            "       IDENTIFICATION DIVISION.",
+            "       PROGRAM-ID. BROKEN.",
+            "       PROCEDURE DIVISION.",
+            "       MAIN.",
+            "           IF 1 = 1",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
+        compile(generated, "<malformed-if-output>", "exec")
+        self.assertIn("Unclosed IF opened at source line", generated)
+
     def test_standard_if_else_without_then_matches_cobol_control_flow(self):
         from contextlib import redirect_stdout
         from io import StringIO

@@ -273,6 +273,11 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
             units.append((num, "ELSE"))
             continue
 
+        if upper.startswith("WHEN "):
+            flush()
+            units.append((num, text.strip()))
+            continue
+
         # Scope terminators must be standalone parser units. Otherwise a
         # preceding DISPLAY without a period can absorb END-IF as an operand.
         if upper in ("END-IF", "END-PERFORM", "END-EVALUATE"):
@@ -289,6 +294,7 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
             or upper in ("END-IF", "END-PERFORM", "END-EVALUATE")
             or upper.endswith("THEN")
             or upper.startswith("EVALUATE")
+            or upper.startswith("WHEN ")
         )
         if ends_unit:
             flush()
@@ -302,93 +308,96 @@ RE_EVALUATE_OPEN = re.compile(r"^EVALUATE\s+(.+)$", re.IGNORECASE)
 
 
 def build_tree(units: list[tuple[int, str]]) -> list[Node]:
+    """Build nested blocks with one stack, so mixed/nested scopes close correctly."""
     root: list[Node] = []
-    stack: list[tuple[list[Node], Node]] = []
-    current_list: list[Node] = root
-    open_if: Optional[Node] = None
-    open_perform: Optional[Node] = None
-    open_evaluate: Optional[Node] = None
+    current_list = root
+    # Each frame stores (block kind, opening node, list to resume after closing).
+    stack: list[tuple[str, Node, list[Node]]] = []
 
     for line, text in units:
-        upper = text.upper().rstrip(".")
+        normalized = text.strip().rstrip(".").strip()
+        upper = normalized.upper()
 
         if upper == "ELSE":
-            if open_if is not None:
-                current_list = open_if.else_branch
-            continue
-
-        if upper == "END-IF":
-            if open_if is not None and stack:
-                current_list, open_if = stack.pop()
+            if stack and stack[-1][0] == "if":
+                current_list = stack[-1][1].else_branch
             else:
-                current_list = root
-                open_if = None
+                current_list.append(Node(kind="malformed", text="ELSE without matching IF", line=line))
             continue
 
-        if upper == "END-PERFORM":
-            if open_perform is not None and stack:
-                current_list, open_perform = stack.pop()
+        if upper.startswith("WHEN "):
+            if stack and stack[-1][0] == "evaluate":
+                branch = Node(kind="when", text=normalized[5:].strip(), line=line)
+                stack[-1][1].body.append(branch)
+                current_list = branch.then_branch
             else:
-                current_list = root
-                open_perform = None
+                current_list.append(Node(kind="malformed", text=f"{normalized} without matching EVALUATE", line=line))
             continue
 
-        if upper == "END-EVALUATE":
-            if open_evaluate is not None and stack:
-                current_list, open_evaluate = stack.pop()
+        if upper in ("END-IF", "END-PERFORM", "END-EVALUATE"):
+            expected = {
+                "END-IF": "if",
+                "END-PERFORM": "perform",
+                "END-EVALUATE": "evaluate",
+            }[upper]
+            if stack and stack[-1][0] == expected:
+                _, _, parent_list = stack.pop()
+                current_list = parent_list
             else:
-                current_list = root
-                open_evaluate = None
+                current_list.append(Node(
+                    kind="malformed",
+                    text=f"{upper} without matching open block",
+                    line=line,
+                ))
             continue
 
-        m = RE_IF_OPEN.match(text)
+        m = RE_IF_OPEN.match(normalized)
         if m:
-            new_node = Node(kind="if", text=text, line=line)
-            current_list.append(new_node)
-            if open_if is not None:
-                stack.append((current_list, open_if))
-            current_list = new_node.then_branch
-            open_if = new_node
+            node = Node(kind="if", text=normalized, line=line)
+            current_list.append(node)
+            stack.append(("if", node, current_list))
+            current_list = node.then_branch
             continue
 
-        inline_times = re.match(r"^PERFORM\s+(\d+)\s+TIMES$", text, re.IGNORECASE)
+        inline_times = re.match(r"^PERFORM\s+(\d+)\s+TIMES$", upper)
         if inline_times:
-            new_node = Node(kind="perform_times_inline", text=text, line=line)
-            current_list.append(new_node)
-            if open_perform is not None:
-                stack.append((current_list, open_perform))
-            current_list = new_node.body
-            open_perform = new_node
+            node = Node(kind="perform_times_inline", text=normalized, line=line)
+            current_list.append(node)
+            stack.append(("perform", node, current_list))
+            current_list = node.body
             continue
 
         if (
             upper.startswith("PERFORM")
-            and not text.endswith(".")
+            and not normalized.endswith(".")
             and "TIMES" not in upper
             and "UNTIL" not in upper
         ):
-            new_node = Node(kind="perform_inline", text=text, line=line)
-            current_list.append(new_node)
-            if open_perform is not None:
-                stack.append((current_list, open_perform))
-            current_list = new_node.body
-            open_perform = new_node
+            node = Node(kind="perform_inline", text=normalized, line=line)
+            current_list.append(node)
+            stack.append(("perform", node, current_list))
+            current_list = node.body
             continue
 
-        m = RE_EVALUATE_OPEN.match(text)
-        if m and not text.endswith("."):
-            new_node = Node(kind="evaluate", text=text, line=line)
-            current_list.append(new_node)
-            if open_evaluate is not None:
-                stack.append((current_list, open_evaluate))
-            open_evaluate = new_node
-            current_list = []
+        m = RE_EVALUATE_OPEN.match(normalized)
+        if m:
+            node = Node(kind="evaluate", text=normalized, line=line)
+            current_list.append(node)
+            stack.append(("evaluate", node, current_list))
+            current_list = node.body
             continue
 
-        current_list.append(Node(kind="stmt", text=text, line=line))
+        current_list.append(Node(kind="stmt", text=normalized, line=line))
 
+    # Preserve malformed/unclosed scopes visibly instead of silently resetting
+    # the parser to the root list. Comments remain valid Python output.
+    for kind, node, _ in reversed(stack):
+        current_list.append(Node(
+            kind="malformed",
+            text=f"Unclosed {kind.upper()} opened at source line {node.line}",
+            line=node.line,
+        ))
     return root
-
 
 def parse_procedure(lines: list[tuple[int, str]]) -> tuple[dict[str, list[Node]], list[str]]:
     paragraph_lines: dict[str, list[tuple[int, str]]] = {}
@@ -763,26 +772,77 @@ def translate_nodes(
             cond = translate_condition(m.group(1), variables)
             out.append("    " * indent + f"if {cond}:")
             then_body = translate_nodes(node.then_branch, paragraphs, indent + 1, variables)
-            out.extend(then_body if then_body else ["    " * (indent + 1) + "pass"])
+            if not then_body:
+                then_body = ["    " * (indent + 1) + "pass"]
+            elif all(not line.strip() or line.strip().startswith("#") for line in then_body):
+                then_body.append("    " * (indent + 1) + "pass")
+            out.extend(then_body)
             if node.else_branch:
                 out.append("    " * indent + "else:")
                 else_body = translate_nodes(node.else_branch, paragraphs, indent + 1, variables)
-                out.extend(else_body if else_body else ["    " * (indent + 1) + "pass"])
+                if not else_body:
+                    else_body = ["    " * (indent + 1) + "pass"]
+                elif all(not line.strip() or line.strip().startswith("#") for line in else_body):
+                    else_body.append("    " * (indent + 1) + "pass")
+                out.extend(else_body)
 
         elif node.kind == "perform_inline":
             out.append("    " * indent + f"# PERFORM inline: {node.text}")
             body = translate_nodes(node.body, paragraphs, indent + 1, variables)
-            out.extend(body if body else ["    " * (indent + 1) + "pass"])
+            if not body:
+                body = ["    " * (indent + 1) + "pass"]
+            elif all(not line.strip() or line.strip().startswith("#") for line in body):
+                body.append("    " * (indent + 1) + "pass")
+            out.extend(body)
 
         elif node.kind == "perform_times_inline":
             match = re.match(r"^PERFORM\s+(\d+)\s+TIMES$", node.text, re.IGNORECASE)
             count = match.group(1) if match else "0"
             out.append("    " * indent + f"for _ in range({count}):")
             body = translate_nodes(node.body, paragraphs, indent + 1, variables)
-            out.extend(body if body else ["    " * (indent + 1) + "pass"])
+            if not body or all(not line.strip() or line.strip().startswith("#") for line in body):
+                body = ["    " * (indent + 1) + "pass"]
+            out.extend(body)
 
         elif node.kind == "evaluate":
-            out.append("    " * indent + f"# EVALUATE no traducido en v0.0.4: {node.text}")
+            subject = node.text[len("EVALUATE"):].strip()
+            is_boolean = subject.upper() in ("TRUE", "FALSE")
+            temp_name = f"_cobol_evaluate_{node.line}"
+            if not is_boolean:
+                out.append("    " * indent + f"{temp_name} = {translate_expr(subject)}")
+            emitted = 0
+            for branch in node.body:
+                if branch.kind != "when":
+                    out.append("    " * indent + f"# COBOL no traducido dentro de EVALUATE: {branch.text}")
+                    continue
+                choice = branch.text.strip()
+                if choice.upper() == "OTHER":
+                    condition = "True" if emitted == 0 else None
+                    prefix = "if True:" if condition else "else:"
+                else:
+                    if is_boolean:
+                        condition = translate_condition(choice, variables)
+                        if subject.upper() == "FALSE":
+                            condition = f"not ({condition})"
+                    elif re.search(r"\s+(?:THRU|THROUGH)\s+", choice, re.IGNORECASE):
+                        low, high = re.split(r"\s+(?:THRU|THROUGH)\s+", choice, maxsplit=1, flags=re.IGNORECASE)
+                        condition = f"{temp_name} >= {translate_literal(low)} and {temp_name} <= {translate_literal(high)}"
+                    else:
+                        condition = f"{temp_name} == {translate_literal(choice)}"
+                    prefix = ("if " if emitted == 0 else "elif ") + condition + ":"
+                out.append("    " * indent + prefix)
+                branch_body = translate_nodes(branch.then_branch, paragraphs, indent + 1, variables)
+                if not branch_body:
+                    branch_body = ["    " * (indent + 1) + "pass"]
+                elif all(not line.strip() or line.strip().startswith("#") for line in branch_body):
+                    branch_body.append("    " * (indent + 1) + "pass")
+                out.extend(branch_body)
+                emitted += 1
+            if emitted == 0:
+                out.append("    " * indent + f"# EVALUATE sin WHEN: {node.text}")
+
+        elif node.kind == "malformed":
+            out.append("    " * indent + f"# COBOL estructura malformada: {node.text}")
 
     return out
 
@@ -805,7 +865,7 @@ def emit_python(prog: Program) -> str:
     lines.append('"""')
     lines.append("Traducción automática de COBOL a Python.")
     lines.append(f"Programa original: {prog.program_id}")
-    lines.append("Generado por cobol2py.py — v0.0.4")
+    lines.append("Generado por cobol2py.py — v0.0.6")
     lines.append('"""')
     lines.append("")
 
@@ -872,7 +932,7 @@ def emit_python(prog: Program) -> str:
 # ============================================================================
 
 def main() -> int:
-    ap = argparse.ArgumentParser(prog="cobol2py", description="Traductor COBOL → Python v0.0.4")
+    ap = argparse.ArgumentParser(prog="cobol2py", description="Traductor COBOL → Python v0.0.6")
     ap.add_argument("input", type=Path, help="Archivo .cbl o .cob")
     ap.add_argument("--out", type=Path, default=None, help="Archivo de salida")
     ap.add_argument("--format", dest="source_format", choices=("auto", "fixed", "free"), default="auto", help="Formato fuente COBOL (por defecto: auto)")
