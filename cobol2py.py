@@ -1815,7 +1815,21 @@ def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
                 "message": f"{variable.name} PIC {variable.pic}: sign, scale, or scaling semantics are not generally guaranteed",
             })
 
-    variable_names = {normalize_name(variable.name) for variable in prog.variables}
+    normalized_variable_names: dict[str, list[str]] = {}
+    for variable in prog.variables:
+        normalized_variable_names.setdefault(normalize_name(variable.name), []).append(variable.name)
+    variable_names = set(normalized_variable_names)
+    for generated_name, source_names in normalized_variable_names.items():
+        if len(source_names) > 1:
+            diagnostics.append({
+                "code": "PYTHON_IDENTIFIER_COLLISION",
+                "severity": "warning",
+                "line": None,
+                "message": (
+                    f"Multiple COBOL data-names map to {generated_name!r}: "
+                    + ", ".join(source_names)
+                ),
+            })
     generated_paragraph_names: dict[str, list[str]] = {}
     if prog.paragraphs.get("__MAIN__"):
         generated_paragraph_names.setdefault("main", []).append("__MAIN__")
