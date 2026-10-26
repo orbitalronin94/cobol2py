@@ -180,13 +180,13 @@ class GnuCobolTraceTests(unittest.TestCase):
             source, source_format="free"
         )
         self.assertEqual(actual_format, "free")
-        self.assertEqual(traced, ["WS-NAME", "WS-COUNT", "WS-GROUP", "WS-CHILD OF WS-GROUP", "WS-TABLE(1)", "WS-TABLE(2)"])
+        self.assertEqual(traced, ["WS-NAME", "WS-COUNT", "WS-GROUP", "WS-CHILD", "WS-TABLE(1)", "WS-TABLE(2)"])
         self.assertEqual(skipped, [])
         self.assertEqual(unresolved, [])
         self.assertLess(instrumented.index('TRACE_VAR|WS-COUNT|'), instrumented.index("STOP RUN"))
         self.assertIn('DISPLAY "TRACE_VAR|WS-NAME|" WS-NAME.', instrumented)
         self.assertIn('DISPLAY "TRACE_VAR|WS-COUNT|" WS-COUNT.', instrumented)
-        self.assertIn('DISPLAY "TRACE_VAR|WS-CHILD OF WS-GROUP|" WS-CHILD OF WS-GROUP.', instrumented)
+        self.assertIn('DISPLAY "TRACE_VAR|WS-CHILD|" WS-CHILD.', instrumented)
         self.assertIn('DISPLAY "TRACE_VAR|WS-TABLE(2)|" WS-TABLE(2).', instrumented)
 
 
