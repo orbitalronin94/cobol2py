@@ -36,7 +36,7 @@ class ExternalCorpusManifestTests(unittest.TestCase):
             "entries": [{
                 "id": "bad", "project": "Bad", "program_id": "BAD",
                 "repository": "example/bad", "source_path": "bad.cob",
-                "source_url": "https://github.com/example/bad/blob/main/bad.cob",
+                "source_url": "https://github.com/example/bad/blob/0123456789012345678901234567890123456789/bad.cob",
                 "source_commit": "main", "source_blob_sha": "invalid",
                 "source_lines": 0, "license_spdx": "MIT", "license_path": "LICENSE",
                 "license_evidence": "checked", "compile_status": "NOT_RUN",
