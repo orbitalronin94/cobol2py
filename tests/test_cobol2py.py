@@ -27,6 +27,20 @@ class PreprocessTests(unittest.TestCase):
             [(1, "IDENTIFICATION DIVISION."), (2, "DISPLAY 'OK'.")],
         )
 
+    def test_explicit_free_format_preserves_seven_space_indentation(self):
+        source = "       DISPLAY 'OK'."
+        self.assertEqual(
+            cobol2py.preprocess(source, source_format="free"),
+            [(1, "       DISPLAY 'OK'.")],
+        )
+
+    def test_explicit_fixed_format_uses_source_columns(self):
+        source = "       DISPLAY 'OK'."
+        self.assertEqual(
+            cobol2py.preprocess(source, source_format="fixed"),
+            [(1, "DISPLAY 'OK'.")],
+        )
+
 
 class TranslationTests(unittest.TestCase):
     def test_simple_value_clause_initializes_variable(self):
