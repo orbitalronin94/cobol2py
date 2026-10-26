@@ -46,11 +46,21 @@ class TranslationTests(unittest.TestCase):
     def test_simple_value_clause_initializes_variable(self):
         self.assertEqual(
             cobol2py.CobolVar(level=1, name="WS-STATUS", pic="X", value='"A"').py_default(),
-            '"A"',
+            'str("A")[:1].ljust(1)',
         )
         self.assertEqual(
             cobol2py.CobolVar(level=1, name="WS-TOTAL", pic="9(3)", value="12").py_default(),
             "12",
+        )
+
+    def test_alphanumeric_pic_defaults_and_value_are_fixed_width(self):
+        self.assertEqual(
+            cobol2py.CobolVar(level=1, name="WS-BLANK", pic="X(3)").py_default(),
+            "'   '",
+        )
+        self.assertEqual(
+            cobol2py.CobolVar(level=1, name="WS-INITIAL", pic="X(5)", value='"A"').py_default(),
+            'str("A")[:5].ljust(5)',
         )
 
     def test_move_pads_and_truncates_alphanumeric_receiving_pic(self):
