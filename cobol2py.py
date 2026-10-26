@@ -439,10 +439,8 @@ def translate_expr(expr: str) -> str:
     # names (WS-NUM) become Python identifiers (ws_num), not subtraction.
     # COBOL arithmetic using '-' should be separated from identifiers by
     # whitespace when the token could otherwise be a hyphenated data-name.
-    tokens = re.findall(
-        r'"[^"]*"|\\'[^\\']*\\'|[A-Za-z][A-Za-z0-9-]*|\\d+(?:\\.\\d+)?|<=|>=|<>|==|!=|[()+*/=<>&-]|\\s+|.',
-        expr,
-    )
+    token_pattern = r"""("[^"]*"|'[^']*'|[A-Za-z][A-Za-z0-9-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&-]|\s+|.)"""
+    tokens = re.findall(token_pattern, expr)
     out = []
     for tok in tokens:
         if re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", tok):
