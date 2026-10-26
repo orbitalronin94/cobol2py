@@ -780,8 +780,10 @@ def translate_nodes(
             if node.else_branch:
                 out.append("    " * indent + "else:")
                 else_body = translate_nodes(node.else_branch, paragraphs, indent + 1, variables)
-                if not else_body or all(not line.strip() or line.strip().startswith("#") for line in else_body):
+                if not else_body:
                     else_body = ["    " * (indent + 1) + "pass"]
+                elif all(not line.strip() or line.strip().startswith("#") for line in else_body):
+                    else_body.append("    " * (indent + 1) + "pass")
                 out.extend(else_body)
 
         elif node.kind == "perform_inline":
@@ -830,8 +832,10 @@ def translate_nodes(
                     prefix = ("if " if emitted == 0 else "elif ") + condition + ":"
                 out.append("    " * indent + prefix)
                 branch_body = translate_nodes(branch.then_branch, paragraphs, indent + 1, variables)
-                if not branch_body or all(not line.strip() or line.strip().startswith("#") for line in branch_body):
+                if not branch_body:
                     branch_body = ["    " * (indent + 1) + "pass"]
+                elif all(not line.strip() or line.strip().startswith("#") for line in branch_body):
+                    branch_body.append("    " * (indent + 1) + "pass")
                 out.extend(branch_body)
                 emitted += 1
             if emitted == 0:
