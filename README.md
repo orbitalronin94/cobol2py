@@ -137,7 +137,7 @@ Y lo dice. No falla en silencio.
 | COBOL | Estado |
 |---|---|
 | `EVALUATE/WHEN/WHEN OTHER` | Traducción básica a `if/elif/else`; rangos `THRU` y `EVALUATE TRUE` acotados. |
-| `COPY` (copybooks) | Ignorado. Degradación elegante. |
+| `COPY` simple | Expansión recursiva desde el directorio fuente y rutas `--copybook-path`; ciclos y faltantes quedan como advertencias. `REPLACING` y bibliotecas siguen pendientes. |
 | `CALL` a subprogramas | Pendiente. |
 | `FILE SECTION`, I/O | Pendiente. |
 | `SORT`, `SEARCH`, `MERGE` | Pendiente. |
@@ -163,8 +163,8 @@ Estas son las que quedan pendientes y que sabes que existen antes de encontrárt
 **3. El splitter por verbos sigue siendo heurístico.**
 La pila de bloques ahora conserva ámbitos anidados de `IF`, `PERFORM` y `EVALUATE`, y marca cierres malformados; sentencias COBOL concatenadas de formas no habituales todavía pueden confundirlo.
 
-**4. Copybooks no se resuelven.**
-Si el programa usa `COPY CUSTMAST.CPY.`, las variables del copybook no aparecen. El traductor no falla, pero el Python está incompleto.
+**4. Copybooks: solo expansión básica.**
+Se resuelve `COPY nombre.` o `COPY nombre.CPY.` buscando primero junto al archivo fuente y después en cada `--copybook-path`. Se expanden dependencias anidadas y se detectan ciclos; faltantes, errores de lectura y cláusulas no soportadas quedan en comentarios de advertencia. `COPY ... REPLACING`, bibliotecas y reglas avanzadas de reemplazo siguen pendientes.
 
 **5. Los grupos (nivel 01 con hijos 05) no se expanden.**
 Salen como comentario. `# Grupo nivel 01: WS-REGISTRO`. No se genera un dataclass ni un modelo.
@@ -223,6 +223,7 @@ El formato de origen puede indicarse explícitamente cuando la detección autom�
 ```bash
 python cobol2py.py programa.cbl --format fixed
 python cobol2py.py programa.cbl --format free
+python cobol2py.py programa.cbl --copybook-path ./copybooks
 ```
 
 `--format auto` es el valor predeterminado; como las columnas de secuencia en blanco pueden aparecer tanto en formato fijo como en fuentes libres indentadas, no siempre es posible inferir el formato con certeza.
@@ -261,7 +262,9 @@ python benchmarks/run_benchmark.py --translator cobol2py.py
 - [x] Sustituir el estado global del árbol por una pila de bloques coherente; cubrir IF anidados y cierres malformados.
 
 **v0.0.7 — Copybook resolver**
-Localizar `COPY nombre.CPY.` en rutas explícitas y expandirlo antes del parseo. Detectar ciclos y dejar constancia de los archivos no resueltos.
+- [x] Localizar `COPY nombre.CPY.` junto al fuente y en rutas explícitas; expandir antes del parseo.
+- [x] Detectar ciclos y dejar constancia de copybooks no resueltos.
+- [ ] `COPY ... REPLACING` y bibliotecas calificadas siguen fuera del alcance.
 
 **v0.0.8 — Jerarquía de datos**
 Modelar los grupos COBOL y sus campos hijos sin aplanarlos ni simular una equivalencia que todavía no existe.

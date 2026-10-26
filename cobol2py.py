@@ -160,6 +160,7 @@ class Program:
     paragraphs: dict[str, list[Node]] = field(default_factory=dict)
     paragraph_order: list[str] = field(default_factory=list)
     raw_lines: list[tuple[int, str]] = field(default_factory=list)
+    unresolved_copybooks: list[str] = field(default_factory=list)
 
 
 # ============================================================================
@@ -424,9 +425,105 @@ def parse_procedure(lines: list[tuple[int, str]]) -> tuple[dict[str, list[Node]]
     return paragraphs, order
 
 
-def parse_cobol(source: str, source_format: str = "auto") -> Program:
+def resolve_copybooks(
+    source: str,
+    copybook_paths: Optional[list[str | Path]] = None,
+    source_path: Optional[str | Path] = None,
+) -> tuple[str, list[str]]:
+    """Expand simple COPY directives, recording missing files and cycles.
+
+    Search order is the source file's directory, each explicit --copybook-path
+    directory, then the current working directory. COPY ... REPLACING and
+    library-qualified COPY forms are intentionally reported as unresolved.
+    """
+    roots: list[Path] = []
+    if source_path is not None:
+        roots.append(Path(source_path).resolve().parent)
+    roots.extend(Path(path).resolve() for path in (copybook_paths or []))
+    roots.append(Path.cwd().resolve())
+    unique_roots: list[Path] = []
+    for root in roots:
+        if root not in unique_roots:
+            unique_roots.append(root)
+
+    unresolved: list[str] = []
+
+    def record(message: str) -> None:
+        if message not in unresolved:
+            unresolved.append(message)
+
+    def locate(name: str, search_roots: list[Path]) -> Optional[Path]:
+        candidates = [name, name.lower(), name.upper()]
+        if not Path(name).suffix:
+            candidates.extend([
+                name + ".cpy", name + ".CPY", name + ".Cpy",
+                name + ".cbl", name + ".CBL", name + ".cob", name + ".COB",
+            ])
+        seen: set[str] = set()
+        for candidate in candidates:
+            if candidate in seen:
+                continue
+            seen.add(candidate)
+            for root in search_roots:
+                path = root / candidate
+                if path.is_file():
+                    return path.resolve()
+        return None
+
+    def expand(text: str, search_roots: list[Path], stack: list[Path]) -> list[str]:
+        output: list[str] = []
+        for line in text.splitlines():
+            code_line = line.split("*>", 1)[0].rstrip()
+            # Accept free-format COPY and the common six-column fixed-format
+            # sequence prefix. Other COPY syntax is left visible as a warning.
+            match = re.match(
+                r"^\s*(?:\d{6}[ \t]+)?COPY\s+([A-Za-z0-9_.-]+)(.*?)\s*\.\s*$",
+                code_line,
+                re.IGNORECASE,
+            )
+            if not match:
+                output.append(line)
+                continue
+            name, suffix = match.groups()
+            if suffix.strip():
+                record(f"COPYBOOK UNSUPPORTED CLAUSE: {line.strip()}")
+                output.append(f"*> COBOL2PY UNRESOLVED COPYBOOK: {line.strip()}")
+                continue
+            resolved = locate(name, search_roots)
+            if resolved is None:
+                record(f"COPYBOOK NOT FOUND: {name} (searched: {', '.join(str(p) for p in search_roots)})")
+                output.append(f"*> COBOL2PY UNRESOLVED COPYBOOK: {name}")
+                continue
+            if resolved in stack:
+                chain = " -> ".join(path.name for path in stack + [resolved])
+                record(f"COPYBOOK CYCLE: {chain}")
+                output.append(f"*> COBOL2PY COPYBOOK CYCLE: {chain}")
+                continue
+            try:
+                nested_source = resolved.read_text(encoding="utf-8", errors="replace")
+            except OSError as exc:
+                record(f"COPYBOOK READ ERROR: {resolved}: {exc}")
+                output.append(f"*> COBOL2PY UNRESOLVED COPYBOOK: {name}")
+                continue
+            nested_roots = [resolved.parent] + [root for root in search_roots if root != resolved.parent]
+            output.extend(expand(nested_source, nested_roots, stack + [resolved]))
+        return output
+
+    return "\n".join(expand(source, unique_roots, [])), unresolved
+
+
+def parse_cobol(
+    source: str,
+    source_format: str = "auto",
+    copybook_paths: Optional[list[str | Path]] = None,
+    source_path: Optional[str | Path] = None,
+) -> Program:
+    source, unresolved_copybooks = resolve_copybooks(
+        source, copybook_paths=copybook_paths, source_path=source_path
+    )
     lines = preprocess(source, source_format=source_format)
     prog = Program()
+    prog.unresolved_copybooks = unresolved_copybooks
     prog.raw_lines = lines
 
     idx_ident = idx_data = idx_proc = -1
@@ -868,6 +965,10 @@ def emit_python(prog: Program) -> str:
     lines.append("Generado por cobol2py.py — v0.0.6")
     lines.append('"""')
     lines.append("")
+    for warning in prog.unresolved_copybooks:
+        lines.append(f"# COPYBOOK RESOLUTION WARNING: {warning}")
+    if prog.unresolved_copybooks:
+        lines.append("")
 
     if prog.variables:
         lines.append("# VARIABLES (WORKING-STORAGE)")
@@ -936,6 +1037,7 @@ def main() -> int:
     ap.add_argument("input", type=Path, help="Archivo .cbl o .cob")
     ap.add_argument("--out", type=Path, default=None, help="Archivo de salida")
     ap.add_argument("--format", dest="source_format", choices=("auto", "fixed", "free"), default="auto", help="Formato fuente COBOL (por defecto: auto)")
+    ap.add_argument("--copybook-path", action="append", type=Path, default=[], help="Directorio de copybooks (se puede repetir)")
     args = ap.parse_args()
 
     if not args.input.exists():
@@ -943,7 +1045,12 @@ def main() -> int:
         return 1
 
     source = args.input.read_text(encoding="utf-8", errors="replace")
-    prog = parse_cobol(source, source_format=args.source_format)
+    prog = parse_cobol(
+        source,
+        source_format=args.source_format,
+        copybook_paths=args.copybook_path,
+        source_path=args.input,
+    )
     output = emit_python(prog)
 
     if args.out:
