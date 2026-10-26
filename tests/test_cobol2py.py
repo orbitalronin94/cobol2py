@@ -521,7 +521,7 @@ class EndToEndTests(unittest.TestCase):
         output = StringIO()
         with redirect_stdout(output):
             namespace["main"]()
-        self.assertEqual(output.getvalue(), "TWO\\n", generated)
+        self.assertEqual(output.getvalue(), "TWO\n", generated)
 
     def test_evaluate_true_supports_nested_if_and_else(self):
         from contextlib import redirect_stdout
@@ -553,7 +553,7 @@ class EndToEndTests(unittest.TestCase):
         output = StringIO()
         with redirect_stdout(output):
             namespace["main"]()
-        self.assertEqual(output.getvalue(), "IN\\n", generated)
+        self.assertEqual(output.getvalue(), "IN\n", generated)
 
     def test_three_level_nested_if_preserves_each_else_scope(self):
         from contextlib import redirect_stdout
@@ -590,7 +590,7 @@ class EndToEndTests(unittest.TestCase):
         output = StringIO()
         with redirect_stdout(output):
             namespace["main"]()
-        self.assertEqual(output.getvalue(), "DEEP\\n", generated)
+        self.assertEqual(output.getvalue(), "DEEP\n", generated)
 
     def test_unclosed_if_generates_valid_python_and_explicit_comment(self):
         source = "\n".join([
