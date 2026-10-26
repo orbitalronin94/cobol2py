@@ -243,6 +243,7 @@ class JavaBackendTests(unittest.TestCase):
         self.assertIn("evalEquals(_cobolEvaluate", generated)
         self.assertIn('System.out.println(String.join("", Arrays.asList', generated)
         self.assertNotIn("EVALUATE no traducido", generated)
+        self.assertIn("System.exit(0);", generated)
 
 
 class CopybookTests(unittest.TestCase):
@@ -316,6 +317,31 @@ class CopybookTests(unittest.TestCase):
 
 
 class EndToEndTests(unittest.TestCase):
+    def test_stop_run_in_called_paragraph_stops_entry_paragraph(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. STOPTEST.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            'DISPLAY "BEFORE".',
+            "PERFORM HALT-PARA.",
+            'DISPLAY "AFTER".',
+            "HALT-PARA.",
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(
+            cobol2py.parse_cobol(source, source_format="free")
+        )
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<stop-run-output>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "BEFORE\n", generated)
+
     def test_perform_times_body_is_nested_in_loop(self):
         source = "\n".join([
             "       IDENTIFICATION DIVISION.",
