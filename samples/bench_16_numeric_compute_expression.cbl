@@ -6,5 +6,9 @@
        PROCEDURE DIVISION.
        MAIN-PARA.
        COMPUTE WS-NUM = (3 * 4) + 2.
-       IF WS-NUM = 14 DISPLAY "FOURTEEN" ELSE DISPLAY "OTHER" END-IF.
+       IF WS-NUM = 14
+          DISPLAY "FOURTEEN"
+       ELSE
+          DISPLAY "OTHER"
+       END-IF.
        STOP RUN.
