@@ -42,7 +42,6 @@
     <div class="eyebrow">COBOL → Python · laboratorio</div>
     <h1>Pega COBOL. Obtén Python.</h1>
     <p class="sub">Demo local para probar el traductor real del repositorio. La traducción se ejecuta en tu equipo con Python; el código pegado no se envía a ningún servicio externo.</p>
-    <p class="note"><strong>Importante:</strong> esta página necesita el servidor local en marcha. Desde la carpeta del repositorio ejecuta <code>python web_demo.py</code> y abre <code>http://127.0.0.1:8765</code>. Abrir el HTML directamente desde GitHub o como archivo no inicia el traductor.</p>
   </header>
   <div class="toolbar">
     <label for="format">Formato de origen</label>
@@ -128,13 +127,8 @@ translateButton.addEventListener('click', async () => {
     copyButton.disabled = !data.python;
     setStatus('Traducción terminada. Revisa las construcciones no soportadas antes de usar el resultado.');
   } catch (err) {
-    const localPage = location.protocol === 'file:' || location.hostname !== '127.0.0.1' && location.hostname !== 'localhost';
-    const message = localPage
-      ? 'Esta página se está abriendo fuera del servidor local. En la carpeta del repositorio ejecuta: python web_demo.py y abre http://127.0.0.1:8765'
-      : 'No se pudo conectar con el servidor. Comprueba que python web_demo.py sigue ejecutándose en una terminal y que la dirección es http://127.0.0.1:8765';
-    output.textContent = message;
-    document.querySelector('#output-count').textContent = 'Servidor no disponible';
-    setStatus(message, true);
+    output.textContent = 'No se pudo conectar con la demo local. Comprueba que ejecutaste: python web_demo.py';
+    setStatus('Error de conexión con el servidor local.', true);
   } finally {
     translateButton.disabled = false;
   }

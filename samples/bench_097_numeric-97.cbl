@@ -1,0 +1,11 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. B097.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 WS-A PIC 9(3) VALUE 12.
+       01 WS-B PIC 9(3) VALUE 8.
+       PROCEDURE DIVISION.
+       MAIN-PARA.
+           ADD WS-B TO WS-A.
+           DISPLAY WS-A.
+           STOP RUN.

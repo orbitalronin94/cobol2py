@@ -286,5 +286,83 @@ class EndToEndTests(unittest.TestCase):
         self.assertIn("def main_para():", generated)
 
 
+    def test_standard_if_else_without_then_matches_cobol_control_flow(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\n".join([
+            "       IDENTIFICATION DIVISION.",
+            "       PROGRAM-ID. IFTEST.",
+            "       DATA DIVISION.",
+            "       WORKING-STORAGE SECTION.",
+            "       01 WS-NUM PIC 9 VALUE 2.",
+            "       PROCEDURE DIVISION.",
+            "       MAIN.",
+            "           IF WS-NUM = 2",
+            '               DISPLAY "MATCH".',
+            "           ELSE",
+            '               DISPLAY "OTHER".',
+            "           END-IF.",
+            "           STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<if-output>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "MATCH\n", generated)
+
+    def test_inline_perform_times_executes_body_exactly_n_times(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\n".join([
+            "       IDENTIFICATION DIVISION.",
+            "       PROGRAM-ID. INLINELOOP.",
+            "       PROCEDURE DIVISION.",
+            "       MAIN.",
+            '           PERFORM 2 TIMES DISPLAY "TICK" END-PERFORM.',
+            "           STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<inline-perform-output>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "TICK\nTICK\n", generated)
+
+    def test_table_subscript_in_condition_is_one_based_in_cobol(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\n".join([
+            "       IDENTIFICATION DIVISION.",
+            "       PROGRAM-ID. TABLEIF.",
+            "       DATA DIVISION.",
+            "       WORKING-STORAGE SECTION.",
+            "       01 WS-TABLE.",
+            "          05 WS-ITEM PIC X(4) OCCURS 2 TIMES.",
+            "       PROCEDURE DIVISION.",
+            "       MAIN.",
+            '           MOVE "RED" TO WS-ITEM(1).',
+            '           MOVE "BLU" TO WS-ITEM(2).',
+            '           IF WS-ITEM(2) = "BLU"',
+            '               DISPLAY "TABLE-OK".',
+            "           ELSE",
+            '               DISPLAY "TABLE-NO".',
+            "           END-IF.",
+            "           STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<table-if-output>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "TABLE-OK\n", generated)
+
+
 if __name__ == "__main__":
     unittest.main()

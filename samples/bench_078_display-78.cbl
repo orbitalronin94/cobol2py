@@ -1,0 +1,10 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. B078.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 WS-TEXT PIC X(6).
+       PROCEDURE DIVISION.
+       MAIN-PARA.
+           MOVE "READY" TO WS-TEXT.
+           DISPLAY WS-TEXT.
+           STOP RUN.

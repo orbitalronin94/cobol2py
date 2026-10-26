@@ -4,9 +4,9 @@
 
 La compatibilidad se debe expresar por construcción y por caso de prueba, no como una etiqueta absoluta. Una traducción puede ser sintácticamente válida y aun así cambiar resultados, formato de datos, flujo de control, efectos de E/S o códigos de salida.
 
-El benchmark actual considera que un caso coincide cuando el `stdout` y el código de retorno del Python generado son iguales a los del ejecutable COBOL compilado por GnuCOBOL. El manifiesto actual contiene 50 programas, pero el corpus es pequeño y sesgado hacia construcciones concretas. No mide todos los dialectos, cláusulas, estados de error ni combinaciones de sentencias.
+El benchmark actual considera que un caso coincide cuando el `stdout` y el código de retorno del Python generado son iguales a los del ejecutable COBOL compilado por GnuCOBOL. El manifiesto contiene 100 programas. El corpus amplía la variedad de casos, pero sigue siendo curado y sesgado hacia construcciones concretas. No mide todos los dialectos, cláusulas, estados de error ni combinaciones de sentencias.
 
-## Áreas cubiertas por el corpus actual
+## Áreas cubiertas por el corpus actual (100 casos)
 
 Consulta la lista autoritativa en [`benchmarks/cases.json`](../benchmarks/cases.json). A nivel general, incluye:
 
@@ -19,6 +19,8 @@ Consulta la lista autoritativa en [`benchmarks/cases.json`](../benchmarks/cases.
 - Tablas `OCCURS` y acceso por subíndice en ejemplos acotados.
 
 La lista exacta de características por caso está en el manifiesto; este resumen no amplía por sí mismo el soporte.
+
+En la revisión de PR #9, el traductor candidato coincidió en **100/100 casos (100%)** con GnuCOBOL en `stdout` y código de salida; el snapshot inicial coincidió en **16/100 (16%)** sobre el mismo corpus. No hubo fallos de compilación de las referencias COBOL. Estos resultados son específicos de esa revisión y del manifiesto versionado; no equivalen a una certificación del lenguaje COBOL.
 
 ## Qué no se debe inferir
 

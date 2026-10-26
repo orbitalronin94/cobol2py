@@ -202,7 +202,8 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
 # Patch 3: verbos que abren sentencia. Se usan para partir buffers concatenados.
 STATEMENT_VERBS = frozenset({
     "MOVE", "DISPLAY", "ACCEPT", "COMPUTE", "ADD", "SUBTRACT", "MULTIPLY",
-    "DIVIDE", "PERFORM", "IF", "EVALUATE", "STOP", "GOBACK", "EXIT",
+    "DIVIDE", "PERFORM", "IF", "ELSE", "END-IF", "END-PERFORM",
+    "END-EVALUATE", "EVALUATE", "STOP", "GOBACK", "EXIT",
     "CALL", "OPEN", "CLOSE", "READ", "WRITE", "REWRITE", "DELETE",
     "START", "STRING", "UNSTRING", "INSPECT", "SET", "INITIALIZE",
     "CONTINUE", "RETURN", "SEARCH", "SORT", "MERGE", "GO", "ALTER",
@@ -282,7 +283,7 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
     return units
 
 
-RE_IF_OPEN = re.compile(r"^IF\s+(.+?)\s+THEN$", re.IGNORECASE | re.DOTALL)
+RE_IF_OPEN = re.compile(r"^IF\s+(.+?)(?:\s+THEN)?$", re.IGNORECASE | re.DOTALL)
 RE_EVALUATE_OPEN = re.compile(r"^EVALUATE\s+(.+)$", re.IGNORECASE)
 
 
@@ -334,6 +335,16 @@ def build_tree(units: list[tuple[int, str]]) -> list[Node]:
                 stack.append((current_list, open_if))
             current_list = new_node.then_branch
             open_if = new_node
+            continue
+
+        inline_times = re.match(r"^PERFORM\s+(\d+)\s+TIMES$", text, re.IGNORECASE)
+        if inline_times:
+            new_node = Node(kind="perform_times_inline", text=text, line=line)
+            current_list.append(new_node)
+            if open_perform is not None:
+                stack.append((current_list, open_perform))
+            current_list = new_node.body
+            open_perform = new_node
             continue
 
         if (
@@ -468,17 +479,25 @@ def translate_expr(expr: str) -> str:
     # COBOL arithmetic using '-' should be separated from identifiers by
     # whitespace when the token could otherwise be a hyphenated data-name.
     token_pattern = r"""("[^"]*"|'[^']*'|[A-Za-z][A-Za-z0-9-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&-]|\s+|.)"""
+    # Normalize simple COBOL table references before tokenizing identifiers.
+    # COBOL subscripts are 1-based; normalize_name converts them to Python indexes.
+    expr = re.sub(
+        r"\b([A-Za-z][A-Za-z0-9-]*)\(([A-Za-z0-9_-]+)\)",
+        lambda match: normalize_name(f"{match.group(1)}({match.group(2)})"),
+        expr,
+    )
+    token_pattern = token_pattern.replace("[A-Za-z0-9-]*", "[A-Za-z0-9_-]*")
     tokens = re.findall(token_pattern, expr)
     out = []
     for tok in tokens:
-        if re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", tok):
+        if re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*", tok):
             out.append(normalize_name(tok))
         else:
             out.append(tok)
     return "".join(out).strip()
 
 # Patch 1: normalización de operadores
-def translate_condition(cond: str) -> str:
+def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = None) -> str:
     c = cond.strip()
     c = re.sub(r"\bAND\b", "and", c, flags=re.IGNORECASE)
     c = re.sub(r"\bOR\b", "or", c, flags=re.IGNORECASE)
@@ -492,12 +511,42 @@ def translate_condition(cond: str) -> str:
     c = re.sub(r"\bIS\s+LESS\s+THAN\b", "<", c, flags=re.IGNORECASE)
     c = re.sub(r"\bLESS\s+THAN\b", "<", c, flags=re.IGNORECASE)
     c = re.sub(r"\bIS\b", "==", c, flags=re.IGNORECASE)
-    # `=` aislado → `==`
     c = re.sub(r"(?<![<>=])=(?!=)", "==", c)
-    # `< >` (not-equal de COBOL) → `!=`
     c = c.replace("<>", "!=")
-    return translate_expr(c)
 
+    translated = translate_expr(c)
+    if not variables:
+        return translated
+
+    # COBOL pads the shorter operand with spaces for alphanumeric comparisons.
+    # Match a translated data-name (including a table element) against a literal.
+    def pad_literal(match: re.Match[str]) -> str:
+        left, operator, quote, literal = match.groups()
+        base = re.match(r"[a-z_][a-z0-9_]*", left)
+        if base is None:
+            return match.group(0)
+        variable = next(
+            (item for item in variables.values()
+             if normalize_name(item.name) == base.group(0)),
+            None,
+        )
+        if variable is None or not variable.pic:
+            return match.group(0)
+        pic = variable.pic.upper()
+        if not any(char in pic for char in ("X", "A")):
+            return match.group(0)
+        width = pic_character_count(pic)
+        if not width:
+            return match.group(0)
+        compare_width = max(width, len(literal))
+        padded = literal.ljust(compare_width)
+        return f"{left}.ljust({compare_width}) {operator} {padded!r}"
+
+    return re.sub(
+        r"""([a-z_][a-z0-9_]*(?:\[[^\]]+\])?)\s*(==|!=)\s*(["'])(.*?)\3""",
+        pad_literal,
+        translated,
+    )
 
 def pic_digit_count(pic: str) -> int:
     """Count storage digits in a simple numeric PIC, including repetitions."""
@@ -635,7 +684,7 @@ def translate_statement(
     m = re.match(r"PERFORM\s+([A-Za-z0-9\-]+)\s+UNTIL\s+(.+)", s, re.IGNORECASE)
     if m and m.group(1).upper() in paragraphs:
         return [
-            f"while not ({translate_condition(m.group(2))}):",
+            f"while not ({translate_condition(m.group(2), variables or {})}):",
             f"{normalize_name(m.group(1))}()",
         ]
 
@@ -670,7 +719,7 @@ def translate_nodes(
             if not m:
                 out.append("    " * indent + f"# IF malformado: {node.text}")
                 continue
-            cond = translate_condition(m.group(1))
+            cond = translate_condition(m.group(1), variables)
             out.append("    " * indent + f"if {cond}:")
             then_body = translate_nodes(node.then_branch, paragraphs, indent + 1, variables)
             out.extend(then_body if then_body else ["    " * (indent + 1) + "pass"])
@@ -681,6 +730,13 @@ def translate_nodes(
 
         elif node.kind == "perform_inline":
             out.append("    " * indent + f"# PERFORM inline: {node.text}")
+            body = translate_nodes(node.body, paragraphs, indent + 1, variables)
+            out.extend(body if body else ["    " * (indent + 1) + "pass"])
+
+        elif node.kind == "perform_times_inline":
+            match = re.match(r"^PERFORM\s+(\d+)\s+TIMES$", node.text, re.IGNORECASE)
+            count = match.group(1) if match else "0"
+            out.append("    " * indent + f"for _ in range({count}):")
             body = translate_nodes(node.body, paragraphs, indent + 1, variables)
             out.extend(body if body else ["    " * (indent + 1) + "pass"])
 

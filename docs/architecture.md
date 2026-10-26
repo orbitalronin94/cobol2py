@@ -27,6 +27,9 @@ Estos pasos describen la organización actual, no una gramática COBOL formal. N
 - El almacenamiento `WORKING-STORAGE` debe seguir siendo accesible desde los párrafos que lo usan.
 - La traducción de sentencias respeta los cierres explícitos reconocidos, como `END-IF`, `END-PERFORM` y `END-EVALUATE`, en las estructuras que soporta.
 - Los índices de tablas COBOL son normalmente base 1; al emitir acceso a estructuras Python, hay que ajustar el índice sin cambiar la semántica visible.
+- El parser reconoce `IF` estándar sin `THEN` y `ELSE`/`END-IF` como unidades estructurales, dentro de los patrones cubiertos por pruebas.
+- `PERFORM n TIMES` en línea se representa como un bucle Python cuando el cuerpo pertenece al subconjunto reconocido; no implica soporte de todas las variantes de `PERFORM`.
+- Las comparaciones alfanuméricas con literales aplican relleno de espacios en los casos implementados para aproximar la comparación de campos de ancho fijo COBOL.
 
 ## Errores y límites
 

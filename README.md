@@ -182,7 +182,7 @@ cobol2py/
 │   ├── hello.cbl
 │   ├── realtest.cbl
 │   ├── move_semantics.cbl
-│   └── bench_*.cbl     # 48 casos COBOL independientes
+│   └── bench_*.cbl     # 98 fixtures de benchmark COBOL
 ├── benchmarks/
 │   ├── cases.json       # corpus versionado de comparación diferencial
 │   └── run_benchmark.py
@@ -227,7 +227,7 @@ python cobol2py.py programa.cbl --format free
 
 `--format auto` es el valor predeterminado; como las columnas de secuencia en blanco pueden aparecer tanto en formato fijo como en fuentes libres indentadas, no siempre es posible inferir el formato con certeza.
 
-GitHub Actions ejecuta las pruebas con Python 3.10–3.13 y compara, mediante el benchmark diferencial, 50 programas COBOL independientes contra GnuCOBOL. Los casos cubren `DISPLAY`, campos `PIC X/9`, `MOVE`, operaciones aritméticas, condiciones simples y compuestas, `IF` anidados, `PERFORM TIMES`, párrafos y tablas/subíndices. La suite de unittest mantiene además sus regresiones de runtime. La cobertura sigue limitada al corpus versionado y al subconjunto probado; no demuestra equivalencia semántica general ni certifica una migración. La compilación sintáctica de la salida, por sí sola, tampoco prueba equivalencia.
+GitHub Actions ejecuta las pruebas con Python 3.10–3.13 y compara, mediante el benchmark diferencial, 100 programas COBOL contra GnuCOBOL. Los casos cubren `DISPLAY`, campos `PIC X/9`, `MOVE`, operaciones aritméticas, condiciones simples y compuestas, `IF` anidados, `PERFORM TIMES`, párrafos y tablas/subíndices. La suite de unittest mantiene además sus regresiones de runtime. La cobertura sigue limitada al corpus versionado y al subconjunto probado; no demuestra equivalencia semántica general ni certifica una migración. La compilación sintáctica de la salida, por sí sola, tampoco prueba equivalencia.
 
 ---
 
@@ -238,7 +238,7 @@ El workflow `differential-benchmark.yml` compara el snapshot inicial del traduct
 - **Métrica principal:** porcentaje de programas cuyo `stdout` y código de salida coinciden exactamente con GnuCOBOL.
 - **Comparación entre versiones:** ejecuta el snapshot inicial fijado en `02fde4b` y el candidato actual sobre el mismo corpus de la revisión evaluada, y muestra el cambio en puntos porcentuales.
 - **Fallos visibles:** errores de compilación COBOL, traducción, ejecución Python y diferencias de salida cuentan como fallos del caso y aparecen en el detalle.
-- **Corpus versionado:** `benchmarks/cases.json` define los 50 programas y las capacidades cubiertas. El corpus inicial contiene 2 fixtures previos y 48 programas independientes pequeños, cada uno enfocado en una o varias construcciones COBOL. Para añadir un caso, incorpora un programa COBOL autónomo en `samples/` y una entrada al manifiesto; no elimines casos difíciles solo para subir la puntuación.
+- **Corpus versionado:** `benchmarks/cases.json` define 100 programas y las capacidades cubiertas: 2 fixtures de referencia previos y 98 fixtures de benchmark. La revisión del PR #9 obtuvo 100/100 coincidencias exactas de salida y código de retorno contra GnuCOBOL; el snapshot inicial obtuvo 16/100 sobre el mismo corpus. Este resultado mide solo estos casos versionados, no la equivalencia general de COBOL. Para añadir un caso, incorpora un programa COBOL autónomo en `samples/` y una entrada al manifiesto; no elimines casos difíciles solo para subir la puntuación.
 - **Interpretación prudente:** la métrica mide únicamente estos fixtures; no equivale al porcentaje de COBOL del mundo real que se traduce correctamente. Los casos deben crecer en variedad y complejidad, no solo en cantidad.
 
 Para ejecutar el benchmark localmente (requiere Python y GnuCOBOL):

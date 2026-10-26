@@ -131,7 +131,7 @@
     },
     {
       "id": "numeric-compute-expression",
-      "path": "samples/bench_16_numeric_compute_expression.cbl",
+      "path": "samples/bench_16_compute_expr.cbl",
       "features": [
         "COMPUTE expression"
       ]
@@ -358,6 +358,356 @@
       "path": "samples/bench_48_multiple_conditions.cbl",
       "features": [
         "variable-to-variable comparison"
+      ]
+    },
+    {
+      "id": "display-51",
+      "path": "samples/bench_051_display-51.cbl",
+      "features": [
+        "DISPLAY literal with punctuation"
+      ]
+    },
+    {
+      "id": "display-52",
+      "path": "samples/bench_052_display-52.cbl",
+      "features": [
+        "multiple DISPLAY statements"
+      ]
+    },
+    {
+      "id": "display-53",
+      "path": "samples/bench_053_display-53.cbl",
+      "features": [
+        "literal embedded spaces"
+      ]
+    },
+    {
+      "id": "display-54",
+      "path": "samples/bench_054_display-54.cbl",
+      "features": [
+        "PIC X VALUE and DISPLAY"
+      ]
+    },
+    {
+      "id": "display-55",
+      "path": "samples/bench_055_display-55.cbl",
+      "features": [
+        "short alphanumeric MOVE padding"
+      ]
+    },
+    {
+      "id": "display-56",
+      "path": "samples/bench_056_display-56.cbl",
+      "features": [
+        "long alphanumeric MOVE truncation"
+      ]
+    },
+    {
+      "id": "display-57",
+      "path": "samples/bench_057_display-57.cbl",
+      "features": [
+        "two independent fields"
+      ]
+    },
+    {
+      "id": "display-58",
+      "path": "samples/bench_058_display-58.cbl",
+      "features": [
+        "overwrite alphanumeric field"
+      ]
+    },
+    {
+      "id": "numeric-59",
+      "path": "samples/bench_059_numeric-59.cbl",
+      "features": [
+        "numeric MOVE small value"
+      ]
+    },
+    {
+      "id": "numeric-60",
+      "path": "samples/bench_060_numeric-60.cbl",
+      "features": [
+        "unsigned numeric overflow truncation"
+      ]
+    },
+    {
+      "id": "numeric-61",
+      "path": "samples/bench_061_numeric-61.cbl",
+      "features": [
+        "ADD one operand"
+      ]
+    },
+    {
+      "id": "numeric-62",
+      "path": "samples/bench_062_numeric-62.cbl",
+      "features": [
+        "SUBTRACT one operand"
+      ]
+    },
+    {
+      "id": "numeric-63",
+      "path": "samples/bench_063_numeric-63.cbl",
+      "features": [
+        "MULTIPLY one operand"
+      ]
+    },
+    {
+      "id": "numeric-64",
+      "path": "samples/bench_064_numeric-64.cbl",
+      "features": [
+        "COMPUTE addition"
+      ]
+    },
+    {
+      "id": "numeric-65",
+      "path": "samples/bench_065_numeric-65.cbl",
+      "features": [
+        "COMPUTE subtraction"
+      ]
+    },
+    {
+      "id": "numeric-66",
+      "path": "samples/bench_066_numeric-66.cbl",
+      "features": [
+        "COMPUTE multiplication"
+      ]
+    },
+    {
+      "id": "numeric-67",
+      "path": "samples/bench_067_numeric-67.cbl",
+      "features": [
+        "exact integer division"
+      ]
+    },
+    {
+      "id": "numeric-68",
+      "path": "samples/bench_068_numeric-68.cbl",
+      "features": [
+        "ADD multiple operands"
+      ]
+    },
+    {
+      "id": "numeric-69",
+      "path": "samples/bench_069_numeric-69.cbl",
+      "features": [
+        "MOVE zero into numeric field"
+      ]
+    },
+    {
+      "id": "display-70",
+      "path": "samples/bench_070_display-70.cbl",
+      "features": [
+        "default spaces in PIC X"
+      ]
+    },
+    {
+      "id": "paragraph-71",
+      "path": "samples/bench_071_paragraph-71.cbl",
+      "features": [
+        "single paragraph call"
+      ]
+    },
+    {
+      "id": "paragraph-72",
+      "path": "samples/bench_072_paragraph-72.cbl",
+      "features": [
+        "paragraph called twice"
+      ]
+    },
+    {
+      "id": "paragraph-73",
+      "path": "samples/bench_073_paragraph-73.cbl",
+      "features": [
+        "paragraph chain"
+      ]
+    },
+    {
+      "id": "perform-74",
+      "path": "samples/bench_074_perform-74.cbl",
+      "features": [
+        "paragraph repeated twice"
+      ]
+    },
+    {
+      "id": "perform-75",
+      "path": "samples/bench_075_perform-75.cbl",
+      "features": [
+        "paragraph repeated four times"
+      ]
+    },
+    {
+      "id": "perform-76",
+      "path": "samples/bench_076_perform-76.cbl",
+      "features": [
+        "PERFORM paragraph UNTIL condition"
+      ]
+    },
+    {
+      "id": "numeric-77",
+      "path": "samples/bench_077_numeric-77.cbl",
+      "features": [
+        "repeated increment"
+      ]
+    },
+    {
+      "id": "display-78",
+      "path": "samples/bench_078_display-78.cbl",
+      "features": [
+        "display text after MOVE"
+      ]
+    },
+    {
+      "id": "display-79",
+      "path": "samples/bench_079_display-79.cbl",
+      "features": [
+        "DISPLAY numeric field with width"
+      ]
+    },
+    {
+      "id": "display-80",
+      "path": "samples/bench_080_display-80.cbl",
+      "features": [
+        "concatenate text and numeric"
+      ]
+    },
+    {
+      "id": "display-81",
+      "path": "samples/bench_081_display-81.cbl",
+      "features": [
+        "truncate and overwrite text"
+      ]
+    },
+    {
+      "id": "display-82",
+      "path": "samples/bench_082_display-82.cbl",
+      "features": [
+        "right-padding text to width"
+      ]
+    },
+    {
+      "id": "display-83",
+      "path": "samples/bench_083_display-83.cbl",
+      "features": [
+        "single character field"
+      ]
+    },
+    {
+      "id": "display-84",
+      "path": "samples/bench_084_display-84.cbl",
+      "features": [
+        "ten character initial value"
+      ]
+    },
+    {
+      "id": "numeric-85",
+      "path": "samples/bench_085_numeric-85.cbl",
+      "features": [
+        "two digit initial value"
+      ]
+    },
+    {
+      "id": "numeric-86",
+      "path": "samples/bench_086_numeric-86.cbl",
+      "features": [
+        "four digit initial value"
+      ]
+    },
+    {
+      "id": "numeric-87",
+      "path": "samples/bench_087_numeric-87.cbl",
+      "features": [
+        "COMPUTE with parentheses"
+      ]
+    },
+    {
+      "id": "numeric-88",
+      "path": "samples/bench_088_numeric-88.cbl",
+      "features": [
+        "ADD three operands"
+      ]
+    },
+    {
+      "id": "numeric-89",
+      "path": "samples/bench_089_numeric-89.cbl",
+      "features": [
+        "SUBTRACT multiple operands"
+      ]
+    },
+    {
+      "id": "numeric-90",
+      "path": "samples/bench_090_numeric-90.cbl",
+      "features": [
+        "MULTIPLY then ADD"
+      ]
+    },
+    {
+      "id": "numeric-91",
+      "path": "samples/bench_091_numeric-91.cbl",
+      "features": [
+        "DIVIDE exact result"
+      ]
+    },
+    {
+      "id": "numeric-92",
+      "path": "samples/bench_092_numeric-92.cbl",
+      "features": [
+        "move numeric literal to field"
+      ]
+    },
+    {
+      "id": "numeric-93",
+      "path": "samples/bench_093_numeric-93.cbl",
+      "features": [
+        "MOVE between numeric fields"
+      ]
+    },
+    {
+      "id": "display-94",
+      "path": "samples/bench_094_display-94.cbl",
+      "features": [
+        "MOVE between alphanumeric fields"
+      ]
+    },
+    {
+      "id": "paragraph-95",
+      "path": "samples/bench_095_paragraph-95.cbl",
+      "features": [
+        "paragraph emits literal"
+      ]
+    },
+    {
+      "id": "perform-96",
+      "path": "samples/bench_096_perform-96.cbl",
+      "features": [
+        "paragraph repeated three times"
+      ]
+    },
+    {
+      "id": "numeric-97",
+      "path": "samples/bench_097_numeric-97.cbl",
+      "features": [
+        "arithmetic across two variables"
+      ]
+    },
+    {
+      "id": "display-98",
+      "path": "samples/bench_098_display-98.cbl",
+      "features": [
+        "three sequential displays"
+      ]
+    },
+    {
+      "id": "numeric-99",
+      "path": "samples/bench_099_numeric-99.cbl",
+      "features": [
+        "numeric decrement twice"
+      ]
+    },
+    {
+      "id": "display-100",
+      "path": "samples/bench_100_display-100.cbl",
+      "features": [
+        "final corpus marker"
       ]
     }
   ]

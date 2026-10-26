@@ -1,0 +1,12 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. B072.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 WS-NUM PIC 9(2) VALUE 7.
+       PROCEDURE DIVISION.
+       MAIN-PARA.
+           PERFORM SHOW-NUM.
+           PERFORM SHOW-NUM.
+           STOP RUN.
+       SHOW-NUM.
+           DISPLAY WS-NUM.
