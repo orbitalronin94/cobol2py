@@ -63,3 +63,6 @@ Cada caso pesa lo mismo, independientemente de su tamaño o complejidad. Por ell
 ## Modo estricto y diagnósticos
 
 `--strict` termina con código 2 cuando el traductor detecta sentencias no soportadas, copybooks sin resolver, bloques de control malformados, overlays `REDEFINES` o semántica numérica `PIC` parcialmente cubierta. `--diagnostics-json` emite una lista JSON por stderr con `code`, `severity`, `line` y `message`. Estos diagnósticos son una ayuda para automatizar revisiones, no una prueba de que una traducción sin advertencias sea semánticamente equivalente a COBOL.
+
+
+`STOP RUN` se emite como señal de terminación que se propaga hasta el párrafo de entrada en Python y como `System.exit(0)` en Java. `GOBACK` y `EXIT PROGRAM` se mantienen como retornos locales. La semántica de códigos de retorno y de subprogramas COBOL sigue fuera de la garantía general.
