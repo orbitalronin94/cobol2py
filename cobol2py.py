@@ -590,7 +590,7 @@ def normalize_data_reference(
     """Map a COBOL data-name (including OF/IN qualification) into nested dicts."""
     text = name.strip()
     match = re.fullmatch(
-        r"([A-Za-z0-9-]+)(?:\(([A-Za-z0-9_-]+)\))?(?:\s+(?:OF|IN)\\s+([A-Za-z0-9-]+))?",
+        r"([A-Za-z0-9-]+)(?:\(([A-Za-z0-9_-]+)\))?(?:\s+(?:OF|IN)\s+([A-Za-z0-9-]+))?",
         text,
         re.IGNORECASE,
     )
@@ -763,7 +763,7 @@ def translate_move_value(source: str, target: str, variables: dict[str, CobolVar
     truncates values that exceed the receiving field. Other PIC categories
     retain the existing simple assignment behavior.
     """
-    value = translate_literal(source)
+    value = translate_literal(source, variables)
     target_base = re.match(r"([A-Za-z0-9-]+)", target)
     variable = variables.get(target_base.group(1).upper()) if target_base else None
     if variable is not None and variable.pic:
@@ -812,6 +812,9 @@ def split_cobol_items(s: str) -> list[str]:
     return tokens
 
 
+DATA_REF_PATTERN = r"[A-Za-z0-9-]+(?:\([A-Za-z0-9_-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?"
+
+
 def translate_statement(
     stmt: str,
     paragraphs: set[str],
@@ -837,40 +840,40 @@ def translate_statement(
         )
         return [f'print("".join([{items}]))']
 
-    m = re.match(r"ACCEPT\s+([A-Za-z0-9\-\(\)]+)", s, re.IGNORECASE)
+    m = re.match(rf"ACCEPT\s+({DATA_REF_PATTERN})", s, re.IGNORECASE)
     if m:
-        return [f"{normalize_name(m.group(1))} = input()"]
+        return [f"{normalize_data_reference(m.group(1), variables)} = input()"]
 
-    m = re.match(r"MOVE\s+(.+?)\s+TO\s+([A-Za-z0-9\-\(\)]+)", s, re.IGNORECASE)
+    m = re.match(rf"MOVE\s+(.+?)\s+TO\s+({DATA_REF_PATTERN})", s, re.IGNORECASE)
     if m:
         target = m.group(2)
         value = translate_move_value(m.group(1), target, variables or {})
-        return [f"{normalize_name(target)} = {value}"]
+        return [f"{normalize_data_reference(target, variables)} = {value}"]
 
-    m = re.match(r"COMPUTE\s+([A-Za-z0-9\-\(\)]+)\s*=\s*(.+)", s, re.IGNORECASE)
+    m = re.match(rf"COMPUTE\s+({DATA_REF_PATTERN})\s*=\s*(.+)", s, re.IGNORECASE)
     if m:
-        return [f"{normalize_name(m.group(1))} = {translate_expr(m.group(2))}"]
+        return [f"{normalize_data_reference(m.group(1), variables)} = {translate_expr(m.group(2), variables)}"]
 
     # Patch 4: ADD con múltiples operandos
-    m = re.match(r"ADD\s+(.+?)\s+TO\s+([A-Za-z0-9\-\(\)]+)", s, re.IGNORECASE)
+    m = re.match(rf"ADD\s+(.+?)\s+TO\s+({DATA_REF_PATTERN})", s, re.IGNORECASE)
+    if m:
+        operands = split_cobol_items(m.group(1))
+        sum_expr = " + ".join(translate_literal(o, variables) for o in operands)
+        return [f"{normalize_data_reference(m.group(2), variables)} += {sum_expr}"]
+
+    m = re.match(rf"SUBTRACT\s+(.+?)\s+FROM\s+({DATA_REF_PATTERN})", s, re.IGNORECASE)
     if m:
         operands = split_cobol_items(m.group(1))
         sum_expr = " + ".join(translate_literal(o) for o in operands)
-        return [f"{normalize_name(m.group(2))} += {sum_expr}"]
+        return [f"{normalize_data_reference(m.group(2), variables)} -= {sum_expr}"]
 
-    m = re.match(r"SUBTRACT\s+(.+?)\s+FROM\s+([A-Za-z0-9\-\(\)]+)", s, re.IGNORECASE)
+    m = re.match(rf"MULTIPLY\s+(.+?)\s+BY\s+({DATA_REF_PATTERN})", s, re.IGNORECASE)
     if m:
-        operands = split_cobol_items(m.group(1))
-        sum_expr = " + ".join(translate_literal(o) for o in operands)
-        return [f"{normalize_name(m.group(2))} -= {sum_expr}"]
+        return [f"{normalize_data_reference(m.group(2), variables)} *= {translate_literal(m.group(1), variables)}"]
 
-    m = re.match(r"MULTIPLY\s+(.+?)\s+BY\s+([A-Za-z0-9\-\(\)]+)", s, re.IGNORECASE)
+    m = re.match(rf"DIVIDE\s+(.+?)\s+INTO\s+({DATA_REF_PATTERN})", s, re.IGNORECASE)
     if m:
-        return [f"{normalize_name(m.group(2))} *= {translate_literal(m.group(1))}"]
-
-    m = re.match(r"DIVIDE\s+(.+?)\s+INTO\s+([A-Za-z0-9\-\(\)]+)", s, re.IGNORECASE)
-    if m:
-        return [f"{normalize_name(m.group(2))} /= {translate_literal(m.group(1))}"]
+        return [f"{normalize_data_reference(m.group(2), variables)} /= {translate_literal(m.group(1), variables)}"]
 
     m = re.match(r"PERFORM\s+([A-Za-z0-9\-]+)\s+(\d+)\s+TIMES", s, re.IGNORECASE)
     if m and m.group(1).upper() in paragraphs:
