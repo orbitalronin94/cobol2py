@@ -157,6 +157,41 @@ class TranslationTests(unittest.TestCase):
         self.assertEqual(output, ['# COBOL no traducido: CALL "SUBPGM"'])
 
 
+class JavaBackendTests(unittest.TestCase):
+    def test_java_backend_emits_valid_shape_for_shared_ast(self):
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. JAVATEST.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            '01 WS-NAME PIC X(5) VALUE "AL".',
+            "01 WS-COUNT PIC 9(3) VALUE 0.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            'MOVE "BOB" TO WS-NAME.',
+            "ADD 2 TO WS-COUNT.",
+            "IF WS-COUNT = 2",
+            'DISPLAY "MATCH".',
+            "ELSE",
+            'DISPLAY "MISS".',
+            "END-IF.",
+            "EVALUATE WS-COUNT",
+            "WHEN 2",
+            'DISPLAY "TWO".',
+            "WHEN OTHER",
+            'DISPLAY "OTHER".',
+            "END-EVALUATE.",
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_java(cobol2py.parse_cobol(source, source_format="free"))
+        self.assertIn("class Cobol2PyProgram", generated)
+        self.assertIn("private static int ws_count", generated)
+        self.assertIn("if (ws_count == 2)", generated)
+        self.assertIn("evalEquals(_cobolEvaluate", generated)
+        self.assertIn('System.out.println(String.join("", Arrays.asList', generated)
+        self.assertNotIn("EVALUATE no traducido", generated)
+
+
 class CopybookTests(unittest.TestCase):
     def test_resolves_copybook_from_explicit_search_path(self):
         from pathlib import Path
