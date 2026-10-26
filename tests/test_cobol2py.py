@@ -206,6 +206,15 @@ class TranslationTests(unittest.TestCase):
         self.assertEqual([item.value for item in variables], ["-12", "+12.50"])
         self.assertEqual([item.py_default() for item in variables], ["-12", "+12.50"])
 
+    def test_display_of_implied_decimal_pic_emits_digits_without_point(self):
+        variables = {
+            "WS-RATE": cobol2py.CobolVar(level=1, name="WS-RATE", pic="9(3)V99")
+        }
+        self.assertEqual(
+            cobol2py.translate_display_item("WS-RATE", variables),
+            "format(float(ws_rate), '.2f').replace('.', '').zfill(5)",
+        )
+
     def test_move_truncates_signed_and_implied_decimal_receiving_fields(self):
         source = "\n".join([
             "       IDENTIFICATION DIVISION.",
