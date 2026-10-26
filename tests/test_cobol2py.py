@@ -126,6 +126,15 @@ class TranslationTests(unittest.TestCase):
         variable = cobol2py.CobolVar(level=1, name="WS-FLAG", pic="X(4)", value='ALL "Y"')
         self.assertEqual(variable.py_default(), "'YYYY'")
 
+    def test_all_literal_decodes_doubled_quotes(self):
+        variable = cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(5)", value='ALL "DON""T"')
+        self.assertEqual(variable.py_default(), "'DON\"T'")
+        variables = {"WS-TEXT": cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(5)")}
+        self.assertEqual(
+            cobol2py.translate_move_value('ALL "DON""T"', "WS-TEXT", variables),
+            "'DON\"T'",
+        )
+
     def test_move_all_literal_repeats_to_fill_alphanumeric_pic(self):
         variables = {"WS-FLAG": cobol2py.CobolVar(level=1, name="WS-FLAG", pic="X(4)")}
         self.assertEqual(cobol2py.translate_move_value('ALL "Y"', "WS-FLAG", variables), "'YYYY'")
