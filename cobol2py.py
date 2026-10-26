@@ -769,6 +769,29 @@ def translate_expr(
 
 
 # Patch 1: normalización de operadores
+def mask_cobol_literal_contents(text: str) -> str:
+    """Replace literal contents with a harmless marker while retaining quote delimiters."""
+    output: list[str] = []
+    i = 0
+    while i < len(text):
+        if text[i] not in ("'", '"'):
+            output.append(text[i])
+            i += 1
+            continue
+        quote = text[i]
+        i += 1
+        while i < len(text):
+            if text[i] == quote:
+                if i + 1 < len(text) and text[i + 1] == quote:
+                    i += 2
+                    continue
+                i += 1
+                break
+            i += 1
+        output.extend((quote, "X", quote))
+    return "".join(output)
+
+
 def rewrite_outside_literals(text: str, transform) -> str:
     """Rewrite COBOL operators without modifying quoted literal contents."""
     protected: list[str] = []
@@ -1949,9 +1972,10 @@ def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
             elif node.kind == "if":
                 match = RE_IF_OPEN.match(node.text)
                 condition = match.group(1) if match else ""
+                diagnostic_condition = mask_cobol_literal_contents(condition)
                 comparison = re.search(
                     r"""([A-Za-z][A-Za-z0-9-]*(?:\([A-Za-z0-9_-]+\))?)\s*(?:<=|>=|<|>)\s*["']""",
-                    condition,
+                    diagnostic_condition,
                     re.IGNORECASE,
                 )
                 if comparison:
@@ -1973,7 +1997,7 @@ def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
                         })
                 field_comparison = re.search(
                     r"\b([A-Za-z][A-Za-z0-9-]*)\b\s*(?:=|==|!=|<>|<=|>=|<|>)\s*([A-Za-z][A-Za-z0-9-]*)\b",
-                    condition,
+                    diagnostic_condition,
                     re.IGNORECASE,
                 )
                 if field_comparison:
@@ -2011,11 +2035,12 @@ def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
                 also_branch = next(
                     (
                         child.text for child in node.body
-                        if child.kind == "when" and re.search(r"\bALSO\b", child.text, re.IGNORECASE)
+                        if child.kind == "when"
+                        and re.search(r"\bALSO\b", mask_cobol_literal_contents(child.text), re.IGNORECASE)
                     ),
                     None,
                 )
-                if re.search(r"\bALSO\b", subject, re.IGNORECASE) or also_branch:
+                if re.search(r"\bALSO\b", mask_cobol_literal_contents(subject), re.IGNORECASE) or also_branch:
                     diagnostics.append({
                         "code": "UNSUPPORTED_EVALUATE_ALSO",
                         "severity": "warning",
