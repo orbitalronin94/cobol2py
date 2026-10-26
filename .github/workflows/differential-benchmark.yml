@@ -46,11 +46,13 @@ jobs:
             echo "sha=unavailable" >> "$GITHUB_OUTPUT"
           fi
       - name: Run paired GnuCOBOL differential benchmark
+        shell: bash
         env:
           BASELINE_AVAILABLE: ${{ steps.baseline.outputs.available }}
           BASELINE_SHA: ${{ steps.baseline.outputs.sha }}
           HEAD_SHA: ${{ github.sha }}
         run: |
+          set -o pipefail
           ARGS=(
             --manifest benchmarks/cases.json
             --translator "$GITHUB_WORKSPACE/cobol2py.py"
