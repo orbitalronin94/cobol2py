@@ -767,23 +767,31 @@ def translate_nodes(
             cond = translate_condition(m.group(1), variables)
             out.append("    " * indent + f"if {cond}:")
             then_body = translate_nodes(node.then_branch, paragraphs, indent + 1, variables)
-            out.extend(then_body if then_body else ["    " * (indent + 1) + "pass"])
+            if not then_body or all(not line.strip() or line.strip().startswith("#") for line in then_body):
+                then_body = ["    " * (indent + 1) + "pass"]
+            out.extend(then_body)
             if node.else_branch:
                 out.append("    " * indent + "else:")
                 else_body = translate_nodes(node.else_branch, paragraphs, indent + 1, variables)
-                out.extend(else_body if else_body else ["    " * (indent + 1) + "pass"])
+                if not else_body or all(not line.strip() or line.strip().startswith("#") for line in else_body):
+                    else_body = ["    " * (indent + 1) + "pass"]
+                out.extend(else_body)
 
         elif node.kind == "perform_inline":
             out.append("    " * indent + f"# PERFORM inline: {node.text}")
             body = translate_nodes(node.body, paragraphs, indent + 1, variables)
-            out.extend(body if body else ["    " * (indent + 1) + "pass"])
+            if not body or all(not line.strip() or line.strip().startswith("#") for line in body):
+                body = ["    " * (indent + 1) + "pass"]
+            out.extend(body)
 
         elif node.kind == "perform_times_inline":
             match = re.match(r"^PERFORM\s+(\d+)\s+TIMES$", node.text, re.IGNORECASE)
             count = match.group(1) if match else "0"
             out.append("    " * indent + f"for _ in range({count}):")
             body = translate_nodes(node.body, paragraphs, indent + 1, variables)
-            out.extend(body if body else ["    " * (indent + 1) + "pass"])
+            if not body or all(not line.strip() or line.strip().startswith("#") for line in body):
+                body = ["    " * (indent + 1) + "pass"]
+            out.extend(body)
 
         elif node.kind == "evaluate":
             subject = node.text[len("EVALUATE"):].strip()
@@ -805,15 +813,17 @@ def translate_nodes(
                         condition = translate_condition(choice, variables)
                         if subject.upper() == "FALSE":
                             condition = f"not ({condition})"
-                    elif re.search(r"\\s+(?:THRU|THROUGH)\\s+", choice, re.IGNORECASE):
-                        low, high = re.split(r"\\s+(?:THRU|THROUGH)\\s+", choice, maxsplit=1, flags=re.IGNORECASE)
+                    elif re.search(r"\s+(?:THRU|THROUGH)\s+", choice, re.IGNORECASE):
+                        low, high = re.split(r"\s+(?:THRU|THROUGH)\s+", choice, maxsplit=1, flags=re.IGNORECASE)
                         condition = f"{temp_name} >= {translate_literal(low)} and {temp_name} <= {translate_literal(high)}"
                     else:
                         condition = f"{temp_name} == {translate_literal(choice)}"
                     prefix = ("if " if emitted == 0 else "elif ") + condition + ":"
                 out.append("    " * indent + prefix)
                 branch_body = translate_nodes(branch.then_branch, paragraphs, indent + 1, variables)
-                out.extend(branch_body if branch_body else ["    " * (indent + 1) + "pass"])
+                if not branch_body or all(not line.strip() or line.strip().startswith("#") for line in branch_body):
+                    branch_body = ["    " * (indent + 1) + "pass"]
+                out.extend(branch_body)
                 emitted += 1
             if emitted == 0:
                 out.append("    " * indent + f"# EVALUATE sin WHEN: {node.text}")
