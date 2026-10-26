@@ -153,3 +153,13 @@ Añadir una sección con:
 - **Contexto:** COBOL escapa la comilla delimitadora duplicándola; copiar el contenido textual directamente a Python o Java cambia el valor producido.
 - **Consecuencias:** hay regresiones unitarias para ambos delimitadores y ambos backends. Esto no resuelve por sí solo el análisis léxico de literales con comillas duplicadas en todos los contextos de sentencia; el splitter de operandos sigue siendo una limitación que requiere cobertura adicional.
 - **Validación:** el código y las pruebas se han actualizado en `main`; la suite completa aún necesita una ejecución verificable.
+
+
+## D-016 — Hacer visibles las declaraciones de datos no modeladas
+
+- **Fecha:** 2026-10-26.
+- **Estado:** aceptada.
+- **Decisión:** emitir diagnósticos para `OCCURS DEPENDING ON` sin longitud activa dinámica, niveles `66 RENAMES` y nombres de condición de nivel `88`.
+- **Contexto:** el parser omitía algunas declaraciones o conservaba solo la capacidad máxima de una tabla, lo que podía aparentar soporte completo.
+- **Consecuencias:** `--strict` falla cuando se detectan estas construcciones; los diagnósticos ayudan a localizar la brecha, pero no implementan la semántica omitida.
+- **Validación:** se añadieron pruebas de regresión para los tres códigos de diagnóstico; la ejecución real de la suite aún está pendiente de confirmación en CI.
