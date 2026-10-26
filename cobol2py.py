@@ -597,6 +597,14 @@ def parse_cobol(
 # 4. TRADUCCIÓN
 # ============================================================================
 
+PYTHON_BUILTINS_USED = frozenset({
+    "abs", "all", "any", "bool", "dict", "enumerate", "filter", "float",
+    "format", "int", "input", "isinstance", "len", "list", "map", "max",
+    "min", "object", "open", "print", "range", "repr", "round", "str",
+    "sum", "type", "zip",
+})
+
+
 JAVA_RESERVED_WORDS = frozenset({
     "abstract", "assert", "boolean", "break", "byte", "case", "catch", "char",
     "class", "const", "continue", "default", "do", "double", "else", "enum",
@@ -611,7 +619,11 @@ JAVA_RESERVED_WORDS = frozenset({
 
 def normalize_identifier(name: str) -> str:
     normalized = name.replace("-", "_").lower()
-    if keyword.iskeyword(normalized) or normalized in JAVA_RESERVED_WORDS:
+    if (
+        keyword.iskeyword(normalized)
+        or normalized in JAVA_RESERVED_WORDS
+        or normalized in PYTHON_BUILTINS_USED
+    ):
         return "cobol_" + normalized
     return normalized
 
