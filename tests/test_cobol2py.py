@@ -151,6 +151,19 @@ class TranslationTests(unittest.TestCase):
             cobol2py.translate_java_literal('"DON""T"', {}),
         )
 
+    def test_string_comparison_handles_doubled_quote_literals(self):
+        variables = {
+            "WS-NAME": cobol2py.CobolVar(level=1, name="WS-NAME", pic="X(5)")
+        }
+        self.assertEqual(
+            cobol2py.translate_condition('WS-NAME = "DON""T"', variables),
+            'ws_name.ljust(5) == \'DON"T\'',
+        )
+        self.assertEqual(
+            cobol2py.translate_java_condition('WS-NAME = "DON""T"', variables),
+            'Objects.equals(ws_name, "DON\\\"T")',
+        )
+
     def test_value_space_zero_and_low_value_figuratives(self):
         self.assertEqual(cobol2py.translate_literal("ZEROES"), "0")
         self.assertEqual(cobol2py.translate_literal("LOW-VALUES"), repr("\x00"))
