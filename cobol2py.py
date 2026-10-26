@@ -2104,6 +2104,24 @@ def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
                             "message": node.text,
                             "paragraph": paragraph,
                         })
+                literal_left_comparison = re.search(
+                    r"""("(?:[^"]|"")*"|'(?:[^']|'')*')\s*(?:=|==|!=|<>|<=|>=|<|>)\s*([A-Za-z][A-Za-z0-9-]*)\b""",
+                    diagnostic_condition,
+                    re.IGNORECASE,
+                )
+                if literal_left_comparison:
+                    right_var = next(
+                        (item for item in prog.variables if item.name.upper() == literal_left_comparison.group(2).upper()),
+                        None,
+                    )
+                    if right_var and right_var.pic and any(char in right_var.pic.upper() for char in ("X", "A")):
+                        diagnostics.append({
+                            "code": "ALPHANUMERIC_LITERAL_LEFT_COMPARISON_UNSUPPORTED",
+                            "severity": "warning",
+                            "line": node.line,
+                            "message": node.text,
+                            "paragraph": paragraph,
+                        })
             elif node.kind == "evaluate":
                 if not any(child.kind == "when" for child in node.body):
                     diagnostics.append({
