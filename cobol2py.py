@@ -202,7 +202,7 @@ RE_WORKING_STORAGE = re.compile(r"WORKING-STORAGE\s+SECTION", re.IGNORECASE)
 RE_VAR = re.compile(r"^\s*(\d{1,2})\s+([A-Za-z0-9\-]+)\s*(.*?)(?:\.\s*)?$", re.IGNORECASE)
 RE_PIC = re.compile(r"PIC(?:TURE)?\s+(?:IS\s+)?([A-Za-z0-9\(\)VSPX]+)", re.IGNORECASE)
 RE_VALUE = re.compile(
-    r"""VALUE\s+(?:IS\s+)?((?:ALL\s+)?(?:"[^"]*"|'[^']*'|[+-]?\d+(?:\.\d+)?|[A-Za-z][A-Za-z0-9-]*))""",
+    r"""VALUE\s+(?:IS\s+)?((?:ALL\s+)?(?:"(?:[^"]|"")*"|'(?:[^']|'')*'|[+-]?\d+(?:\.\d+)?|[A-Za-z][A-Za-z0-9-]*))""",
     re.IGNORECASE,
 )
 # Patch 2: OCCURS dinámico
@@ -703,7 +703,9 @@ def translate_expr(
     tokens = re.findall(token_pattern, expr)
     out = []
     for tok in tokens:
-        if re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", tok):
+        if tok.startswith(('"', "'")):
+            out.append(translate_literal(tok, variables))
+        elif re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", tok):
             out.append(normalize_data_reference(tok, variables))
         else:
             out.append(tok)
@@ -1136,7 +1138,9 @@ def translate_java_expr(expr: str, variables: dict[str, CobolVar]) -> str:
     token_pattern = r"""("(?:[^"]|"")*"|'(?:[^']|'')*'|[A-Za-z][A-Za-z0-9-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&\[\]-]|\s+|.)"""
     out: list[str] = []
     for token in re.findall(token_pattern, expr):
-        if re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", token):
+        if token.startswith(('"', "'")):
+            out.append(translate_java_literal(token, variables))
+        elif re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", token):
             out.append(translate_java_literal(token, variables))
         else:
             out.append(token)
