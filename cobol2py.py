@@ -1827,6 +1827,31 @@ def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
                         "message": node.text,
                         "paragraph": paragraph,
                     })
+            elif node.kind == "if":
+                match = RE_IF_OPEN.match(node.text)
+                condition = match.group(1) if match else ""
+                comparison = re.search(
+                    r"""([A-Za-z][A-Za-z0-9-]*(?:\\([A-Za-z0-9_-]+\\))?)\\s*(?:<=|>=|<|>)\\s*["']""",
+                    condition,
+                    re.IGNORECASE,
+                )
+                if comparison:
+                    base = re.match(r"[A-Za-z][A-Za-z0-9-]*", comparison.group(1))
+                    variable = (
+                        next(
+                            (item for item in prog.variables if item.name.upper() == base.group(0).upper()),
+                            None,
+                        )
+                        if base else None
+                    )
+                    if variable and variable.pic and any(char in variable.pic.upper() for char in ("X", "A")):
+                        diagnostics.append({
+                            "code": "ALPHANUMERIC_ORDER_COMPARISON_UNSUPPORTED",
+                            "severity": "warning",
+                            "line": node.line,
+                            "message": node.text,
+                            "paragraph": paragraph,
+                        })
             elif node.kind == "evaluate":
                 if not any(child.kind == "when" for child in node.body):
                     diagnostics.append({
