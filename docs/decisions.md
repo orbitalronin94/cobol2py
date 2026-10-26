@@ -135,3 +135,11 @@ Añadir una sección con:
 - **Decisión:** si el ejecutable de referencia GnuCOBOL no puede iniciarse o excede el timeout, el benchmark registra `reference_ok: false`, conserva el detalle en el informe y devuelve un estado de fallo en vez de abortar sin artefactos.
 - **Contexto:** un corpus puede contener un bucle infinito o un entorno de ejecución defectuoso; un fallo abrupto dificulta diagnosticarlo y puede impedir publicar el informe.
 - **Consecuencias:** los fallos de referencia quedan diferenciados de las discrepancias del traductor, aunque ambos bloquean la barrera por defecto. Un código de salida no cero normal del programa COBOL sigue siendo una referencia válida y se compara exactamente.
+
+
+## D-014 — Advertir de la aritmética sin semántica completa de tamaño
+
+- **Estado:** aceptada.
+- **Decisión:** `--strict` genera `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` para `ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE` y `COMPUTE` hasta implementar y verificar la capacidad de dígitos del campo receptor y `ON SIZE ERROR`.
+- **Contexto:** la aritmética Python sin límites puede producir resultados que COBOL truncaría, rechazaría o manejaría mediante una rama de error.
+- **Consecuencias:** el modo estricto es conservador para programas con aritmética; no afirma que cada operación vaya a desbordar, sino que la equivalencia completa aún no está garantizada.
