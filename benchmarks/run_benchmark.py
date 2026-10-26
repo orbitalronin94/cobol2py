@@ -25,7 +25,7 @@ def run(command: list[str], *, timeout: int = 15) -> subprocess.CompletedProcess
     )
 
 
-def run_translator(translator: Path, source: Path, work: Path) -> dict[str, Any]:
+def run_translator(translator: Path, source: Path, work: Path, reference_returncode: int) -> dict[str, Any]:
     generated = work / (source.stem + ".py")
     try:
         result = run([sys.executable, str(translator), str(source), "--format", "auto"])
@@ -42,11 +42,11 @@ def run_translator(translator: Path, source: Path, work: Path) -> dict[str, Any]
     except (OSError, subprocess.TimeoutExpired) as exc:
         return {"matched": False, "reason": f"translated Python failed to launch: {exc}"}
     return {
-        "matched": executed.returncode == 0 and executed.stdout == work.joinpath("reference.out").read_text(encoding="utf-8"),
+        "matched": executed.returncode == reference_returncode and executed.stdout == work.joinpath("reference.out").read_text(encoding="utf-8"),
         "returncode": executed.returncode,
         "stdout": executed.stdout,
         "stderr": executed.stderr[-500:],
-        "reason": None if executed.returncode == 0 and executed.stdout == work.joinpath("reference.out").read_text(encoding="utf-8")
+        "reason": None if executed.returncode == reference_returncode and executed.stdout == work.joinpath("reference.out").read_text(encoding="utf-8")
                   else "stdout or exit status differs from GnuCOBOL",
     }
 
@@ -104,11 +104,11 @@ def main() -> int:
                 item["reference_returncode"] = reference.returncode
                 (work / "reference.out").write_text(reference.stdout, encoding="utf-8")
                 if args.baseline_translator:
-                    item["baseline"] = run_translator(args.baseline_translator.resolve(), source.resolve(), work)
+                    item["baseline"] = run_translator(args.baseline_translator.resolve(), source.resolve(), work, reference.returncode)
                     # Preserve reference output if translator execution changed no file; run_translator only reads it.
                 else:
                     item["baseline"] = None
-                item["candidate"] = run_translator(args.translator.resolve(), source.resolve(), work)
+                item["candidate"] = run_translator(args.translator.resolve(), source.resolve(), work, reference.returncode)
                 # A non-zero COBOL exit is still a valid reference; require exact return-code agreement.
                 for key in ("baseline", "candidate"):
                     result = item.get(key)
