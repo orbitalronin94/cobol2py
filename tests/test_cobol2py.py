@@ -176,11 +176,11 @@ class EndToEndTests(unittest.TestCase):
             output.getvalue(),
             "INICIO DEL PROGRAMA\n"
             "PROCESANDO...\n"
-            "ACUMULADO: 10\n"
-            "ACUMULADO: 20\n"
-            "ACUMULADO: 30\n"
+            "ACUMULADO: 000010\n"
+            "ACUMULADO: 000020\n"
+            "ACUMULADO: 000030\n"
             "CODIGO ALTO\n"
-            "TOTAL FINAL: 30\n"
+            "TOTAL FINAL: 000030\n"
             "STATUS ACTIVO\n",
             generated,
         )
@@ -200,7 +200,7 @@ class EndToEndTests(unittest.TestCase):
 
         generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
         compile(generated, "<cobol2py-output>", "exec")
-        self.assertIn('print("".join(str(x) for x in ["OK"])', generated)
+        self.assertIn('print("".join([str("OK")]))', generated)
         self.assertIn("def main_para():", generated)
 
 
