@@ -14,6 +14,7 @@ Cambios v0.0.4 sobre v0.0.3:
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import re
 import sys
@@ -737,7 +738,13 @@ def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = No
     # COBOL pads the shorter operand with spaces for alphanumeric comparisons.
     # Match a translated data-name (including a table element) against a literal.
     def pad_literal(match: re.Match[str]) -> str:
-        left, operator, quote, literal = match.groups()
+        left, operator, literal_token = match.groups()
+        try:
+            literal = ast.literal_eval(literal_token)
+        except (SyntaxError, ValueError):
+            return match.group(0)
+        if not isinstance(literal, str):
+            return match.group(0)
         base = re.match(r"[a-z_][a-z0-9_]*", left)
         if base is None:
             return match.group(0)
@@ -761,7 +768,7 @@ def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = No
         return f"{left}.ljust({compare_width}) {operator} {padded!r}"
 
     return re.sub(
-        r"""([a-z_][a-z0-9_]*(?:\[[^\]]+\])*)\s*(==|!=)\s*(["'])(.*?)\3""",
+        r"""([a-z_][a-z0-9_]*(?:\[[^\]]+\])*)\s*(==|!=)\s*("(?:\\\\.|[^"\\\\])*"|'(?:\\\\.|[^'\\\\])*')""",
         pad_literal,
         translated,
     )
@@ -1150,11 +1157,14 @@ def translate_java_expr(expr: str, variables: dict[str, CobolVar]) -> str:
 def translate_java_condition(condition: str, variables: dict[str, CobolVar]) -> str:
     text = condition.strip()
     string_comparison = re.fullmatch(
-        r"""(.+?)\s*(==|=|!=|<>)\s*(["'])(.*?)\3""",
+        r"""(.+?)\s*(==|=|!=|<>)\s*("(?:[^"]|"")*"|'(?:[^']|'')*')""",
         text,
     )
     if string_comparison:
-        left, operator, _, literal = string_comparison.groups()
+        left, operator, literal_token = string_comparison.groups()
+        literal = decode_cobol_quoted_literal(literal_token)
+        if literal is None:
+            literal = literal_token[1:-1]
         base = re.match(r"[A-Za-z0-9-]+", left.strip())
         variable = variables.get(base.group(0).upper()) if base else None
         if variable is not None and variable.pic and any(char in variable.pic.upper() for char in ("X", "A")):
