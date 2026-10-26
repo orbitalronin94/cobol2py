@@ -53,3 +53,6 @@ El benchmark requiere GnuCOBOL instalado. Las pruebas unitarias comprueban compo
 
 
 El backend Python trata `STOP RUN` como terminación del programa: una señal interna se propaga desde cualquier párrafo llamado y se captura en el punto de entrada, evitando que el párrafo llamador continúe ejecutando sentencias. El backend Java usa `System.exit(0)` para el programa independiente generado.
+
+
+El modo estricto también advierte sobre operaciones aritméticas (`ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE`, `COMPUTE`) porque la semántica completa de desbordamiento del campo receptor y `ON SIZE ERROR` todavía no está garantizada.
