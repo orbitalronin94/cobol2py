@@ -641,6 +641,17 @@ def normalize_data_reference(
     return expr
 
 
+def decode_cobol_quoted_literal(token: str) -> Optional[str]:
+    """Decode a complete COBOL quoted literal, including doubled quote escapes."""
+    text = token.strip()
+    if len(text) < 2 or text[0] not in ("'", '"') or text[-1] != text[0]:
+        return None
+    quote = text[0]
+    inner = text[1:-1]
+    # A matching quote inside a COBOL literal is represented by two copies.
+    return inner.replace(quote + quote, quote)
+
+
 def translate_literal(
     token: str,
     variables: Optional[dict[str, CobolVar]] = None,
@@ -651,8 +662,9 @@ def translate_literal(
     all_literal = re.fullmatch(r"""ALL\s+(["'])(.*?)\1""", t, re.IGNORECASE)
     if all_literal:
         return repr(all_literal.group(2))
-    if (t.startswith('"') and t.endswith('"')) or (t.startswith("'") and t.endswith("'")):
-        return '"' + t[1:-1] + '"'
+    quoted = decode_cobol_quoted_literal(t)
+    if quoted is not None:
+        return repr(quoted)
     if re.match(r"^[+-]?\d+$", t):
         return t
     if re.match(r"^[+-]?\d+\.\d+$", t):
@@ -1087,8 +1099,9 @@ def translate_java_literal(token: str, variables: dict[str, CobolVar]) -> str:
     all_literal = re.fullmatch(r"""ALL\s+(["'])(.*?)\1""", t, re.IGNORECASE)
     if all_literal:
         return java_string_literal(all_literal.group(2))
-    if (t.startswith('"') and t.endswith('"')) or (t.startswith("'") and t.endswith("'")):
-        return java_string_literal(t[1:-1])
+    quoted = decode_cobol_quoted_literal(t)
+    if quoted is not None:
+        return java_string_literal(quoted)
     if re.match(r"^[+-]?\d+(?:\.\d+)?$", t):
         return t
     if t.upper() in ("SPACE", "SPACES"):
