@@ -210,6 +210,62 @@ class GnuCobolTraceTests(unittest.TestCase):
         self.assertIn('DISPLAY "TRACE_VAR|WS-TABLE(2)|" WS-TABLE(2).', instrumented)
 
 
+class StrictCliTests(unittest.TestCase):
+    def test_strict_mode_returns_two_for_unsupported_statement(self):
+        import tempfile
+        from contextlib import redirect_stderr, redirect_stdout
+        from io import StringIO
+        from pathlib import Path
+        from unittest.mock import patch
+
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. STRICTTEST.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            'CALL "UNKNOWN-SUBPROGRAM".',
+            "STOP RUN.",
+        ])
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "strict.cbl"
+            path.write_text(source, encoding="utf-8")
+            stdout, stderr = StringIO(), StringIO()
+            with patch("sys.argv", ["cobol2py", str(path), "--strict"]):
+                with redirect_stdout(stdout), redirect_stderr(stderr):
+                    status = cobol2py.main()
+        self.assertEqual(status, 2)
+        self.assertEqual(stdout.getvalue(), "")
+        self.assertIn("UNSUPPORTED_STATEMENT", stderr.getvalue())
+
+    def test_diagnostics_json_emits_machine_readable_list(self):
+        import json
+        import tempfile
+        from contextlib import redirect_stderr, redirect_stdout
+        from io import StringIO
+        from pathlib import Path
+        from unittest.mock import patch
+
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. JSONTEST.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            'CALL "UNKNOWN-SUBPROGRAM".',
+            "STOP RUN.",
+        ])
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "diagnostics.cbl"
+            path.write_text(source, encoding="utf-8")
+            stdout, stderr = StringIO(), StringIO()
+            with patch("sys.argv", ["cobol2py", str(path), "--diagnostics-json"]):
+                with redirect_stdout(stdout), redirect_stderr(stderr):
+                    status = cobol2py.main()
+        self.assertEqual(status, 0)
+        diagnostics = json.loads(stderr.getvalue())
+        self.assertTrue(any(item["code"] == "UNSUPPORTED_STATEMENT" for item in diagnostics))
+        self.assertIn("def main", stdout.getvalue())
+
+
 class JavaBackendTests(unittest.TestCase):
     def test_java_backend_emits_valid_shape_for_shared_ast(self):
         source = "\n".join([
