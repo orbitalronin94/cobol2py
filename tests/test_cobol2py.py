@@ -189,7 +189,7 @@ class TranslationTests(unittest.TestCase):
         ])
         variable = cobol2py.parse_cobol(source, source_format="free").variables[0]
         self.assertEqual(variable.value, '"DON""T"')
-        self.assertIn('DON"T', variable.py_default())
+        self.assertEqual(eval(variable.py_default()), 'DON"T ')
 
     def test_value_clause_parses_signed_and_decimal_literals(self):
         source = "\n".join([
