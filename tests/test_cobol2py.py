@@ -930,6 +930,7 @@ class DiagnosticTests(unittest.TestCase):
         self.assertIn("UNSUPPORTED_RENAMES", by_code)
         self.assertIn("UNSUPPORTED_CONDITION_NAME_88", by_code)
         self.assertIn("dynamic active length is not implemented", by_code["OCCURS_DEPENDING_ON_UNSUPPORTED"]["message"])
+        self.assertEqual(by_code["OCCURS_DEPENDING_ON_UNSUPPORTED"]["line"], 6)
 
     def test_collect_diagnostics_reports_unsupported_and_malformed_constructs(self):
         program = cobol2py.Program(
