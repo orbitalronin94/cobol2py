@@ -56,3 +56,8 @@ El backend Python trata `STOP RUN` como terminación del programa: una señal in
 
 
 El modo estricto también advierte sobre operaciones aritméticas (`ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE`, `COMPUTE`) porque la semántica completa de desbordamiento del campo receptor y `ON SIZE ERROR` todavía no está garantizada.
+
+
+## Literales COBOL
+
+La conversión de literales reconoce las comillas delimitadoras duplicadas de COBOL y serializa el valor decodificado con el escape del lenguaje destino. Los patrones de tokenización de operandos y expresiones deben mantener el literal completo como un único token. Esta regla no sustituye un lexer COBOL completo.
