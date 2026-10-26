@@ -38,3 +38,10 @@ jobs:
           python cobol2py.py samples/realtest.cbl > /tmp/realtest.py
           python /tmp/realtest.py > /tmp/python.out
           diff -u /tmp/cobol.out /tmp/python.out
+      - name: Compare MOVE field-sizing semantics
+        run: |
+          cobc -x -o /tmp/move_semantics samples/move_semantics.cbl
+          /tmp/move_semantics > /tmp/move-cobol.out
+          python cobol2py.py samples/move_semantics.cbl > /tmp/move_semantics.py
+          python /tmp/move_semantics.py > /tmp/move-python.out
+          diff -u /tmp/move-cobol.out /tmp/move-python.out
