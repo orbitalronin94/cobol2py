@@ -1710,7 +1710,7 @@ def main() -> int:
     ap.add_argument("--lang", choices=("python", "java"), default="python", help="Lenguaje de salida (por defecto: python)")
     ap.add_argument(
         "--strict", action="store_true",
-        help="Falla si hay construcciones no soportadas, copybooks sin resolver o semántica de datos parcialmente cubierta",
+        help="Falla si hay construcciones no soportadas, copybooks sin resolver o semántica de datos/aritmética parcialmente cubierta",
     )
     ap.add_argument(
         "--diagnostics-json", action="store_true",
