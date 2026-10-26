@@ -183,3 +183,13 @@ Añadir una sección con:
 - **Contexto:** la generación actual de valores por defecto puede colapsar el grupo a un único diccionario en vez de una lista de grupos.
 - **Consecuencias:** el modo estricto detecta esta forma de almacenamiento y evita sugerir equivalencia; la implementación de tablas de grupos queda pendiente.
 - **Validación:** prueba unitaria que comprueba el diagnóstico y su línea de origen; la suite completa todavía no está confirmada en CI.
+
+
+## D-019 — Evitar palabras reservadas en identificadores generados
+
+- **Fecha:** 2026-10-26.
+- **Estado:** aceptada.
+- **Decisión:** prefijar los nombres COBOL que coincidan con palabras reservadas de Python o Java con `cobol_`, aplicando la misma normalización a declaraciones, referencias y subíndices.
+- **Contexto:** un nombre de dato o párrafo legal en COBOL puede coincidir con una palabra reservada del lenguaje destino y producir salida inválida.
+- **Consecuencias:** se prioriza la sintaxis válida sobre conservar literalmente el nombre; el prefijo debe aplicarse de forma consistente en ambos backends.
+- **Validación:** pruebas unitarias de normalización para `CLASS` e índices con `INT`; la suite completa sigue pendiente de confirmación en CI.
