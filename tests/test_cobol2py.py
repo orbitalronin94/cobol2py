@@ -34,6 +34,12 @@ class PreprocessTests(unittest.TestCase):
             [(1, "IDENTIFICATION DIVISION."), (2, 'DISPLAY "A *> B".')],
         )
 
+    def test_split_cobol_items_keeps_doubled_quote_literals_atomic(self):
+        self.assertEqual(
+            cobol2py.split_cobol_items('"DON""T" \'IT\'\'S OK\''),
+            ['"DON""T"', "'IT''S OK'"],
+        )
+
     def test_split_concat_statements_keeps_quoted_text_atomic(self):
         source = 'DISPLAY "MOVE END-IF *> inside" MOVE WS-A TO WS-B'
         self.assertEqual(
@@ -105,15 +111,15 @@ class TranslationTests(unittest.TestCase):
         self.assertEqual(cobol2py.translate_move_value('ALL "Y"', "WS-FLAG", variables), "'YYYY'")
 
     def test_doubled_quotes_in_cobol_literals_are_decoded(self):
-        self.assertEqual(cobol2py.translate_literal('"DON""T"'), "'DON\\\"T'")
-        self.assertEqual(cobol2py.translate_literal("'IT''S OK'"), '"IT\\\'S OK"')
+        self.assertEqual(cobol2py.translate_literal('"DON""T"'), "'DON\"T'")
+        self.assertEqual(cobol2py.translate_literal("'IT''S OK'"), "\"IT'S OK\"")
         self.assertEqual(
             cobol2py.translate_java_literal('"DON""T"', {}),
             '"DON\\\"T"',
         )
         self.assertEqual(
             cobol2py.translate_java_literal("'IT''S OK'", {}),
-            '"IT\\\'S OK"',
+            '"IT\'S OK"',
         )
 
     def test_value_space_zero_and_low_value_figuratives(self):
