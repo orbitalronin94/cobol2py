@@ -116,6 +116,6 @@ Añadir una sección con:
 ## D-011 — Modo estricto y diagnósticos estructurados
 
 - **Estado:** aceptada.
-- **Decisión:** exponer `--strict` para rechazar sentencias no soportadas, copybooks no resueltos y estructuras de control malformadas; `--diagnostics-json` emite diagnósticos con código, severidad, línea y mensaje por stderr.
+- **Decisión:** exponer `--strict` para rechazar sentencias no soportadas, copybooks no resueltos, estructuras de control malformadas, `REDEFINES` y cláusulas `PIC` numéricas cuya semántica no está garantizada; `--diagnostics-json` emite diagnósticos con código, severidad, línea y mensaje por stderr.
 - **Contexto:** comentarios de advertencia en el código generado son útiles para lectura, pero pueden pasar inadvertidos en automatizaciones.
 - **Consecuencias:** los consumidores pueden distinguir una traducción parcial de una salida sin los diagnósticos conocidos. El modo estricto solo cubre las limitaciones detectables por el parser actual; no garantiza equivalencia semántica.
