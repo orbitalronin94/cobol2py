@@ -213,3 +213,13 @@ Añadir una sección con:
 - **Contexto:** `V` declara una posición decimal implícita; no es un carácter visible del campo almacenado.
 - **Consecuencias:** la salida de `DISPLAY` es más cercana a la representación numérica COBOL para el subconjunto sencillo. Signo, redondeo, edición y precisión aritmética siguen siendo límites independientes.
 - **Validación:** prueba unitaria de la expresión generada; no se ha ejecutado la suite completa en este entorno.
+
+
+## D-025 — Aplicar NOT al predicado en el backend Java
+
+- **Fecha:** 2026-10-26.
+- **Estado:** aceptada para predicados simples y condiciones compuestas separadas por AND/OR.
+- **Decisión:** agrupar la negación como `!(predicado)` antes de emitir la condición Java, en vez de anteponer `!` al primer operando.
+- **Contexto:** la traducción directa de `NOT WS-X = valor` como `!ws_x == valor` no es Java válido para operandos numéricos y no representa la negación del predicado completo.
+- **Consecuencias:** se corrige la precedencia para las condiciones simples cubiertas; condiciones abreviadas y gramáticas complejas siguen requiriendo pruebas adicionales.
+- **Validación:** prueba unitaria para `NOT WS-B = 2`; la suite completa todavía no se ha confirmado en CI.
