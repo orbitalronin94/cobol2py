@@ -378,10 +378,7 @@ def build_tree(units: list[tuple[int, str]]) -> list[Node]:
             continue
 
         if (
-            upper.startswith("PERFORM")
-            and not normalized.endswith(".")
-            and "TIMES" not in upper
-            and "UNTIL" not in upper
+            upper == "PERFORM"
         ):
             node = Node(kind="perform_inline", text=normalized, line=line)
             current_list.append(node)
