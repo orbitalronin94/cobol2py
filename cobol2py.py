@@ -748,20 +748,16 @@ def translate_expr(
 
 # Patch 1: normalización de operadores
 def rewrite_outside_literals(text: str, transform) -> str:
-    """Apply a text rewrite only to source outside COBOL quoted literals."""
-    output: list[str] = []
-    chunk: list[str] = []
+    """Rewrite COBOL operators without modifying quoted literal contents."""
+    protected: list[str] = []
+    literals: list[tuple[str, str]] = []
     i = 0
     while i < len(text):
-        char = text[i]
-        if char not in ("'", '"'):
-            chunk.append(char)
+        if text[i] not in ("'", '"'):
+            protected.append(text[i])
             i += 1
             continue
-        if chunk:
-            output.append(transform("".join(chunk)))
-            chunk = []
-        quote = char
+        quote = text[i]
         start = i
         i += 1
         while i < len(text):
@@ -772,10 +768,13 @@ def rewrite_outside_literals(text: str, transform) -> str:
                 i += 1
                 break
             i += 1
-        output.append(text[start:i])
-    if chunk:
-        output.append(transform("".join(chunk)))
-    return "".join(output)
+        marker = f"COBOL_LITERAL_TOKEN_{len(literals)}"
+        literals.append((marker, text[start:i]))
+        protected.append(marker)
+    rewritten = transform("".join(protected))
+    for marker, literal in literals:
+        rewritten = rewritten.replace(marker, literal)
+    return rewritten
 
 
 def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = None) -> str:
