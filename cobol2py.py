@@ -1815,6 +1815,33 @@ def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
                 "message": f"{variable.name} PIC {variable.pic}: sign, scale, or scaling semantics are not generally guaranteed",
             })
 
+    variable_names = {normalize_name(variable.name) for variable in prog.variables}
+    generated_paragraph_names: dict[str, list[str]] = {}
+    if prog.paragraphs.get("__MAIN__"):
+        generated_paragraph_names.setdefault("main", []).append("__MAIN__")
+    for paragraph_name in prog.paragraphs:
+        if paragraph_name == "__MAIN__":
+            continue
+        generated_paragraph_names.setdefault(normalize_name(paragraph_name), []).append(paragraph_name)
+    for generated_name, source_names in generated_paragraph_names.items():
+        if len(source_names) > 1 or generated_name in variable_names:
+            diagnostics.append({
+                "code": "PYTHON_IDENTIFIER_COLLISION",
+                "severity": "warning",
+                "line": next(
+                    (
+                        line_number for line_number, source_line in prog.raw_lines
+                        if (match := RE_PARAGRAPH.match(source_line.strip()))
+                        and match.group(1).upper() in source_names
+                    ),
+                    None,
+                ),
+                "message": (
+                    f"Generated paragraph name {generated_name!r} collides with "
+                    f"another paragraph or a WORKING-STORAGE name: {', '.join(source_names)}"
+                ),
+            })
+
     def visit(nodes: list[Node], paragraph: str) -> None:
         for node in nodes:
             if node.kind == "malformed":
