@@ -203,3 +203,13 @@ Añadir una sección con:
 - **Contexto:** reemplazos textuales de `AND`, `NOT` o `IS` podían alterar el valor de una cadena y cambiar la condición generada.
 - **Consecuencias:** las comillas y su contenido permanecen intactos durante la normalización de operadores; la conversión del literal se hace después por el traductor del lenguaje destino.
 - **Validación:** regresiones para literales con comillas duplicadas y palabras como `NOT`/`AND`; la ejecución completa de tests sigue pendiente de confirmación en CI.
+
+
+## D-021 — Mostrar PIC con V como dígitos implícitos en DISPLAY
+
+- **Fecha:** 2026-10-26.
+- **Estado:** aceptada para PIC numéricas simples con `V`.
+- **Decisión:** al emitir `DISPLAY` de un campo numérico con decimal implícito, formatear la escala declarada y eliminar el punto decimal, rellenando hasta el número de posiciones `9`.
+- **Contexto:** `V` declara una posición decimal implícita; no es un carácter visible del campo almacenado.
+- **Consecuencias:** la salida de `DISPLAY` es más cercana a la representación numérica COBOL para el subconjunto sencillo. Signo, redondeo, edición y precisión aritmética siguen siendo límites independientes.
+- **Validación:** prueba unitaria de la expresión generada; no se ha ejecutado la suite completa en este entorno.
