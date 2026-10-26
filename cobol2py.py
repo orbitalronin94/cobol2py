@@ -768,7 +768,7 @@ def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = No
         return f"{left}.ljust({compare_width}) {operator} {padded!r}"
 
     return re.sub(
-        r"""([a-z_][a-z0-9_]*(?:\[[^\]]+\])*)\s*(==|!=)\s*("(?:\\\\.|[^"\\\\])*"|'(?:\\\\.|[^'\\\\])*')""",
+        r"""([a-z_][a-z0-9_]*(?:\[[^\]]+\])*)\s*(==|!=)\s*("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')""",
         pad_literal,
         translated,
     )
