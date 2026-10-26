@@ -30,6 +30,20 @@ class BenchmarkExitPolicyTests(unittest.TestCase):
         report = {"cases": [{"compile_ok": False, "candidate": {"matched": False}}]}
         self.assertTrue(has_candidate_failures(report))
 
+    def test_reference_runtime_failure_fails(self):
+        report = {
+            "cases": [{
+                "compile_ok": True,
+                "reference_ok": False,
+                "candidate": {"matched": False},
+            }]
+        }
+        self.assertTrue(has_candidate_failures(report))
+
+    def test_legacy_report_without_reference_ok_remains_compatible(self):
+        report = {"cases": [{"compile_ok": True, "candidate": {"matched": True}}]}
+        self.assertFalse(has_candidate_failures(report))
+
     def test_missing_candidate_result_fails_closed(self):
         report = {"cases": [{"compile_ok": True, "candidate": None}]}
         self.assertTrue(has_candidate_failures(report))
