@@ -1025,6 +1025,19 @@ class DiagnosticTests(unittest.TestCase):
             {item["code"] for item in diagnostics},
         )
 
+    def test_collect_diagnostics_warns_on_python_identifier_collisions(self):
+        program = cobol2py.Program(
+            variables=[cobol2py.CobolVar(level=1, name="MAIN", pic="9")],
+            paragraphs={
+                "__MAIN__": [cobol2py.Node(kind="stmt", text="CONTINUE", line=2)],
+                "MAIN": [cobol2py.Node(kind="stmt", text="CONTINUE", line=4)],
+            },
+            paragraph_order=["__MAIN__", "MAIN"],
+            raw_lines=[(4, "MAIN.")],
+        )
+        diagnostics = cobol2py.collect_diagnostics(program)
+        self.assertIn("PYTHON_IDENTIFIER_COLLISION", {item["code"] for item in diagnostics})
+
     def test_collect_diagnostics_warns_on_evaluate_also(self):
         program = cobol2py.Program(
             paragraphs={
