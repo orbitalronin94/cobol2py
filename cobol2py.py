@@ -983,7 +983,36 @@ def translate_statement(
 
     m = re.match(rf"ACCEPT\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
-        return [f"{normalize_data_reference(m.group(1), variables)} = input()"]
+        target = m.group(1)
+        target_expr = normalize_data_reference(target, variables)
+        base = re.match(r"[A-Za-z0-9-]+", target)
+        variable = variables.get(base.group(0).upper()) if base and variables else None
+        if variable is None or not variable.pic:
+            return [f"{target_expr} = input()"]
+        pic = variable.pic.upper()
+        if any(char in pic for char in ("X", "A")):
+            width = pic_character_count(pic)
+            if width:
+                return [f"{target_expr} = str(input())[:{width}].ljust({width})"]
+            return [f"{target_expr} = input()"]
+        if "9" in pic:
+            digits = pic_digit_count(pic)
+            if "V" in pic:
+                scale = pic_digit_count(pic.split("V", 1)[1])
+                factor = 10 ** scale
+                value = (
+                    f"(-1 if float(_cobol_accept_value) < 0 else 1) * "
+                    f"((int(abs(float(_cobol_accept_value)) * {factor}) % (10 ** {digits})) / {factor})"
+                )
+            elif "S" in pic:
+                value = (
+                    f"(-1 if int(_cobol_accept_value) < 0 else 1) * "
+                    f"(abs(int(_cobol_accept_value)) % (10 ** {digits}))"
+                )
+            else:
+                value = f"int(_cobol_accept_value) % (10 ** {digits})"
+            return ["_cobol_accept_value = input()", f"{target_expr} = {value}"]
+        return [f"{target_expr} = input()"]
 
     m = re.match(rf"MOVE\s+(.+?)\s+TO\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
@@ -1403,10 +1432,22 @@ def translate_java_statement(
         match = re.match(rf"ACCEPT\s+({DATA_REF_PATTERN})$", text, re.IGNORECASE)
         if match:
             target = match.group(1)
-            variable = variables.get(re.match(r"[A-Za-z0-9-]+", target).group(0).upper())
+            base = re.match(r"[A-Za-z0-9-]+", target)
+            variable = variables.get(base.group(0).upper()) if base else None
+            if variable and variable.pic and any(char in variable.pic.upper() for char in ("X", "A")):
+                width = pic_character_count(variable.pic)
+                value = f"fit(SCANNER.nextLine(), {width})" if width else "SCANNER.nextLine()"
+                return [java_assignment_statement(target, "=", value, variables)]
             if variable and variable.pic and "9" in variable.pic.upper():
-                parser = "Double.parseDouble" if "V" in variable.pic.upper() else "Integer.parseInt"
-                return [java_assignment_statement(target, "=", f"{parser}(SCANNER.nextLine())", variables)]
+                pic = variable.pic.upper()
+                parser = "Double.parseDouble" if "V" in pic else "Integer.parseInt"
+                parsed = f"{parser}(SCANNER.nextLine())"
+                digits = pic_digit_count(pic)
+                scale = pic_digit_count(pic.split("V", 1)[1]) if "V" in pic else 0
+                value = f"moveNumeric((double)({parsed}), {digits}, {scale})"
+                if "V" not in pic:
+                    value = f"(int){value}"
+                return [java_assignment_statement(target, "=", value, variables)]
             return [java_assignment_statement(target, "=", "SCANNER.nextLine()", variables)]
     move = re.match(rf"MOVE\s+(.+?)\s+TO\s+({DATA_REF_PATTERN})$", text, re.IGNORECASE)
     if move:
