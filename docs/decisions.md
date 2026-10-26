@@ -193,3 +193,13 @@ Añadir una sección con:
 - **Contexto:** un nombre de dato o párrafo legal en COBOL puede coincidir con una palabra reservada del lenguaje destino y producir salida inválida.
 - **Consecuencias:** se prioriza la sintaxis válida sobre conservar literalmente el nombre; el prefijo debe aplicarse de forma consistente en ambos backends.
 - **Validación:** pruebas unitarias de normalización para `CLASS` e índices con `INT`; la suite completa sigue pendiente de confirmación en CI.
+
+
+## D-020 — Reescribir operadores solo fuera de literales
+
+- **Fecha:** 2026-10-26.
+- **Estado:** aceptada.
+- **Decisión:** normalizar palabras reservadas y operadores de condiciones únicamente en fragmentos de código fuera de literales COBOL entre comillas.
+- **Contexto:** reemplazos textuales de `AND`, `NOT` o `IS` podían alterar el valor de una cadena y cambiar la condición generada.
+- **Consecuencias:** las comillas y su contenido permanecen intactos durante la normalización de operadores; la conversión del literal se hace después por el traductor del lenguaje destino.
+- **Validación:** regresiones para literales con comillas duplicadas y palabras como `NOT`/`AND`; la ejecución completa de tests sigue pendiente de confirmación en CI.
