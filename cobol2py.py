@@ -1071,9 +1071,9 @@ def translate_java_literal(token: str, variables: dict[str, CobolVar]) -> str:
     if t.upper() in ("ZERO", "ZEROS", "ZEROES"):
         return "0"
     if t.upper() in ("LOW-VALUE", "LOW-VALUES"):
-        return '"\\u0000"'
+        return java_string_literal("\x00")
     if t.upper() in ("HIGH-VALUE", "HIGH-VALUES"):
-        return '"\\u00ff"'
+        return java_string_literal("\xff")
     if t.upper() in ("QUOTE", "QUOTES"):
         return '"\\\""'
     if t.upper() == "TRUE":
@@ -1184,6 +1184,32 @@ def java_field_default(variable: CobolVar, variables: dict[str, CobolVar]) -> st
     return "0.0" if "V" in pic else "0"
 
 
+def java_assignment_statement(
+    target: str,
+    operator: str,
+    value: str,
+    variables: dict[str, CobolVar],
+) -> str:
+    """Emit assignment to a scalar field or a 1-based COBOL table element."""
+    match = re.fullmatch(
+        r"([A-Za-z0-9-]+)\(([A-Za-z0-9_-]+)\)(?:\s+(?:OF|IN)\s+([A-Za-z0-9-]+))?",
+        target.strip(),
+        re.IGNORECASE,
+    )
+    if not match:
+        return f"{java_data_reference(target, variables)} {operator} {value};"
+    field_name, subscript, qualifier = match.groups()
+    collection_name = field_name + (f" OF {qualifier}" if qualifier else "")
+    collection = java_data_reference(collection_name, variables)
+    index = str(int(subscript) - 1) if subscript.isdigit() else f"{normalize_name(subscript)} - 1"
+    if operator == "=":
+        result = value
+    else:
+        symbol = {"+=": "+", "-=": "-", "*=": "*", "/=": "/"}.get(operator, "+")
+        result = f"{collection}.get({index}) {symbol} ({value})"
+    return f"{collection}.set({index}, {result});"
+
+
 def translate_java_display_item(token: str, variables: dict[str, CobolVar]) -> str:
     base_match = re.match(r"[A-Za-z0-9-]+", token)
     variable = variables.get(base_match.group(0).upper()) if base_match else None
@@ -1218,8 +1244,8 @@ def translate_java_statement(
             variable = variables.get(re.match(r"[A-Za-z0-9-]+", target).group(0).upper())
             if variable and variable.pic and "9" in variable.pic.upper():
                 parser = "Double.parseDouble" if "V" in variable.pic.upper() else "Integer.parseInt"
-                return [f"{java_data_reference(target, variables)} = {parser}(SCANNER.nextLine());"]
-            return [f"{java_data_reference(target, variables)} = SCANNER.nextLine();"]
+                return [java_assignment_statement(target, "=", f"{parser}(SCANNER.nextLine())", variables)]
+            return [java_assignment_statement(target, "=", "SCANNER.nextLine()", variables)]
     move = re.match(rf"MOVE\s+(.+?)\s+TO\s+({DATA_REF_PATTERN})$", text, re.IGNORECASE)
     if move:
         source, target = move.groups()
@@ -1232,30 +1258,30 @@ def translate_java_statement(
             all_literal = re.fullmatch(r"""ALL\s+(["'])(.*?)\1""", source.strip(), re.IGNORECASE)
             if all_literal:
                 value = java_string_literal((all_literal.group(2) * width)[:width])
-            return [f"{target_expr} = fit(String.valueOf({value}), {width});"]
+            return [java_assignment_statement(target, "=", f"fit(String.valueOf({value}), {width})", variables)]
         if variable and variable.pic and "9" in variable.pic.upper():
             digits = pic_digit_count(variable.pic)
             scale = pic_digit_count(variable.pic.upper().split("V", 1)[1]) if "V" in variable.pic.upper() else 0
             moved = f"moveNumeric((double)({value}), {digits}, {scale})"
             if "V" not in variable.pic.upper():
                 moved = f"(int){moved}"
-            return [f"{target_expr} = {moved};"]
-        return [f"{target_expr} = {value};"]
+            return [java_assignment_statement(target, "=", moved, variables)]
+        return [java_assignment_statement(target, "=", value, variables)]
     compute = re.match(rf"COMPUTE\s+({DATA_REF_PATTERN})\s*=\s*(.+)", text, re.IGNORECASE)
     if compute:
-        return [f"{java_data_reference(compute.group(1), variables)} = {translate_java_expr(compute.group(2), variables)};"]
+        return [java_assignment_statement(compute.group(1), "=", translate_java_expr(compute.group(2), variables), variables)]
     for verb, delim, op in (("ADD", "TO", "+="), ("SUBTRACT", "FROM", "-=")):
         match = re.match(rf"{verb}\s+(.+?)\s+{delim}\s+({DATA_REF_PATTERN})$", text, re.IGNORECASE)
         if match:
             operands = split_cobol_items(match.group(1))
             value = " + ".join(translate_java_literal(item, variables) for item in operands)
-            return [f"{java_data_reference(match.group(2), variables)} {op} {value};"]
+            return [java_assignment_statement(match.group(2), op, value, variables)]
     match = re.match(rf"MULTIPLY\s+(.+?)\s+BY\s+({DATA_REF_PATTERN})$", text, re.IGNORECASE)
     if match:
-        return [f"{java_data_reference(match.group(2), variables)} *= {translate_java_literal(match.group(1), variables)};"]
+        return [java_assignment_statement(match.group(2), "*=", translate_java_literal(match.group(1), variables), variables)]
     match = re.match(rf"DIVIDE\s+(.+?)\s+INTO\s+({DATA_REF_PATTERN})$", text, re.IGNORECASE)
     if match:
-        return [f"{java_data_reference(match.group(2), variables)} /= {translate_java_literal(match.group(1), variables)};"]
+        return [java_assignment_statement(match.group(2), "/=", translate_java_literal(match.group(1), variables), variables)]
     match = re.match(r"PERFORM\s+([A-Za-z0-9-]+)\s+(\d+)\s+TIMES", text, re.IGNORECASE)
     if match and match.group(1).upper() in paragraphs:
         return [f"for (int _i = 0; _i < {match.group(2)}; _i++) {{ {normalize_name(match.group(1))}(); }}"]
