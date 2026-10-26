@@ -699,7 +699,7 @@ def translate_expr(
         lambda match: normalize_data_reference(match.group(0), variables),
         expr,
     )
-    token_pattern = r"""("[^"]*"|'[^']*'|[A-Za-z][A-Za-z0-9-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&\[\]-]|\s+|.)"""
+    token_pattern = r"""("(?:[^"]|"")*"|'(?:[^']|'')*'|[A-Za-z][A-Za-z0-9-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&\[\]-]|\s+|.)"""
     tokens = re.findall(token_pattern, expr)
     out = []
     for tok in tokens:
@@ -842,7 +842,7 @@ def translate_move_value(source: str, target: str, variables: dict[str, CobolVar
 
 
 COBOL_TOKEN_RE = re.compile(
-    r'"[^"]*"|\'[^\']*\'|[A-Za-z][A-Za-z0-9-]*(?:\([A-Za-z0-9_-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*)?|,?\s*|(?:\S+)',
+    r'"(?:[^"]|"")*"|\'(?:[^\']|\'\')*\'|[A-Za-z][A-Za-z0-9-]*(?:\([A-Za-z0-9_-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*)?|,?\s*|(?:\S+)',
     re.IGNORECASE,
 )
 
@@ -1133,7 +1133,7 @@ def translate_java_expr(expr: str, variables: dict[str, CobolVar]) -> str:
         lambda match: java_data_reference(match.group(0), variables),
         expr,
     )
-    token_pattern = r"""("[^"]*"|'[^']*'|[A-Za-z][A-Za-z0-9-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&\[\]-]|\s+|.)"""
+    token_pattern = r"""("(?:[^"]|"")*"|'(?:[^']|'')*'|[A-Za-z][A-Za-z0-9-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&\[\]-]|\s+|.)"""
     out: list[str] = []
     for token in re.findall(token_pattern, expr):
         if re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", token):
