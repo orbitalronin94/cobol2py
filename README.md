@@ -321,3 +321,6 @@ Esto no es un producto. Es una herramienta. Y las herramientas se comparten.
 
 **Agencia RONIN** — 2026
 `#1310 — El conocimiento que no se ejecuta es decoración.`
+
+
+Los nombres de datos o párrafos que coinciden con palabras reservadas de Python/Java se generan con el prefijo `cobol_`; esto evita conflictos sintácticos, aunque los identificadores de salida ya no coinciden literalmente con los nombres COBOL.
