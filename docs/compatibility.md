@@ -104,4 +104,4 @@ Los nombres de párrafo que colisionan con variables globales o con otra funció
 
 `ACCEPT` convierte la entrada de campos numéricos simples y recorta/rellena campos `PIC X/A` según su ancho. No reproduce toda la validación de entrada COBOL ni todas las reglas de signo, escala o conversión inválida.
 
-En Java, las comparaciones alfanuméricas incrustadas en condiciones compuestas (`AND`/`OR`) todavía no garantizan el uso de comparación por valor en todas las formas. Las comparaciones de cadenas invertidas (literal a la izquierda) también quedan fuera de la garantía; el modo estricto no detecta todas estas formas, así que revisa las condiciones complejas antes de confiar en equivalencia.
+En Java, las comparaciones directas de un campo `PIC X/A` con un literal a la derecha usan comparación por valor y padding básico, incluso en condiciones compuestas sencillas con `AND`/`OR`. Las comparaciones de cadenas invertidas (literal a la izquierda), comparaciones entre campos alfanuméricos y referencias cualificadas complejas siguen fuera de la garantía; el modo estricto no detecta todas estas formas.
