@@ -1670,7 +1670,7 @@ def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
                 "line": next(
                     (
                         line_number for line_number, source_line in prog.raw_lines
-                        if re.search(rf"^\\s*0*{variable.level}\\s+{re.escape(variable.name)}\\b", source_line, re.IGNORECASE)
+                        if re.search(rf"^\s*0*{variable.level}\s+{re.escape(variable.name)}\b", source_line, re.IGNORECASE)
                     ),
                     None,
                 ),
