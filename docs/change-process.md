@@ -62,3 +62,6 @@ No es necesario añadir un documento largo por cada cambio trivial. Los cambios 
 - Registrar si se añade o retira un caso y por qué.
 - Comparar versiones con el mismo manifiesto siempre que se quiera atribuir el cambio de puntuación al traductor.
 - Informar el número de casos ejecutados, fallidos y no ejecutados, además del porcentaje.
+
+
+El benchmark debe producir informes aun cuando falle la ejecución de la referencia: verifica que compile, que termine dentro del timeout y que su salida/código de retorno puedan usarse como oráculo. No confundas un código de retorno COBOL distinto de cero con un fallo de infraestructura.
