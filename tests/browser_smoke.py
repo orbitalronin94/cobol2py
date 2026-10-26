@@ -44,8 +44,8 @@ async def main() -> None:
             )
             output = await page.locator("#output").inner_text()
             status = await page.locator("#status").inner_text()
-            if 'print("HOLA MUNDO")' not in output:
-                raise AssertionError(f"Expected translated greeting in output, got:\n{output}")
+            if "str(mensaje)" not in output or 'str("GRANDE")' not in output:
+                raise AssertionError(f"Expected translated variable and branch in output, got:\n{output}")
             if "terminada" not in status.lower():
                 raise AssertionError(f"Unexpected translation status: {status}")
             if errors:
