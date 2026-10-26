@@ -66,6 +66,15 @@ class TranslationTests(unittest.TestCase):
             'str("ABCDEFG")[:5].ljust(5)',
         )
 
+    def test_move_keeps_rightmost_digits_for_unsigned_integer_pic(self):
+        variables = {
+            "WS-NUM": cobol2py.CobolVar(level=1, name="WS-NUM", pic="9(3)")
+        }
+        self.assertEqual(
+            cobol2py.translate_move_value("1234", "WS-NUM", variables),
+            "int(1234) % (10 ** 3)",
+        )
+
     def test_hyphenated_identifier_and_subtraction_are_tokenized(self):
         self.assertEqual(cobol2py.translate_expr("WS-NUM - 1"), "ws_num - 1")
         self.assertEqual(cobol2py.translate_expr("WS-NUM + WS-TOTAL"), "ws_num + ws_total")
@@ -197,6 +206,30 @@ class EndToEndTests(unittest.TestCase):
             "STATUS ACTIVO\n",
             generated,
         )
+
+    def test_move_numeric_pic_keeps_rightmost_digits(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\n".join([
+            "       IDENTIFICATION DIVISION.",
+            "       PROGRAM-ID. MOVENUMERIC.",
+            "       DATA DIVISION.",
+            "       WORKING-STORAGE SECTION.",
+            "       01 WS-NUM PIC 9(3).",
+            "       PROCEDURE DIVISION.",
+            "       MAIN.",
+            "           MOVE 1234 TO WS-NUM.",
+            '           DISPLAY WS-NUM.',
+            "           STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<move-numeric-output>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "234\\n", generated)
 
     def test_move_alphanumeric_pic_matches_fixed_width_display(self):
         from contextlib import redirect_stdout
