@@ -196,6 +196,15 @@ python -m unittest discover -s tests -v
 python -m py_compile cobol2py.py
 ```
 
+El formato de origen puede indicarse explícitamente cuando la detección automática sea ambigua:
+
+```bash
+python cobol2py.py programa.cbl --format fixed
+python cobol2py.py programa.cbl --format free
+```
+
+`--format auto` es el valor predeterminado; como las columnas de secuencia en blanco pueden aparecer tanto en formato fijo como en fuentes libres indentadas, no siempre es posible inferir el formato con certeza.
+
 GitHub Actions ejecuta estas comprobaciones con Python 3.10–3.13. La compilación sintáctica de la salida no demuestra equivalencia semántica con COBOL; las pruebas actuales son una base de regresión, no una certificación de migración.
 
 ---
