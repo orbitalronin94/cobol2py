@@ -38,59 +38,117 @@ def detect_source_format(source: str) -> str:
 def collect_trace_variables(
     source: str,
     source_format: str,
-) -> tuple[list[str], list[str]]:
-    variables: list[str] = []
-    skipped: list[str] = []
-    seen: set[str] = set()
-    for _, text in cobol2py.preprocess(source, source_format=source_format):
-        match = cobol2py.RE_VAR.match(text)
-        if not match:
-            continue
-        level = int(match.group(1))
-        if level == 88 or level >= 50:
-            continue
-        name = match.group(2).upper()
-        rest = match.group(3)
-        pic = cobol2py.RE_PIC.search(rest)
-        occurs = cobol2py.RE_OCCURS.search(rest)
-        if pic is None:
-            skipped.append(f"{name}: group item (not displayed as a scalar)")
-            continue
-        if occurs is not None:
-            skipped.append(f"{name}: OCCURS table (requires an explicit subscript)")
-            continue
-        if name == "FILLER":
-            skipped.append("FILLER: unnamed field")
-            continue
-        if name in seen:
-            skipped.append(f"{name}: duplicate data-name (ambiguous without qualification)")
-            continue
-        seen.add(name)
-        variables.append(name)
-    return variables, skipped
+    max_table_items: int = 1000,
+) -> tuple[list[tuple[str, str]], list[str]]:
+    """Return (label, COBOL reference) pairs for scalar fields, groups and tables."""
+    program = cobol2py.parse_cobol(source, source_format=source_format)
+    variables = program.variables
+    name_counts: dict[str, int] = {}
+    for variable in variables:
+        name_counts[variable.name] = name_counts.get(variable.name, 0) + 1
 
+    variables_by_name = {
+        variable.name: variable
+        for variable in variables
+        if name_counts[variable.name] == 1
+    }
+    children_by_parent: dict[str, list[cobol2py.CobolVar]] = {}
+    for variable in variables:
+        if variable.parent_name:
+            children_by_parent.setdefault(variable.parent_name, []).append(variable)
+
+    skipped: list[str] = []
+    for name, count in name_counts.items():
+        if count > 1:
+            skipped.append(f"{name}: duplicate data-name ({count} declarations; ambiguous qualification)")
+
+    trace_entries: list[tuple[str, str]] = []
+    visited: set[str] = set()
+
+    def qualified_reference(
+        variable: cobol2py.CobolVar,
+        own_index: Optional[int],
+        ancestor_indices: dict[str, int],
+    ) -> str:
+        reference = variable.name
+        if own_index is not None:
+            reference += f"({own_index})"
+        parent_name = variable.parent_name
+        while parent_name:
+            parent = variables_by_name.get(parent_name)
+            if parent is None:
+                break
+            parent_index = ancestor_indices.get(parent.name)
+            qualifier = parent.name + (f"({parent_index})" if parent_index is not None else "")
+            reference += f" OF {qualifier}"
+            parent_name = parent.parent_name
+        return reference
+
+    def visit(variable: cobol2py.CobolVar, ancestor_indices: dict[str, int]) -> None:
+        if variable.name == "FILLER":
+            skipped.append("FILLER: unnamed field")
+            return
+        if name_counts.get(variable.name, 0) > 1:
+            return
+        if variable.name in visited and not variable.parent_name:
+            return
+        visited.add(variable.name)
+
+        if variable.is_array:
+            count = variable.occurs or 0
+            if count <= 0:
+                skipped.append(f"{variable.name}: OCCURS count could not be determined")
+                return
+            if count > max_table_items:
+                skipped.append(
+                    f"{variable.name}: {count} OCCURS elements exceeds --max-table-items {max_table_items}"
+                )
+                return
+            for index in range(1, count + 1):
+                ref = qualified_reference(variable, index, ancestor_indices)
+                trace_entries.append((ref, ref))
+                if variable.is_group:
+                    nested_indices = dict(ancestor_indices)
+                    nested_indices[variable.name] = index
+                    for child in children_by_parent.get(variable.name, []):
+                        visit(child, nested_indices)
+            return
+
+        ref = qualified_reference(variable, None, ancestor_indices)
+        trace_entries.append((ref, ref))
+        if variable.is_group:
+            for child in children_by_parent.get(variable.name, []):
+                visit(child, ancestor_indices)
+
+    for variable in variables:
+        if not variable.parent_name:
+            visit(variable, {})
+    if not trace_entries:
+        skipped.append("No traceable data items were found.")
+    return trace_entries, skipped
 
 def instrument_source(
     source: str,
     source_format: str = "auto",
     copybook_paths: Optional[list[str | Path]] = None,
     source_path: Optional[str | Path] = None,
+    max_table_items: int = 1000,
 ) -> tuple[str, list[str], list[str], list[str], str]:
     """Expand COPYs and inject one DISPLAY snapshot per scalar variable."""
     expanded, unresolved_copybooks = cobol2py.resolve_copybooks(
         source,
         copybook_paths=copybook_paths,
         source_path=source_path,
+        max_table_items=max_table_items,
     )
     actual_format = detect_source_format(expanded) if source_format == "auto" else source_format
-    variables, skipped = collect_trace_variables(expanded, actual_format)
-    if not variables:
-        skipped.append("No scalar data items were found to trace.")
+    trace_entries, skipped = collect_trace_variables(expanded, actual_format, max_table_items)
+    variables = [label for label, _ in trace_entries]
 
     prefix = "       " if actual_format == "fixed" else "    "
     snapshot = [
-        f'{prefix}DISPLAY "TRACE_VAR|{name}|" {name}.'
-        for name in variables
+        f'{prefix}DISPLAY "TRACE_VAR|{label}|" {reference}.'
+        for label, reference in trace_entries
     ]
     terminal = re.compile(r"^\s*(?:(?:\d{6})\s+)?(?:STOP\s+RUN|GOBACK|EXIT\s+PROGRAM)\b", re.IGNORECASE)
     end_program = re.compile(r"^\s*(?:(?:\d{6})\s+)?END\s+PROGRAM\b", re.IGNORECASE)
@@ -115,6 +173,7 @@ def run_trace(
     source_format: str,
     copybook_paths: list[Path],
     timeout: int,
+    max_table_items: int,
 ) -> int:
     if shutil.which("cobc") is None:
         print("ERROR: GnuCOBOL compiler 'cobc' not found on PATH.", file=sys.stderr)
@@ -200,10 +259,13 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("--format", choices=("auto", "fixed", "free"), default="auto")
     parser.add_argument("--copybook-path", action="append", type=Path, default=[])
     parser.add_argument("--timeout", type=int, default=30)
+    parser.add_argument("--max-table-items", type=int, default=1000, help="Maximum OCCURS entries to snapshot per table")
     args = parser.parse_args(argv)
     if args.timeout < 1:
         parser.error("--timeout must be at least 1 second")
-    return run_trace(args.source, args.format, args.copybook_path, args.timeout)
+    if args.max_table_items < 1:
+        parser.error("--max-table-items must be at least 1")
+    return run_trace(args.source, args.format, args.copybook_path, args.timeout, args.max_table_items)
 
 
 if __name__ == "__main__":
