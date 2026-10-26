@@ -63,6 +63,14 @@ class TranslationTests(unittest.TestCase):
             "ws_num == 10",
         )
 
+
+    def test_cobol_table_subscripts_are_converted_to_zero_based_indexes(self):
+        self.assertEqual(cobol2py.normalize_name("WS-ITEM(1)"), "ws_item[0]")
+        self.assertEqual(
+            cobol2py.normalize_name("WS-ITEM(WS-INDEX)"),
+            "ws_item[ws_index - 1]",
+        )
+
     def test_unsupported_statement_is_explicit(self):
         output = cobol2py.translate_statement('CALL "SUBPGM"', set())
         self.assertEqual(output, ['# COBOL no traducido: CALL "SUBPGM"'])
