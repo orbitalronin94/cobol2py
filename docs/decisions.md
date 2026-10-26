@@ -303,3 +303,13 @@ Añadir una sección con:
 - **Contexto:** la comparación COBOL rellena el operando más corto con espacios; la comparación escalar generada actualmente puede comparar cadenas de longitudes distintas sin padding.
 - **Consecuencias:** `--strict` señala los casos directos detectados. El diagnóstico no cubre todas las alternativas variables, sujetos cualificados complejos ni reglas de dialecto.
 - **Validación:** prueba unitaria con `PIC X(5)` frente a un literal de tres caracteres; la suite completa sigue sin confirmación en CI.
+
+
+## D-035 — Convertir ACCEPT según el PIC receptor
+
+- **Fecha:** 2026-10-26.
+- **Estado:** aceptada para PIC numéricos y alfanuméricos simples.
+- **Decisión:** convertir la entrada a número y aplicar truncamiento básico para PIC numéricos; recortar/rellenar el texto para PIC X/A en ambos backends.
+- **Contexto:** asignar siempre `input()`/`Scanner.nextLine()` dejaba strings en variables numéricas y no respetaba el ancho de campos alfanuméricos.
+- **Consecuencias:** los casos sencillos de ACCEPT son utilizables con operaciones posteriores; reglas completas de validación de entrada, signo, escala y errores de conversión siguen pendientes.
+- **Validación:** pruebas end-to-end Python y unitarias de generación Java; la suite completa no se ha confirmado en CI.
