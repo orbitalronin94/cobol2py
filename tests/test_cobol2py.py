@@ -104,6 +104,18 @@ class TranslationTests(unittest.TestCase):
         variables = {"WS-FLAG": cobol2py.CobolVar(level=1, name="WS-FLAG", pic="X(4)")}
         self.assertEqual(cobol2py.translate_move_value('ALL "Y"', "WS-FLAG", variables), "'YYYY'")
 
+    def test_doubled_quotes_in_cobol_literals_are_decoded(self):
+        self.assertEqual(cobol2py.translate_literal('"DON""T"'), "'DON\\\"T'")
+        self.assertEqual(cobol2py.translate_literal("'IT''S OK'"), '"IT\\\'S OK"')
+        self.assertEqual(
+            cobol2py.translate_java_literal('"DON""T"', {}),
+            '"DON\\\"T"',
+        )
+        self.assertEqual(
+            cobol2py.translate_java_literal("'IT''S OK'", {}),
+            '"IT\\\'S OK"',
+        )
+
     def test_value_space_zero_and_low_value_figuratives(self):
         self.assertEqual(cobol2py.translate_literal("ZEROES"), "0")
         self.assertEqual(cobol2py.translate_literal("LOW-VALUES"), repr("\x00"))
