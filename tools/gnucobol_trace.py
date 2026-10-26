@@ -73,6 +73,10 @@ def collect_trace_variables(
         reference = variable.name
         if own_index is not None:
             reference += f"({own_index})"
+        # Unqualified references are safe for unique names. Add the full
+        # qualification chain only when an OCCURS group index is required.
+        if not ancestor_indices:
+            return reference
         parent_name = variable.parent_name
         while parent_name:
             parent = variables_by_name.get(parent_name)
