@@ -63,6 +63,14 @@ class TranslationTests(unittest.TestCase):
             "ws_num == 10",
         )
 
+
+    def test_cobol_table_subscripts_are_converted_to_zero_based_indexes(self):
+        self.assertEqual(cobol2py.normalize_name("WS-ITEM(1)"), "ws_item[0]")
+        self.assertEqual(
+            cobol2py.normalize_name("WS-ITEM(WS-INDEX)"),
+            "ws_item[ws_index - 1]",
+        )
+
     def test_unsupported_statement_is_explicit(self):
         output = cobol2py.translate_statement('CALL "SUBPGM"', set())
         self.assertEqual(output, ['# COBOL no traducido: CALL "SUBPGM"'])
@@ -94,6 +102,89 @@ class EndToEndTests(unittest.TestCase):
                 generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
                 compile(generated, f"<{sample}-output>", "exec")
 
+
+    def test_generated_program_matches_cobol_output_for_add_and_if(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\n".join([
+            "       IDENTIFICATION DIVISION.",
+            "       PROGRAM-ID. BEHAVIOR.",
+            "       DATA DIVISION.",
+            "       WORKING-STORAGE SECTION.",
+            "       01 WS-COUNT PIC 9(3) VALUE 0.",
+            "       PROCEDURE DIVISION.",
+            "       MAIN.",
+            "           ADD 1 TO WS-COUNT.",
+            "           ADD 2 TO WS-COUNT.",
+            "           IF WS-COUNT = 3 THEN",
+            '               DISPLAY "COUNT=" WS-COUNT.',
+            "           END-IF.",
+            "           STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<behavior-output>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        # COBOL DISPLAY concatenates its operands without Python's print separator.
+        self.assertEqual(output.getvalue(), "COUNT=003\n")
+
+
+    def test_generated_program_executes_perform_times_against_shared_storage(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\n".join([
+            "       IDENTIFICATION DIVISION.",
+            "       PROGRAM-ID. LOOPBEHAVIOR.",
+            "       DATA DIVISION.",
+            "       WORKING-STORAGE SECTION.",
+            "       01 WS-TOTAL PIC 9(3) VALUE 0.",
+            "       PROCEDURE DIVISION.",
+            "       MAIN.",
+            "           PERFORM INCREMENT 3 TIMES.",
+            '           DISPLAY "TOTAL=" WS-TOTAL.',
+            "           STOP RUN.",
+            "       INCREMENT.",
+            "           ADD 1 TO WS-TOTAL.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<perform-behavior-output>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "TOTAL=003\n")
+
+
+    def test_realtest_sample_matches_expected_console_output(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+        from pathlib import Path
+
+        root = Path(__file__).resolve().parents[1]
+        source = (root / "samples" / "realtest.cbl").read_text(encoding="utf-8")
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<realtest-output>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["inicio"]()
+        self.assertEqual(
+            output.getvalue(),
+            "INICIO DEL PROGRAMA\n"
+            "PROCESANDO...\n"
+            "ACUMULADO: 000010\n"
+            "ACUMULADO: 000020\n"
+            "ACUMULADO: 000030\n"
+            "CODIGO ALTO\n"
+            "TOTAL FINAL: 000030\n"
+            "STATUS ACTIVO\n",
+            generated,
+        )
+
     def test_fixed_format_program_generates_valid_python(self):
         source = "\n".join([
             "       IDENTIFICATION DIVISION.",
@@ -109,7 +200,7 @@ class EndToEndTests(unittest.TestCase):
 
         generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
         compile(generated, "<cobol2py-output>", "exec")
-        self.assertIn('print("OK")', generated)
+        self.assertIn('print("".join([str("OK")]))', generated)
         self.assertIn("def main_para():", generated)
 
 

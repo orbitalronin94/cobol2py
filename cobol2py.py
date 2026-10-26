@@ -252,6 +252,13 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
             units.append((num, "ELSE"))
             continue
 
+        # Scope terminators must be standalone parser units. Otherwise a
+        # preceding DISPLAY without a period can absorb END-IF as an operand.
+        if upper in ("END-IF", "END-PERFORM", "END-EVALUATE"):
+            flush()
+            units.append((num, upper))
+            continue
+
         if not buffer:
             buffer_start = num
         buffer.append(text)
@@ -420,7 +427,16 @@ def parse_cobol(source: str, source_format: str = "auto") -> Program:
 
 def normalize_name(name: str) -> str:
     name = name.replace("-", "_").lower()
-    return name.replace("(", "[").replace(")", "]")
+
+    # COBOL table subscripts are 1-based; Python lists are 0-based.
+    # Translate a simple literal or data-name subscript accordingly.
+    def normalize_subscript(match: re.Match[str]) -> str:
+        subscript = match.group(1)
+        if subscript.isdigit():
+            return f"[{int(subscript) - 1}]"
+        return f"[{subscript.replace('-', '_').lower()} - 1]"
+
+    return re.sub(r"\(([A-Za-z0-9_-]+)\)", normalize_subscript, name)
 
 
 def translate_literal(token: str) -> str:
@@ -477,6 +493,30 @@ def translate_condition(cond: str) -> str:
     return translate_expr(c)
 
 
+def pic_digit_count(pic: str) -> int:
+    """Count storage digits in a simple numeric PIC, including repetitions."""
+    return sum(
+        int(match.group(1)) if match.group(1) else 1
+        for match in re.finditer(r"9(?:\((\d+)\))?", pic.upper())
+    )
+
+
+def translate_display_item(token: str, variables: dict[str, CobolVar]) -> str:
+    """Emit a string expression matching basic COBOL DISPLAY formatting."""
+    variable = variables.get(token.upper())
+    if variable is not None and variable.pic:
+        pic = variable.pic.upper()
+        if "9" in pic:
+            digits = pic_digit_count(pic)
+            scale = pic_digit_count(pic.split("V", 1)[1]) if "V" in pic else 0
+            name = normalize_name(token)
+            return (
+                f'f"{{float({name}):.{scale}f}}".replace(".", "")'
+                f".zfill({digits})"
+            )
+    return f"str({translate_literal(token)})"
+
+
 COBOL_TOKEN_RE = re.compile(r'"[^"]*"|\'[^\']*\'|,?\s*|(?:\S+)')
 
 
@@ -489,7 +529,11 @@ def split_cobol_items(s: str) -> list[str]:
     return tokens
 
 
-def translate_statement(stmt: str, paragraphs: set[str]) -> Optional[list[str]]:
+def translate_statement(
+    stmt: str,
+    paragraphs: set[str],
+    variables: Optional[dict[str, CobolVar]] = None,
+) -> Optional[list[str]]:
     s = stmt.strip().rstrip(".").strip()
     if not s:
         return None
@@ -503,7 +547,12 @@ def translate_statement(stmt: str, paragraphs: set[str]) -> Optional[list[str]]:
     m = re.match(r"DISPLAY\s+(.+)", s, re.IGNORECASE)
     if m:
         args = split_cobol_items(m.group(1))
-        return [f"print({', '.join(translate_literal(a) for a in args)})"]
+        # COBOL DISPLAY concatenates operands. Numeric DISPLAY items also
+        # retain the zero-filled width specified by their PIC clause.
+        items = ", ".join(
+            translate_display_item(a, variables or {}) for a in args
+        )
+        return [f'print("".join([{items}]))']
 
     m = re.match(r"ACCEPT\s+([A-Za-z0-9\-\(\)]+)", s, re.IGNORECASE)
     if m:
@@ -559,11 +608,16 @@ def translate_statement(stmt: str, paragraphs: set[str]) -> Optional[list[str]]:
     return [f"# COBOL no traducido: {s}"]
 
 
-def translate_nodes(nodes: list[Node], paragraphs: set[str], indent: int) -> list[str]:
+def translate_nodes(
+    nodes: list[Node],
+    paragraphs: set[str],
+    indent: int,
+    variables: Optional[dict[str, CobolVar]] = None,
+) -> list[str]:
     out: list[str] = []
     for node in nodes:
         if node.kind == "stmt":
-            lines = translate_statement(node.text, paragraphs)
+            lines = translate_statement(node.text, paragraphs, variables)
             if lines:
                 opens_block = lines[0].rstrip().endswith(":")
                 for i, line in enumerate(lines):
@@ -577,16 +631,16 @@ def translate_nodes(nodes: list[Node], paragraphs: set[str], indent: int) -> lis
                 continue
             cond = translate_condition(m.group(1))
             out.append("    " * indent + f"if {cond}:")
-            then_body = translate_nodes(node.then_branch, paragraphs, indent + 1)
+            then_body = translate_nodes(node.then_branch, paragraphs, indent + 1, variables)
             out.extend(then_body if then_body else ["    " * (indent + 1) + "pass"])
             if node.else_branch:
                 out.append("    " * indent + "else:")
-                else_body = translate_nodes(node.else_branch, paragraphs, indent + 1)
+                else_body = translate_nodes(node.else_branch, paragraphs, indent + 1, variables)
                 out.extend(else_body if else_body else ["    " * (indent + 1) + "pass"])
 
         elif node.kind == "perform_inline":
             out.append("    " * indent + f"# PERFORM inline: {node.text}")
-            body = translate_nodes(node.body, paragraphs, indent + 1)
+            body = translate_nodes(node.body, paragraphs, indent + 1, variables)
             out.extend(body if body else ["    " * (indent + 1) + "pass"])
 
         elif node.kind == "evaluate":
@@ -595,8 +649,12 @@ def translate_nodes(nodes: list[Node], paragraphs: set[str], indent: int) -> lis
     return out
 
 
-def translate_paragraph(nodes: list[Node], paragraphs: set[str]) -> list[str]:
-    return translate_nodes(nodes, paragraphs, indent=1)
+def translate_paragraph(
+    nodes: list[Node],
+    paragraphs: set[str],
+    variables: Optional[dict[str, CobolVar]] = None,
+) -> list[str]:
+    return translate_nodes(nodes, paragraphs, indent=1, variables=variables)
 
 
 # ============================================================================
@@ -632,6 +690,11 @@ def emit_python(prog: Program) -> str:
         lines.append("")
 
     para_names = set(prog.paragraphs.keys())
+    variables_by_name = {
+        variable.name.upper(): variable
+        for variable in prog.variables
+        if not variable.is_group
+    }
     order = [p for p in prog.paragraph_order if p != "__MAIN__"]
     if "__MAIN__" in prog.paragraphs and prog.paragraphs["__MAIN__"]:
         order = ["__MAIN__"] + order
@@ -645,7 +708,13 @@ def emit_python(prog: Program) -> str:
             lines.append("def main():")
         else:
             lines.append(f"def {normalize_name(para_name)}():")
-        body = translate_paragraph(nodes, para_names)
+        # Working-Storage variables live outside paragraph functions in the
+        # generated module. Declare them global so statements mutate shared
+        # COBOL storage instead of creating Python locals.
+        global_vars = [normalize_name(v.name) for v in prog.variables if not v.is_group]
+        if global_vars:
+            lines.append("    global " + ", ".join(global_vars))
+        body = translate_paragraph(nodes, para_names, variables_by_name)
         lines.extend(body if body else ["    pass"])
         lines.append("")
 
