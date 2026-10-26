@@ -73,6 +73,7 @@ class CobolVar:
     is_array: bool = False
     occurs: Optional[int] = None
     depending_on: Optional[str] = None
+    parent_name: Optional[str] = None
 
     def _base_py_type(self) -> str:
         if self.pic is None:
@@ -189,6 +190,7 @@ RE_PARAGRAPH = re.compile(r"^(?!END-)([A-Za-z][A-Za-z0-9\-]*)\.\s*$")
 
 def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
     variables: list[CobolVar] = []
+    hierarchy: list[CobolVar] = []
     for _, text in lines:
         m = RE_VAR.match(text)
         if not m:
@@ -196,23 +198,29 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
         level = int(m.group(1))
         if level == 88 or level >= 50:
             continue
+        while hierarchy and hierarchy[-1].level >= level:
+            hierarchy.pop()
         name = m.group(2).upper()
         rest = m.group(3)
         pic_m = RE_PIC.search(rest)
         val_m = RE_VALUE.search(rest)
         occ_m = RE_OCCURS.search(rest)
-        variables.append(CobolVar(
+        is_group = pic_m is None
+        parent = next((item for item in reversed(hierarchy) if item.is_group), None)
+        variable = CobolVar(
             level=level,
             name=name,
             pic=pic_m.group(1) if pic_m else None,
             value=val_m.group(1) if val_m else None,
-            is_group=pic_m is None,
+            is_group=is_group,
             is_array=occ_m is not None,
             occurs=int(occ_m.group(1)) if occ_m else None,
             depending_on=occ_m.group(2) if occ_m and occ_m.group(2) else None,
-        ))
+            parent_name=parent.name if parent else None,
+        )
+        variables.append(variable)
+        hierarchy.append(variable)
     return variables
-
 
 # Patch 3: verbos que abren sentencia. Se usan para partir buffers concatenados.
 STATEMENT_VERBS = frozenset({
@@ -574,6 +582,38 @@ def normalize_name(name: str) -> str:
         return f"[{subscript.replace('-', '_').lower()} - 1]"
 
     return re.sub(r"\(([A-Za-z0-9_-]+)\)", normalize_subscript, name)
+
+def normalize_data_reference(
+    name: str,
+    variables: Optional[dict[str, CobolVar]] = None,
+) -> str:
+    """Map a COBOL data-name (including OF/IN qualification) into nested dicts."""
+    text = name.strip()
+    match = re.fullmatch(
+        r"([A-Za-z0-9-]+)(?:\\(([A-Za-z0-9_-]+)\\))?(?:\\s+(?:OF|IN)\\s+([A-Za-z0-9-]+))?",
+        text,
+        re.IGNORECASE,
+    )
+    if not match:
+        return normalize_name(text)
+    field_name, subscript, qualifier = match.groups()
+    variable_map = variables or {}
+    if qualifier:
+        parent_expr = normalize_data_reference(qualifier, variable_map)
+        expr = f"{parent_expr}[{normalize_name(field_name)!r}]"
+    else:
+        variable = variable_map.get(field_name.upper())
+        if variable is not None and variable.parent_name:
+            parent_expr = normalize_data_reference(variable.parent_name, variable_map)
+            expr = f"{parent_expr}[{normalize_name(field_name)!r}]"
+        else:
+            expr = normalize_name(field_name)
+    if subscript:
+        if subscript.isdigit():
+            expr += f"[{int(subscript) - 1}]"
+        else:
+            expr += f"[{normalize_name(subscript)} - 1]"
+    return expr
 
 
 def translate_literal(token: str) -> str:
