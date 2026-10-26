@@ -1831,7 +1831,7 @@ def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
                 match = RE_IF_OPEN.match(node.text)
                 condition = match.group(1) if match else ""
                 comparison = re.search(
-                    r"""([A-Za-z][A-Za-z0-9-]*(?:\\([A-Za-z0-9_-]+\\))?)\\s*(?:<=|>=|<|>)\\s*["']""",
+                    r"""([A-Za-z][A-Za-z0-9-]*(?:\([A-Za-z0-9_-]+\))?)\s*(?:<=|>=|<|>)\s*["']""",
                     condition,
                     re.IGNORECASE,
                 )
