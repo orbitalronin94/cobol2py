@@ -4,9 +4,14 @@
        WORKING-STORAGE SECTION.
        01 WS-NAME PIC X(5) VALUE "AL".
        01 WS-COUNT PIC 9(3) VALUE 0.
+       01 WS-GROUP.
+          05 WS-CHILD PIC X(3) VALUE "CH".
+       01 WS-TABLE PIC 9(2) OCCURS 2 TIMES.
        PROCEDURE DIVISION.
        MAIN.
            MOVE "BOB" TO WS-NAME.
            MOVE 2 TO WS-COUNT.
+           MOVE 3 TO WS-TABLE(1).
+           MOVE 4 TO WS-TABLE(2).
            DISPLAY "PROGRAM-OUTPUT".
            STOP RUN.
