@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import subprocess
 import sys
 import tempfile
@@ -69,7 +68,7 @@ def main() -> int:
 
     report: dict[str, Any] = {
         "schema_version": 1,
-        "definition": "Exact stdout and zero exit status match against compiled GnuCOBOL",
+        "definition": "Exact stdout and process exit status match against compiled GnuCOBOL",
         "baseline_label": args.baseline_label if args.baseline_translator else None,
         "candidate_label": args.candidate_label,
         "case_count": len(cases),
