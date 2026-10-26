@@ -16,7 +16,7 @@ class StandaloneHtmlTests(unittest.TestCase):
             html,
         )
         self.assertIsNotNone(match, "HTML must contain the embedded translator source")
-        self.assertEqual(match.group(1), translator)
+        self.assertEqual(match.group(1) + "\n", translator)
 
     def test_browser_demo_does_not_call_the_local_translation_api(self):
         html = (ROOT / "web" / "index.html").read_text(encoding="utf-8")
