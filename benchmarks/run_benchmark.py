@@ -54,9 +54,11 @@ def run_translator(translator: Path, source: Path, work: Path, reference_returnc
 
 
 def has_candidate_failures(report: dict[str, Any]) -> bool:
-    """Return whether any reference failed to compile or candidate case mismatched."""
+    """Return whether a reference failed or any candidate case mismatched."""
     return any(
-        not case.get("compile_ok") or not (case.get("candidate") or {}).get("matched", False)
+        not case.get("compile_ok")
+        or not case.get("reference_ok", True)
+        or not (case.get("candidate") or {}).get("matched", False)
         for case in report.get("cases", [])
     )
 
@@ -114,8 +116,23 @@ def main() -> int:
                     report["cases"].append(item)
                     continue
 
-                reference = run([str(work / "reference")])
                 item["compile_ok"] = True
+                try:
+                    reference = run([str(work / "reference")])
+                except (OSError, subprocess.TimeoutExpired) as exc:
+                    item["reference_ok"] = False
+                    item["reference_error"] = f"COBOL reference execution failed: {exc}"
+                    item["baseline"] = (
+                        {"matched": False, "reason": item["reference_error"]}
+                        if args.baseline_translator else None
+                    )
+                    item["candidate"] = {
+                        "matched": False,
+                        "reason": item["reference_error"],
+                    }
+                    report["cases"].append(item)
+                    continue
+                item["reference_ok"] = True
                 item["reference_returncode"] = reference.returncode
                 (work / "reference.out").write_text(reference.stdout, encoding="utf-8")
                 if args.baseline_translator:
@@ -177,6 +194,8 @@ def main() -> int:
         reasons = []
         if not case.get("compile_ok"):
             reasons.append("GnuCOBOL compile failed: " + case.get("compile_error", "unknown error"))
+        elif not case.get("reference_ok", True):
+            reasons.append(case.get("reference_error", "GnuCOBOL reference execution failed"))
         for version in ("baseline", "candidate"):
             result = case.get(version)
             if result and not result.get("matched") and result.get("reason"):
