@@ -122,7 +122,7 @@ No es Python perfecto. Es Python **legible**. Y eso es lo que importa.
 | `OCCURS n TIMES` | `list[T]` con tamaño fijo |
 | `OCCURS n DEPENDING ON X` | Lista con tamaño máximo; la longitud activa dinámica no está implementada y se advierte en `--strict` |
 | `DISPLAY` | `print()` |
-| `ACCEPT` | `input()` |
+| `ACCEPT` | Conversión numérica básica o recorte/relleno al ancho de PIC X/A |
 | `MOVE` | asignación |
 | `ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE` | `+=`, `-=`, `*=`, `/=` |
 | `COMPUTE` | expresión |
