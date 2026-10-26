@@ -41,6 +41,12 @@ class PreprocessTests(unittest.TestCase):
             ['DISPLAY "MOVE END-IF *> inside"', "MOVE WS-A TO WS-B"],
         )
 
+    def test_inline_comment_scanner_handles_doubled_quotes(self):
+        self.assertEqual(
+            cobol2py.strip_inline_comment('DISPLAY "A ""*>"" B". *> comment'),
+            'DISPLAY "A ""*>"" B".',
+        )
+
     def test_explicit_free_format_preserves_seven_space_indentation(self):
         source = "       DISPLAY 'OK'."
         self.assertEqual(
