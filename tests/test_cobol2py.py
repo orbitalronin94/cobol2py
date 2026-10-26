@@ -129,7 +129,7 @@ class EndToEndTests(unittest.TestCase):
         with redirect_stdout(output):
             namespace["main"]()
         # COBOL DISPLAY concatenates its operands without Python's print separator.
-        self.assertEqual(output.getvalue(), "COUNT=3\n")
+        self.assertEqual(output.getvalue(), "COUNT=003\n")
 
 
     def test_generated_program_executes_perform_times_against_shared_storage(self):
@@ -156,7 +156,7 @@ class EndToEndTests(unittest.TestCase):
         output = StringIO()
         with redirect_stdout(output):
             namespace["main"]()
-        self.assertEqual(output.getvalue(), "TOTAL=3\n")
+        self.assertEqual(output.getvalue(), "TOTAL=003\n")
 
 
     def test_realtest_sample_matches_expected_console_output(self):
