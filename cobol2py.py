@@ -747,23 +747,55 @@ def translate_expr(
 
 
 # Patch 1: normalización de operadores
-def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = None) -> str:
-    c = cond.strip()
-    c = re.sub(r"\bAND\b", "and", c, flags=re.IGNORECASE)
-    c = re.sub(r"\bOR\b", "or", c, flags=re.IGNORECASE)
-    c = re.sub(r"\bNOT\b", "not", c, flags=re.IGNORECASE)
-    c = re.sub(r"\bIS\s+NOT\s+EQUAL\s+TO\b", "!=", c, flags=re.IGNORECASE)
-    c = re.sub(r"\bNOT\s+EQUAL\s+TO\b", "!=", c, flags=re.IGNORECASE)
-    c = re.sub(r"\bIS\s+EQUAL\s+TO\b", "==", c, flags=re.IGNORECASE)
-    c = re.sub(r"\bEQUAL\s+TO\b", "==", c, flags=re.IGNORECASE)
-    c = re.sub(r"\bIS\s+GREATER\s+THAN\b", ">", c, flags=re.IGNORECASE)
-    c = re.sub(r"\bGREATER\s+THAN\b", ">", c, flags=re.IGNORECASE)
-    c = re.sub(r"\bIS\s+LESS\s+THAN\b", "<", c, flags=re.IGNORECASE)
-    c = re.sub(r"\bLESS\s+THAN\b", "<", c, flags=re.IGNORECASE)
-    c = re.sub(r"\bIS\b", "==", c, flags=re.IGNORECASE)
-    c = re.sub(r"(?<![<>=])=(?!=)", "==", c)
-    c = c.replace("<>", "!=")
+def rewrite_outside_literals(text: str, transform) -> str:
+    """Apply a text rewrite only to source outside COBOL quoted literals."""
+    output: list[str] = []
+    chunk: list[str] = []
+    i = 0
+    while i < len(text):
+        char = text[i]
+        if char not in ("'", '"'):
+            chunk.append(char)
+            i += 1
+            continue
+        if chunk:
+            output.append(transform("".join(chunk)))
+            chunk = []
+        quote = char
+        start = i
+        i += 1
+        while i < len(text):
+            if text[i] == quote:
+                if i + 1 < len(text) and text[i + 1] == quote:
+                    i += 2
+                    continue
+                i += 1
+                break
+            i += 1
+        output.append(text[start:i])
+    if chunk:
+        output.append(transform("".join(chunk)))
+    return "".join(output)
 
+
+def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = None) -> str:
+    def rewrite(chunk: str) -> str:
+        c = re.sub(r"\\bAND\\b", "and", chunk, flags=re.IGNORECASE)
+        c = re.sub(r"\\bOR\\b", "or", c, flags=re.IGNORECASE)
+        c = re.sub(r"\\bNOT\\b", "not", c, flags=re.IGNORECASE)
+        c = re.sub(r"\\bIS\\s+NOT\\s+EQUAL\\s+TO\\b", "!=", c, flags=re.IGNORECASE)
+        c = re.sub(r"\\bNOT\\s+EQUAL\\s+TO\\b", "!=", c, flags=re.IGNORECASE)
+        c = re.sub(r"\\bIS\\s+EQUAL\\s+TO\\b", "==", c, flags=re.IGNORECASE)
+        c = re.sub(r"\\bEQUAL\\s+TO\\b", "==", c, flags=re.IGNORECASE)
+        c = re.sub(r"\\bIS\\s+GREATER\\s+THAN\\b", ">", c, flags=re.IGNORECASE)
+        c = re.sub(r"\\bGREATER\\s+THAN\\b", ">", c, flags=re.IGNORECASE)
+        c = re.sub(r"\\bIS\\s+LESS\\s+THAN\\b", "<", c, flags=re.IGNORECASE)
+        c = re.sub(r"\\bLESS\\s+THAN\\b", "<", c, flags=re.IGNORECASE)
+        c = re.sub(r"\\bIS\\b", "==", c, flags=re.IGNORECASE)
+        c = re.sub(r"(?<![<>=])=(?!=)", "==", c)
+        return c.replace("<>", "!=")
+
+    c = rewrite_outside_literals(cond.strip(), rewrite)
     translated = translate_expr(c, variables)
     if not variables:
         return translated
