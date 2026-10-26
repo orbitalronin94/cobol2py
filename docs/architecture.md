@@ -50,3 +50,6 @@ El benchmark requiere GnuCOBOL instalado. Las pruebas unitarias comprueban compo
 ## Diagnósticos
 
 `collect_diagnostics()` inspecciona el AST y las referencias de copybooks para reportar construcciones no soportadas o malformadas. La CLI permite mostrar JSON estructurado y rechazar esos casos con `--strict`. El análisis es deliberadamente conservador y no sustituye a una validación semántica con GnuCOBOL.
+
+
+El backend Python trata `STOP RUN` como terminación del programa: una señal interna se propaga desde cualquier párrafo llamado y se captura en el punto de entrada, evitando que el párrafo llamador continúe ejecutando sentencias. El backend Java usa `System.exit(0)` para el programa independiente generado.
