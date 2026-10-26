@@ -243,3 +243,13 @@ Añadir una sección con:
 - **Contexto:** la expresión regular de etiquetas podía interpretar `GOBACK.` como un párrafo nuevo y descartar la sentencia, alterando el flujo de control.
 - **Consecuencias:** se preserva el retorno local de GOBACK y se evita que CONTINUE/EXIT desaparezcan. Otros nombres de una sola palabra que colisionen con verbos pueden requerir tratamiento específico.
 - **Validación:** prueba de regresión para GOBACK seguido de una sentencia que no debe ejecutarse; la suite completa sigue sin resultado verificable.
+
+
+## D-028 — No reescribir el signo igual de una desigualdad
+
+- **Fecha:** 2026-10-26.
+- **Estado:** aceptada.
+- **Decisión:** excluir también `!` del contexto previo al normalizar `=` a `==`, para conservar operadores `!=` ya producidos por `NOT EQUAL TO` y `<>`.
+- **Contexto:** la normalización secuencial podía transformar `!=` en el operador inválido `!==`.
+- **Consecuencias:** las condiciones de desigualdad vuelven a generar operadores válidos en ambos backends.
+- **Validación:** pruebas unitarias para `NOT EQUAL TO` en Python y Java; ejecución completa de la suite aún pendiente.
