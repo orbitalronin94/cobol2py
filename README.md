@@ -193,6 +193,18 @@ cobol2py/
     └── differential-benchmark.yml
 ```
 
+## Demo web local
+
+Puedes pegar un programa COBOL en una página HTML y ver la traducción generada por el traductor real. La demo usa un servidor Python local, no un traductor JavaScript simulado.
+
+```bash
+python web_demo.py
+```
+
+Abre [http://127.0.0.1:8765](http://127.0.0.1:8765). El servidor solo escucha en `localhost`, acepta entradas de hasta 1 MB y no envía el código a servicios externos. Permite elegir formato `auto`, `fixed` o `free`. Detén el servidor con Ctrl+C.
+
+La interfaz es una herramienta de prueba; no valida la equivalencia semántica ni convierte la salida en apta para producción.
+
 ## Documentación de ingeniería
 
 La documentación de arquitectura, decisiones de diseño, alcance de compatibilidad y proceso de cambios está en [`docs/`](docs/README.md). Los cambios semánticos deben incluir pruebas y, cuando sea posible, una comparación diferencial con GnuCOBOL. El porcentaje del benchmark mide únicamente los casos versionados; no demuestra equivalencia general.
@@ -221,7 +233,7 @@ GitHub Actions ejecuta las pruebas con Python 3.10–3.13 y compara, mediante el
 
 ## Benchmark diferencial y evolución objetiva
 
-El workflow `differential-benchmark.yml` compara cada programa del corpus con dos ejecuciones: el programa compilado por GnuCOBOL y el Python generado por el traductor. En cada push a `main`, pull request o ejecución manual, publica un informe Markdown en el resumen de GitHub Actions y conserva los informes JSON/Markdown como artefactos durante 90 días.
+El workflow `differential-benchmark.yml` compara el snapshot inicial del traductor (`02fde4b`) y el traductor actual contra el mismo corpus versionado; ambos se contrastan con el programa compilado por GnuCOBOL. En cada push a `main`, pull request o ejecución manual, publica un informe Markdown en el resumen de GitHub Actions y conserva los informes JSON/Markdown como artefactos durante 90 días.
 
 - **Métrica principal:** porcentaje de programas cuyo `stdout` y código de salida coinciden exactamente con GnuCOBOL.
 - **Comparación entre versiones:** cuando existe una revisión base, ejecuta tanto el traductor anterior como el candidato sobre el mismo corpus de la revisión evaluada y muestra el cambio en puntos porcentuales.
