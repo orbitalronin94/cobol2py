@@ -46,7 +46,7 @@ class Mit100AuditTests(unittest.TestCase):
             }
             self.assertIn(entry["program_id"].upper(), declared_ids, relative)
             self.assertEqual(
-                len(content.splitlines()),
+                len(content.split("\n")),
                 entry["source_file_lines"],
                 relative,
             )
