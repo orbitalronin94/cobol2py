@@ -857,9 +857,9 @@ def translate_display_item(token: str, variables: dict[str, CobolVar]) -> str:
             scale = pic_digit_count(pic.split("V", 1)[1]) if "V" in pic else 0
             name = normalize_data_reference(token, variables)
             if scale:
-                integer_digits = pic_digit_count(pic.split("V", 1)[0])
-                width = integer_digits + scale + 1
-                return f"format(float({name}), '0{width}.{scale}f')"
+                # V is an implied decimal point in COBOL storage; DISPLAY emits
+                # the digit positions, not a visible decimal separator.
+                return f"format(float({name}), '.{scale}f').replace('.', '').zfill({digits})"
             return f"str(int(float({name}))).zfill({digits})"
     return f"str({translate_literal(token, variables)})"
 
