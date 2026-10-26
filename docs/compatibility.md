@@ -72,3 +72,8 @@ El benchmark también registra los errores de lanzamiento o timeout al ejecutar 
 
 
 El modo estricto también señala `ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE` y `COMPUTE`, ya que el tamaño del campo receptor y `ON SIZE ERROR` no están implementados de forma completa. Es una advertencia conservadora sobre la cobertura, no una afirmación de que cada operación concreta produzca un desbordamiento.
+
+
+## Literales y comillas escapadas
+
+Los literales completos entre comillas simples o dobles decodifican las comillas delimitadoras duplicadas de COBOL, incluso en operandos y expresiones. Por ejemplo, `"DON""T"` representa el texto `DON"T`. Se han añadido regresiones para Python, Java y cláusulas `VALUE`. El splitter y el parser siguen siendo heurísticos; no debe inferirse soporte de todas las construcciones de literal ni de todos los dialectos.
