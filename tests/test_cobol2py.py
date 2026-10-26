@@ -892,6 +892,28 @@ class EndToEndTests(unittest.TestCase):
 
 
 class DiagnosticTests(unittest.TestCase):
+    def test_collect_diagnostics_warns_on_unsupported_data_declarations(self):
+        source = "\\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. DATAWARN.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-COUNT PIC 9 VALUE 2.",
+            "01 WS-TABLE PIC X OCCURS 5 TIMES DEPENDING ON WS-COUNT.",
+            "01 WS-ORIGINAL PIC X(4).",
+            "66 WS-ALIAS RENAMES WS-ORIGINAL.",
+            "88 WS-VALID VALUE 'Y'.",
+            "PROCEDURE DIVISION.",
+            "STOP RUN.",
+        ])
+        program = cobol2py.parse_cobol(source, source_format="free")
+        diagnostics = cobol2py.collect_diagnostics(program)
+        by_code = {item["code"]: item for item in diagnostics}
+        self.assertIn("OCCURS_DEPENDING_ON_UNSUPPORTED", by_code)
+        self.assertIn("UNSUPPORTED_RENAMES", by_code)
+        self.assertIn("UNSUPPORTED_CONDITION_NAME_88", by_code)
+        self.assertIn("dynamic active length is not implemented", by_code["OCCURS_DEPENDING_ON_UNSUPPORTED"]["message"])
+
     def test_collect_diagnostics_reports_unsupported_and_malformed_constructs(self):
         program = cobol2py.Program(
             variables=[
