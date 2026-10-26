@@ -703,6 +703,10 @@ def translate_literal(
         return repr("\x00")
     if t.upper() in ("HIGH-VALUE", "HIGH-VALUES"):
         return repr("\xff")
+    if t.upper() == "TRUE":
+        return "True"
+    if t.upper() == "FALSE":
+        return "False"
     if t.upper() in ("QUOTE", "QUOTES"):
         return repr('"')
     return normalize_data_reference(t, variables)
@@ -731,6 +735,10 @@ def translate_expr(
     for tok in tokens:
         if tok.startswith(('"', "'")):
             out.append(translate_literal(tok, variables))
+        elif tok.lower() in ("and", "or", "not"):
+            out.append(tok.lower())
+        elif tok.upper() in ("TRUE", "FALSE"):
+            out.append("True" if tok.upper() == "TRUE" else "False")
         elif re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", tok):
             out.append(normalize_data_reference(tok, variables))
         else:
