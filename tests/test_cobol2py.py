@@ -237,6 +237,13 @@ class TranslationTests(unittest.TestCase):
         self.assertEqual(cobol2py.translate_expr("WS-NUM - 1"), "ws_num - 1")
         self.assertEqual(cobol2py.translate_expr("WS-NUM + WS-TOTAL"), "ws_num + ws_total")
 
+    def test_logical_operators_remain_python_operators(self):
+        self.assertEqual(
+            cobol2py.translate_condition("WS-A = 1 AND NOT WS-B = 2"),
+            "ws_a == 1 and not ws_b == 2",
+        )
+        self.assertEqual(cobol2py.translate_condition("TRUE"), "True")
+
     def test_equality_condition_uses_python_operator(self):
         self.assertEqual(
             cobol2py.translate_condition("WS-NUM = 10"),
