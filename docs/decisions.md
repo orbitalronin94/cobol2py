@@ -96,3 +96,18 @@ Añadir una sección con:
 - **Consecuencias:** ventajas, costes y riesgos
 - **Validación:** tests/casos de benchmark que la respaldan
 - **Revisión:** qué evidencia podría hacer cambiar la decisión
+
+
+## D-009 — Tratar literales antes de detectar comentarios y límites de sentencia
+
+- **Estado:** aceptada.
+- **Decisión:** el preprocesado elimina el marcador `*>` solo fuera de literales entre comillas y el splitter mantiene cada literal como una unidad al buscar verbos de sentencia.
+- **Contexto:** una búsqueda textual ciega puede truncar valores válidos que contengan `*>` o dividir una sentencia al encontrar palabras reservadas dentro de una cadena.
+- **Consecuencias:** los casos de regresión deben cubrir comillas duplicadas, marcadores de comentario en literales y verbos COBOL dentro de texto. Esto reduce errores de lexicalización frecuentes, pero no convierte el splitter heurístico en un parser COBOL formal.
+
+## D-010 — El benchmark diferencial debe ser una barrera de CI
+
+- **Estado:** aceptada.
+- **Decisión:** el benchmark devuelve un código distinto de cero si el candidato no coincide con GnuCOBOL en todos los casos o si una referencia no compila. `--report-only` queda disponible para análisis exploratorio.
+- **Contexto:** un informe que muestra discrepancias pero termina con código cero puede dejar pasar regresiones en integración continua.
+- **Consecuencias:** CI falla de forma visible ante cambios incompatibles; las métricas siguen limitadas al corpus versionado y no prueban equivalencia general de COBOL.
