@@ -224,17 +224,25 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
         if not m:
             continue
         level = int(m.group(1))
-        if level == 88 or level >= 50:
+        # COBOL level 77 is a standalone elementary item, not a child of
+        # the preceding group. 66/78/88 and invalid level ranges are not
+        # ordinary storage declarations for this model.
+        if level in (66, 78, 88) or 50 <= level <= 65 or level >= 79:
             continue
-        while hierarchy and hierarchy[-1].level >= level:
-            hierarchy.pop()
+        if level == 77:
+            hierarchy.clear()
+        else:
+            while hierarchy and hierarchy[-1].level >= level:
+                hierarchy.pop()
         name = m.group(2).upper()
         rest = m.group(3)
         pic_m = RE_PIC.search(rest)
         val_m = RE_VALUE.search(rest)
         occ_m = RE_OCCURS.search(rest)
         is_group = pic_m is None
-        parent = next((item for item in reversed(hierarchy) if item.is_group), None)
+        parent = None if level == 77 else next(
+            (item for item in reversed(hierarchy) if item.is_group), None
+        )
         variable = CobolVar(
             level=level,
             name=name,
@@ -247,7 +255,8 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
             parent_name=parent.name if parent else None,
         )
         variables.append(variable)
-        hierarchy.append(variable)
+        if level != 77:
+            hierarchy.append(variable)
     return variables
 
 # Patch 3: verbos que abren sentencia. Se usan para partir buffers concatenados.
