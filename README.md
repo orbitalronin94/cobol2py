@@ -136,7 +136,7 @@ Y lo dice. No falla en silencio.
 
 | COBOL | Estado |
 |---|---|
-| `EVALUATE` | Comentado. Pendiente v0.0.5. |
+| `EVALUATE/WHEN/WHEN OTHER` | Traducción básica a `if/elif/else`; rangos `THRU` y `EVALUATE TRUE` acotados. |
 | `COPY` (copybooks) | Ignorado. Degradación elegante. |
 | `CALL` a subprogramas | Pendiente. |
 | `FILE SECTION`, I/O | Pendiente. |
@@ -157,11 +157,11 @@ Estas son las que quedan pendientes y que sabes que existen antes de encontrárt
 **1. La semántica de datos solo está cubierta en un subconjunto.**
 `MOVE` aplica relleno con espacios y truncamiento por la derecha de campos alfanuméricos `PIC X/A`; los valores iniciales de esos campos también respetan su ancho. Para `PIC 9(n)` entero sin signo, `MOVE` conserva los dígitos menos significativos si el valor de origen excede el ancho. Hay comparación diferencial con GnuCOBOL para estos casos. No se emulan aún los campos numéricos con signo, las escalas decimales, todos los valores figurativos ni toda la semántica de almacenamiento COBOL. La salida no debe considerarse equivalente ni lista para producción.
 
-**2. `EVALUATE` no se traduce.**
-Se marca con un comentario y se deja para v0.0.5.
+**2. `EVALUATE` cubre un subconjunto.**
+`WHEN` escalar, `WHEN OTHER`, `EVALUATE TRUE/FALSE` y rangos `THRU` tienen traducción básica. `ALSO`, abreviaturas de selección y todas las reglas de dialecto siguen fuera de cobertura.
 
-**3. IF anidados a más de 2 niveles pueden fallar.**
-La heurística del splitter por verbos no es perfecta. Detecta sentencias concatenadas por el verbo que las abre, pero puede confundirse si un identificador coincide con un verbo (raro, pero posible).
+**3. El splitter por verbos sigue siendo heurístico.**
+La pila de bloques ahora conserva ámbitos anidados de `IF`, `PERFORM` y `EVALUATE`, y marca cierres malformados; sentencias COBOL concatenadas de formas no habituales todavía pueden confundirlo.
 
 **4. Copybooks no se resuelven.**
 Si el programa usa `COPY CUSTMAST.CPY.`, las variables del copybook no aparecen. El traductor no falla, pero el Python está incompleto.
@@ -257,8 +257,8 @@ python benchmarks/run_benchmark.py --translator cobol2py.py
 - [x] Añadir pruebas de semántica para campos alfanuméricos, precisión numérica y condiciones; la cobertura de arrays continúa creciendo con el corpus existente.
 
 **v0.0.6 — Control de flujo**
-- Implementar `EVALUATE/WHEN` con pruebas para `WHEN`, `WHEN OTHER` y anidamiento.
-- Sustituir el estado global del árbol por una pila de bloques coherente; cubrir IF anidados y cierres malformados.
+- [x] Implementar `EVALUATE/WHEN` con pruebas para `WHEN`, `WHEN OTHER` y anidamiento.
+- [x] Sustituir el estado global del árbol por una pila de bloques coherente; cubrir IF anidados y cierres malformados.
 
 **v0.0.7 — Copybook resolver**
 Localizar `COPY nombre.CPY.` en rutas explícitas y expandirlo antes del parseo. Detectar ciclos y dejar constancia de los archivos no resueltos.
