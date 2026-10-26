@@ -19,6 +19,7 @@ Consulta la lista autoritativa en [`benchmarks/cases.json`](../benchmarks/cases.
 - `EVALUATE` escalar con `WHEN`, `WHEN OTHER`, `EVALUATE TRUE/FALSE` y rangos `THRU` en casos acotados.
 - `COPY` simple con expansión recursiva, búsqueda por directorios explícitos y diagnósticos de faltantes/ciclos.
 - Grupos de datos como diccionarios anidados y referencias básicas a campos hijos.
+- Backend Java sobre el mismo AST para el subconjunto cubierto por sus fixtures de compilación/salida.
 - Tablas `OCCURS` y acceso por subíndice en ejemplos acotados.
 
 La lista exacta de características por caso está en el manifiesto; este resumen no amplía por sí mismo el soporte.
@@ -39,7 +40,7 @@ Un resultado favorable no implica automáticamente soporte para:
 - todas las variantes de `EVALUATE`, `SEARCH`, `STRING`, `UNSTRING`, `INSPECT`, `CALL`, `COPY`, `EXEC SQL` o extensiones de dialecto;
 - equivalencia en mensajes de error, salida estándar de error, archivos producidos, estado global externo o efectos secundarios no medidos.
 
-Esta lista no afirma que cada elemento esté completamente ausente del código; indica que el corpus actual no basta para declarar equivalencia general de esas áreas.
+El backend Java tiene un subconjunto más acotado que el backend Python y requiere revisar cada sentencia no cubierta antes de usar la salida. Esta lista no afirma que cada elemento esté completamente ausente del código; indica que el corpus actual no basta para declarar equivalencia general de esas áreas.
 
 ## Política para añadir casos
 

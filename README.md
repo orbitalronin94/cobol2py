@@ -45,6 +45,8 @@ Eso imprime la traducción por stdout. Si quieres guardarla en un archivo:
 
 ```bash
 python cobol2py.py programa.cbl --out programa.py
+python cobol2py.py programa.cbl --lang java --out Cobol2PyProgram.java
+javac Cobol2PyProgram.java
 ```
 
 Y si quieres comprobar que la salida es Python válido:
@@ -127,6 +129,7 @@ No es Python perfecto. Es Python **legible**. Y eso es lo que importa.
 | `PERFORM párrafo N TIMES` | `for _ in range(N)` |
 | `PERFORM párrafo UNTIL X` | `while not X` |
 | `STOP RUN`, `GOBACK`, `EXIT PROGRAM` | `return` |
+| `--lang java` | Backend Java básico que consume el mismo árbol de bloques; compila en el subset probado |
 
 ---
 
@@ -272,7 +275,9 @@ python benchmarks/run_benchmark.py --translator cobol2py.py
 - [ ] `REDEFINES`, `RENAMES`, overlays y grupos `OCCURS` complejos siguen fuera del alcance.
 
 **v0.1.0 — Salida Java**
-Reactivar el backend de Java con el mismo AST. `--lang java`.
+- [x] Reactivar el backend Java sobre el mismo AST y exponer `--lang java`.
+- [x] Añadir fixture y CI que compila el Java generado y compara su salida con GnuCOBOL.
+- [ ] La cobertura de Java sigue siendo un subconjunto; revisar construcciones no soportadas antes de usarlo.
 
 **v0.2.0 — Ejecución con GnuCOBOL**
 Compilar el COBOL con GnuCOBOL y ejecutarlo con trace. Mostrar el valor de cada variable por línea.
