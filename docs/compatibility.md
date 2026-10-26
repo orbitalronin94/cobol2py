@@ -97,3 +97,6 @@ Las comparaciones relacionales de campos `PIC X/A` con literales en condiciones 
 
 
 Las comparaciones directas entre dos campos alfanuméricos en `IF` también pueden diferir cuando sus anchos no coinciden. El modo estricto emite `ALPHANUMERIC_FIELD_COMPARISON_UNSUPPORTED` para los casos simples detectados; no cubre todas las referencias cualificadas, subíndices ni expresiones compuestas.
+
+
+Los nombres de párrafo que colisionan con variables globales o con otra función generada pueden sobrescribirse en Python. El modo estricto emite `PYTHON_IDENTIFIER_COLLISION` para los casos directos detectados; la salida normal no renombra automáticamente estas colisiones.
