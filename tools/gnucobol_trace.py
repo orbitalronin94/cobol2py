@@ -159,10 +159,10 @@ def instrument_source(
     inserted = False
     for line in expanded.splitlines():
         code = line.split("*>", 1)[0]
-        if not inserted and terminal.match(code):
-            output.extend(snapshot)
-            inserted = True
-        elif not inserted and end_program.match(code):
+        # Every syntactic exit path needs its own snapshot. Inserting only
+        # before the first terminal statement misses branches that terminate
+        # through a different STOP RUN/GOBACK/EXIT PROGRAM.
+        if terminal.match(code) or end_program.match(code):
             output.extend(snapshot)
             inserted = True
         output.append(line)
