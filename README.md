@@ -154,8 +154,8 @@ Todo lo que no se traduce sale con un comentario `# COBOL no traducido: ...` en 
 
 Estas son las que quedan pendientes y que sabes que existen antes de encontrártelas:
 
-**1. Las cláusulas `VALUE` todavía no inicializan las variables generadas.**
-`01 WS-STATUS PIC X VALUE "A".` aparece como comentario, pero la variable Python se inicializa con el valor por defecto (`""`). La salida conserva la pista del valor original, pero no su semántica. Debe corregirse antes de presentar el código generado como ejecutable.
+**1. Las cláusulas `VALUE` solo cubren literales simples.**
+Los valores iniciales simples se preservan, pero no se emula el relleno de campos alfanuméricos, la precisión/escala de `PIC` ni toda la semántica de almacenamiento COBOL. La salida sigue orientada a lectura; no debe considerarse equivalente ni lista para producción.
 
 **2. `EVALUATE` no se traduce.**
 Se marca con un comentario y se deja para v0.0.5.
