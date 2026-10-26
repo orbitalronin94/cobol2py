@@ -157,6 +157,76 @@ class TranslationTests(unittest.TestCase):
         self.assertEqual(output, ['# COBOL no traducido: CALL "SUBPGM"'])
 
 
+class CopybookTests(unittest.TestCase):
+    def test_resolves_copybook_from_explicit_search_path(self):
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as temp:
+            root = Path(temp)
+            source_dir = root / "src"
+            copy_dir = root / "copybooks"
+            source_dir.mkdir()
+            copy_dir.mkdir()
+            (copy_dir / "CUSTOMER.cpy").write_text(
+                '01 WS-NAME PIC X(5) VALUE "AL".\n', encoding="utf-8"
+            )
+            source = "\n".join([
+                "IDENTIFICATION DIVISION.",
+                "PROGRAM-ID. COPYTEST.",
+                "DATA DIVISION.",
+                "WORKING-STORAGE SECTION.",
+                "COPY CUSTOMER.",
+                "PROCEDURE DIVISION.",
+                "MAIN.",
+                "STOP RUN.",
+            ])
+            program = cobol2py.parse_cobol(
+                source,
+                source_format="free",
+                copybook_paths=[copy_dir],
+                source_path=source_dir / "main.cbl",
+            )
+            self.assertEqual([v.name for v in program.variables], ["WS-NAME"])
+            self.assertEqual(program.unresolved_copybooks, [])
+
+    def test_resolves_nested_copybooks_and_reports_cycles(self):
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "A.cpy").write_text("COPY B.\n", encoding="utf-8")
+            (root / "B.cpy").write_text('01 WS-ID PIC 9 VALUE 7.\nCOPY A.\n', encoding="utf-8")
+            source = "\n".join([
+                "DATA DIVISION.",
+                "WORKING-STORAGE SECTION.",
+                "COPY A.",
+                "PROCEDURE DIVISION.",
+                "MAIN.",
+                "STOP RUN.",
+            ])
+            program = cobol2py.parse_cobol(
+                source, source_format="free", copybook_paths=[root]
+            )
+            self.assertEqual([v.name for v in program.variables], ["WS-ID"])
+            self.assertTrue(any("COPYBOOK CYCLE" in item for item in program.unresolved_copybooks))
+            self.assertIn("COPYBOOK RESOLUTION WARNING", cobol2py.emit_python(program))
+
+    def test_missing_copybook_is_explicit_and_not_silently_dropped(self):
+        source = "\n".join([
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "COPY DOES-NOT-EXIST.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "STOP RUN.",
+        ])
+        program = cobol2py.parse_cobol(source, source_format="free", copybook_paths=[])
+        self.assertTrue(any("COPYBOOK NOT FOUND: DOES-NOT-EXIST" in item for item in program.unresolved_copybooks))
+        self.assertIn("COPYBOOK RESOLUTION WARNING", cobol2py.emit_python(program))
+
+
 class EndToEndTests(unittest.TestCase):
     def test_perform_times_body_is_nested_in_loop(self):
         source = "\n".join([
