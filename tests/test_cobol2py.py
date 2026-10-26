@@ -111,7 +111,7 @@ class TranslationTests(unittest.TestCase):
         self.assertEqual(cobol2py.translate_move_value('ALL "Y"', "WS-FLAG", variables), "'YYYY'")
 
     def test_doubled_quotes_in_cobol_literals_are_decoded(self):
-        self.assertEqual(cobol2py.translate_literal('"DON""T"'), "'DON\"T'")
+        self.assertEqual(cobol2py.translate_literal('"DON""T"'), '"DON\\\"T"')
         self.assertEqual(cobol2py.translate_literal("'IT''S OK'"), "\"IT'S OK\"")
         self.assertEqual(
             cobol2py.translate_java_literal('"DON""T"', {}),
