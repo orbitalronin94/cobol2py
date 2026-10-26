@@ -435,15 +435,21 @@ def translate_literal(token: str) -> str:
 
 
 def translate_expr(expr: str) -> str:
-    tokens = re.split(r"(\s+|\+|\-|\*|/|=|<|>|\(|\))", expr)
+    # Match COBOL identifiers before arithmetic operators so hyphenated
+    # names (WS-NUM) become Python identifiers (ws_num), not subtraction.
+    # COBOL arithmetic using '-' should be separated from identifiers by
+    # whitespace when the token could otherwise be a hyphenated data-name.
+    tokens = re.findall(
+        r'"[^"]*"|\\'[^\\']*\\'|[A-Za-z][A-Za-z0-9-]*|\\d+(?:\\.\\d+)?|<=|>=|<>|==|!=|[()+*/=<>&-]|\\s+|.',
+        expr,
+    )
     out = []
     for tok in tokens:
-        if re.match(r"^[A-Za-z][A-Za-z0-9\-]*$", tok):
+        if re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", tok):
             out.append(normalize_name(tok))
         else:
             out.append(tok)
     return "".join(out).strip()
-
 
 # Patch 1: normalización de operadores
 def translate_condition(cond: str) -> str:
@@ -555,8 +561,10 @@ def translate_nodes(nodes: list[Node], paragraphs: set[str], indent: int) -> lis
         if node.kind == "stmt":
             lines = translate_statement(node.text, paragraphs)
             if lines:
-                for line in lines:
-                    out.append("    " * indent + line.strip())
+                opens_block = lines[0].rstrip().endswith(":")
+                for i, line in enumerate(lines):
+                    line_indent = indent + 1 if opens_block and i > 0 else indent
+                    out.append("    " * line_indent + line.strip())
 
         elif node.kind == "if":
             m = RE_IF_OPEN.match(node.text)
