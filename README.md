@@ -179,12 +179,17 @@ cobol2py/
 ├── README.md
 ├── LICENSE
 ├── samples/
-│   ├── hello.cbl        # ejemplo mínimo
-│   └── realtest.cbl     # ejemplo con OCCURS, IF anidados y PERFORM
+│   ├── hello.cbl
+│   ├── realtest.cbl
+│   └── move_semantics.cbl
+├── benchmarks/
+│   ├── cases.json       # corpus versionado de comparación diferencial
+│   └── run_benchmark.py
 ├── tests/
 │   └── test_cobol2py.py
 └── .github/workflows/
-    └── tests.yml
+    ├── tests.yml
+    └── differential-benchmark.yml
 ```
 
 ## Pruebas
@@ -206,6 +211,24 @@ python cobol2py.py programa.cbl --format free
 `--format auto` es el valor predeterminado; como las columnas de secuencia en blanco pueden aparecer tanto en formato fijo como en fuentes libres indentadas, no siempre es posible inferir el formato con certeza.
 
 GitHub Actions ejecuta las pruebas con Python 3.10–3.13 y compara, mediante `diff -u`, la salida de GnuCOBOL con la de Python traducido para `samples/realtest.cbl` y `samples/move_semantics.cbl`. Este segundo fixture verifica relleno/truncamiento de `PIC X(n)` y truncamiento de dígitos en `PIC 9(n)`. También hay regresiones de runtime para `ADD`, `IF`, `DISPLAY` con varios operandos, `PERFORM ... TIMES` y subíndices de tablas. La cobertura sigue limitada a estos fixtures y al subconjunto probado; no demuestra equivalencia semántica general ni certifica una migración. La compilación sintáctica de la salida, por sí sola, tampoco prueba equivalencia.
+
+---
+
+## Benchmark diferencial y evolución objetiva
+
+El workflow `differential-benchmark.yml` compara cada programa del corpus con dos ejecuciones: el programa compilado por GnuCOBOL y el Python generado por el traductor. En cada push a `main`, pull request o ejecución manual, publica un informe Markdown en el resumen de GitHub Actions y conserva los informes JSON/Markdown como artefactos durante 90 días.
+
+- **Métrica principal:** porcentaje de programas cuyo `stdout` y código de salida coinciden exactamente con GnuCOBOL.
+- **Comparación entre versiones:** cuando existe una revisión base, ejecuta tanto el traductor anterior como el candidato sobre el mismo corpus de la revisión evaluada y muestra el cambio en puntos porcentuales.
+- **Fallos visibles:** errores de compilación COBOL, traducción, ejecución Python y diferencias de salida cuentan como fallos del caso y aparecen en el detalle.
+- **Corpus versionado:** `benchmarks/cases.json` define programas y capacidades cubiertas. Para añadir un caso, incorpora un programa COBOL autónomo en `samples/` y una entrada al manifiesto; no elimines casos difíciles solo para subir la puntuación.
+- **Interpretación prudente:** la métrica mide únicamente estos fixtures; no equivale al porcentaje de COBOL del mundo real que se traduce correctamente. Los casos deben crecer en variedad y complejidad, no solo en cantidad.
+
+Para ejecutar el benchmark localmente (requiere Python y GnuCOBOL):
+
+```bash
+python benchmarks/run_benchmark.py --translator cobol2py.py
+```
 
 ---
 
