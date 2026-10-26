@@ -1051,7 +1051,7 @@ def java_data_reference(name: str, variables: dict[str, CobolVar]) -> str:
 
 
 def java_string_literal(value: str) -> str:
-    return json.dumps(value, ensure_ascii=False)
+    # Java processes Unicode escapes before tokenization; use an octal escape for NUL.\n    return json.dumps(value, ensure_ascii=False).replace(r"\\u0000", r"\\000")
 
 
 def translate_java_literal(token: str, variables: dict[str, CobolVar]) -> str:
@@ -1106,6 +1106,19 @@ def translate_java_expr(expr: str, variables: dict[str, CobolVar]) -> str:
 
 def translate_java_condition(condition: str, variables: dict[str, CobolVar]) -> str:
     text = condition.strip()
+    string_comparison = re.fullmatch(
+        r"""(.+?)\s*(==|=|!=|<>)\s*(["'])(.*?)\3""",
+        text,
+    )
+    if string_comparison:
+        left, operator, _, literal = string_comparison.groups()
+        base = re.match(r"[A-Za-z0-9-]+", left.strip())
+        variable = variables.get(base.group(0).upper()) if base else None
+        if variable is not None and variable.pic and any(char in variable.pic.upper() for char in ("X", "A")):
+            width = pic_character_count(variable.pic)
+            padded = literal.ljust(max(width, len(literal)))
+            equality = f"Objects.equals({java_data_reference(left, variables)}, {java_string_literal(padded)})"
+            return equality if operator in ("=", "==") else "!(" + equality + ")"
     text = re.sub(r"\bIS\s+NOT\s+EQUAL\s+TO\b|\bNOT\s+EQUAL\s+TO\b", "!=", text, flags=re.IGNORECASE)
     text = re.sub(r"\bIS\s+EQUAL\s+TO\b|\bEQUAL\s+TO\b", "==", text, flags=re.IGNORECASE)
     text = re.sub(r"\bIS\s+GREATER\s+THAN\b|\bGREATER\s+THAN\b", ">", text, flags=re.IGNORECASE)
@@ -1178,7 +1191,7 @@ def translate_java_display_item(token: str, variables: dict[str, CobolVar]) -> s
         pic = variable.pic.upper()
         digits = pic_digit_count(pic)
         scale = pic_digit_count(pic.split("V", 1)[1]) if "V" in pic else 0
-        return f"formatNumeric(((Number)({value})).doubleValue(), {digits}, {scale})"
+        return f"formatNumeric((double)({value}), {digits}, {scale})"
     return f"String.valueOf({value})"
 
 
@@ -1222,7 +1235,7 @@ def translate_java_statement(
         if variable and variable.pic and "9" in variable.pic.upper():
             digits = pic_digit_count(variable.pic)
             scale = pic_digit_count(variable.pic.upper().split("V", 1)[1]) if "V" in variable.pic.upper() else 0
-            moved = f"moveNumeric(((Number)({value})).doubleValue(), {digits}, {scale})"
+            moved = f"moveNumeric((double)({value}), {digits}, {scale})"
             if "V" not in variable.pic.upper():
                 moved = f"(int){moved}"
             return [f"{target_expr} = {moved};"]
@@ -1513,11 +1526,12 @@ def emit_python(prog: Program) -> str:
 # ============================================================================
 
 def main() -> int:
-    ap = argparse.ArgumentParser(prog="cobol2py", description="Traductor COBOL → Python v0.0.8")
+    ap = argparse.ArgumentParser(prog="cobol2py", description="Traductor COBOL → Python/Java v0.1.0")
     ap.add_argument("input", type=Path, help="Archivo .cbl o .cob")
     ap.add_argument("--out", type=Path, default=None, help="Archivo de salida")
     ap.add_argument("--format", dest="source_format", choices=("auto", "fixed", "free"), default="auto", help="Formato fuente COBOL (por defecto: auto)")
     ap.add_argument("--copybook-path", action="append", type=Path, default=[], help="Directorio de copybooks (se puede repetir)")
+    ap.add_argument("--lang", choices=("python", "java"), default="python", help="Lenguaje de salida (por defecto: python)")
     args = ap.parse_args()
 
     if not args.input.exists():
@@ -1531,7 +1545,7 @@ def main() -> int:
         copybook_paths=args.copybook_path,
         source_path=args.input,
     )
-    output = emit_python(prog)
+    output = emit_java(prog) if args.lang == "java" else emit_python(prog)
 
     if args.out:
         args.out.write_text(output, encoding="utf-8")
