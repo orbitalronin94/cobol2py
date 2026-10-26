@@ -729,5 +729,28 @@ class EndToEndTests(unittest.TestCase):
         self.assertEqual(output.getvalue(), "TABLE-OK\n", generated)
 
 
+class DiagnosticTests(unittest.TestCase):
+    def test_collect_diagnostics_reports_unsupported_and_malformed_constructs(self):
+        program = cobol2py.Program(
+            paragraphs={
+                "MAIN": [
+                    cobol2py.Node(kind="stmt", text="FOO BAR", line=4),
+                    cobol2py.Node(kind="malformed", text="END-IF without matching open block", line=9),
+                ]
+            },
+            paragraph_order=["MAIN"],
+            unresolved_copybooks=["COPYBOOK NOT FOUND: MISSING"],
+        )
+
+        diagnostics = cobol2py.collect_diagnostics(program)
+        codes = {item["code"] for item in diagnostics}
+        self.assertEqual(
+            codes,
+            {"UNSUPPORTED_STATEMENT", "MALFORMED_CONTROL_FLOW", "COPYBOOK_RESOLUTION"},
+        )
+        malformed = next(item for item in diagnostics if item["code"] == "MALFORMED_CONTROL_FLOW")
+        self.assertEqual(malformed["line"], 9)
+
+
 if __name__ == "__main__":
     unittest.main()
