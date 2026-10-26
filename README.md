@@ -203,9 +203,9 @@ GitHub Actions ejecuta estas comprobaciones con Python 3.10–3.13. La compilaci
 ## Hoja de ruta
 
 **v0.0.5 — Semántica de datos y regresiones**
-- Aplicar cláusulas `VALUE` al valor inicial generado.
-- Preservar el tipo de dato al mover literales y documentar diferencias entre legibilidad y ejecución.
-- Añadir casos de prueba para valores numéricos, alfanuméricos, arrays y condiciones.
+- Ampliar `VALUE` más allá de literales simples y cubrir valores figurativos y casos límite.
+- Hacer que `MOVE` tenga en cuenta el `PIC` del destino, sin ocultar conversiones o truncamientos.
+- Añadir pruebas de semántica para campos alfanuméricos, precisión numérica, arrays y condiciones.
 
 **v0.0.6 — Control de flujo**
 - Implementar `EVALUATE/WHEN` con pruebas para `WHEN`, `WHEN OTHER` y anidamiento.
