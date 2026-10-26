@@ -1354,6 +1354,7 @@ def emit_java(prog: Program) -> str:
         "",
         "class Cobol2PyProgram {",
         "    private static final Scanner SCANNER = new Scanner(System.in);",
+        *[f"    // COPYBOOK RESOLUTION WARNING: {warning}" for warning in prog.unresolved_copybooks],
     ]
     groups = [variable for variable in prog.variables if variable.is_group]
     for group in groups:
@@ -1416,7 +1417,11 @@ def emit_java(prog: Program) -> str:
         method_name = "mainParagraph" if paragraph == "__MAIN__" else normalize_name(paragraph)
         lines.append(f"    private static void {method_name}() {{")
         body = translate_java_nodes(prog.paragraphs.get(paragraph, []), paragraph_names, variables, indent=2)
-        lines.extend(body if body else ["        ;"])
+        if not body:
+            body = ["        ;"]
+        elif all(not line.strip() or line.strip().startswith("//") for line in body):
+            body.append("        ;")
+        lines.extend(body)
         lines.append("    }")
         lines.append("")
     lines.append("    public static void main(String[] args) {")
