@@ -436,7 +436,7 @@ def normalize_name(name: str) -> str:
             return f"[{int(subscript) - 1}]"
         return f"[{subscript.replace('-', '_').lower()} - 1]"
 
-    return re.sub(r"\(([A-Za-z0-9-]+)\)", normalize_subscript, name)
+    return re.sub(r"\(([A-Za-z0-9_-]+)\)", normalize_subscript, name)
 
 
 def translate_literal(token: str) -> str:
