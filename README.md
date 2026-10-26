@@ -201,15 +201,18 @@ cobol2py/
     └── differential-benchmark.yml
 ```
 
-## Demo web local
+## Demo HTML autónoma
 
-Puedes pegar un programa COBOL en una página HTML y ver la traducción generada por el traductor real. La demo usa un servidor Python local, no un traductor JavaScript simulado.
+Abre directamente [`web/index.html`](web/index.html) en un navegador moderno. El archivo incluye embebido el código fuente completo de `cobol2py.py` y ejecuta ese traductor real en el navegador mediante Pyodide; no utiliza un traductor JavaScript simplificado ni necesita ejecutar `web_demo.py`.
 
+La primera traducción requiere conexión a Internet para descargar el runtime de Python desde el CDN de Pyodide. Después, el runtime permanece cargado en esa pestaña. El código COBOL y el código del traductor se ejecutan localmente; el programa COBOL no se envía a una API ni a un servidor de traducción. El HTML contiene la lógica del traductor, pero no incluye los binarios del runtime de Python.
+
+La demo admite formatos `auto`, `fixed` y `free`, limita la entrada a 1 MB y permite copiar el Python generado. Las limitaciones semánticas de `cobol2py.py` siguen aplicándose: una traducción generada no implica equivalencia completa ni aptitud para producción.
+
+El servidor local opcional sigue disponible para desarrollo:
 ```bash
 python web_demo.py
 ```
-
-Abre [http://127.0.0.1:8765](http://127.0.0.1:8765). El servidor solo escucha en `localhost`, acepta entradas de hasta 1 MB y no envía el código a servicios externos. Permite elegir formato `auto`, `fixed` o `free`. Detén el servidor con Ctrl+C.
 
 La interfaz es una herramienta de prueba; no valida la equivalencia semántica ni convierte la salida en apta para producción.
 
