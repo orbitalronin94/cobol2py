@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "realtest",
+      "path": "samples/realtest.cbl",
+      "features": [
+        "MOVE",
+        "PIC X/9",
+        "ADD",
+        "IF/ELSE",
+        "PERFORM TIMES",
+        "tables/subscripts",
+        "paragraph calls"
+      ]
+    },
+    {
+      "id": "move-semantics",
+      "path": "samples/move_semantics.cbl",
+      "features": [
+        "PIC X fixed-width initialization",
+        "MOVE text padding/truncation",
+        "PIC 9 overflow truncation",
+        "DISPLAY"
+      ]
+    }
+  ]
+}
