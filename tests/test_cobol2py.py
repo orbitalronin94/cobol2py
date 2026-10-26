@@ -38,7 +38,7 @@ class PreprocessTests(unittest.TestCase):
         from contextlib import redirect_stdout
         from io import StringIO
 
-        source = "\\n".join([
+        source = "\n".join([
             "IDENTIFICATION DIVISION.",
             "PROGRAM-ID. QUOTEDDISPLAY.",
             "PROCEDURE DIVISION.",
@@ -230,7 +230,7 @@ class TranslationTests(unittest.TestCase):
         from io import StringIO
         from unittest.mock import patch
 
-        source = "\\n".join([
+        source = "\n".join([
             "IDENTIFICATION DIVISION.",
             "PROGRAM-ID. ACCEPTTEST.",
             "DATA DIVISION.",
@@ -261,11 +261,11 @@ class TranslationTests(unittest.TestCase):
         }
         self.assertIn(
             "Integer.parseInt(SCANNER.nextLine())",
-            "\\n".join(cobol2py.translate_java_statement("ACCEPT WS-NUM", set(), variables)),
+            "\n".join(cobol2py.translate_java_statement("ACCEPT WS-NUM", set(), variables)),
         )
         self.assertIn(
             "fit(SCANNER.nextLine(), 3)",
-            "\\n".join(cobol2py.translate_java_statement("ACCEPT WS-TEXT", set(), variables)),
+            "\n".join(cobol2py.translate_java_statement("ACCEPT WS-TEXT", set(), variables)),
         )
 
     def test_display_of_implied_decimal_pic_emits_digits_without_point(self):
@@ -586,7 +586,7 @@ class EndToEndTests(unittest.TestCase):
         from contextlib import redirect_stdout
         from io import StringIO
 
-        source = "\\n".join([
+        source = "\n".join([
             "IDENTIFICATION DIVISION.",
             "PROGRAM-ID. GOBACKTEST.",
             "PROCEDURE DIVISION.",
@@ -864,7 +864,7 @@ class EndToEndTests(unittest.TestCase):
         from contextlib import redirect_stdout
         from io import StringIO
 
-        source = "\\n".join([
+        source = "\n".join([
             "IDENTIFICATION DIVISION.",
             "PROGRAM-ID. EVALUATEGROUP.",
             "DATA DIVISION.",
@@ -1213,7 +1213,7 @@ class DiagnosticTests(unittest.TestCase):
         self.assertIn("UNSUPPORTED_EVALUATE_ALSO", {item["code"] for item in diagnostics})
 
     def test_collect_diagnostics_warns_on_occurs_group(self):
-        source = "\\n".join([
+        source = "\n".join([
             "IDENTIFICATION DIVISION.",
             "PROGRAM-ID. GROUPTABLE.",
             "DATA DIVISION.",
@@ -1229,7 +1229,7 @@ class DiagnosticTests(unittest.TestCase):
         self.assertEqual(item["line"], 5)
 
     def test_collect_diagnostics_warns_on_unsupported_data_declarations(self):
-        source = "\\n".join([
+        source = "\n".join([
             "IDENTIFICATION DIVISION.",
             "PROGRAM-ID. DATAWARN.",
             "DATA DIVISION.",
