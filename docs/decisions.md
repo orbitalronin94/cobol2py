@@ -98,14 +98,14 @@ Añadir una sección con:
 - **Revisión:** qué evidencia podría hacer cambiar la decisión
 
 
-## D-009 — Tratar literales antes de detectar comentarios y límites de sentencia
+## D-012 — Tratar literales antes de detectar comentarios y límites de sentencia
 
 - **Estado:** aceptada.
 - **Decisión:** el preprocesado elimina el marcador `*>` solo fuera de literales entre comillas y el splitter mantiene cada literal como una unidad al buscar verbos de sentencia.
 - **Contexto:** una búsqueda textual ciega puede truncar valores válidos que contengan `*>` o dividir una sentencia al encontrar palabras reservadas dentro de una cadena.
 - **Consecuencias:** los casos de regresión deben cubrir comillas duplicadas, marcadores de comentario en literales y verbos COBOL dentro de texto. Esto reduce errores de lexicalización frecuentes, pero no convierte el splitter heurístico en un parser COBOL formal.
 
-## D-010 — El benchmark diferencial debe ser una barrera de CI
+## D-013 — El benchmark diferencial debe ser una barrera de CI
 
 - **Estado:** aceptada.
 - **Decisión:** el benchmark devuelve un código distinto de cero si el candidato no coincide con GnuCOBOL en todos los casos o si una referencia no compila. `--report-only` queda disponible para análisis exploratorio.
@@ -113,7 +113,7 @@ Añadir una sección con:
 - **Consecuencias:** CI falla de forma visible ante cambios incompatibles; las métricas siguen limitadas al corpus versionado y no prueban equivalencia general de COBOL.
 
 
-## D-011 — Modo estricto y diagnósticos estructurados
+## D-014 — Modo estricto y diagnósticos estructurados
 
 - **Estado:** aceptada.
 - **Decisión:** exponer `--strict` para rechazar sentencias no soportadas, copybooks no resueltos, estructuras de control malformadas, `REDEFINES` y cláusulas `PIC` numéricas cuya semántica no está garantizada; `--diagnostics-json` emite diagnósticos con código, severidad, línea y mensaje por stderr.
@@ -121,7 +121,7 @@ Añadir una sección con:
 - **Consecuencias:** los consumidores pueden distinguir una traducción parcial de una salida sin los diagnósticos conocidos. El modo estricto solo cubre las limitaciones detectables por el parser actual; no garantiza equivalencia semántica.
 
 
-## D-012 — Preservar la terminación del programa con STOP RUN
+## D-015 — Preservar la terminación del programa con STOP RUN
 
 - **Estado:** aceptada para los backends generados.
 - **Decisión:** Python propaga una señal interna de terminación hasta el párrafo de entrada, que la captura para no ejecutar sentencias posteriores; Java emite `System.exit(0)`. `GOBACK` y `EXIT PROGRAM` siguen siendo retornos del ámbito actual.
@@ -129,7 +129,7 @@ Añadir una sección con:
 - **Consecuencias:** la regresión cubre `STOP RUN` dentro de un párrafo invocado. El modelo sigue siendo el de un programa independiente; no pretende modelar todos los casos de subprogramas COBOL ni cláusulas de código de retorno.
 
 
-## D-013 — Registrar fallos de ejecución de la referencia del benchmark
+## D-016 — Registrar fallos de ejecución de la referencia del benchmark
 
 - **Estado:** aceptada.
 - **Decisión:** si el ejecutable de referencia GnuCOBOL no puede iniciarse o excede el timeout, el benchmark registra `reference_ok: false`, conserva el detalle en el informe y devuelve un estado de fallo en vez de abortar sin artefactos.
@@ -137,7 +137,7 @@ Añadir una sección con:
 - **Consecuencias:** los fallos de referencia quedan diferenciados de las discrepancias del traductor, aunque ambos bloquean la barrera por defecto. Un código de salida no cero normal del programa COBOL sigue siendo una referencia válida y se compara exactamente.
 
 
-## D-014 — Advertir de la aritmética sin semántica completa de tamaño
+## D-017 — Advertir de la aritmética sin semántica completa de tamaño
 
 - **Estado:** aceptada.
 - **Decisión:** `--strict` genera `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` para `ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE` y `COMPUTE` hasta implementar y verificar la capacidad de dígitos del campo receptor y `ON SIZE ERROR`.
@@ -145,7 +145,7 @@ Añadir una sección con:
 - **Consecuencias:** el modo estricto es conservador para programas con aritmética; no afirma que cada operación vaya a desbordar, sino que la equivalencia completa aún no está garantizada.
 
 
-## D-015 — Decodificar comillas duplicadas en literales COBOL
+## D-018 — Decodificar comillas duplicadas en literales COBOL
 
 - **Fecha:** 2026-10-26.
 - **Estado:** aceptada para literales completos reconocidos por el traductor.
@@ -155,7 +155,7 @@ Añadir una sección con:
 - **Validación:** el código y las pruebas se han actualizado en `main`; la suite completa aún necesita una ejecución verificable.
 
 
-## D-016 — Hacer visibles las declaraciones de datos no modeladas
+## D-019 — Hacer visibles las declaraciones de datos no modeladas
 
 - **Fecha:** 2026-10-26.
 - **Estado:** aceptada.
@@ -165,7 +165,7 @@ Añadir una sección con:
 - **Validación:** se añadieron pruebas de regresión para los tres códigos de diagnóstico; la ejecución real de la suite aún está pendiente de confirmación en CI.
 
 
-## D-017 — Diagnosticar EVALUATE ALSO no soportado
+## D-020 — Diagnosticar EVALUATE ALSO no soportado
 
 - **Fecha:** 2026-10-26.
 - **Estado:** aceptada.
@@ -175,7 +175,7 @@ Añadir una sección con:
 - **Validación:** prueba unitaria de `collect_diagnostics`; la ejecución completa de la suite todavía no está confirmada.
 
 
-## D-018 — Diagnosticar OCCURS sobre grupos
+## D-021 — Diagnosticar OCCURS sobre grupos
 
 - **Fecha:** 2026-10-26.
 - **Estado:** aceptada.
@@ -185,7 +185,7 @@ Añadir una sección con:
 - **Validación:** prueba unitaria que comprueba el diagnóstico y su línea de origen; la suite completa todavía no está confirmada en CI.
 
 
-## D-019 — Evitar palabras reservadas en identificadores generados
+## D-022 — Evitar palabras reservadas en identificadores generados
 
 - **Fecha:** 2026-10-26.
 - **Estado:** aceptada.
@@ -195,7 +195,7 @@ Añadir una sección con:
 - **Validación:** pruebas unitarias de normalización para `CLASS` e índices con `INT`; la suite completa sigue pendiente de confirmación en CI.
 
 
-## D-020 — Reescribir operadores solo fuera de literales
+## D-023 — Reescribir operadores solo fuera de literales
 
 - **Fecha:** 2026-10-26.
 - **Estado:** aceptada.
@@ -205,7 +205,7 @@ Añadir una sección con:
 - **Validación:** regresiones para literales con comillas duplicadas y palabras como `NOT`/`AND`; la ejecución completa de tests sigue pendiente de confirmación en CI.
 
 
-## D-021 — Mostrar PIC con V como dígitos implícitos en DISPLAY
+## D-024 — Mostrar PIC con V como dígitos implícitos en DISPLAY
 
 - **Fecha:** 2026-10-26.
 - **Estado:** aceptada para PIC numéricas simples con `V`.
