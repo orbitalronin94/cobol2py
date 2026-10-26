@@ -892,6 +892,23 @@ class EndToEndTests(unittest.TestCase):
 
 
 class DiagnosticTests(unittest.TestCase):
+    def test_collect_diagnostics_warns_on_evaluate_also(self):
+        program = cobol2py.Program(
+            paragraphs={
+                "MAIN": [
+                    cobol2py.Node(
+                        kind="evaluate",
+                        text="EVALUATE WS-A ALSO WS-B",
+                        line=3,
+                        body=[cobol2py.Node(kind="when", text="1 ALSO 2", line=4)],
+                    )
+                ]
+            },
+            paragraph_order=["MAIN"],
+        )
+        diagnostics = cobol2py.collect_diagnostics(program)
+        self.assertIn("UNSUPPORTED_EVALUATE_ALSO", {item["code"] for item in diagnostics})
+
     def test_collect_diagnostics_warns_on_unsupported_data_declarations(self):
         source = "\\n".join([
             "IDENTIFICATION DIVISION.",
