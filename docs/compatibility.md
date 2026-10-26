@@ -66,3 +66,6 @@ Cada caso pesa lo mismo, independientemente de su tamaño o complejidad. Por ell
 
 
 `STOP RUN` se emite como señal de terminación que se propaga hasta el párrafo de entrada en Python y como `System.exit(0)` en Java. `GOBACK` y `EXIT PROGRAM` se mantienen como retornos locales. La semántica de códigos de retorno y de subprogramas COBOL sigue fuera de la garantía general.
+
+
+El benchmark también registra los errores de lanzamiento o timeout al ejecutar la referencia COBOL (`reference_ok: false`) y termina con error de forma controlada. Un código de salida no cero producido por el programa COBOL no se considera por sí solo un fallo de referencia: forma parte del resultado esperado y se compara con el traductor.
