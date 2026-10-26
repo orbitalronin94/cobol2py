@@ -4,7 +4,7 @@
 
 La compatibilidad se debe expresar por construcción y por caso de prueba, no como una etiqueta absoluta. Una traducción puede ser sintácticamente válida y aun así cambiar resultados, formato de datos, flujo de control, efectos de E/S o códigos de salida.
 
-El benchmark actual considera que un caso coincide cuando el `stdout` y el código de retorno del Python generado son iguales a los del ejecutable COBOL compilado por GnuCOBOL. El manifiesto contiene 100 programas. El corpus amplía la variedad de casos, pero sigue siendo curado y sesgado hacia construcciones concretas. No mide todos los dialectos, cláusulas, estados de error ni combinaciones de sentencias.
+El benchmark actual considera que un caso coincide cuando el `stdout` y el código de retorno del Python generado son iguales a los del ejecutable COBOL compilado por GnuCOBOL. El comando termina con código distinto de cero si el candidato tiene discrepancias o una referencia no compila; `--report-only` se reserva para ejecuciones exploratorias que no deban bloquear CI. El manifiesto contiene 100 programas. El corpus amplía la variedad de casos, pero sigue siendo curado y sesgado hacia construcciones concretas. No mide todos los dialectos, cláusulas, estados de error ni combinaciones de sentencias.
 
 ## Áreas cubiertas por el corpus actual (100 casos)
 
