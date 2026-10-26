@@ -516,6 +516,32 @@ def translate_display_item(token: str, variables: dict[str, CobolVar]) -> str:
             )
     return f"str({translate_literal(token)})"
 
+def pic_character_count(pic: str) -> int:
+    """Count positions in a simple alphanumeric PIC such as X(10) or XX."""
+    return sum(
+        int(match.group(1)) if match.group(1) else 1
+        for match in re.finditer(r"[XA](?:\((\d+)\))?", pic.upper())
+    )
+
+
+def translate_move_value(source: str, target: str, variables: dict[str, CobolVar]) -> str:
+    """Translate MOVE with basic receiving-field size semantics.
+
+    For alphanumeric PICs, COBOL right-pads short values with spaces and
+    truncates values that exceed the receiving field. Other PIC categories
+    retain the existing simple assignment behavior.
+    """
+    value = translate_literal(source)
+    target_base = re.match(r"([A-Za-z0-9-]+)", target)
+    variable = variables.get(target_base.group(1).upper()) if target_base else None
+    if variable is not None and variable.pic:
+        pic = variable.pic.upper()
+        if "X" in pic or "A" in pic:
+            width = pic_character_count(pic)
+            if width:
+                return f"str({value})[:{width}].ljust({width})"
+    return value
+
 
 COBOL_TOKEN_RE = re.compile(r'"[^"]*"|\'[^\']*\'|,?\s*|(?:\S+)')
 
@@ -560,7 +586,9 @@ def translate_statement(
 
     m = re.match(r"MOVE\s+(.+?)\s+TO\s+([A-Za-z0-9\-\(\)]+)", s, re.IGNORECASE)
     if m:
-        return [f"{normalize_name(m.group(2))} = {translate_literal(m.group(1))}"]
+        target = m.group(2)
+        value = translate_move_value(m.group(1), target, variables or {})
+        return [f"{normalize_name(target)} = {value}"]
 
     m = re.match(r"COMPUTE\s+([A-Za-z0-9\-\(\)]+)\s*=\s*(.+)", s, re.IGNORECASE)
     if m:
