@@ -25,50 +25,34 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gnucobol
-      - name: Select baseline revision
-        id: baseline
+      - name: Prepare initial translator snapshot
         env:
-          EVENT_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
-          EVENT_NAME: ${{ github.event_name }}
+          BASELINE_SHA: 02fde4baab3956e640111092e15291aa10a6a774
         run: |
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            BASE_SHA="$(git rev-parse HEAD^ 2>/dev/null || true)"
-          else
-            BASE_SHA="$EVENT_BASE"
-          fi
-          if [ -n "$BASE_SHA" ] && [ "$BASE_SHA" != "0000000000000000000000000000000000000000" ] && git cat-file -e "$BASE_SHA:cobol2py.py" 2>/dev/null; then
-            mkdir -p /tmp/cobol2py-baseline
-            git show "$BASE_SHA:cobol2py.py" > /tmp/cobol2py-baseline/cobol2py.py
-            echo "available=true" >> "$GITHUB_OUTPUT"
-            echo "sha=$BASE_SHA" >> "$GITHUB_OUTPUT"
-          else
-            echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "sha=unavailable" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Run paired GnuCOBOL differential benchmark
+          git cat-file -e "$BASELINE_SHA:cobol2py.py"
+          mkdir -p /tmp/cobol2py-baseline
+          git show "$BASELINE_SHA:cobol2py.py" > /tmp/cobol2py-baseline/cobol2py.py
+          echo "Baseline: $BASELINE_SHA (initial translator snapshot)" >> "$GITHUB_STEP_SUMMARY"
+      - name: Compare initial snapshot and current translator on the same corpus
         shell: bash
         env:
-          BASELINE_AVAILABLE: ${{ steps.baseline.outputs.available }}
-          BASELINE_SHA: ${{ steps.baseline.outputs.sha }}
+          BASELINE_SHA: 02fde4baab3956e640111092e15291aa10a6a774
           HEAD_SHA: ${{ github.sha }}
         run: |
           set -o pipefail
-          ARGS=(
-            --manifest benchmarks/cases.json
-            --translator "$GITHUB_WORKSPACE/cobol2py.py"
-            --candidate-label "$HEAD_SHA"
-            --json benchmark-report.json
-            --markdown benchmark-report.md
-          )
-          if [ "$BASELINE_AVAILABLE" = "true" ]; then
-            ARGS+=(--baseline-translator /tmp/cobol2py-baseline/cobol2py.py --baseline-label "$BASELINE_SHA")
-          fi
-          python benchmarks/run_benchmark.py "${ARGS[@]}" | tee /tmp/benchmark-console.md
+          python benchmarks/run_benchmark.py \
+            --manifest benchmarks/cases.json \
+            --baseline-translator /tmp/cobol2py-baseline/cobol2py.py \
+            --translator "$GITHUB_WORKSPACE/cobol2py.py" \
+            --baseline-label "Initial snapshot (${BASELINE_SHA:0:7})" \
+            --candidate-label "Current (${HEAD_SHA:0:7})" \
+            --json benchmark-report.json \
+            --markdown benchmark-report.md | tee /tmp/benchmark-console.md
           cat benchmark-report.md >> "$GITHUB_STEP_SUMMARY"
       - name: Upload machine-readable and human-readable reports
         uses: actions/upload-artifact@v4
         with:
-          name: differential-benchmark-${{ github.run_number }}
+          name: baseline-vs-current-benchmark-${{ github.run_number }}
           path: |
             benchmark-report.json
             benchmark-report.md
