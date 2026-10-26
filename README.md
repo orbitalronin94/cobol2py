@@ -47,6 +47,7 @@ Eso imprime la traducción por stdout. Si quieres guardarla en un archivo:
 python cobol2py.py programa.cbl --out programa.py
 python cobol2py.py programa.cbl --lang java --out Cobol2PyProgram.java
 javac Cobol2PyProgram.java
+python tools/gnucobol_trace.py programa.cbl --format auto
 ```
 
 Y si quieres comprobar que la salida es Python válido:
@@ -267,20 +268,23 @@ python benchmarks/run_benchmark.py --translator cobol2py.py
 **v0.0.7 — Copybook resolver**
 - [x] Localizar `COPY nombre.CPY.` junto al fuente y en rutas explícitas; expandir antes del parseo.
 - [x] Detectar ciclos y dejar constancia de copybooks no resueltos.
-- [ ] `COPY ... REPLACING` y bibliotecas calificadas siguen fuera del alcance.
+Alcance no cubierto: `COPY ... REPLACING` y bibliotecas calificadas.
 
 **v0.0.8 — Jerarquía de datos**
 - [x] Modelar grupos COBOL y campos hijos como diccionarios anidados, preservando la relación padre/hijo.
 - [x] Traducir referencias básicas a campos anidados y cualificación `OF/IN`.
-- [ ] `REDEFINES`, `RENAMES`, overlays y grupos `OCCURS` complejos siguen fuera del alcance.
+Alcance no cubierto: `REDEFINES`, `RENAMES`, overlays y grupos `OCCURS` complejos.
 
 **v0.1.0 — Salida Java**
 - [x] Reactivar el backend Java sobre el mismo AST y exponer `--lang java`.
 - [x] Añadir fixture y CI que compila el Java generado y compara su salida con GnuCOBOL.
-- [ ] La cobertura de Java sigue siendo un subconjunto; revisar construcciones no soportadas antes de usarlo.
+Alcance no cubierto: el backend Java sigue siendo un subconjunto; construcciones no soportadas se dejan explícitas como comentarios.
 
 **v0.2.0 — Ejecución con GnuCOBOL**
-Compilar el COBOL con GnuCOBOL y ejecutarlo con trace. Mostrar el valor de cada variable por línea.
+- [x] Añadir `tools/gnucobol_trace.py`: compila con GnuCOBOL (`-ftraceall`) y ejecuta con trace habilitado.
+- [x] Inyectar snapshots `TRACE_VAR|nombre|valor` para campos escalares, grupos y elementos `OCCURS` (hasta `--max-table-items`, por defecto 1000); los valores los formatea GnuCOBOL.
+- [x] Trazar grupos y cada elemento de `OCCURS` hasta `--max-table-items` (por defecto 1000).
+- [x] Reportar nombres duplicados y tablas sobre el límite en lugar de omitirlos silenciosamente.
 
 ---
 
