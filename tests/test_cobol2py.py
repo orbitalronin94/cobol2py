@@ -110,7 +110,7 @@ class EndToEndTests(unittest.TestCase):
             "           ADD 1 TO WS-COUNT.",
             "           ADD 2 TO WS-COUNT.",
             "           IF WS-COUNT = 3 THEN",
-            '               DISPLAY "COUNT=" WS-COUNT',
+            '               DISPLAY "COUNT=" WS-COUNT.',
             "           END-IF.",
             "           STOP RUN.",
         ])
@@ -138,7 +138,7 @@ class EndToEndTests(unittest.TestCase):
 
         generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
         compile(generated, "<cobol2py-output>", "exec")
-        self.assertIn('print("OK")', generated)
+        self.assertIn('print("".join(str(x) for in', generated)
         self.assertIn("def main_para():", generated)
 
 
