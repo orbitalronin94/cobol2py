@@ -119,3 +119,11 @@ Añadir una sección con:
 - **Decisión:** exponer `--strict` para rechazar sentencias no soportadas, copybooks no resueltos, estructuras de control malformadas, `REDEFINES` y cláusulas `PIC` numéricas cuya semántica no está garantizada; `--diagnostics-json` emite diagnósticos con código, severidad, línea y mensaje por stderr.
 - **Contexto:** comentarios de advertencia en el código generado son útiles para lectura, pero pueden pasar inadvertidos en automatizaciones.
 - **Consecuencias:** los consumidores pueden distinguir una traducción parcial de una salida sin los diagnósticos conocidos. El modo estricto solo cubre las limitaciones detectables por el parser actual; no garantiza equivalencia semántica.
+
+
+## D-012 — Preservar la terminación del programa con STOP RUN
+
+- **Estado:** aceptada para los backends generados.
+- **Decisión:** Python propaga una señal interna de terminación hasta el párrafo de entrada, que la captura para no ejecutar sentencias posteriores; Java emite `System.exit(0)`. `GOBACK` y `EXIT PROGRAM` siguen siendo retornos del ámbito actual.
+- **Contexto:** traducir `STOP RUN` como un `return` local permite que el párrafo llamador continúe, a diferencia del comportamiento de terminación del programa.
+- **Consecuencias:** la regresión cubre `STOP RUN` dentro de un párrafo invocado. El modelo sigue siendo el de un programa independiente; no pretende modelar todos los casos de subprogramas COBOL ni cláusulas de código de retorno.
