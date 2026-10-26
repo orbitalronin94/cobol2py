@@ -104,16 +104,17 @@ class CobolVar:
         # Preserve simple VALUE literals. Fixed-width alphanumeric storage
         # starts space-filled and MOVE/VALUE text is padded or truncated.
         initial = translate_literal(self.value) if self.value is not None else self._base_default()
-        if self.is_array:
-            if self.occurs:
-                return f"[{initial}] * {self.occurs}"
-            return "[]"
         if self.pic and ("X" in self.pic.upper() or "A" in self.pic.upper()):
             width = pic_character_count(self.pic)
             if width:
                 if self.value is None:
-                    return repr(" " * width)
-                return f"str({initial})[:{width}].ljust({width})"
+                    initial = repr(" " * width)
+                else:
+                    initial = f"str({initial})[:{width}].ljust({width})"
+        if self.is_array:
+            if self.occurs:
+                return f"[{initial}] * {self.occurs}"
+            return "[]"
         return initial
 
     def java_type(self) -> str:
