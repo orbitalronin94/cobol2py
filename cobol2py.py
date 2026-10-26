@@ -1239,8 +1239,8 @@ def translate_java_condition(condition: str, variables: dict[str, CobolVar]) -> 
             width = pic_character_count(variable.pic)
             padded = literal.ljust(max(width, len(literal)))
             equality = f"Objects.equals({java_data_reference(left, variables)}, {java_string_literal(padded)})"
-            positive = operator in ("=", "==") or bool(
-                re.fullmatch(r"(?:IS\\s+)?EQUAL\\s+TO", operator, re.IGNORECASE)
+            positive = operator in ("=", "==") or operator.upper().split() in (
+                ["EQUAL", "TO"], ["IS", "EQUAL", "TO"]
             )
             return equality if positive else "!(" + equality + ")"
     def rewrite(chunk: str) -> str:
