@@ -1098,7 +1098,7 @@ def translate_nodes(
             is_boolean = subject.upper() in ("TRUE", "FALSE")
             temp_name = f"_cobol_evaluate_{node.line}"
             if not is_boolean:
-                out.append("    " * indent + f"{temp_name} = {translate_expr(subject)}")
+                out.append("    " * indent + f"{temp_name} = {translate_expr(subject, variables)}")
             emitted = 0
             for branch in node.body:
                 if branch.kind != "when":
@@ -1115,9 +1115,12 @@ def translate_nodes(
                             condition = f"not ({condition})"
                     elif re.search(r"\s+(?:THRU|THROUGH)\s+", choice, re.IGNORECASE):
                         low, high = re.split(r"\s+(?:THRU|THROUGH)\s+", choice, maxsplit=1, flags=re.IGNORECASE)
-                        condition = f"{temp_name} >= {translate_literal(low)} and {temp_name} <= {translate_literal(high)}"
+                        condition = (
+                            f"{temp_name} >= {translate_literal(low, variables)} "
+                            f"and {temp_name} <= {translate_literal(high, variables)}"
+                        )
                     else:
-                        condition = f"{temp_name} == {translate_literal(choice)}"
+                        condition = f"{temp_name} == {translate_literal(choice, variables)}"
                     prefix = ("if " if emitted == 0 else "elif ") + condition + ":"
                 out.append("    " * indent + prefix)
                 branch_body = translate_nodes(branch.then_branch, paragraphs, indent + 1, variables)
