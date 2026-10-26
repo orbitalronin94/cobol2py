@@ -540,6 +540,13 @@ def translate_move_value(source: str, target: str, variables: dict[str, CobolVar
             width = pic_character_count(pic)
             if width:
                 return f"str({value})[:{width}].ljust({width})"
+        # For unsigned integer receiving fields, COBOL MOVE keeps the
+        # rightmost digits when the sending value is wider than the PIC.
+        # Signed and implied-decimal pictures need separate semantics.
+        if "9" in pic and not any(mark in pic for mark in ("V", "S", "P")):
+            digits = pic_digit_count(pic)
+            if digits:
+                return f"int({value}) % (10 ** {digits})"
     return value
 
 
