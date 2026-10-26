@@ -157,6 +157,38 @@ class TranslationTests(unittest.TestCase):
         self.assertEqual(output, ['# COBOL no traducido: CALL "SUBPGM"'])
 
 
+class GnuCobolTraceTests(unittest.TestCase):
+    def test_trace_instrumentation_emits_each_scalar_before_program_exit(self):
+        from tools.gnucobol_trace import instrument_source
+
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. TRACETEST.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            '01 WS-NAME PIC X(5) VALUE "AL".',
+            "01 WS-COUNT PIC 9(3) VALUE 0.",
+            "01 WS-GROUP.",
+            "   05 WS-CHILD PIC X(3).",
+            "01 WS-TABLE PIC 9 OCCURS 2 TIMES.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            'DISPLAY "HELLO".',
+            "STOP RUN.",
+        ])
+        instrumented, traced, skipped, unresolved, actual_format = instrument_source(
+            source, source_format="free"
+        )
+        self.assertEqual(actual_format, "free")
+        self.assertEqual(traced, ["WS-NAME", "WS-COUNT", "WS-CHILD"])
+        self.assertTrue(any("WS-GROUP" in item for item in skipped))
+        self.assertTrue(any("WS-TABLE" in item for item in skipped))
+        self.assertEqual(unresolved, [])
+        self.assertLess(instrumented.index('TRACE_VAR|WS-COUNT|'), instrumented.index("STOP RUN"))
+        self.assertIn('DISPLAY "TRACE_VAR|WS-NAME|" WS-NAME.', instrumented)
+        self.assertIn('DISPLAY "TRACE_VAR|WS-COUNT|" WS-COUNT.', instrumented)
+
+
 class JavaBackendTests(unittest.TestCase):
     def test_java_backend_emits_valid_shape_for_shared_ast(self):
         source = "\n".join([
