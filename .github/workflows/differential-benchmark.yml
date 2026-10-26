@@ -43,6 +43,7 @@ jobs:
           python benchmarks/run_benchmark.py \
             --manifest benchmarks/cases.json \
             --baseline-translator /tmp/cobol2py-baseline/cobol2py.py \
+            --baseline-no-format-flag \
             --translator "$GITHUB_WORKSPACE/cobol2py.py" \
             --baseline-label "Initial snapshot (${BASELINE_SHA:0:7})" \
             --candidate-label "Current (${HEAD_SHA:0:7})" \
