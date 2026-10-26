@@ -1132,10 +1132,18 @@ class DiagnosticTests(unittest.TestCase):
             variables=[
                 cobol2py.CobolVar(level=1, name="PRINT", pic="X"),
                 cobol2py.CobolVar(level=1, name="COBOL-PRINT", pic="X"),
-            ]
+            ],
+            raw_lines=[
+                (5, "01 PRINT PIC X."),
+                (6, "01 COBOL-PRINT PIC X."),
+            ],
         )
         diagnostics = cobol2py.collect_diagnostics(program)
-        self.assertIn("PYTHON_IDENTIFIER_COLLISION", {item["code"] for item in diagnostics})
+        item = next(
+            item for item in diagnostics
+            if item["code"] == "PYTHON_IDENTIFIER_COLLISION"
+        )
+        self.assertEqual(item["line"], 5)
 
     def test_collect_diagnostics_warns_on_python_identifier_collisions(self):
         program = cobol2py.Program(
