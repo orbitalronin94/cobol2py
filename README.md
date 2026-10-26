@@ -165,13 +165,15 @@ Estas son las que quedan pendientes y que sabes que existen antes de encontrárt
 **2. `EVALUATE` cubre un subconjunto.**
 `WHEN` escalar, `WHEN OTHER`, `EVALUATE TRUE/FALSE` y rangos `THRU` tienen traducción básica. `ALSO`, abreviaturas de selección y todas las reglas de dialecto siguen fuera de cobertura.
 
-**3. El splitter por verbos sigue siendo heurístico.**
+**3. Literales con comillas duplicadas.** Los literales completos con comillas simples o dobles se decodifican según la regla COBOL de duplicar la comilla delimitadora, tanto en operandos como en expresiones y cláusulas `VALUE`. El analizador sigue siendo heurístico y esto no implica soporte para todas las formas de literal, prefijos o extensiones de dialecto.
+
+**4. El splitter por verbos sigue siendo heurístico.**
 La pila de bloques ahora conserva ámbitos anidados de `IF`, `PERFORM` y `EVALUATE`, y marca cierres malformados; sentencias COBOL concatenadas de formas no habituales todavía pueden confundirlo.
 
-**4. Copybooks: solo expansión básica.**
+**5. Copybooks: solo expansión básica.**
 Se resuelve `COPY nombre.` o `COPY nombre.CPY.` buscando primero junto al archivo fuente y después en cada `--copybook-path`. Se expanden dependencias anidadas y se detectan ciclos; faltantes, errores de lectura y cláusulas no soportadas quedan en comentarios de advertencia. `COPY ... REPLACING`, bibliotecas y reglas avanzadas de reemplazo siguen pendientes.
 
-**5. La jerarquía de grupos es una representación simplificada.**
+**6. La jerarquía de grupos es una representación simplificada.**
 Los grupos COBOL se emiten como diccionarios anidados y los campos se leen/escriben mediante nombres no cualificados o `OF/IN` básico. No se modelan `REDEFINES`, `RENAMES`, overlays de almacenamiento, todos los calificadores ni las reglas completas de inicialización de grupos.
 
 ---
