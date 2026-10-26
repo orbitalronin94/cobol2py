@@ -25,7 +25,9 @@ from typing import Optional
 # 1. PREPROCESADO
 # ============================================================================
 
-def preprocess(source: str) -> list[tuple[int, str]]:
+def preprocess(source: str, source_format: str = "auto") -> list[tuple[int, str]]:
+    if source_format not in ("auto", "fixed", "free"):
+        raise ValueError("source_format debe ser 'auto', 'fixed' o 'free'")
     lines = source.splitlines()
     # COBOL fixed format uses columns 1-6 for sequence numbers, column 7
     # for the indicator, and columns 8-72 for source. Do not infer free
@@ -35,7 +37,11 @@ def preprocess(source: str) -> list[tuple[int, str]]:
             return False
         return line[6] in (" ", "*", "/", "D", "d", "-")
 
-    fixed_format = any(looks_fixed(line) for line in lines[:20])
+    # Blank sequence areas make fixed/free format inherently ambiguous. Allow
+    # callers to override the heuristic explicitly when source layout is known.
+    fixed_format = source_format == "fixed" or (
+        source_format == "auto" and any(looks_fixed(line) for line in lines[:20])
+    )
     out: list[tuple[int, str]] = []
     for i, raw in enumerate(lines, 1):
         if not fixed_format:
@@ -371,8 +377,8 @@ def parse_procedure(lines: list[tuple[int, str]]) -> tuple[dict[str, list[Node]]
     return paragraphs, order
 
 
-def parse_cobol(source: str) -> Program:
-    lines = preprocess(source)
+def parse_cobol(source: str, source_format: str = "auto") -> Program:
+    lines = preprocess(source, source_format=source_format)
     prog = Program()
     prog.raw_lines = lines
 
@@ -662,6 +668,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(prog="cobol2py", description="Traductor COBOL → Python v0.0.4")
     ap.add_argument("input", type=Path, help="Archivo .cbl o .cob")
     ap.add_argument("--out", type=Path, default=None, help="Archivo de salida")
+    ap.add_argument("--format", dest="source_format", choices=("auto", "fixed", "free"), default="auto", help="Formato fuente COBOL (por defecto: auto)")
     args = ap.parse_args()
 
     if not args.input.exists():
@@ -669,7 +676,7 @@ def main() -> int:
         return 1
 
     source = args.input.read_text(encoding="utf-8", errors="replace")
-    prog = parse_cobol(source)
+    prog = parse_cobol(source, source_format=args.source_format)
     output = emit_python(prog)
 
     if args.out:
