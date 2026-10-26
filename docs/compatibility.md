@@ -88,3 +88,6 @@ Los literales completos entre comillas simples o dobles decodifican las comillas
 
 
 Los grupos de datos con `OCCURS` tampoco se representan todavía como listas de registros anidados; el modo estricto emite `OCCURS_GROUP_UNSUPPORTED`. Esta advertencia es distinta de `OCCURS_DEPENDING_ON_UNSUPPORTED`, que se refiere a la longitud activa dinámica de una tabla.
+
+
+Para un `DISPLAY` simple de un campo numérico con `V` implícita, el backend Python emite las posiciones de dígitos sin punto decimal visible. Esto no implica que todas las reglas de redondeo, signo, aritmética o PIC editadas estén cubiertas.
