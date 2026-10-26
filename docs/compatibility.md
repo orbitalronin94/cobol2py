@@ -85,3 +85,6 @@ Los literales completos entre comillas simples o dobles decodifican las comillas
 
 
 `EVALUATE ALSO` no se traduce como selección múltiple. El modo estricto emite `UNSUPPORTED_EVALUATE_ALSO` si detecta `ALSO` en el sujeto o en una alternativa `WHEN`; esto no garantiza que todas las variantes avanzadas de `EVALUATE` estén detectadas.
+
+
+Los grupos de datos con `OCCURS` tampoco se representan todavía como listas de registros anidados; el modo estricto emite `OCCURS_GROUP_UNSUPPORTED`. Esta advertencia es distinta de `OCCURS_DEPENDING_ON_UNSUPPORTED`, que se refiere a la longitud activa dinámica de una tabla.
