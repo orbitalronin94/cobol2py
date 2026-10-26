@@ -115,3 +115,7 @@ jobs:
           python tools/gnucobol_trace.py samples/trace_demo.cbl --format fixed > /tmp/trace.out 2> /tmp/trace.err
           grep -F 'TRACE_VAR|WS-NAME|BOB  ' /tmp/trace.out
           grep -F 'TRACE_VAR|WS-COUNT|002' /tmp/trace.out
+          grep -F 'TRACE_VAR|WS-GROUP|CH ' /tmp/trace.out
+          grep -F 'TRACE_VAR|WS-CHILD|CH ' /tmp/trace.out
+          grep -F 'TRACE_VAR|WS-TABLE(1)|03' /tmp/trace.out
+          grep -F 'TRACE_VAR|WS-TABLE(2)|04' /tmp/trace.out
