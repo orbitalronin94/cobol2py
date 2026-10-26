@@ -54,6 +54,7 @@ Y si quieres comprobar que la salida es Python válido:
 
 ```bash
 python -m py_compile programa.py && echo "OK"
+python -m unittest discover -s tests -v
 ```
 
 ---
