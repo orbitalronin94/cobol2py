@@ -39,7 +39,7 @@ jobs:
           BASELINE_SHA: 02fde4baab3956e640111092e15291aa10a6a774
           HEAD_SHA: ${{ github.sha }}
         run: |
-          set -o pipefail
+          set -uo pipefail
           python benchmarks/run_benchmark.py \
             --manifest benchmarks/cases.json \
             --baseline-translator /tmp/cobol2py-baseline/cobol2py.py \
@@ -49,7 +49,11 @@ jobs:
             --candidate-label "Current (${HEAD_SHA:0:7})" \
             --json benchmark-report.json \
             --markdown benchmark-report.md | tee /tmp/benchmark-console.md
-          cat benchmark-report.md >> "$GITHUB_STEP_SUMMARY"
+          benchmark_status=${PIPESTATUS[0]}
+          if [ -f benchmark-report.md ]; then
+            cat benchmark-report.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$benchmark_status"
       - name: Upload machine-readable and human-readable reports
         uses: actions/upload-artifact@v4
         with:
