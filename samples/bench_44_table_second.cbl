@@ -9,5 +9,9 @@
        MAIN-PARA.
        MOVE "RED" TO WS-ITEM(1).
        MOVE "BLU" TO WS-ITEM(2).
-       IF WS-ITEM(2) = "BLU" DISPLAY "SECOND-OK" ELSE DISPLAY "SECOND-NO" END-IF.
+       IF WS-ITEM(2) = "BLU"
+          DISPLAY "SECOND-OK"
+       ELSE
+          DISPLAY "SECOND-NO"
+       END-IF.
        STOP RUN.
