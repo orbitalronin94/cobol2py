@@ -100,3 +100,8 @@ Las comparaciones directas entre dos campos alfanuméricos en `IF` también pued
 
 
 Los nombres de párrafo que colisionan con variables globales o con otra función generada, y los nombres de datos que convergen al mismo identificador normalizado, pueden sobrescribirse o confundirse en Python. El modo estricto emite `PYTHON_IDENTIFIER_COLLISION` para los casos directos detectados; la salida normal no renombra automáticamente estas colisiones.
+
+
+`ACCEPT` convierte la entrada de campos numéricos simples y recorta/rellena campos `PIC X/A` según su ancho. No reproduce toda la validación de entrada COBOL ni todas las reglas de signo, escala o conversión inválida.
+
+En Java, las comparaciones alfanuméricas incrustadas en condiciones compuestas (`AND`/`OR`) todavía no garantizan el uso de comparación por valor en todas las formas. Las comparaciones de cadenas invertidas (literal a la izquierda) también quedan fuera de la garantía; usa `--strict` y revisa las condiciones complejas antes de confiar en equivalencia.
