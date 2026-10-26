@@ -279,7 +279,7 @@ Añadir una sección con:
 
 - **Fecha:** 2026-10-26.
 - **Estado:** aceptada como diagnóstico conservador.
-- **Decisión:** emitir `PYTHON_IDENTIFIER_COLLISION` cuando los nombres de función de párrafo generados colisionan entre sí o con una variable de `WORKING-STORAGE`.
+- **Decisión:** emitir `PYTHON_IDENTIFIER_COLLISION` cuando dos nombres de datos se normalizan al mismo identificador, o los nombres de función de párrafo generados colisionan entre sí o con una variable de `WORKING-STORAGE`.
 - **Contexto:** Python comparte el espacio de nombres de variables globales y funciones; una colisión puede sobrescribir una variable o la función de entrada.
 - **Consecuencias:** `--strict` detecta los casos heurísticos; la generación normal todavía requiere renombrar el código fuente o resolver manualmente la colisión.
-- **Validación:** prueba unitaria con variable y párrafo `MAIN`; la suite completa no se ha confirmado en CI.
+- **Validación:** pruebas unitarias con variable/párrafo `MAIN` y nombres `PRINT`/`COBOL-PRINT` que colisionan tras normalizar; la suite completa no se ha confirmado en CI.
