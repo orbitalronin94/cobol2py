@@ -4,7 +4,7 @@
 
 `cobol2py` pela la capa dura del código legado y deja ver la lógica de negocio que llevaba décadas enterrada bajo una sintaxis que nadie recuerda. No es una herramienta de migración. No es un IDE. No es un producto. Es un script que entra un `.cbl` y sale un `.py` legible.
 
-La traducción no busca ejecutarse. Busca **leerse**. Entender qué hacía el COBOL sin pelearse con él.
+La traducción busca **leerse** y, para el subconjunto cubierto por regresiones diferenciales, también ejecutarse. No promete equivalencia completa de COBOL: las construcciones no soportadas quedan documentadas o señaladas explícitamente.
 
 ---
 
@@ -283,7 +283,6 @@ Alcance no cubierto: el backend Java sigue siendo un subconjunto; construcciones
 **v0.2.0 — Ejecución con GnuCOBOL**
 - [x] Añadir `tools/gnucobol_trace.py`: compila con GnuCOBOL (`-ftraceall`) y ejecuta con trace habilitado.
 - [x] Inyectar snapshots `TRACE_VAR|nombre|valor` para campos escalares, grupos y elementos `OCCURS` (hasta `--max-table-items`, por defecto 1000); los valores los formatea GnuCOBOL.
-- [x] Trazar grupos y cada elemento de `OCCURS` hasta `--max-table-items` (por defecto 1000).
 - [x] Reportar nombres duplicados y tablas sobre el límite en lugar de omitirlos silenciosamente.
 
 ---
