@@ -800,7 +800,10 @@ def translate_move_value(source: str, target: str, variables: dict[str, CobolVar
     return value
 
 
-COBOL_TOKEN_RE = re.compile(r'"[^"]*"|\'[^\']*\'|,?\s*|(?:\S+)')
+COBOL_TOKEN_RE = re.compile(
+    r'"[^"]*"|\'[^\']*\'|[A-Za-z][A-Za-z0-9-]*(?:\([A-Za-z0-9_-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*)?|,?\s*|(?:\S+)',
+    re.IGNORECASE,
+)
 
 
 def split_cobol_items(s: str) -> list[str]:
@@ -840,11 +843,11 @@ def translate_statement(
         )
         return [f'print("".join([{items}]))']
 
-    m = re.match(rf"ACCEPT\s+({DATA_REF_PATTERN})", s, re.IGNORECASE)
+    m = re.match(rf"ACCEPT\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
         return [f"{normalize_data_reference(m.group(1), variables)} = input()"]
 
-    m = re.match(rf"MOVE\s+(.+?)\s+TO\s+({DATA_REF_PATTERN})", s, re.IGNORECASE)
+    m = re.match(rf"MOVE\s+(.+?)\s+TO\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
         target = m.group(2)
         value = translate_move_value(m.group(1), target, variables or {})
@@ -855,23 +858,23 @@ def translate_statement(
         return [f"{normalize_data_reference(m.group(1), variables)} = {translate_expr(m.group(2), variables)}"]
 
     # Patch 4: ADD con múltiples operandos
-    m = re.match(rf"ADD\s+(.+?)\s+TO\s+({DATA_REF_PATTERN})", s, re.IGNORECASE)
+    m = re.match(rf"ADD\s+(.+?)\s+TO\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
         operands = split_cobol_items(m.group(1))
         sum_expr = " + ".join(translate_literal(o, variables) for o in operands)
         return [f"{normalize_data_reference(m.group(2), variables)} += {sum_expr}"]
 
-    m = re.match(rf"SUBTRACT\s+(.+?)\s+FROM\s+({DATA_REF_PATTERN})", s, re.IGNORECASE)
+    m = re.match(rf"SUBTRACT\s+(.+?)\s+FROM\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
         operands = split_cobol_items(m.group(1))
-        sum_expr = " + ".join(translate_literal(o) for o in operands)
+        sum_expr = " + ".join(translate_literal(o, variables) for o in operands)
         return [f"{normalize_data_reference(m.group(2), variables)} -= {sum_expr}"]
 
-    m = re.match(rf"MULTIPLY\s+(.+?)\s+BY\s+({DATA_REF_PATTERN})", s, re.IGNORECASE)
+    m = re.match(rf"MULTIPLY\s+(.+?)\s+BY\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
         return [f"{normalize_data_reference(m.group(2), variables)} *= {translate_literal(m.group(1), variables)}"]
 
-    m = re.match(rf"DIVIDE\s+(.+?)\s+INTO\s+({DATA_REF_PATTERN})", s, re.IGNORECASE)
+    m = re.match(rf"DIVIDE\s+(.+?)\s+INTO\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
         return [f"{normalize_data_reference(m.group(2), variables)} /= {translate_literal(m.group(1), variables)}"]
 
@@ -1023,28 +1026,44 @@ def emit_python(prog: Program) -> str:
 
     if prog.variables:
         lines.append("# VARIABLES (WORKING-STORAGE)")
-        for v in prog.variables:
-            if v.is_group:
-                lines.append(f"# Grupo nivel {v.level:02d}: {v.name}")
-            else:
-                t = v.py_type()
-                default = v.py_default()
-                comment = f"  # COBOL: {v.level:02d} {v.name} PIC {v.pic}"
-                if v.occurs:
-                    comment += f" OCCURS {v.occurs} TIMES"
-                if v.depending_on:
-                    comment += f" DEPENDING ON {v.depending_on}"
-                if v.value:
-                    comment += f" VALUE {v.value}"
-                lines.append(f"{normalize_name(v.name)}: {t} = {default}{comment}")
+        children_by_parent: dict[str, list[CobolVar]] = {}
+        for variable in prog.variables:
+            if variable.parent_name:
+                children_by_parent.setdefault(variable.parent_name.upper(), []).append(variable)
+
+        def nested_default(variable: CobolVar) -> str:
+            if not variable.is_group:
+                return variable.py_default()
+            children = children_by_parent.get(variable.name.upper(), [])
+            if not children:
+                return "{}"
+            fields = ", ".join(
+                f"{normalize_name(child.name)!r}: {nested_default(child)}"
+                for child in children
+            )
+            return "{" + fields + "}"
+
+        root_variables = [variable for variable in prog.variables if not variable.parent_name]
+        for variable in root_variables:
+            default = nested_default(variable)
+            if variable.is_group:
+                lines.append(
+                    f"{normalize_name(variable.name)}: dict = {default}  "
+                    f"# COBOL group: {variable.level:02d} {variable.name}"
+                )
+                continue
+            comment = f"  # COBOL: {variable.level:02d} {variable.name} PIC {variable.pic}"
+            if variable.occurs:
+                comment += f" OCCURS {variable.occurs} TIMES"
+            if variable.depending_on:
+                comment += f" DEPENDING ON {variable.depending_on}"
+            if variable.value:
+                comment += f" VALUE {variable.value}"
+            lines.append(f"{normalize_name(variable.name)}: {variable.py_type()} = {default}{comment}")
         lines.append("")
 
     para_names = set(prog.paragraphs.keys())
-    variables_by_name = {
-        variable.name.upper(): variable
-        for variable in prog.variables
-        if not variable.is_group
-    }
+    variables_by_name = {variable.name.upper(): variable for variable in prog.variables}
     order = [p for p in prog.paragraph_order if p != "__MAIN__"]
     if "__MAIN__" in prog.paragraphs and prog.paragraphs["__MAIN__"]:
         order = ["__MAIN__"] + order
@@ -1061,7 +1080,7 @@ def emit_python(prog: Program) -> str:
         # Working-Storage variables live outside paragraph functions in the
         # generated module. Declare them global so statements mutate shared
         # COBOL storage instead of creating Python locals.
-        global_vars = [normalize_name(v.name) for v in prog.variables if not v.is_group]
+        global_vars = [normalize_name(v.name) for v in prog.variables if not v.parent_name]
         if global_vars:
             lines.append("    global " + ", ".join(global_vars))
         body = translate_paragraph(nodes, para_names, variables_by_name)
