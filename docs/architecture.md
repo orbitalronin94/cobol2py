@@ -66,3 +66,8 @@ La conversión de literales reconoce las comillas delimitadoras duplicadas de CO
 ## Normalización de identificadores
 
 Los nombres COBOL se normalizan de forma consistente en declaraciones, referencias cualificadas y subíndices. Si el nombre coincide con una palabra reservada de Python o Java, se antepone `cobol_` para evitar código de destino sintácticamente inválido. Esta transformación cambia el identificador generado, no el nombre del campo en el programa COBOL original.
+
+
+## Normalización de condiciones
+
+La traducción de condiciones separa los fragmentos de código de los literales COBOL. Las palabras reservadas de condición y los operadores se reescriben solo fuera de cadenas entre comillas, incluidas las comillas delimitadoras duplicadas. Esto evita alterar literales como `"NOT"` o `"AND"` al normalizar condiciones.
