@@ -1861,7 +1861,7 @@ def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
                             "paragraph": paragraph,
                         })
                 field_comparison = re.search(
-                    r"\\b([A-Za-z][A-Za-z0-9-]*)\\b\\s*(?:=|==|!=|<>|<=|>=|<|>)\\s*([A-Za-z][A-Za-z0-9-]*)\\b",
+                    r"\b([A-Za-z][A-Za-z0-9-]*)\b\s*(?:=|==|!=|<>|<=|>=|<|>)\s*([A-Za-z][A-Za-z0-9-]*)\b",
                     condition,
                     re.IGNORECASE,
                 )
