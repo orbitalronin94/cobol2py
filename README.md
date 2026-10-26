@@ -205,7 +205,7 @@ python cobol2py.py programa.cbl --format free
 
 `--format auto` es el valor predeterminado; como las columnas de secuencia en blanco pueden aparecer tanto en formato fijo como en fuentes libres indentadas, no siempre es posible inferir el formato con certeza.
 
-GitHub Actions ejecuta estas comprobaciones con Python 3.10–3.13. Las pruebas incluyen algunos casos de ejecución que comparan la salida Python con el resultado COBOL esperado para `ADD`, `IF`, `DISPLAY` con varios operandos y `PERFORM ... TIMES`. Son fixtures pequeños del subconjunto soportado; no demuestran equivalencia semántica general ni certifican una migración. La compilación sintáctica de la salida, por sí sola, tampoco prueba equivalencia.
+GitHub Actions ejecuta las pruebas con Python 3.10–3.13 y compila `samples/realtest.cbl` con GnuCOBOL para comparar la salida real del ejecutable COBOL con la salida Python traducida. También hay regresiones para `ADD`, `IF`, `DISPLAY` con varios operandos, `PERFORM ... TIMES` y subíndices de tablas. La cobertura se limita a este programa y a fixtures pequeños del subconjunto soportado; no demuestra equivalencia semántica general ni certifica una migración. La compilación sintáctica de la salida, por sí sola, tampoco prueba equivalencia.
 
 ---
 
