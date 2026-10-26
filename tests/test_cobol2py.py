@@ -266,6 +266,8 @@ class TranslationTests(unittest.TestCase):
 
     def test_reserved_words_are_normalized_for_both_backends(self):
         self.assertEqual(cobol2py.normalize_name("CLASS"), "cobol_class")
+        self.assertEqual(cobol2py.normalize_name("PRINT"), "cobol_print")
+        self.assertEqual(cobol2py.normalize_name("INPUT"), "cobol_input")
         self.assertEqual(cobol2py.normalize_name("WS-CLASS(1)"), "ws_class[0]")
         self.assertEqual(cobol2py.normalize_name("WS-ITEM(INT)"), "ws_item[cobol_int - 1]")
 
