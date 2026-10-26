@@ -263,3 +263,13 @@ Añadir una sección con:
 - **Contexto:** traducir ambos figurativos a cadena vacía eliminaba un carácter observable en `DISPLAY`.
 - **Consecuencias:** el espacio se conserva en ambos backends; las reglas de longitud de figurativos en todos los contextos COBOL siguen siendo más amplias que este caso.
 - **Validación:** pruebas unitarias para los dos figurativos en Python y Java; la suite completa aún no está confirmada en CI.
+
+
+## D-030 — Advertir sobre comparaciones entre campos alfanuméricos
+
+- **Fecha:** 2026-10-26.
+- **Estado:** aceptada para comparaciones directas detectadas en IF.
+- **Decisión:** emitir `ALPHANUMERIC_FIELD_COMPARISON_UNSUPPORTED` cuando dos campos `PIC X/A` se comparan directamente en una condición `IF`.
+- **Contexto:** COBOL puede rellenar el operando más corto con espacios; comparar directamente strings Python/Java de longitudes distintas puede cambiar igualdad y orden.
+- **Consecuencias:** el modo estricto señala esta diferencia en vez de afirmar equivalencia; otras expresiones compuestas y referencias cualificadas aún pueden escapar al patrón heurístico.
+- **Validación:** prueba unitaria para campos de ancho distinto; la suite completa no se ha confirmado en CI.
