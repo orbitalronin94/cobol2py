@@ -143,3 +143,13 @@ Añadir una sección con:
 - **Decisión:** `--strict` genera `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` para `ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE` y `COMPUTE` hasta implementar y verificar la capacidad de dígitos del campo receptor y `ON SIZE ERROR`.
 - **Contexto:** la aritmética Python sin límites puede producir resultados que COBOL truncaría, rechazaría o manejaría mediante una rama de error.
 - **Consecuencias:** el modo estricto es conservador para programas con aritmética; no afirma que cada operación vaya a desbordar, sino que la equivalencia completa aún no está garantizada.
+
+
+## D-015 — Decodificar comillas duplicadas en literales COBOL
+
+- **Fecha:** 2026-10-26.
+- **Estado:** aceptada para literales completos reconocidos por el traductor.
+- **Decisión:** al traducir un literal entre comillas simples o dobles, convertir cada pareja de comillas delimitadoras duplicadas en una sola y serializar el resultado con el escape propio del lenguaje destino.
+- **Contexto:** COBOL escapa la comilla delimitadora duplicándola; copiar el contenido textual directamente a Python o Java cambia el valor producido.
+- **Consecuencias:** hay regresiones unitarias para ambos delimitadores y ambos backends. Esto no resuelve por sí solo el análisis léxico de literales con comillas duplicadas en todos los contextos de sentencia; el splitter de operandos sigue siendo una limitación que requiere cobertura adicional.
+- **Validación:** el código y las pruebas se han actualizado en `main`; la suite completa aún necesita una ejecución verificable.
