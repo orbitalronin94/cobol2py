@@ -493,6 +493,30 @@ def translate_condition(cond: str) -> str:
     return translate_expr(c)
 
 
+def pic_digit_count(pic: str) -> int:
+    """Count storage digits in a simple numeric PIC, including repetitions."""
+    return sum(
+        int(match.group(1)) if match.group(1) else 1
+        for match in re.finditer(r"9(?:\((\d+)\))?", pic.upper())
+    )
+
+
+def translate_display_item(token: str, variables: dict[str, CobolVar]) -> str:
+    """Emit a string expression matching basic COBOL DISPLAY formatting."""
+    variable = variables.get(token.upper())
+    if variable is not None and variable.pic:
+        pic = variable.pic.upper()
+        if "9" in pic:
+            digits = pic_digit_count(pic)
+            scale = pic_digit_count(pic.split("V", 1)[1]) if "V" in pic else 0
+            name = normalize_name(token)
+            return (
+                f'f"{{float({name}):.{scale}f}}".replace(".", "")'
+                f".zfill({digits})"
+            )
+    return f"str({translate_literal(token)})"
+
+
 COBOL_TOKEN_RE = re.compile(r'"[^"]*"|\'[^\']*\'|,?\s*|(?:\S+)')
 
 
@@ -505,7 +529,11 @@ def split_cobol_items(s: str) -> list[str]:
     return tokens
 
 
-def translate_statement(stmt: str, paragraphs: set[str]) -> Optional[list[str]]:
+def translate_statement(
+    stmt: str,
+    paragraphs: set[str],
+    variables: Optional[dict[str, CobolVar]] = None,
+) -> Optional[list[str]]:
     s = stmt.strip().rstrip(".").strip()
     if not s:
         return None
@@ -519,10 +547,12 @@ def translate_statement(stmt: str, paragraphs: set[str]) -> Optional[list[str]]:
     m = re.match(r"DISPLAY\s+(.+)", s, re.IGNORECASE)
     if m:
         args = split_cobol_items(m.group(1))
-        # COBOL DISPLAY writes operands consecutively; Python print() would
-        # insert spaces between arguments and change the program's output.
-        items = ", ".join(translate_literal(a) for a in args)
-        return [f'print("".join(str(x) for x in [{items}]))']
+        # COBOL DISPLAY concatenates operands. Numeric DISPLAY items also
+        # retain the zero-filled width specified by their PIC clause.
+        items = ", ".join(
+            translate_display_item(a, variables or {}) for a in args
+        )
+        return [f'print("".join([{items}]))']
 
     m = re.match(r"ACCEPT\s+([A-Za-z0-9\-\(\)]+)", s, re.IGNORECASE)
     if m:
@@ -578,11 +608,16 @@ def translate_statement(stmt: str, paragraphs: set[str]) -> Optional[list[str]]:
     return [f"# COBOL no traducido: {s}"]
 
 
-def translate_nodes(nodes: list[Node], paragraphs: set[str], indent: int) -> list[str]:
+def translate_nodes(
+    nodes: list[Node],
+    paragraphs: set[str],
+    indent: int,
+    variables: Optional[dict[str, CobolVar]] = None,
+) -> list[str]:
     out: list[str] = []
     for node in nodes:
         if node.kind == "stmt":
-            lines = translate_statement(node.text, paragraphs)
+            lines = translate_statement(node.text, paragraphs, variables)
             if lines:
                 opens_block = lines[0].rstrip().endswith(":")
                 for i, line in enumerate(lines):
@@ -596,16 +631,16 @@ def translate_nodes(nodes: list[Node], paragraphs: set[str], indent: int) -> lis
                 continue
             cond = translate_condition(m.group(1))
             out.append("    " * indent + f"if {cond}:")
-            then_body = translate_nodes(node.then_branch, paragraphs, indent + 1)
+            then_body = translate_nodes(node.then_branch, paragraphs, indent + 1, variables)
             out.extend(then_body if then_body else ["    " * (indent + 1) + "pass"])
             if node.else_branch:
                 out.append("    " * indent + "else:")
-                else_body = translate_nodes(node.else_branch, paragraphs, indent + 1)
+                else_body = translate_nodes(node.else_branch, paragraphs, indent + 1, variables)
                 out.extend(else_body if else_body else ["    " * (indent + 1) + "pass"])
 
         elif node.kind == "perform_inline":
             out.append("    " * indent + f"# PERFORM inline: {node.text}")
-            body = translate_nodes(node.body, paragraphs, indent + 1)
+            body = translate_nodes(node.body, paragraphs, indent + 1, variables)
             out.extend(body if body else ["    " * (indent + 1) + "pass"])
 
         elif node.kind == "evaluate":
@@ -614,8 +649,12 @@ def translate_nodes(nodes: list[Node], paragraphs: set[str], indent: int) -> lis
     return out
 
 
-def translate_paragraph(nodes: list[Node], paragraphs: set[str]) -> list[str]:
-    return translate_nodes(nodes, paragraphs, indent=1)
+def translate_paragraph(
+    nodes: list[Node],
+    paragraphs: set[str],
+    variables: Optional[dict[str, CobolVar]] = None,
+) -> list[str]:
+    return translate_nodes(nodes, paragraphs, indent=1, variables=variables)
 
 
 # ============================================================================
@@ -651,6 +690,11 @@ def emit_python(prog: Program) -> str:
         lines.append("")
 
     para_names = set(prog.paragraphs.keys())
+    variables_by_name = {
+        variable.name.upper(): variable
+        for variable in prog.variables
+        if not variable.is_group
+    }
     order = [p for p in prog.paragraph_order if p != "__MAIN__"]
     if "__MAIN__" in prog.paragraphs and prog.paragraphs["__MAIN__"]:
         order = ["__MAIN__"] + order
@@ -670,7 +714,7 @@ def emit_python(prog: Program) -> str:
         global_vars = [normalize_name(v.name) for v in prog.variables if not v.is_group]
         if global_vars:
             lines.append("    global " + ", ".join(global_vars))
-        body = translate_paragraph(nodes, para_names)
+        body = translate_paragraph(nodes, para_names, variables_by_name)
         lines.extend(body if body else ["    pass"])
         lines.append("")
 
