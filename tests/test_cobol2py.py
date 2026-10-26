@@ -264,6 +264,15 @@ class TranslationTests(unittest.TestCase):
         self.assertEqual(cobol2py.translate_expr("WS-NUM - 1"), "ws_num - 1")
         self.assertEqual(cobol2py.translate_expr("WS-NUM + WS-TOTAL"), "ws_num + ws_total")
 
+    def test_java_not_can_wrap_a_predicate_with_a_string_literal(self):
+        variables = {
+            "WS-NAME": cobol2py.CobolVar(level=1, name="WS-NAME", pic="X(3)")
+        }
+        self.assertEqual(
+            cobol2py.translate_java_condition('NOT WS-NAME = "A"', variables),
+            '!(Objects.equals(ws_name, "A  "))',
+        )
+
     def test_java_not_applies_to_the_full_condition(self):
         self.assertEqual(
             cobol2py.translate_java_condition("NOT WS-B = 2", {}),
