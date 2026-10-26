@@ -94,3 +94,6 @@ Para un `DISPLAY` simple de un campo numérico con `V` implícita, el backend Py
 
 
 Las comparaciones relacionales de campos `PIC X/A` con literales en condiciones `IF` no están garantizadas. El modo estricto emite `ALPHANUMERIC_ORDER_COMPARISON_UNSUPPORTED` para los casos directos detectados; la cobertura de expresiones compuestas y otros contextos es incompleta.
+
+
+Las comparaciones directas entre dos campos alfanuméricos en `IF` también pueden diferir cuando sus anchos no coinciden. El modo estricto emite `ALPHANUMERIC_FIELD_COMPARISON_UNSUPPORTED` para los casos simples detectados; no cubre todas las referencias cualificadas, subíndices ni expresiones compuestas.
