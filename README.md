@@ -228,6 +228,13 @@ El formato de origen puede indicarse explícitamente cuando la detección autom�
 python cobol2py.py programa.cbl --format fixed
 python cobol2py.py programa.cbl --format free
 python cobol2py.py programa.cbl --copybook-path ./copybooks
+
+Para convertir advertencias de traducción en un error y evitar usar una salida incompleta por accidente:
+
+```bash
+python cobol2py.py programa.cbl --strict
+python cobol2py.py programa.cbl --diagnostics-json
+```
 ```
 
 `--format auto` es el valor predeterminado; como las columnas de secuencia en blanco pueden aparecer tanto en formato fijo como en fuentes libres indentadas, no siempre es posible inferir el formato con certeza.
