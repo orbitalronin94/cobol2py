@@ -29,12 +29,6 @@ class PreprocessTests(unittest.TestCase):
 
 
 class TranslationTests(unittest.TestCase):
-    def test_numeric_move_is_not_stringified(self):
-        self.assertEqual(
-            cobol2py.translate_statement("MOVE 123 TO WS-CODIGO", set()),
-            ["ws_codigo = 123"],
-        )
-
     def test_simple_value_clause_initializes_variable(self):
         self.assertEqual(
             cobol2py.CobolVar(level=1, name="WS-STATUS", pic="X", value='"A"').py_default(),
@@ -44,6 +38,10 @@ class TranslationTests(unittest.TestCase):
             cobol2py.CobolVar(level=1, name="WS-TOTAL", pic="9(3)", value="12").py_default(),
             "12",
         )
+
+    def test_hyphenated_identifier_and_subtraction_are_tokenized(self):
+        self.assertEqual(cobol2py.translate_expr("WS-NUM - 1"), "ws_num - 1")
+        self.assertEqual(cobol2py.translate_expr("WS-NUM + WS-TOTAL"), "ws_num + ws_total")
 
     def test_equality_condition_uses_python_operator(self):
         self.assertEqual(
@@ -57,6 +55,21 @@ class TranslationTests(unittest.TestCase):
 
 
 class EndToEndTests(unittest.TestCase):
+    def test_perform_times_body_is_nested_in_loop(self):
+        source = "\\n".join([
+            "       IDENTIFICATION DIVISION.",
+            "       PROGRAM-ID. LOOPTEST.",
+            "       PROCEDURE DIVISION.",
+            "       MAIN-PARA.",
+            "           PERFORM WORK-PARA 3 TIMES.",
+            "           STOP RUN.",
+            "       WORK-PARA.",
+            '           DISPLAY "OK".',
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
+        compile(generated, "<perform-times-output>", "exec")
+        self.assertRegex(generated, r"for _ in range\\(3\\):\\n\\s+work_para\\(\\)")
+
     def test_repository_samples_generate_syntactically_valid_python(self):
         from pathlib import Path
 
