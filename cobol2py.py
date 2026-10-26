@@ -1609,7 +1609,11 @@ def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
         })
 
     for line_number, source_line in prog.raw_lines:
-        if re.search(r"\bREDEFINES\b", source_line, re.IGNORECASE):
+        if re.match(
+            r"^\s*\d{1,2}\s+[A-Za-z0-9-]+\s+.*\bREDEFINES\b",
+            source_line,
+            re.IGNORECASE,
+        ):
             diagnostics.append({
                 "code": "UNSUPPORTED_STORAGE_OVERLAY",
                 "severity": "warning",
