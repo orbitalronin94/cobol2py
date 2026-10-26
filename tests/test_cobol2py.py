@@ -274,7 +274,7 @@ class TranslationTests(unittest.TestCase):
         }
         self.assertEqual(
             cobol2py.translate_display_item("WS-RATE", variables),
-            "format(float(ws_rate), '06.2f'),
+            "format(float(ws_rate), '06.2f')",
         )
 
     def test_move_truncates_signed_and_implied_decimal_receiving_fields(self):
