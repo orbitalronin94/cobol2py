@@ -104,6 +104,27 @@ class TranslationTests(unittest.TestCase):
         self.assertEqual([item.value for item in variables], ["-12", "+12.50"])
         self.assertEqual([item.py_default() for item in variables], ["-12", "+12.50"])
 
+    def test_move_truncates_signed_and_implied_decimal_receiving_fields(self):
+        source = "\n".join([
+            "       IDENTIFICATION DIVISION.",
+            "       PROGRAM-ID. NUMERICMOVE.",
+            "       DATA DIVISION.",
+            "       WORKING-STORAGE SECTION.",
+            "       01 WS-SIGNED PIC S9(3) VALUE 0.",
+            "       01 WS-RATE PIC 9(3)V99 VALUE 0.",
+            "       PROCEDURE DIVISION.",
+            "       MAIN.",
+            "           MOVE -1234 TO WS-SIGNED.",
+            "           MOVE 1234.567 TO WS-RATE.",
+            "           STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<numeric-move-output>", "exec"), namespace)
+        namespace["main"]()
+        self.assertEqual(namespace["ws_signed"], -234, generated)
+        self.assertAlmostEqual(namespace["ws_rate"], 234.56, places=2, msg=generated)
+
     def test_move_keeps_rightmost_digits_for_unsigned_integer_pic(self):
         variables = {
             "WS-NUM": cobol2py.CobolVar(level=1, name="WS-NUM", pic="9(3)")
