@@ -58,3 +58,8 @@ El backend Java tiene un subconjunto más acotado que el backend Python y requie
 `casos coincidentes / casos ejecutados × 100`
 
 Cada caso pesa lo mismo, independientemente de su tamaño o complejidad. Por ello, el porcentaje es una métrica de regresión del corpus, no una estimación estadística de equivalencia para programas COBOL arbitrarios. Cambiar el corpus puede cambiar la puntuación aunque el traductor no cambie; las comparaciones entre versiones deben usar el mismo manifiesto.
+
+
+## Modo estricto y diagnósticos
+
+`--strict` termina con código 2 cuando el traductor detecta sentencias no soportadas, copybooks sin resolver o bloques de control malformados. `--diagnostics-json` emite una lista JSON por stderr con `code`, `severity`, `line` y `message`. Estos diagnósticos son una ayuda para automatizar revisiones, no una prueba de que una traducción sin advertencias sea semánticamente equivalente a COBOL.
