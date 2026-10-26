@@ -970,6 +970,25 @@ class EndToEndTests(unittest.TestCase):
 
 
 class DiagnosticTests(unittest.TestCase):
+    def test_collect_diagnostics_warns_on_alphanumeric_field_comparison(self):
+        program = cobol2py.Program(
+            variables=[
+                cobol2py.CobolVar(level=1, name="WS-A", pic="X(3)"),
+                cobol2py.CobolVar(level=1, name="WS-B", pic="X(5)"),
+            ],
+            paragraphs={
+                "MAIN": [
+                    cobol2py.Node(kind="if", text="IF WS-A = WS-B", line=7)
+                ]
+            },
+            paragraph_order=["MAIN"],
+        )
+        diagnostics = cobol2py.collect_diagnostics(program)
+        self.assertIn(
+            "ALPHANUMERIC_FIELD_COMPARISON_UNSUPPORTED",
+            {item["code"] for item in diagnostics},
+        )
+
     def test_collect_diagnostics_warns_on_alphanumeric_order_comparison(self):
         program = cobol2py.Program(
             variables=[cobol2py.CobolVar(level=1, name="WS-NAME", pic="X(5)")],
