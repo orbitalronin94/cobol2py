@@ -1818,7 +1818,11 @@ def collect_diagnostics(prog: Program) -> list[dict[str, object]]:
     normalized_variable_names: dict[str, list[str]] = {}
     for variable in prog.variables:
         normalized_variable_names.setdefault(normalize_name(variable.name), []).append(variable.name)
-    variable_names = set(normalized_variable_names)
+    variable_names = {
+        normalize_name(variable.name)
+        for variable in prog.variables
+        if not variable.parent_name
+    }
     for generated_name, source_names in normalized_variable_names.items():
         if len(source_names) > 1:
             diagnostics.append({
