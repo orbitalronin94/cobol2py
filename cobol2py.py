@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import keyword
 import re
 import sys
 from dataclasses import dataclass, field
@@ -596,18 +597,42 @@ def parse_cobol(
 # 4. TRADUCCIÓN
 # ============================================================================
 
+JAVA_RESERVED_WORDS = frozenset({
+    "abstract", "assert", "boolean", "break", "byte", "case", "catch", "char",
+    "class", "const", "continue", "default", "do", "double", "else", "enum",
+    "extends", "final", "finally", "float", "for", "goto", "if", "implements",
+    "import", "instanceof", "int", "interface", "long", "native", "new",
+    "package", "private", "protected", "public", "return", "short", "static",
+    "strictfp", "super", "switch", "synchronized", "this", "throw", "throws",
+    "transient", "try", "void", "volatile", "while", "true", "false", "null",
+    "_", "record", "sealed", "permits", "var", "yield",
+})
+
+
+def normalize_identifier(name: str) -> str:
+    normalized = name.replace("-", "_").lower()
+    if keyword.iskeyword(normalized) or normalized in JAVA_RESERVED_WORDS:
+        return "cobol_" + normalized
+    return normalized
+
+
 def normalize_name(name: str) -> str:
-    name = name.replace("-", "_").lower()
+    # Normalize identifiers consistently for both target languages and avoid
+    # Python/Java reserved words. This also applies to identifiers in subscripts.
+    normalized = re.sub(
+        r"[A-Za-z][A-Za-z0-9-]*",
+        lambda match: normalize_identifier(match.group(0)),
+        name,
+    )
 
     # COBOL table subscripts are 1-based; Python lists are 0-based.
-    # Translate a simple literal or data-name subscript accordingly.
     def normalize_subscript(match: re.Match[str]) -> str:
         subscript = match.group(1)
         if subscript.isdigit():
             return f"[{int(subscript) - 1}]"
-        return f"[{subscript.replace('-', '_').lower()} - 1]"
+        return f"[{normalize_identifier(subscript)} - 1]"
 
-    return re.sub(r"\(([A-Za-z0-9_-]+)\)", normalize_subscript, name)
+    return re.sub(r"\(([A-Za-z0-9_-]+)\)", normalize_subscript, normalized)
 
 def normalize_data_reference(
     name: str,
