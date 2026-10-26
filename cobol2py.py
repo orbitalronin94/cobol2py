@@ -772,8 +772,10 @@ def translate_nodes(
             cond = translate_condition(m.group(1), variables)
             out.append("    " * indent + f"if {cond}:")
             then_body = translate_nodes(node.then_branch, paragraphs, indent + 1, variables)
-            if not then_body or all(not line.strip() or line.strip().startswith("#") for line in then_body):
+            if not then_body:
                 then_body = ["    " * (indent + 1) + "pass"]
+            elif all(not line.strip() or line.strip().startswith("#") for line in then_body):
+                then_body.append("    " * (indent + 1) + "pass")
             out.extend(then_body)
             if node.else_branch:
                 out.append("    " * indent + "else:")
@@ -785,8 +787,10 @@ def translate_nodes(
         elif node.kind == "perform_inline":
             out.append("    " * indent + f"# PERFORM inline: {node.text}")
             body = translate_nodes(node.body, paragraphs, indent + 1, variables)
-            if not body or all(not line.strip() or line.strip().startswith("#") for line in body):
+            if not body:
                 body = ["    " * (indent + 1) + "pass"]
+            elif all(not line.strip() or line.strip().startswith("#") for line in body):
+                body.append("    " * (indent + 1) + "pass")
             out.extend(body)
 
         elif node.kind == "perform_times_inline":
