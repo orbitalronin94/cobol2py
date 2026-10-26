@@ -86,8 +86,23 @@ class TranslationTests(unittest.TestCase):
 
     def test_value_space_zero_and_low_value_figuratives(self):
         self.assertEqual(cobol2py.translate_literal("ZEROES"), "0")
-        self.assertEqual(cobol2py.translate_literal("LOW-VALUES"), '"\\\\x00"')
-        self.assertEqual(cobol2py.translate_literal("HIGH-VALUES"), '"\\\\xff"')
+        self.assertEqual(cobol2py.translate_literal("LOW-VALUES"), repr("\\x00"))
+        self.assertEqual(cobol2py.translate_literal("HIGH-VALUES"), repr("\\xff"))
+
+    def test_value_clause_parses_signed_and_decimal_literals(self):
+        source = "\\n".join([
+            "       IDENTIFICATION DIVISION.",
+            "       PROGRAM-ID. VALUEDECIMAL.",
+            "       DATA DIVISION.",
+            "       WORKING-STORAGE SECTION.",
+            "       01 WS-SIGNED PIC S9(3) VALUE -12.",
+            "       01 WS-RATE PIC 9(3)V99 VALUE +12.50.",
+            "       PROCEDURE DIVISION.",
+            "           STOP RUN.",
+        ])
+        variables = cobol2py.parse_cobol(source).variables
+        self.assertEqual([item.value for item in variables], ["-12", "+12.50"])
+        self.assertEqual([item.py_default() for item in variables], ["-12", "+12.50"])
 
     def test_move_keeps_rightmost_digits_for_unsigned_integer_pic(self):
         variables = {
