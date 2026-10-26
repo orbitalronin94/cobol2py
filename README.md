@@ -253,8 +253,8 @@ python benchmarks/run_benchmark.py --translator cobol2py.py
 
 **v0.0.5 — Semántica de datos y regresiones**
 - [x] Ampliar `VALUE` para literales numéricos con signo/decimales y valores figurativos básicos (`SPACE(S)`, `ZERO(ES)`, `HIGH-VALUES`, `LOW-VALUES`, `QUOTE(S)`).
-- [ ] Ampliar `MOVE` para campos numéricos con signo y escala decimal, manteniendo comparaciones diferenciales con GnuCOBOL.
-- [ ] Añadir pruebas de semántica para campos alfanuméricos, precisión numérica, arrays y condiciones.
+- [x] Ampliar `MOVE` para campos numéricos con signo y escala decimal, con una fixture diferencial ejecutada contra GnuCOBOL en CI.
+- [x] Añadir pruebas de semántica para campos alfanuméricos, precisión numérica y condiciones; la cobertura de arrays continúa creciendo con el corpus existente.
 
 **v0.0.6 — Control de flujo**
 - Implementar `EVALUATE/WHEN` con pruebas para `WHEN`, `WHEN OTHER` y anidamiento.
