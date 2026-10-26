@@ -503,7 +503,10 @@ def translate_statement(stmt: str, paragraphs: set[str]) -> Optional[list[str]]:
     m = re.match(r"DISPLAY\s+(.+)", s, re.IGNORECASE)
     if m:
         args = split_cobol_items(m.group(1))
-        return [f"print({', '.join(translate_literal(a) for a in args)})"]
+        # COBOL DISPLAY writes operands consecutively; Python print() would
+        # insert spaces between arguments and change the program's output.
+        items = ", ".join(translate_literal(a) for a in args)
+        return [f'print("".join(str(x) for x in [{items}]))']
 
     m = re.match(r"ACCEPT\s+([A-Za-z0-9\-\(\)]+)", s, re.IGNORECASE)
     if m:
@@ -645,6 +648,12 @@ def emit_python(prog: Program) -> str:
             lines.append("def main():")
         else:
             lines.append(f"def {normalize_name(para_name)}():")
+        # Working-Storage variables live outside paragraph functions in the
+        # generated module. Declare them global so statements mutate shared
+        # COBOL storage instead of creating Python locals.
+        global_vars = [normalize_name(v.name) for v in prog.variables if not v.is_group]
+        if global_vars:
+            lines.append("    global " + ", ".join(global_vars))
         body = translate_paragraph(nodes, para_names)
         lines.extend(body if body else ["    pass"])
         lines.append("")
