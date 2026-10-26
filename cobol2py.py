@@ -743,10 +743,11 @@ def translate_display_item(token: str, variables: dict[str, CobolVar]) -> str:
             digits = pic_digit_count(pic)
             scale = pic_digit_count(pic.split("V", 1)[1]) if "V" in pic else 0
             name = normalize_data_reference(token, variables)
-            return (
-                f'f"{{float({name}):.{scale}f}}".replace(".", "")'
-                f".zfill({digits})"
-            )
+            if scale:
+                integer_digits = pic_digit_count(pic.split("V", 1)[0])
+                width = integer_digits + scale + 1
+                return f"format(float({name}), '0{width}.{scale}f')"
+            return f"str(int(float({name}))).zfill({digits})"
     return f"str({translate_literal(token, variables)})"
 
 def pic_character_count(pic: str) -> int:
