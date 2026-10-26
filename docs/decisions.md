@@ -275,7 +275,7 @@ Añadir una sección con:
 - **Validación:** prueba unitaria para campos de ancho distinto; la suite completa no se ha confirmado en CI.
 
 
-## D-032 — Detectar colisiones entre nombres de párrafo y datos
+## D-031 — Detectar colisiones entre nombres de párrafo y datos
 
 - **Fecha:** 2026-10-26.
 - **Estado:** aceptada como diagnóstico conservador.
@@ -285,7 +285,7 @@ Añadir una sección con:
 - **Validación:** pruebas unitarias con variable/párrafo `MAIN` y nombres `PRINT`/`COBOL-PRINT` que colisionan tras normalizar; la suite completa no se ha confirmado en CI.
 
 
-## D-033 — Resolver referencias de datos en EVALUATE Python
+## D-032 — Resolver referencias de datos en EVALUATE Python
 
 - **Fecha:** 2026-10-26.
 - **Estado:** aceptada para el subconjunto escalar soportado.
@@ -295,7 +295,7 @@ Añadir una sección con:
 - **Validación:** prueba end-to-end para `EVALUATE` sobre un campo hijo no cualificado; la suite completa no se ha confirmado en CI.
 
 
-## D-034 — Advertir sobre padding de cadenas en EVALUATE
+## D-033 — Advertir sobre padding de cadenas en EVALUATE
 
 - **Fecha:** 2026-10-26.
 - **Estado:** aceptada para sujetos PIC X/A y alternativas WHEN literales detectadas.
@@ -305,7 +305,7 @@ Añadir una sección con:
 - **Validación:** prueba unitaria con `PIC X(5)` frente a un literal de tres caracteres; la suite completa sigue sin confirmación en CI.
 
 
-## D-035 — Convertir ACCEPT según el PIC receptor
+## D-034 — Convertir ACCEPT según el PIC receptor
 
 - **Fecha:** 2026-10-26.
 - **Estado:** aceptada para PIC numéricos y alfanuméricos simples.
@@ -315,7 +315,7 @@ Añadir una sección con:
 - **Validación:** pruebas end-to-end Python y unitarias de generación Java; la suite completa no se ha confirmado en CI.
 
 
-## D-036 — Diagnosticar comparaciones alfanuméricas con literal a la izquierda
+## D-035 — Diagnosticar comparaciones alfanuméricas con literal a la izquierda
 
 - **Fecha:** 2026-10-26.
 - **Estado:** aceptada para comparaciones directas detectadas en IF.
