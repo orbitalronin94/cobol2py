@@ -229,7 +229,7 @@ class EndToEndTests(unittest.TestCase):
         output = StringIO()
         with redirect_stdout(output):
             namespace["main"]()
-        self.assertEqual(output.getvalue(), "234\\n", generated)
+        self.assertEqual(output.getvalue(), "234\n", generated)
 
     def test_move_alphanumeric_pic_matches_fixed_width_display(self):
         from contextlib import redirect_stdout
