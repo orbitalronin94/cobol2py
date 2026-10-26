@@ -45,3 +45,12 @@ jobs:
           python cobol2py.py samples/move_semantics.cbl > /tmp/move_semantics.py
           python /tmp/move_semantics.py > /tmp/move-python.out
           diff -u /tmp/move-cobol.out /tmp/move-python.out
+
+      - name: Compare signed and implied-decimal MOVE semantics
+        run: |
+          cobc -x -o /tmp/numeric_semantics samples/numeric_semantics.cbl
+          /tmp/numeric_semantics > /tmp/numeric-cobol.out
+          python cobol2py.py samples/numeric_semantics.cbl > /tmp/numeric_semantics.py
+          python -m py_compile /tmp/numeric_semantics.py
+          python /tmp/numeric_semantics.py > /tmp/numeric-python.out
+          diff -u /tmp/numeric-cobol.out /tmp/numeric-python.out
