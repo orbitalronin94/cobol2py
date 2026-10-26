@@ -1236,7 +1236,7 @@ def translate_java_statement(
     if upper.startswith("DISPLAY "):
         args = split_cobol_items(text[len("DISPLAY "):])
         values = ", ".join(translate_java_display_item(arg, variables) for arg in args)
-        return [f"System.out.println(String.join(\\"\\", Arrays.asList({values})));"]
+        return [f'System.out.println(String.join("", Arrays.asList({values})));']
     if upper.startswith("ACCEPT "):
         match = re.match(rf"ACCEPT\s+({DATA_REF_PATTERN})$", text, re.IGNORECASE)
         if match:
@@ -1406,14 +1406,14 @@ def emit_java(prog: Program) -> str:
     lines.extend([
         "",
         "    private static String fit(String value, int width) {",
-        "        String text = value == null ? \\"\\" : value;",
+        '        String text = value == null ? "" : value;',
         "        if (text.length() > width) return text.substring(0, width);",
-        "        return String.format(Locale.ROOT, \\"%-\\" + width + \\"s\\", text);",
+        '        return String.format(Locale.ROOT, "%-" + width + "s", text);',
         "    }",
         "",
         "    private static String formatNumeric(double value, int digits, int scale) {",
-        "        String text = String.format(Locale.ROOT, \\"%.\\" + scale + \\"f\\", value).replace(\\".\\", \\"\\");",
-        "        return text.length() < digits ? \\"0\\".repeat(digits - text.length()) + text : text;",
+        '        String text = String.format(Locale.ROOT, "%." + scale + "f", value).replace(".", "");',
+        '        return text.length() < digits ? "0".repeat(digits - text.length()) + text : text;',
         "    }",
         "",
         "    private static double moveNumeric(double value, int digits, int scale) {",
