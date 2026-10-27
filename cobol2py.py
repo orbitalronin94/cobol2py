@@ -2018,6 +2018,8 @@ def emit_python(prog: Program) -> str:
     lines.append("Generado por cobol2py.py — v0.0.8")
     lines.append('"""')
     lines.append("")
+    variables_by_name = {variable.name.upper(): variable for variable in prog.variables}
+    overlay_fields, overlay_buffers = build_overlay_layout(variables_by_name)
     lines.append("class _CobolStopRun(Exception):")
     lines.append('    """Internal signal for COBOL STOP RUN; caught by the entry paragraph."""')
     lines.append("    pass")
