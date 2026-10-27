@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.modernize_pilot import classify_diagnostic, run_pilot
+from tools.modernize_pilot import REPOSITORY_ROOT, _differential_fixtures, classify_diagnostic, run_pilot
 
 
 class ModernizePilotTests(unittest.TestCase):
@@ -54,6 +54,26 @@ PROCEDURE DIVISION.
         self.assertTrue(defect["review_required"])
         self.assertEqual(unknown["classification"], "review-required")
         self.assertTrue(unknown["review_required"])
+
+    def test_differential_mode_marks_unmatched_sources_not_applicable(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            root = base / "legacy"
+            output = base / "pilot-output"
+            root.mkdir()
+            (root / "LOCAL.cbl").write_text(
+                "IDENTIFICATION DIVISION.\\nPROGRAM-ID. LOCAL.\\nPROCEDURE DIVISION.\\n STOP RUN.\\n",
+                encoding="utf-8",
+            )
+            report = run_pilot(root, output, differential=True)
+            self.assertEqual(report["semantic_validation"], "not-applicable")
+            self.assertEqual(report["differential_validation"]["case_count"], 0)
+            self.assertEqual(report["results"][0]["semantic_status"], "not-applicable")
+
+    def test_exact_manifest_source_path_gets_fixture_link(self):
+        matches = _differential_fixtures(REPOSITORY_ROOT / "samples" / "realtest.cbl")
+        self.assertEqual([item["id"] for item in matches], ["realtest"])
+        self.assertEqual(_differential_fixtures(REPOSITORY_ROOT / "elsewhere" / "realtest.cbl"), [])
 
     def test_rejects_output_inside_source_root(self):
         with tempfile.TemporaryDirectory() as temporary:
