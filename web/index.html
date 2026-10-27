@@ -2305,10 +2305,12 @@ def collect_diagnostics(prog: Program, target_language: str = "python") -> list[
                 # the scope stack still sees the inline END-IF on the opening
                 # source line. Differential coverage confirms this pattern;
                 # avoid reporting that specific parser false positive.
+                opening_line = re.search(r"source line (\d+)", node.text)
                 inline_if_closed = (
                     node.text.startswith("Unclosed IF opened at source line")
+                    and opening_line is not None
                     and any(
-                        line_number == node.line
+                        line_number == int(opening_line.group(1))
                         and re.search(r"\bIF\b.*\bEND-IF\b", source_line, re.IGNORECASE)
                         for line_number, source_line in prog.raw_lines
                     )
