@@ -415,3 +415,9 @@ Esto no es un producto. Es una herramienta. Y las herramientas se comparten.
 
 
 Los nombres de datos o párrafos que coinciden con palabras reservadas de Python/Java se generan con el prefijo `cobol_`; esto evita conflictos sintácticos, aunque los identificadores de salida ya no coinciden literalmente con los nombres COBOL.
+
+## Interfaz web del agente
+
+Además del traductor web de [`web/index.html`](web/index.html), hay una interfaz independiente para inventariar sistemas en [`web/agent.html`](web/agent.html). Permite seleccionar múltiples archivos COBOL, copybooks, JCL y SQL, revisar dependencias detectadas, referencias sin resolver o ambiguas y exportar informes Markdown/JSON. La demo analiza los archivos localmente en el navegador y no los sube a un servidor.
+
+La interfaz del navegador es una ayuda rápida con heurísticas reducidas, no un reemplazo del agente Python. Para análisis reproducibles y más completos, usa `python cobol2py_agent.py /ruta/al/sistema --out reports/plan.md --json-out reports/plan.json`; para enlazar inventario, traducción y comprobación sintáctica, consulta `tools/modernize_pilot.py`. Ninguno de estos informes prueba por sí solo equivalencia semántica.
