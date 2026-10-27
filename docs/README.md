@@ -13,6 +13,7 @@ Esta carpeta documenta el diseño actual, las decisiones técnicas, el alcance s
 - [Roadmap y fases siguientes](roadmap-two-weeks.md): plan inicial de diez días, evidencia de entregables y roadmap ampliado para precisión del inventario, validación diferencial, experiencia del agente y semántica del traductor.
 - [Notas de versión 0.1.0-rc1](release-notes-0.1.0-rc1.md): alcance, resultados medidos y limitaciones del candidato.
 - [Notas de hito 0.8 (borrador de ingeniería)](release-notes-0.8.0.md): esquema de informe v2, clasificación de diagnósticos, artefacto de CI y límites del hito; no representa una publicación etiquetada.
+- [Triage de diagnósticos de samples](pilot-diagnostics-baseline.md): clasificación por fuente de los 35 archivos que mantienen avisos en el piloto, con el falso positivo corregido y las limitaciones pendientes.
 
 ## Principio de mantenimiento
 
