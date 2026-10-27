@@ -441,7 +441,22 @@ RE_PARAGRAPH = re.compile(r"^(?!END-)([A-Za-z][A-Za-z0-9\-]*)\.\s*$")
 def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
     variables: list[CobolVar] = []
     hierarchy: list[CobolVar] = []
-    for _, text in lines:
+    # COBOL permits data clauses such as ASCENDING KEY and INDEXED BY to
+    # continue on the next physical line. Fold only recognized clauses into
+    # the preceding declaration; do not swallow section headers or arbitrary
+    # source lines as part of a variable.
+    declarations: list[tuple[int, str]] = []
+    continuation = re.compile(
+        r"^\\s*(?:ASCENDING|DESCENDING|INDEXED|DEPENDING|PIC(?:TURE)?|VALUE|USAGE|SIGN|OCCURS|REDEFINES)\\b",
+        re.IGNORECASE,
+    )
+    for line_number, source_line in lines:
+        if RE_VAR.match(source_line):
+            declarations.append((line_number, source_line))
+        elif declarations and continuation.match(source_line):
+            prior_number, prior_text = declarations[-1]
+            declarations[-1] = (prior_number, prior_text.rstrip() + " " + source_line.strip())
+    for _, text in declarations:
         m = RE_VAR.match(text)
         if not m:
             continue
