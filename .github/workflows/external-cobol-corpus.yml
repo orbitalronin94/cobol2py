@@ -1,6 +1,11 @@
 name: external-cobol-corpus
 
 on:
+  pull_request:
+    paths:
+      - ".github/workflows/external-cobol-corpus.yml"
+      - "benchmarks/Dockerfile.external"
+      - "benchmarks/run_external_corpus.py"
   workflow_dispatch:
     inputs:
       target:
