@@ -491,12 +491,6 @@ P-B.
         source_path = Path(__file__).resolve().parents[1] / "samples" / "laberinto_cobol_original.cbl"
         source = source_path.read_text(encoding="utf-8")
         program = cobol2py.parse_cobol(source, source_path=source_path)
-        table = next(variable for variable in program.variables if variable.name == "WS-ITEM")
-        self.assertEqual(
-            (table.is_array, table.is_group, table.depending_on, table.ascending_key, table.indexed_by),
-            (True, True, "WS-TABLE-SIZE", "WS-ITEM-ID", "WS-IDX"),
-            repr(table),
-        )
         generated = cobol2py.emit_python(program)
         compile(generated, "<laberinto-cobol>", "exec")
         namespace = {"__name__": "generated_test"}
@@ -1582,6 +1576,12 @@ class MultiTableDiabolicoTests(unittest.TestCase):
         source_path = Path(__file__).resolve().parents[1] / "samples" / "el_multi_tabla_diabolico.cbl"
         source = source_path.read_text(encoding="utf-8")
         program = cobol2py.parse_cobol(source, source_path=source_path)
+        table = next(variable for variable in program.variables if variable.name == "WS-ITEM")
+        self.assertEqual(
+            (table.is_array, table.is_group, table.depending_on, table.ascending_key, table.indexed_by),
+            (True, True, "WS-TABLE-SIZE", "WS-ITEM-ID", "WS-IDX"),
+            repr(table),
+        )
         generated = cobol2py.emit_python(program)
         compile(generated, "<el-multi-tabla-diabolico>", "exec")
         namespace = {"__name__": "generated_test"}
