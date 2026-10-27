@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import cobol2py
 from tools.modernize_pilot import REPOSITORY_ROOT, _differential_fixtures, classify_diagnostic, run_pilot
 
 
@@ -46,6 +47,13 @@ PROCEDURE DIVISION.
             self.assertTrue((output / "translated" / "MAIN.py").is_file())
             saved = json.loads((output / "translation-report.json").read_text(encoding="utf-8"))
             self.assertIn(saved["results"][0]["status"], ("translated", "translated-with-diagnostics"))
+
+    def test_valid_inline_if_has_no_malformed_control_flow_diagnostic(self):
+        source_path = REPOSITORY_ROOT / "samples" / "bench_43_table_first.cbl"
+        source = source_path.read_text(encoding="utf-8")
+        program = cobol2py.parse_cobol(source, source_format="auto", source_path=source_path)
+        diagnostics = cobol2py.collect_diagnostics(program)
+        self.assertFalse(any(item["code"] == "MALFORMED_CONTROL_FLOW" for item in diagnostics))
 
     def test_classifies_known_limits_separately_from_possible_defects(self):
         known = classify_diagnostic({"code": "ARITHMETIC_SIZE_ERROR_UNSUPPORTED", "severity": "warning"})
