@@ -2054,9 +2054,12 @@ def emit_python(prog: Program) -> str:
             return "{" + fields + "}"
 
         root_variables = [variable for variable in prog.variables if not variable.parent_name]
-        overlay_root_names = {item.name.upper() for item in root_variables if item.redefines}
+        supported_overlay_roots = {
+            item.name.upper() for item in root_variables
+            if item.redefines and item.redefines.upper() in overlay_buffers
+        }
         for variable in root_variables:
-            if variable.name.upper() in overlay_buffers or variable.name.upper() in overlay_root_names:
+            if variable.name.upper() in overlay_buffers or variable.name.upper() in supported_overlay_roots:
                 continue
             default = nested_default(variable)
             if variable.is_group:
