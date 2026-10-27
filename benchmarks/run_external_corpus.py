@@ -114,10 +114,14 @@ def main() -> int:
             result: dict[str, Any] = {"id": case_id(relative, content_hash), "source": relative,
                 "source_sha256": content_hash, "reference_compile": "pending", "status": "excluded", "reason": None}
             with tempfile.TemporaryDirectory(dir=temp_root, prefix="case-") as case_dir:
-                work = Path(case_dir)
-                executable = work / "reference"
+                case_root = Path(case_dir)
+                reference_work = case_root / "reference-work"
+                candidate_work = case_root / "candidate-work"
+                reference_work.mkdir()
+                candidate_work.mkdir()
+                executable = reference_work / "reference"
                 compiled = run_process(["cobc", "-x", "-I", str(source.parent), "-o", str(executable), str(source)],
-                                       work, args.compile_timeout)
+                                       reference_work, args.compile_timeout)
                 if not compiled["launched"] or compiled["timeout"] or compiled["returncode"] != 0:
                     report["reference_compile_failures"] += 1
                     result["reference_compile"] = "failed"
@@ -125,24 +129,24 @@ def main() -> int:
                         compiled["stderr"] or "compiler did not produce an executable")[-400:]
                     continue
                 result["reference_compile"] = "passed"
-                reference = run_process([str(executable)], work, args.run_timeout)
+                reference = run_process([str(executable)], reference_work, args.run_timeout)
                 if not reference["launched"] or reference["timeout"]:
                     report["reference_runtime_exclusions"] += 1
                     result["reason"] = "reference execution timed out or could not launch"
                     continue
                 translated = run_process(["python3", "-I", str(translator), str(source), "--format", "auto"],
-                                         work, args.translator_timeout)
+                                         candidate_work, args.translator_timeout)
                 if not translated["launched"] or translated["timeout"] or translated["returncode"] != 0:
                     result.update({"status": "failed", "reason": "translator timeout" if translated["timeout"] else
                         (translated["stderr"] or f"translator exited {translated['returncode']}")[-400:]})
                 else:
-                    generated = work / "translated.py"
+                    generated = candidate_work / "translated.py"
                     generated.write_text(translated["stdout"], encoding="utf-8")
                     try: compile(translated["stdout"], str(generated), "exec")
                     except SyntaxError as error:
                         result.update({"status": "failed", "reason": f"generated Python syntax error: {error.msg}"})
                     else:
-                        candidate = run_process(["python3", "-I", str(generated)], work, args.translator_timeout)
+                        candidate = run_process(["python3", "-I", str(generated)], candidate_work, args.translator_timeout)
                         result["candidate_returncode"] = candidate["returncode"]
                         result["reference_returncode"] = reference["returncode"]
                         result["stdout_match"] = candidate["stdout"] == reference["stdout"]
