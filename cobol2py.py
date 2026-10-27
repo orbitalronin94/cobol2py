@@ -163,6 +163,15 @@ class CobolVar:
                         initial = repr(" " * width)
                     else:
                         initial = f"str({initial})[:{width}].ljust({width})"
+        # Numeric VALUE clauses may use COBOL's leading-zero notation
+        # (for example VALUE 01), which is not a valid Python integer literal.
+        if (
+            self.pic
+            and "9" in self.pic.upper()
+            and self.value is not None
+            and re.fullmatch(r"[+-]?\\d+", self.value.strip())
+        ):
+            initial = str(int(self.value.strip()))
         if self.is_array:
             if self.occurs:
                 return f"[{initial}] * {self.occurs}"
