@@ -7,7 +7,7 @@ El calendario de diez días describe la primera iteración y ya se han entregado
 ### Fase A — Precisión del inventario estático
 
 - [ ] Clasificar los 36 archivos de `samples` que reportaron diagnósticos en la ejecución registrada del piloto: diagnóstico esperado, falso positivo, limitación real o posible defecto.
-- [ ] Separar referencias `CALL` literales de llamadas dinámicas mediante identificadores, sin inventar destinos estáticos para llamadas cuyo valor solo se conoce en ejecución.
+- [x] Separar referencias `CALL` literales de llamadas dinámicas mediante identificadores, sin inventar destinos estáticos para llamadas cuyo valor solo se conoce en ejecución. Implementado en el agente Python con un test de regresión; los destinos dinámicos quedan en `dynamic_calls` y no se cuentan como referencias literales sin resolver.
 - [ ] Añadir fixtures para cada patrón reproducible encontrado durante la clasificación y verificar que comentarios y literales no generan dependencias falsas.
 - [ ] Documentar métricas de precisión con denominadores y ejemplos revisables; no usar solo el número bruto de advertencias como métrica de calidad.
 
