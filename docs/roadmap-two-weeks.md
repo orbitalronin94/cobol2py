@@ -46,7 +46,8 @@ No se promete compatibilidad completa con todos los dialectos, traducción autom
 
 - [x] Corregir la divergencia entre `web/index.html` y `cobol2py.py` y ampliar las pruebas de `COPY ... REPLACING`.
 - [ ] Completar una línea base actualizada de todos los workflows y clasificar brechas prioritarias.
-- [ ] Mejorar el análisis estático para reducir dependencias falsas procedentes de comentarios.
+- [x] Mejorar el análisis estático para reducir dependencias falsas procedentes de comentarios.
+- [x] Marcar referencias con varios destinos candidatos en el informe JSON y Markdown.
 - [ ] Ampliar las pruebas diferenciales en las áreas priorizadas.
 - [ ] Revisar el agente y el flujo de extremo a extremo.
 - [ ] Cerrar con CI verde y documentación sincronizada.
