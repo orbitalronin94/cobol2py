@@ -98,6 +98,10 @@ class TranslationTests(unittest.TestCase):
             cobol2py.CobolVar(level=1, name="WS-TOTAL", pic="9(3)", value="12").py_default(),
             "12",
         )
+        self.assertEqual(
+            cobol2py.CobolVar(level=1, name="WS-STEP", pic="9(2)", value="01").py_default(),
+            "1",
+        )
 
     def test_alphanumeric_pic_defaults_and_value_are_fixed_width(self):
         self.assertEqual(
