@@ -50,6 +50,34 @@ async def main() -> None:
                 raise AssertionError(f"Unexpected translation status: {status}")
             if errors:
                 raise AssertionError("Uncaught browser errors: " + "; ".join(errors))
+
+            # Exercise the standalone agent UI with synthetic files; source text stays in-browser.
+            await page.goto(f"http://127.0.0.1:{server.server_port}/agent.html", wait_until="domcontentloaded")
+            await page.locator("#files").set_input_files([
+                {
+                    "name": "MAIN.cbl",
+                    "mimeType": "text/plain",
+                    "buffer": b'IDENTIFICATION DIVISION.\\nPROGRAM-ID. MAIN.\\nPROCEDURE DIVISION.\\n CALL "SUBPROG".\\n CALL "MISSING".\\n STOP RUN.\\n',
+                },
+                {
+                    "name": "SUBPROG.cbl",
+                    "mimeType": "text/plain",
+                    "buffer": b"IDENTIFICATION DIVISION.\\nPROGRAM-ID. SUBPROG.\\nPROCEDURE DIVISION.\\n GOBACK.\\n",
+                },
+            ])
+            await page.locator("#analyze").click()
+            await page.locator("#results").wait_for(state="visible")
+            stats = await page.locator("#stats").inner_text()
+            unresolved = await page.locator("#unresolved").inner_text()
+            if "2" not in stats or "MISSING" not in unresolved:
+                raise AssertionError("Agent inventory missed expected files/reference: " + stats + " / " + unresolved)
+            async with page.expect_download() as download_info:
+                await page.locator("#json").click()
+            download = await download_info.value
+            if download.suggested_filename != "cobol2py-browser-inventory.json":
+                raise AssertionError("Unexpected agent export name: " + download.suggested_filename)
+            if errors:
+                raise AssertionError("Uncaught browser errors: " + "; ".join(errors))
             await browser.close()
     finally:
         server.shutdown()
