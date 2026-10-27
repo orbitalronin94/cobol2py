@@ -6,6 +6,21 @@
 
 La traducción busca **leerse** y, para el subconjunto cubierto por regresiones diferenciales, también ejecutarse. No promete equivalencia completa de COBOL: las construcciones no soportadas quedan documentadas o señaladas explícitamente.
 
+## Roadmap: estado actual y siguiente etapa
+
+El plan inicial de diez días se ha superado en varios entregables: el traductor cuenta con un corpus diferencial de 102 casos; el agente produce inventarios multiarchivo con referencias ambiguas; y el piloto conecta inventario, traducción y validación sintáctica. La interfaz web del agente también permite inspección local y exportación de informes. Esto **no significa que la modernización general esté terminada**: el siguiente ciclo se centra en calidad del análisis, semántica y trazabilidad.
+
+| Etapa | Estado | Objetivo / salida verificable |
+|---|---|---|
+| Base fiable del traductor | Implementada para el subconjunto medido | Regresiones unitarias, benchmark diferencial con GnuCOBOL y documentación explícita de límites |
+| Inventario y piloto integrado | Implementado como piloto | Inventario JSON/Markdown, traducción por archivo, comprobación sintáctica e informe de diagnósticos; sin afirmar equivalencia semántica |
+| Agente de navegador | Implementado como demo heurística | `web/agent.html`, selección de archivos/carpeta, referencias pendientes/ambiguas y exportación local |
+| **Fase siguiente: precisión del inventario** | **En curso** | Clasificar diagnósticos de `samples`, separar llamadas literales de llamadas dinámicas, reducir falsos positivos y cubrir cada corrección con fixtures |
+| **Fase siguiente: validación de migración** | Pendiente | Incorporar al informe del piloto referencias a casos diferenciales aplicables, resultados de ejecución de referencia y estado explícito de validación semántica |
+| **Fase siguiente: experiencia y trazabilidad** | Pendiente | Mejorar navegación entre hallazgos y archivos, esquema de informes versionado, pruebas de extremo a extremo y guía de uso reproducible |
+
+El roadmap detallado, con criterios de aceptación y registro de evidencia, está en [`docs/roadmap-two-weeks.md`](docs/roadmap-two-weeks.md). La siguiente etapa se considera terminada solo cuando sus cambios estén cubiertos por pruebas y CI; no se ocultan diagnósticos para mejorar métricas.
+
 ---
 
 ## Por qué existe
@@ -23,7 +38,7 @@ El proyecto ha evolucionado desde un traductor de COBOL a Python hacia un reposi
 - **Traductor (`cobol2py.py`)**: recibe un programa COBOL y emite Python o Java. Puede descargarse y utilizarse por sí solo; no necesita `cobol2py_agent.py`.
 - **Agente (`cobol2py_agent.py`)**: inspecciona un repositorio con múltiples programas y artefactos relacionados, y genera un inventario y un plan de migración en Markdown/JSON. No modifica los fuentes.
 - **Piloto integrado (`tools/modernize_pilot.py`)**: conecta inventario y traducción del subconjunto a Python, comprueba la sintaxis generada y crea un informe por archivo; no ejecuta las traducciones ni prueba equivalencia semántica.
-- **Flujo combinado (objetivo evolutivo)**: usar el inventario del agente para organizar la migración por módulos y, en fases posteriores, conectar traducción y validación diferencial. Esa integración todavía no debe darse por completada.
+- **Flujo combinado (piloto implementado)**: `tools/modernize_pilot.py` conecta inventario, traducción del subconjunto y comprobación sintáctica, y genera informes auditables. La comparación diferencial automatizada sigue siendo un paso separado; el piloto no ejecuta el Python generado ni prueba equivalencia semántica.
 
 ### Usar solo el traductor
 
