@@ -15,3 +15,5 @@ Esta carpeta documenta el diseño actual, las decisiones técnicas, el alcance s
 ## Principio de mantenimiento
 
 La documentación describe el comportamiento comprobable del código actual. Una intención de diseño no equivale a una garantía de compatibilidad. Si el código, las pruebas y los documentos discrepan, hay que resolver la discrepancia y actualizar las tres piezas; no asumir que la documentación prevalece automáticamente.
+
+- [Interfaz web del agente](repo-modernization-agent.md#interfaz-web): uso y límites de la demo estática `web/agent.html`.
