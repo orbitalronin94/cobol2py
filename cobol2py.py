@@ -1954,6 +1954,8 @@ def emit_python(prog: Program) -> str:
     alter_targets = {name: name for name in para_names if name != "__MAIN__"}
     lines.append("_cobol_alter_targets = " + repr(alter_targets))
     lines.append("")
+    lines.append("_cobol_stopped = False")
+    lines.append("")
     order = [p for p in prog.paragraph_order if p != "__MAIN__"]
     if "__MAIN__" in prog.paragraphs and prog.paragraphs["__MAIN__"]:
         order = ["__MAIN__"] + order
@@ -1980,9 +1982,16 @@ def emit_python(prog: Program) -> str:
             lines.append("    global " + ", ".join(global_vars))
         body = translate_paragraph(nodes, para_names, variables_by_name)
         body = body if body else ["    pass"]
-        # The dispatcher catches STOP RUN and non-local GO TO transfers.
-        # Keep paragraph bodies free of local catches to preserve transfer semantics.
-        lines.extend(body)
+        # Preserve the historical direct-call behavior of the entry function.
+        # The dispatcher observes the flag to stop fall-through after STOP RUN.
+        if para_name == entrypoint:
+            lines.append("    global _cobol_stopped")
+            lines.append("    try:")
+            lines.extend("    " + line if line else line for line in body)
+            lines.append("    except _CobolStopRun:")
+            lines.append("        _cobol_stopped = True")
+        else:
+            lines.extend(body)
         lines.append("")
 
     dispatch_order = [name for name in order if name in prog.paragraphs]
@@ -1997,6 +2006,8 @@ def emit_python(prog: Program) -> str:
     lines.append("}")
     lines.append("")
     lines.append("def _cobol_dispatch(entry):")
+    lines.append("    global _cobol_stopped")
+    lines.append("    _cobol_stopped = False")
     lines.append("    order = " + repr(dispatch_order))
     lines.append("    if entry not in order:")
     lines.append("        raise ValueError(f'Unknown COBOL paragraph: {entry}')")
@@ -2007,6 +2018,8 @@ def emit_python(prog: Program) -> str:
     lines.append("            function = _cobol_paragraph_functions.get(paragraph)")
     lines.append("            if function is not None:")
     lines.append("                function()")
+    lines.append("            if _cobol_stopped:")
+    lines.append("                return")
     lines.append("        except _CobolStopRun:")
     lines.append("            return")
     lines.append("        except _CobolGoTo as transfer:")
