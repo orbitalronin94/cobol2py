@@ -216,23 +216,38 @@ Los grupos COBOL se emiten como diccionarios anidados y los campos se leen/escri
 
 ```
 cobol2py/
-├── cobol2py.py
+├── cobol2py.py                 # traductor COBOL → Python/Java
+├── cobol2py_agent.py           # inventario y plan de modernización multiarchivo
+├── web_demo.py                 # servidor local opcional para la demo
 ├── README.md
 ├── LICENSE
-├── samples/
+├── samples/                    # fuentes COBOL y fixtures
 │   ├── hello.cbl
 │   ├── realtest.cbl
 │   ├── move_semantics.cbl
-│   └── bench_*.cbl     # 98 fixtures de benchmark COBOL
+│   └── bench_*.cbl             # fixtures de benchmark COBOL
 ├── benchmarks/
-│   ├── cases.json       # corpus versionado de comparación diferencial
+│   ├── cases.json              # corpus versionado de comparación diferencial
 │   └── run_benchmark.py
 ├── tests/
-│   └── test_cobol2py.py
+│   ├── test_cobol2py.py        # pruebas del traductor
+│   ├── test_modernize_agent.py # pruebas del agente de repositorio
+│   └── browser_smoke.py        # smoke test de la demo HTML
+├── tools/
+│   └── gnucobol_trace.py       # trazas y snapshots con GnuCOBOL
+├── docs/
+│   ├── README.md               # índice de documentación
+│   ├── architecture.md         # arquitectura
+│   ├── decisions.md            # decisiones de diseño
+│   └── repo-modernization-agent.md # alcance y uso del agente
+├── web/
+│   └── index.html              # demo autónoma en navegador
 └── .github/workflows/
     ├── tests.yml
     └── differential-benchmark.yml
 ```
+
+El árbol anterior resume los componentes principales, no enumera todas las fixtures ni los archivos auxiliares. El agente de modernización está separado del traductor de un solo archivo: primero inventaría COBOL, copybooks, JCL, SQL y dependencias para generar un plan revisable; no modifica los programas analizados.
 
 ## Demo HTML autónoma
 
