@@ -81,7 +81,7 @@ def _run_differential(results: list[dict[str, Any]], output_dir: Path) -> dict[s
     manifest = json.loads((REPOSITORY_ROOT / "benchmarks" / "cases.json").read_text(encoding="utf-8"))
     selected = [case for case in manifest.get("cases", []) if case.get("id") in selected_ids]
     manifest_path = output_dir / "differential-cases.json"
-    manifest_path.write_text(json.dumps({"version": manifest.get("version", 1), "cases": selected}, indent=2) + "\\n", encoding="utf-8")
+    manifest_path.write_text(json.dumps({"version": manifest.get("version", 1), "cases": selected}, indent=2) + "\n", encoding="utf-8")
     report_path = output_dir / "differential-report.json"
     markdown_path = output_dir / "differential-report.md"
     command = [
@@ -126,8 +126,6 @@ def _run_differential(results: list[dict[str, Any]], output_dir: Path) -> dict[s
             item["semantic_status"] = "matched" if all(status == "matched" for status in matched) else (
                 "discrepancy" if "discrepancy" in matched else "reference-error"
             )
-        elif differential:
-            item["semantic_status"] = "not-applicable"
     return {"status": overall, "case_count": len(cases), "cases": cases,
             "report": report_path.name, "markdown": markdown_path.name,
             "runner_returncode": completed.returncode}
