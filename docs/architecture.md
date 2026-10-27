@@ -71,3 +71,29 @@ Los nombres COBOL se normalizan de forma consistente en declaraciones, referenci
 ## Normalización de condiciones
 
 La traducción de condiciones separa los fragmentos de código de los literales COBOL. Las palabras reservadas de condición y los operadores se reescriben solo fuera de cadenas entre comillas, incluidas las comillas delimitadoras duplicadas. Esto evita alterar literales como `"NOT"` o `"AND"` al normalizar condiciones.
+
+## Agente de modernización a nivel de repositorio
+
+El módulo `cobol2py_agent.py` añade una capa separada del traductor: inventaría programas COBOL, copybooks, ficheros JCL y SQL; extrae referencias de texto; resuelve destinos locales por nombre cuando puede; y produce un plan Markdown/JSON con referencias no resueltas y construcciones que requieren revisión. Solo usa la biblioteca estándar y no ejecuta ni modifica el sistema analizado.
+
+Este bloque **no reemplaza** el parser ni el backend determinista. Es una primera pieza de análisis de cartera y planificación, con heurísticas explícitas. La arquitectura objetivo para modernización de sistemas completos es:
+
+1. **Analizador de repositorio**: inventario y grafo provisional de dependencias.
+2. **Planificador**: agrupa el trabajo en pilotos y oleadas, con criterios de salida verificables.
+3. **Adaptador del traductor**: utiliza el motor actual y sus diagnósticos.
+4. **Verificador**: compila el destino y compara el comportamiento con una referencia COBOL, incluyendo archivos y otros efectos observables cuando puedan reproducirse.
+5. **Analizador de divergencias**: identifica qué caso, entrada, variable o dependencia explica una diferencia.
+6. **Bucle de reparación**: en una fase futura, propone cambios aislados, ejecuta de nuevo las pruebas y deja un diff revisable.
+
+Un LLM futuro podrá explicar hallazgos y proponer cambios acotados, pero no debe ser la fuente de verdad de la semántica. La aceptación de una migración debe depender de evidencia de compilación y pruebas diferenciales, no de la plausibilidad del código generado.
+
+### Ejecutar y validar el planificador
+
+```bash
+python cobol2py_agent.py /ruta/al/sistema --out migration-plan.md --json-out migration-plan.json
+python -m unittest tests.test_modernize_agent -v
+```
+
+El JSON versionado contiene `summary`, `files`, `dependencies`, `unresolved_references`, `recommended_sequence`, `review_first` y `limitations`. La resolución por nombre no es un enlazador: puede haber referencias dinámicas, destinos externos, ambigüedad y falsos positivos. Consulta [repo-modernization-agent.md](repo-modernization-agent.md) para el uso, el esquema y las limitaciones.
+
+La futura automatización debe operar en un workspace aislado, producir diffs inspeccionables y pedir revisión ante incertidumbre. No debe tener acceso implícito a credenciales de producción ni aceptar cambios sin ejecutar las verificaciones acordadas.
