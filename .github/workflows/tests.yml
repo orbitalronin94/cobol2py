@@ -159,6 +159,13 @@ jobs:
           python tools/modernize_pilot.py samples --out-dir /tmp/cobol2py-pilot
           python -c "import json; p=json.load(open('/tmp/cobol2py-pilot/translation-report.json', encoding='utf-8')); s=p['translation_summary']; assert p['schema_version'] == 2; assert s['source_files'] > 0; assert s['syntax_errors'] == 0; assert s['translation_errors'] == 0; assert p['semantic_validation'] == 'not-performed'; assert p['validation']['semantics'] == 'not-evaluated'; assert 'diagnostic_classifications' in s; print('Pilot report OK:', json.dumps(s, ensure_ascii=False, sort_keys=True))"
           cat /tmp/cobol2py-pilot/translation-report.md
+      - name: Run explicit differential pilot against GnuCOBOL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gnucobol
+          python tools/modernize_pilot.py samples --out-dir /tmp/cobol2py-pilot --differential
+          python -c "import json; p=json.load(open('/tmp/cobol2py-pilot/translation-report.json', encoding='utf-8')); d=p['differential_validation']; assert p['semantic_validation'] == 'matched', p['semantic_validation']; assert d['case_count'] == 102, d['case_count']; assert all(x['status'] == 'matched' for x in d['cases']); print('Differential pilot matched:', d['case_count'], 'fixtures')"
+          cat /tmp/cobol2py-pilot/translation-report.md
       - name: Publish pilot diagnostic report
         uses: actions/upload-artifact@v4
         with:
