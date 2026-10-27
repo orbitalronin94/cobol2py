@@ -1,6 +1,6 @@
 # Notas de versión — 0.1.0-rc1
 
-> Candidato de validación, no una publicación etiquetada. Los resultados de comportamiento citados se midieron en el commit `1fb78c6c606260451ca255227645586b0a39cfec`; los cambios posteriores en esta secuencia son de documentación.
+> Candidato de validación, no una publicación etiquetada. Los resultados de comportamiento citados se midieron en el commit `4280bff92d45ee6fd8e96026d11a6db5ddcb48e9`; los cambios posteriores en esta secuencia son de documentación.
 
 ## Cambios incluidos
 
@@ -13,8 +13,8 @@
 
 ## Evidencia de validación
 
-- Suite completa de GitHub Actions en Python 3.10, 3.11, 3.12 y 3.13: pasó en el commit de código `1fb78c6`.
-- [Benchmark diferencial 102/102](https://github.com/orbitalronin94/cobol2py/actions/runs/40495907365).
+- Suite completa de GitHub Actions en Python 3.10, 3.11, 3.12 y 3.13: pasó en el commit de código `4280bff`.
+- [Benchmark diferencial 102/102 con las cinco operaciones aritméticas](https://github.com/orbitalronin94/cobol2py/actions/runs/40496463428).
 - [Suite de pruebas del commit de código](https://github.com/orbitalronin94/cobol2py/actions/runs/40495907342).
 - Piloto sobre `samples`: 108 programas fuente traducidos, 0 errores de sintaxis, 0 errores de traducción y 36 archivos con diagnósticos para revisión.
 
