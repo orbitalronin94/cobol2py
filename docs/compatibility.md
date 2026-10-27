@@ -4,9 +4,9 @@
 
 La compatibilidad se debe expresar por construcción y por caso de prueba, no como una etiqueta absoluta. Una traducción puede ser sintácticamente válida y aun así cambiar resultados, formato de datos, flujo de control, efectos de E/S o códigos de salida.
 
-El benchmark actual considera que un caso coincide cuando el `stdout` y el código de retorno del Python generado son iguales a los del ejecutable COBOL compilado por GnuCOBOL. El comando termina con código distinto de cero si el candidato tiene discrepancias o una referencia no compila; `--report-only` se reserva para ejecuciones exploratorias que no deban bloquear CI. El manifiesto contiene 102 programas. El corpus amplía la variedad de casos, pero sigue siendo curado y sesgado hacia construcciones concretas. No mide todos los dialectos, cláusulas, estados de error ni combinaciones de sentencias.
+El benchmark actual considera que un caso coincide cuando el `stdout` y el código de retorno del Python generado son iguales a los del ejecutable COBOL compilado por GnuCOBOL. El comando termina con código distinto de cero si el candidato tiene discrepancias o una referencia no compila; `--report-only` se reserva para ejecuciones exploratorias que no deban bloquear CI. El manifiesto contiene 105 programas en la revisión actual. El corpus amplía la variedad de casos, pero sigue siendo curado y sesgado hacia construcciones concretas. No mide todos los dialectos, cláusulas, estados de error ni combinaciones de sentencias.
 
-## Áreas cubiertas por el corpus actual (102 casos)
+## Áreas cubiertas por el corpus actual (105 casos)
 
 Consulta la lista autoritativa en [`benchmarks/cases.json`](../benchmarks/cases.json). A nivel general, incluye:
 
@@ -147,4 +147,4 @@ La fixture de regresión `samples/el_multi_tabla_diabolico.cbl` cubre el siguien
 
 **Validación registrada:** tras añadir esta fixture, la prueba unitaria pasa en Python 3.10, 3.11, 3.12 y 3.13; la traza y compilación de referencia con GnuCOBOL pasan; la comparación diferencial del corpus pasa; y el piloto de modernización valida las 105 fixtures contra GnuCOBOL. Se actualizó también el control de CI que esperaba 104 fixtures para que compruebe las 105 actuales. Las ejecuciones de CI y benchmark asociadas a la revisión final terminaron correctamente.
 
-Este resultado certifica la fixture y el subconjunto descrito, no todas las variantes de `SEARCH ALL`, claves múltiples, tablas multidimensionales, límites inválidos ni todos los dialectos COBOL. Los párrafos `PERFORM` se emiten como funciones Python; en general, cualquier sentencia posterior a una llamada recursiva se ejecuta al regresar cada marco, igual que en COBOL.
+Este resultado certifica la fixture y el subconjunto descrito, no todas las variantes de `SEARCH ALL`, claves múltiples, tablas multidimensionales, límites inválidos ni todos los dialectos COBOL. `SEARCH ALL` requiere que la tabla esté ordenada según la clave ascendente declarada; la secuencia `GAMMA` antes de `DELTA` del texto inicial no cumple esa precondición y se corrige en la fixture validada. Los párrafos `PERFORM` se emiten como funciones Python; cualquier `DISPLAY` colocado después del `PERFORM` recursivo se ejecuta al regresar en cada marco, por lo que la fixture coloca la salida en la rama base para imprimir una sola línea.
