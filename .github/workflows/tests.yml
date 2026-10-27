@@ -157,7 +157,15 @@ jobs:
         run: |
           python -m unittest discover -s tests -p 'test_modernize_pilot.py' -v
           python tools/modernize_pilot.py samples --out-dir /tmp/cobol2py-pilot
-          python -c "import json; p=json.load(open('/tmp/cobol2py-pilot/translation-report.json', encoding='utf-8')); assert p['translation_summary']['source_files'] > 0; assert p['translation_summary']['syntax_errors'] == 0; assert p['translation_summary']['translation_errors'] == 0; assert p['semantic_validation'] == 'not-performed'; print('Pilot report OK:', p['translation_summary'])"
+          python -c "import json; p=json.load(open('/tmp/cobol2py-pilot/translation-report.json', encoding='utf-8')); s=p['translation_summary']; assert p['schema_version'] == 2; assert s['source_files'] > 0; assert s['syntax_errors'] == 0; assert s['translation_errors'] == 0; assert p['semantic_validation'] == 'not-performed'; assert p['validation']['semantics'] == 'not-evaluated'; assert 'diagnostic_classifications' in s; print('Pilot report OK:', json.dumps(s, ensure_ascii=False, sort_keys=True))"
+          cat /tmp/cobol2py-pilot/translation-report.md
+      - name: Publish pilot diagnostic report
+        uses: actions/upload-artifact@v4
+        with:
+          name: modernization-pilot-diagnostics
+          path: /tmp/cobol2py-pilot/
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Smoke-test repository inventory and JSON report
         run: |
