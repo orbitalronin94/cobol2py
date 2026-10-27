@@ -544,6 +544,32 @@ class CopybookTests(unittest.TestCase):
             self.assertEqual([v.name for v in program.variables], ["WS-NAME"])
             self.assertEqual(program.unresolved_copybooks, [])
 
+    def test_copy_replacing_applies_pseudo_text_before_parsing(self):
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "FIELD.cpy").write_text(
+                "01 :FIELD-NAME: PIC X(4) VALUE \"AB\".\\n",
+                encoding="utf-8",
+            )
+            source = "\\n".join([
+                "IDENTIFICATION DIVISION.",
+                "PROGRAM-ID. REPLACETEST.",
+                "DATA DIVISION.",
+                "WORKING-STORAGE SECTION.",
+                "COPY FIELD REPLACING ==:FIELD-NAME:== BY ==WS-CODE==.",
+                "PROCEDURE DIVISION.",
+                "MAIN.",
+                "STOP RUN.",
+            ])
+            program = cobol2py.parse_cobol(
+                source, source_format="free", copybook_paths=[root]
+            )
+            self.assertEqual([v.name for v in program.variables], ["WS-CODE"])
+            self.assertEqual(program.unresolved_copybooks, [])
+
     def test_resolves_nested_copybooks_and_reports_cycles(self):
         from pathlib import Path
         from tempfile import TemporaryDirectory
