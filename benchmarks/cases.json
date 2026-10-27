@@ -25,6 +25,15 @@
       ]
     },
     {
+      "id": "copy-replacing-basic",
+      "path": "samples/copy_replacing.cbl",
+      "features": [
+        "COPY REPLACING pseudo-text",
+        "copybook field rename",
+        "MOVE and DISPLAY"
+      ]
+    },
+    {
       "id": "display-hello",
       "path": "samples/bench_01_display_hello.cbl",
       "features": [
