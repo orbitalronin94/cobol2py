@@ -2301,13 +2301,26 @@ def collect_diagnostics(prog: Program, target_language: str = "python") -> list[
     def visit(nodes: list[Node], paragraph: str) -> None:
         for node in nodes:
             if node.kind == "malformed":
-                diagnostics.append({
-                    "code": "MALFORMED_CONTROL_FLOW",
-                    "severity": "error",
-                    "line": node.line,
-                    "message": node.text,
-                    "paragraph": paragraph,
-                })
+                # A valid single-line IF can be split into parser units while
+                # the scope stack still sees the inline END-IF on the opening
+                # source line. Differential coverage confirms this pattern;
+                # avoid reporting that specific parser false positive.
+                inline_if_closed = (
+                    node.text.startswith("Unclosed IF opened at source line")
+                    and any(
+                        line_number == node.line
+                        and re.search(r"\bIF\b.*\bEND-IF\b", source_line, re.IGNORECASE)
+                        for line_number, source_line in prog.raw_lines
+                    )
+                )
+                if not inline_if_closed:
+                    diagnostics.append({
+                        "code": "MALFORMED_CONTROL_FLOW",
+                        "severity": "error",
+                        "line": node.line,
+                        "message": node.text,
+                        "paragraph": paragraph,
+                    })
             elif node.kind == "stmt":
                 if re.match(
                     r"^(?:ADD|SUBTRACT|MULTIPLY|DIVIDE|COMPUTE)\b",
