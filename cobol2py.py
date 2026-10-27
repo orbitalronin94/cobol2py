@@ -1170,6 +1170,7 @@ def translate_statement(
     stmt: str,
     paragraphs: set[str],
     variables: Optional[dict[str, CobolVar]] = None,
+    current_paragraph: Optional[str] = None,
 ) -> Optional[list[str]]:
     s = stmt.strip().rstrip(".").strip()
     if not s:
@@ -1208,7 +1209,10 @@ def translate_statement(
     if m:
         target = m.group(1).upper()
         if target in paragraphs:
-            return [f"raise _CobolGoTo(_cobol_alter_targets[{target!r}])"]
+            # ALTER redirects the unconditional GO TO inside the altered
+            # paragraph, not every GO TO whose target happens to be that paragraph.
+            source = current_paragraph.upper() if current_paragraph else ""
+            return [f"raise _CobolGoTo(_cobol_alter_targets.get({source!r}, {target!r}))"]
         return [f"# COBOL no traducido: {s}"]
     if upper.startswith("EXIT PROGRAM") or upper == "GOBACK":
         return ["return"]
@@ -1330,11 +1334,12 @@ def translate_nodes(
     paragraphs: set[str],
     indent: int,
     variables: Optional[dict[str, CobolVar]] = None,
+    current_paragraph: Optional[str] = None,
 ) -> list[str]:
     out: list[str] = []
     for node in nodes:
         if node.kind == "stmt":
-            lines = translate_statement(node.text, paragraphs, variables)
+            lines = translate_statement(node.text, paragraphs, variables, current_paragraph)
             if lines:
                 opens_block = lines[0].rstrip().endswith(":")
                 for i, line in enumerate(lines):
@@ -1348,7 +1353,7 @@ def translate_nodes(
                 continue
             cond = translate_condition(m.group(1), variables)
             out.append("    " * indent + f"if {cond}:")
-            then_body = translate_nodes(node.then_branch, paragraphs, indent + 1, variables)
+            then_body = translate_nodes(node.then_branch, paragraphs, indent + 1, variables, current_paragraph)
             if not then_body:
                 then_body = ["    " * (indent + 1) + "pass"]
             elif all(not line.strip() or line.strip().startswith("#") for line in then_body):
@@ -1356,7 +1361,7 @@ def translate_nodes(
             out.extend(then_body)
             if node.else_branch:
                 out.append("    " * indent + "else:")
-                else_body = translate_nodes(node.else_branch, paragraphs, indent + 1, variables)
+                else_body = translate_nodes(node.else_branch, paragraphs, indent + 1, variables, current_paragraph)
                 if not else_body:
                     else_body = ["    " * (indent + 1) + "pass"]
                 elif all(not line.strip() or line.strip().startswith("#") for line in else_body):
@@ -1365,7 +1370,7 @@ def translate_nodes(
 
         elif node.kind == "perform_inline":
             out.append("    " * indent + f"# PERFORM inline: {node.text}")
-            body = translate_nodes(node.body, paragraphs, indent + 1, variables)
+            body = translate_nodes(node.body, paragraphs, indent + 1, variables, current_paragraph)
             if not body:
                 body = ["    " * (indent + 1) + "pass"]
             elif all(not line.strip() or line.strip().startswith("#") for line in body):
@@ -1411,7 +1416,7 @@ def translate_nodes(
                         condition = f"{temp_name} == {translate_literal(choice, variables)}"
                     prefix = ("if " if emitted == 0 else "elif ") + condition + ":"
                 out.append("    " * indent + prefix)
-                branch_body = translate_nodes(branch.then_branch, paragraphs, indent + 1, variables)
+                branch_body = translate_nodes(branch.then_branch, paragraphs, indent + 1, variables, current_paragraph)
                 if not branch_body:
                     branch_body = ["    " * (indent + 1) + "pass"]
                 elif all(not line.strip() or line.strip().startswith("#") for line in branch_body):
@@ -1431,8 +1436,12 @@ def translate_paragraph(
     nodes: list[Node],
     paragraphs: set[str],
     variables: Optional[dict[str, CobolVar]] = None,
+    current_paragraph: Optional[str] = None,
 ) -> list[str]:
-    return translate_nodes(nodes, paragraphs, indent=1, variables=variables)
+    return translate_nodes(
+        nodes, paragraphs, indent=1, variables=variables,
+        current_paragraph=current_paragraph,
+    )
 
 
 def java_group_class_name(variable: CobolVar, variables: dict[str, CobolVar]) -> str:
@@ -2081,7 +2090,8 @@ def emit_python(prog: Program) -> str:
     para_names = set(prog.paragraphs.keys())
     variables_by_name = {variable.name.upper(): variable for variable in prog.variables}
     overlay_fields, overlay_buffers = build_overlay_layout(variables_by_name)
-    alter_targets = {name: name for name in para_names if name != "__MAIN__"}
+    # Only paragraphs explicitly modified by ALTER have dynamic GO TO targets.
+    alter_targets: dict[str, str] = {}
     lines.append("_cobol_alter_targets = " + repr(alter_targets))
     lines.append("")
     lines.append("_cobol_stopped = False")
@@ -2135,7 +2145,9 @@ def emit_python(prog: Program) -> str:
         global_vars = [normalize_name(v.name) for v in prog.variables if not v.parent_name]
         if global_vars:
             lines.append("    global " + ", ".join(global_vars))
-        body = translate_paragraph(nodes, para_names, variables_by_name)
+        body = translate_paragraph(
+            nodes, para_names, variables_by_name, current_paragraph=para_name
+        )
         body = body if body else ["    pass"]
         # Preserve the historical direct-call behavior of the entry function.
         # The dispatcher observes the flag to stop fall-through after STOP RUN.
