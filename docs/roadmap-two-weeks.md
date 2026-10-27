@@ -48,7 +48,8 @@ No se promete compatibilidad completa con todos los dialectos, traducción autom
 - [ ] Completar una línea base actualizada de todos los workflows y clasificar brechas prioritarias.
 - [x] Mejorar el análisis estático para reducir dependencias falsas procedentes de comentarios.
 - [x] Marcar referencias con varios destinos candidatos en el informe JSON y Markdown.
-- [ ] Ampliar las pruebas diferenciales en las áreas priorizadas.
+- [x] Añadir un caso diferencial COBOL/GnuCOBOL para `COPY ... REPLACING` básico.
+- [ ] Ampliar las pruebas diferenciales en otras áreas priorizadas.
 - [ ] Revisar el agente y el flujo de extremo a extremo.
 - [ ] Cerrar con CI verde y documentación sincronizada.
 
