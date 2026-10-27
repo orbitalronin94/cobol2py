@@ -137,6 +137,14 @@ Las sentencias básicas `ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE` y `COMPUTE` apli
 El modo `auto` evita inferir formato fijo únicamente por sangría cuando detecta verbos COBOL más allá de la columna 72 en las primeras líneas; así conserva terminadores como `END-IF` en fuentes con formato libre indentado. La inferencia sigue siendo heurística: cuando el formato del compilador está definido por el proyecto, se recomienda indicar `--format fixed` o `--format free` explícitamente y validar con el compilador de referencia.
 
 
-### Búsqueda binaria y tablas con longitud activa
+### Búsqueda binaria, tablas con longitud activa y PERFORM recursivo
 
-El backend Python implementa un subconjunto explícito de `SEARCH ALL` para tablas de registros `OCCURS` que declaran `ASCENDING KEY`, `INDEXED BY` y, opcionalmente, `DEPENDING ON`. La búsqueda limita el rango a la longitud activa y usa índices COBOL base 1 al exponer el índice encontrado. Esto no implica soporte general para todas las formas de `SEARCH`, claves múltiples, tablas multidimensionales ni reglas de dialecto. Los párrafos llamados mediante `PERFORM` se emiten como funciones Python; una llamada recursiva produce una salida por cada marco que ejecuta sentencias después del retorno, como en la fixture de regresión. La fixture no forma parte del corpus diferencial GnuCOBOL hasta validar su salida contra ese compilador.
+La fixture de regresión `samples/el_multi_tabla_diabolico.cbl` cubre el siguiente subconjunto de COBOL y se incluye en el corpus diferencial:
+
+- Tabla de registros con `OCCURS 1 TO 10 DEPENDING ON WS-TABLE-SIZE`; la búsqueda usa la longitud activa en tiempo de ejecución.
+- `ASCENDING KEY`, `INDEXED BY`, `SET` y `SEARCH ALL`; las claves deben estar ordenadas ascendentemente según la clave declarada. Para esta fixture, `EAGLE` se encuentra en la posición COBOL 4 (base 1) y se recupera el valor 500.
+- `PERFORM` recursivo del mismo párrafo. La fixture muestra 50 hasta alcanzar 700 y coloca el `DISPLAY` en la rama base, por lo que emite una sola línea final.
+
+**Validación registrada:** la prueba unitaria de esta fixture pasa en Python 3.10, 3.11, 3.12 y 3.13; la traza y compilación de referencia con GnuCOBOL pasan; y la comparación diferencial del corpus pasa. La comprobación adicional del informe de modernización falló únicamente porque su número esperado de fixtures seguía fijado en 104 tras añadir esta nueva fixture; el control se actualizó a 105 y debe volver a ejecutarse para cerrar esa validación.
+
+Este resultado certifica la fixture y el subconjunto descrito, no todas las variantes de `SEARCH ALL`, claves múltiples, tablas multidimensionales, límites inválidos ni todos los dialectos COBOL. Los párrafos `PERFORM` se emiten como funciones Python; en general, cualquier sentencia posterior a una llamada recursiva se ejecuta al regresar cada marco, igual que en COBOL.
