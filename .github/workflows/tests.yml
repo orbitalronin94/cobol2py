@@ -133,3 +133,19 @@ jobs:
           grep -F 'TRACE_VAR|WS-CHILD|CH ' /tmp/trace.out
           grep -F 'TRACE_VAR|WS-TABLE(1)|03' /tmp/trace.out
           grep -F 'TRACE_VAR|WS-TABLE(2)|04' /tmp/trace.out
+
+  modernization-agent:
+    name: Modernization agent
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run dedicated agent unit tests
+        run: python -m unittest discover -s tests -p 'test_modernize_agent.py' -v
+      - name: Smoke-test repository inventory and JSON report
+        run: |
+          python cobol2py_agent.py . --out /tmp/migration-plan.md --json-out /tmp/migration-plan.json
+          python -c "import json; p=json.load(open('/tmp/migration-plan.json', encoding='utf-8')); assert p['schema_version'] == 1; assert isinstance(p['files'], list); assert isinstance(p['dependencies'], list); assert isinstance(p['unresolved_references'], list); print('Agent report schema OK; files:', p['summary']['files'])"
+          test -s /tmp/migration-plan.md
