@@ -139,7 +139,7 @@ Esta escala resume entregables acumulados del proyecto para ordenar el roadmap. 
 
 1. **0.8.x — Cierre de revisión:** adjudicar cada diagnóstico de samples como limitación confirmada, falso positivo reproducible, posible defecto o dependencia externa; convertir cada falso positivo/defecto en regresión.
 2. **0.9 — Validación diferencial por módulo:** ejecutar solo fixtures identificadas y aprobadas explícitamente; guardar stdout, código de retorno, versión de GnuCOBOL y resultado reproducible. Nunca ejecutar traducciones arbitrarias durante el inventario estático.
-3. **0.10 — Navegación y filtros:** filtros de hallazgos por código/categoría/ruta, navegación entre aristas y fuentes, y pruebas con Unicode, rutas profundas y repositorios grandes.
+3. **0.10 — Navegación avanzada:** filtros por relación y nivel de confianza, navegación entre aristas y fuentes, y pruebas con corpus mayores que 200 fuentes.
 4. **1.0 — Criterios de adopción:** contratos de informe estables, documentación de dialectos/entornos soportados, matriz de compatibilidad revisada y CI obligatoria verde. No depende de alcanzar un porcentaje universal de COBOL soportado.
 
 El criterio de avance no es el número de versión: cada hito exige cambios integrados, regresiones, evidencia de CI y límites documentados. Un hallazgo no se marca como falso positivo solo porque la salida Python compile.
