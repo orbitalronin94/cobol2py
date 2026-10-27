@@ -81,6 +81,43 @@ PROCEDURE DIVISION.
         self.assertTrue(any(e["relation"] == "sql-include" and e["symbol"] == "SQLCA"
                             for e in plan["dependencies"]))
 
+    def test_copybook_resolution_prefers_source_relative_file(self):
+        self.write("src/MAIN.cbl", """IDENTIFICATION DIVISION.
+PROGRAM-ID. MAIN.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+COPY CUSTOMER-REC.
+PROCEDURE DIVISION.
+    STOP RUN.
+""")
+        self.write("src/CUSTOMER-REC.cpy", "01 WS-LOCAL PIC X(4).\\n")
+        self.write("shared/CUSTOMER-REC.cpy", "01 WS-SHARED PIC X(4).\\n")
+
+        plan = analyze_repository(self.root)
+        edges = [edge for edge in plan["dependencies"]
+                 if edge["source"] == "src/MAIN.cbl" and edge["relation"] == "copy"]
+        self.assertEqual([edge["target"] for edge in edges], ["src/CUSTOMER-REC.cpy"])
+        self.assertFalse(any(item["source"] == "src/MAIN.cbl" and item["relation"] == "copy"
+                             for item in plan["ambiguous_references"]))
+
+    def test_copybook_resolution_accepts_relative_path(self):
+        self.write("MAIN.cbl", """IDENTIFICATION DIVISION.
+PROGRAM-ID. MAIN.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+COPY copy/RECORD.cpy.
+PROCEDURE DIVISION.
+    STOP RUN.
+""")
+        self.write("copy/RECORD.cpy", "01 WS-REC PIC X(4).\\n")
+
+        plan = analyze_repository(self.root)
+        edges = [edge for edge in plan["dependencies"]
+                 if edge["source"] == "MAIN.cbl" and edge["relation"] == "copy"]
+        self.assertEqual([edge["target"] for edge in edges], ["copy/RECORD.cpy"])
+        self.assertFalse(any(item["source"] == "MAIN.cbl" and item["relation"] == "copy"
+                             for item in plan["unresolved_references"]))
+
     def test_unresolved_reference_and_risk_flags(self):
         self.write("PAYROLL.cbl", """IDENTIFICATION DIVISION.
 PROGRAM-ID. PAYROLL.
