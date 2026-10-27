@@ -79,3 +79,17 @@ Las pruebas de este módulo usan repositorios temporales sintéticos y no requie
 - No se cambian archivos fuente del sistema analizado.
 - Un informe sin riesgos detectados no significa que el sistema sea de bajo riesgo.
 - No se afirma equivalencia semántica. Cada oleada necesita revisión humana y evidencia de pruebas.
+
+
+## Flujo piloto integrado
+
+`tools/modernize_pilot.py` conecta el inventario estático con la traducción del subconjunto COBOL y una comprobación de sintaxis del Python generado. Escribe inventario Markdown/JSON, fuentes traducidos y un informe por programa; no ejecuta los programas generados y declara expresamente que la equivalencia semántica no se ha probado. El directorio de salida debe quedar fuera del árbol analizado para no contaminar el inventario en ejecuciones repetidas.
+
+Ejemplo reproducible desde la raíz del repositorio:
+
+```bash
+python tools/modernize_pilot.py samples --out-dir /tmp/cobol2py-pilot
+python -m unittest discover -s tests -p 'test_modernize_pilot.py' -v
+```
+
+El piloto falla si una traducción no puede generarse o si el Python generado no pasa `compile()`; los diagnósticos de compatibilidad se conservan en `translation-report.json`. Para demostrar equivalencia de comportamiento, ejecutar además el benchmark diferencial con GnuCOBOL.
