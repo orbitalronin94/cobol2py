@@ -105,6 +105,20 @@ SELECT '-- not a comment marker in this literal' FROM SYSIBM.SYSDUMMY1;
         run = next(item for item in plan["files"] if item["path"] == "RUN.jcl")
         self.assertEqual(run["jcl_programs"], ["MAIN"])
 
+    def test_ignores_fixed_format_comment_records(self):
+        self.write("FIXED.cbl", """000100* COPY GHOST-FIXED.
+000200 IDENTIFICATION DIVISION.
+000300 PROGRAM-ID. FIXED.
+000400 PROCEDURE DIVISION.
+000500 STOP RUN.
+""")
+        plan = analyze_repository(self.root)
+        unresolved = {(item["relation"], item["symbol"])
+                      for item in plan["unresolved_references"]}
+        self.assertNotIn(("copy", "GHOST-FIXED"), unresolved)
+        fixed = next(item for item in plan["files"] if item["path"] == "FIXED.cbl")
+        self.assertEqual(fixed["program_id"], "FIXED")
+
     def test_json_serializable(self):
         self.write("ONE.cbl", "IDENTIFICATION DIVISION. PROGRAM-ID. ONE.")
         encoded = json.dumps(analyze_repository(self.root))
