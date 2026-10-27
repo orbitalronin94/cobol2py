@@ -945,6 +945,33 @@ def pic_character_count(pic: str) -> int:
     )
 
 
+def fit_numeric_expression(expression: str, target: str, variables: dict[str, CobolVar]) -> str:
+    """Apply the receiving numeric PIC's basic truncation/wrap semantics."""
+    target_base = re.match(r"([A-Za-z0-9-]+)", target)
+    variable = variables.get(target_base.group(1).upper()) if target_base else None
+    if variable is None or not variable.pic:
+        return expression
+    pic = variable.pic.upper()
+    if "9" not in pic or "P" in pic:
+        return expression
+    digits = pic_digit_count(pic)
+    if not digits:
+        return expression
+    if "V" in pic:
+        scale = pic_digit_count(pic.split("V", 1)[1])
+        factor = 10 ** scale
+        magnitude = f"(int(abs(float({expression})) * {factor}) % (10 ** {digits}))"
+        if "S" in pic:
+            return f"(-1 if float({expression}) < 0 else 1) * ({magnitude} / {factor})"
+        return f"({magnitude} / {factor})"
+    if "S" in pic:
+        return (
+            f"(-1 if int({expression}) < 0 else 1) * "
+            f"(abs(int({expression})) % (10 ** {digits}))"
+        )
+    return f"int({expression}) % (10 ** {digits})"
+
+
 def translate_move_value(source: str, target: str, variables: dict[str, CobolVar]) -> str:
     """Translate MOVE with basic receiving-field size semantics.
 
@@ -1075,28 +1102,43 @@ def translate_statement(
 
     m = re.match(rf"COMPUTE\s+({DATA_REF_PATTERN})\s*=\s*(.+)", s, re.IGNORECASE)
     if m:
-        return [f"{normalize_data_reference(m.group(1), variables)} = {translate_expr(m.group(2), variables)}"]
+        target = m.group(1)
+        target_expr = normalize_data_reference(target, variables)
+        expression = translate_expr(m.group(2), variables)
+        return [f"{target_expr} = {fit_numeric_expression(expression, target, variables or {})}"]
 
     # Patch 4: ADD con múltiples operandos
     m = re.match(rf"ADD\s+(.+?)\s+TO\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
         operands = split_cobol_items(m.group(1))
         sum_expr = " + ".join(translate_literal(o, variables) for o in operands)
-        return [f"{normalize_data_reference(m.group(2), variables)} += {sum_expr}"]
+        target = m.group(2)
+        target_expr = normalize_data_reference(target, variables)
+        expression = f"{target_expr} + ({sum_expr})"
+        return [f"{target_expr} = {fit_numeric_expression(expression, target, variables or {})}"]
 
     m = re.match(rf"SUBTRACT\s+(.+?)\s+FROM\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
         operands = split_cobol_items(m.group(1))
         sum_expr = " + ".join(translate_literal(o, variables) for o in operands)
-        return [f"{normalize_data_reference(m.group(2), variables)} -= {sum_expr}"]
+        target = m.group(2)
+        target_expr = normalize_data_reference(target, variables)
+        expression = f"{target_expr} - ({sum_expr})"
+        return [f"{target_expr} = {fit_numeric_expression(expression, target, variables or {})}"]
 
     m = re.match(rf"MULTIPLY\s+(.+?)\s+BY\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
-        return [f"{normalize_data_reference(m.group(2), variables)} *= {translate_literal(m.group(1), variables)}"]
+        target = m.group(2)
+        target_expr = normalize_data_reference(target, variables)
+        expression = f"{target_expr} * ({translate_literal(m.group(1), variables)})"
+        return [f"{target_expr} = {fit_numeric_expression(expression, target, variables or {})}"]
 
     m = re.match(rf"DIVIDE\s+(.+?)\s+INTO\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
-        return [f"{normalize_data_reference(m.group(2), variables)} /= {translate_literal(m.group(1), variables)}"]
+        target = m.group(2)
+        target_expr = normalize_data_reference(target, variables)
+        expression = f"{target_expr} / ({translate_literal(m.group(1), variables)})"
+        return [f"{target_expr} = {fit_numeric_expression(expression, target, variables or {})}"]
 
     m = re.match(r"PERFORM\s+([A-Za-z0-9\-]+)\s+(\d+)\s+TIMES", s, re.IGNORECASE)
     if m and m.group(1).upper() in paragraphs:
