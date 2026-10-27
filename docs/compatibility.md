@@ -17,7 +17,7 @@ Consulta la lista autoritativa en [`benchmarks/cases.json`](../benchmarks/cases.
 - Comparaciones y condiciones `IF/ELSE`, incluidas algunas condiciones compuestas y anidadas.
 - `PERFORM TIMES` y llamadas a párrafos.
 - `EVALUATE` escalar con `WHEN`, `WHEN OTHER`, `EVALUATE TRUE/FALSE` y rangos `THRU` en casos acotados.
-- `COPY` simple con expansión recursiva, búsqueda por directorios explícitos y diagnósticos de faltantes/ciclos.
+- `COPY` con expansión recursiva, búsqueda por directorios y diagnósticos de faltantes/ciclos; una prueba unitaria cubre parejas simples de pseudo-texto en `REPLACING`.
 - Grupos de datos como diccionarios anidados y referencias básicas a campos hijos.
 - Backend Java sobre el mismo AST para el subconjunto cubierto por sus fixtures de compilación/salida.
 - Herramienta de diagnóstico GnuCOBOL con `-ftraceall` y snapshots de campos escalares, grupos y elementos `OCCURS` antes de terminar.
@@ -36,7 +36,7 @@ Un resultado favorable no implica automáticamente soporte para:
 - equivalencia de overlays `REDEFINES`, `RENAMES` o grupos complejos con `OCCURS`;
 - todo el lenguaje de condiciones, abreviaturas COBOL o precedencia de operadores;
 - `EVALUATE ALSO`, selección múltiple avanzada y todos los matices de ámbito/dialecto;
-- `COPY ... REPLACING`, bibliotecas calificadas y reglas avanzadas de sustitución;
+- bibliotecas calificadas de `COPY`, otras formas de `REPLACING` y reglas avanzadas de sustitución;
 - `READ`/`WRITE`, archivos, bases de datos, transacciones, llamadas externas o comportamiento de entorno;
 - todas las variantes de `EVALUATE`, `SEARCH`, `STRING`, `UNSTRING`, `INSPECT`, `CALL`, `COPY`, `EXEC SQL` o extensiones de dialecto;
 - equivalencia en mensajes de error, salida estándar de error, archivos producidos, estado global externo o efectos secundarios no medidos.
@@ -108,3 +108,16 @@ En Java, las comparaciones directas de un campo `PIC X/A` con un literal a la de
 
 
 Las comparaciones alfanuméricas con un literal a la izquierda (`"A" = WS-NAME`) no están garantizadas; el modo estricto emite `ALPHANUMERIC_LITERAL_LEFT_COMPARISON_UNSUPPORTED` para las formas directas detectadas.
+
+
+## Alcance específico de COPY REPLACING
+
+El resolvedor acepta cláusulas con una o más parejas de pseudo-texto de la forma:
+
+```cobol
+COPY FIELD REPLACING ==:FIELD-NAME:== BY ==WS-CODE==.
+```
+
+Aplica las sustituciones al texto leído del copybook antes de analizarlo. La coincidencia es literal, insensible a mayúsculas/minúsculas y no se interpreta como expresión regular. Esto es una implementación acotada, no el algoritmo completo de sustitución léxica de COBOL: no debe suponerse que respete límites de tokens, todas las reglas de pseudo-texto o todas las variantes de dialecto. Si la cláusula no coincide con la forma admitida, el traductor deja una advertencia explícita de copybook no resuelto en lugar de omitirla silenciosamente.
+
+La regresión unitaria `test_copy_replacing_applies_pseudo_text_before_parsing` comprueba el caso cubierto. Ese test no forma parte de la puntuación del benchmark diferencial de 100 programas, por lo que no debe presentarse como evidencia de equivalencia general ni como cobertura de reemplazos complejos.
