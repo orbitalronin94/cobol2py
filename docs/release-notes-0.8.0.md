@@ -4,13 +4,15 @@
 
 ## Cambios del hito
 
-- **Inventario de CALL:** separación entre nombres literales entre comillas e identificadores dinámicos, en el agente Python y en la demo web.
+- **Inventario de CALL y literales:** separación entre nombres literales entre comillas e identificadores dinámicos; el CLI y la demo web enmascaran contenido literal para evitar dependencias falsas.
 - **Piloto con esquema versionado:** el informe JSON pasa a esquema 2 e incluye versión del traductor, estado sintáctico por archivo y estado semántico explícito `not-evaluated`.
 - **Clasificación de diagnósticos:** los avisos se etiquetan como limitación conocida, dependencia sin resolver, posible defecto o revisión pendiente. La clasificación conserva código, línea y mensaje originales; no elimina avisos.
 - **Triage de 108 fuentes:** CI confirma 108 traducciones, 0 errores de sintaxis, 0 errores de traducción y 35 fuentes con 50 diagnósticos conocidos (46 avisos de aritmética y 4 de PIC parcial). Se corrigió un falso positivo de formato en `bench_43_table_first.cbl`; la revisión humana de los 35 archivos restantes sigue pendiente.
-- **Trazabilidad diferencial:** se enlazan fixtures candidatas solo cuando la ruta de fuente coincide exactamente con el manifiesto. Un enlace no implica que la fixture se haya ejecutado en el piloto.
+- **Trazabilidad diferencial:** se enlazan fixtures candidatas solo cuando la ruta de fuente coincide exactamente con el manifiesto. El modo opt-in --differential ejecuta solo esas fixtures y registra estado por caso; un enlace sin ejecutar no implica equivalencia.
 - **Informe revisable:** el Markdown incluye resumen por categoría y código, detalle por archivo y una lista de fixtures candidatas.
 - **CI:** el job de modernización valida el contrato del informe y publica los ficheros del piloto como artefacto temporal para inspección. El modo diferencial opt-in coincidió en 102/102 fixtures con GnuCOBOL en stdout y código de retorno.
+- **Experiencia web:** filtro de texto global, pruebas de rutas Unicode y casos con palabras clave dentro de literales.
+- **Formato fuente:** el modo auto conserva terminadores de control más allá de columna 72 cuando detecta código largo indentado.
 - **Roadmap:** se añade una escala de hitos de madurez v0.1–v0.8 y se separa el triage automatizado de la adjudicación humana pendiente.
 
 ## Cómo reproducir
