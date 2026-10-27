@@ -292,7 +292,7 @@ El informe enumera los artefactos detectados, las dependencias que logra resolve
 
 ## Documentación de ingeniería
 
-La documentación de arquitectura, decisiones de diseño, alcance de compatibilidad y proceso de cambios está en [`docs/`](docs/README.md). Los cambios semánticos deben incluir pruebas y, cuando sea posible, una comparación diferencial con GnuCOBOL. El porcentaje del benchmark mide únicamente los casos versionados; no demuestra equivalencia general.
+La documentación de arquitectura, decisiones de diseño, alcance de compatibilidad, proceso de cambios y ejecución por fases está en [`docs/`](docs/README.md). Consulta el [roadmap de modernización de dos semanas](docs/roadmap-two-weeks.md) para el calendario, los criterios de aceptación y el registro de progreso. Los cambios semánticos deben incluir pruebas y, cuando sea posible, una comparación diferencial con GnuCOBOL. El porcentaje del benchmark mide únicamente los casos versionados; no demuestra equivalencia general.
 
 ## Pruebas
 
