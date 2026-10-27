@@ -28,8 +28,8 @@
       "id": "copy-replacing-basic",
       "path": "samples/copy_replacing.cbl",
       "features": [
-        "COPY REPLACING pseudo-text",
-        "copybook field rename",
+        "COPY REPLACING multiple pseudo-text pairs",
+        "copybook field rename and PIC replacement",
         "MOVE and DISPLAY"
       ]
     },
