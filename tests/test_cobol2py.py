@@ -488,7 +488,7 @@ P-B.
         from io import StringIO
         from pathlib import Path
 
-        source_path = Path(__file__).resolve().parents[1] / "samples" / "laberinto_cobol.cbl"
+        source_path = Path(__file__).resolve().parents[1] / "samples" / "laberinto_cobol_original.cbl"
         source = source_path.read_text(encoding="utf-8")
         program = cobol2py.parse_cobol(source, source_path=source_path)
         generated = cobol2py.emit_python(program)
@@ -502,7 +502,7 @@ P-B.
             output.getvalue(),
             "INICIO DEL LABERINTO COBOL\n"
             "INICIO DEL LABERINTO COBOL\n"
-            "RESULTADO FINAL ACUMULADOR: 222240\n",
+            "RESULTADO FINAL ACUMULADOR: 000222240\n",
             generated,
         )
         self.assertEqual(namespace["_cobol_storage"]["WS-RAW-INPUT"], "9999911111")
