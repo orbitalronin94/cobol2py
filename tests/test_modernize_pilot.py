@@ -53,7 +53,7 @@ PROCEDURE DIVISION.
         source = source_path.read_text(encoding="utf-8")
         program = cobol2py.parse_cobol(source, source_format="auto", source_path=source_path)
         diagnostics = cobol2py.collect_diagnostics(program)
-        self.assertFalse(any(item["code"] == "MALFORMED_CONTROL_FLOW" for item in diagnostics))
+        self.assertFalse(any(item["code"] == "MALFORMED_CONTROL_FLOW" for item in diagnostics), repr([(item["line"], item["message"]) for item in diagnostics]) + " raw=" + repr([item for item in program.raw_lines if "IF" in item[1].upper()]))
 
     def test_classifies_known_limits_separately_from_possible_defects(self):
         known = classify_diagnostic({"code": "ARITHMETIC_SIZE_ERROR_UNSUPPORTED", "severity": "warning"})
