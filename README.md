@@ -335,7 +335,7 @@ El workflow `differential-benchmark.yml` falla si cualquier caso del candidato n
 - **Corpus versionado:** `benchmarks/cases.json` define 101 programas y las capacidades cubiertas, incluido un caso de `COPY ... REPLACING` contrastado con GnuCOBOL. La revisión histórica del PR #9 obtuvo 100/100 coincidencias en el corpus de 100 casos que existía entonces; el snapshot inicial obtuvo 16/100 sobre aquel mismo corpus. El resultado actual debe consultarse en el último workflow y mide solo los casos versionados, no la equivalencia general de COBOL. Para añadir un caso, incorpora un programa COBOL autónomo en `samples/` y una entrada al manifiesto; no elimines casos difíciles solo para subir la puntuación.
 - **Interpretación prudente:** la métrica mide únicamente estos fixtures; no equivale al porcentaje de COBOL del mundo real que se traduce correctamente. Los casos deben crecer en variedad y complejidad, no solo en cantidad.
 
-Para ejecutar el benchmark localmente (requiere Python y GnuCOBOL):
+El runner compila cada referencia con el directorio del fuente como ruta de búsqueda de copybooks, para que los casos con `COPY` puedan compilarse desde la raíz del repositorio. Para ejecutar el benchmark localmente (requiere Python y GnuCOBOL):
 
 ```bash
 python benchmarks/run_benchmark.py --translator cobol2py.py
