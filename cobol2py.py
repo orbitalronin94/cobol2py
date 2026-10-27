@@ -1078,9 +1078,8 @@ def translate_statement(
         if targets and all(target in paragraphs for target in targets):
             choices = ", ".join(repr(target) for target in targets)
             return [
-                f"_cobol_selector = int({selector})",
-                f"if 1 <= _cobol_selector <= {len(targets)}:",
-                f"raise _CobolGoTo(({choices})[_cobol_selector - 1])",
+                f"if 1 <= int({selector}) <= {len(targets)}:",
+                f"raise _CobolGoTo(({choices})[int({selector}) - 1])",
             ]
         return [f"# COBOL no traducido: {s}"]
 
