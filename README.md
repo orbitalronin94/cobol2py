@@ -2,7 +2,7 @@
 
 > Traductor mínimo de COBOL a Python. Un archivo. Cero dependencias. Solo stdlib.
 
-`cobol2py` pela la capa dura del código legado y deja ver la lógica de negocio que llevaba décadas enterrada bajo una sintaxis que nadie recuerda. El núcleo sigue siendo un traductor pequeño de un archivo COBOL a Python legible; el repositorio también incluye un **agente inicial de análisis y planificación para sistemas empresariales multiarchivo**. No es todavía un migrador autónomo ni promete equivalencia completa.
+`cobol2py` nació como un traductor pequeño y autónomo de un archivo COBOL a Python legible. Después, el proyecto se amplió con un **agente inicial de análisis y planificación para sistemas empresariales multiarchivo** que ayuda a entender programas relacionados, copybooks, JCL y SQL antes de planificar una modernización. Son dos herramientas relacionadas, pero independientes: puedes usar el traductor sin el agente, y ejecutar el agente sin traducir código. El agente todavía no es un migrador autónomo ni promete equivalencia completa.
 
 La traducción busca **leerse** y, para el subconjunto cubierto por regresiones diferenciales, también ejecutarse. No promete equivalencia completa de COBOL: las construcciones no soportadas quedan documentadas o señaladas explícitamente.
 
@@ -16,11 +16,23 @@ Hay miles de sistemas críticos corriendo COBOL en bancos, aseguradoras y admini
 
 ---
 
-## Instalación
+## Dos componentes, dos usos
 
-No hay.
+El proyecto ha evolucionado desde un traductor de COBOL a Python hacia un repositorio que también incluye planificación de modernizaciones a escala de sistema. Los componentes comparten repositorio y objetivo, pero **no dependen uno del otro para su uso básico**.
 
-Es Python 3.10+. Descarga el archivo `cobol2py.py`. Y ya está.
+- **Traductor (`cobol2py.py`)**: recibe un programa COBOL y emite Python o Java. Puede descargarse y utilizarse por sí solo; no necesita `cobol2py_agent.py`.
+- **Agente (`cobol2py_agent.py`)**: inspecciona un repositorio con múltiples programas y artefactos relacionados, y genera un inventario y un plan de migración en Markdown/JSON. No invoca el traductor, no cambia los fuentes y no necesita que el traductor se ejecute.
+- **Flujo combinado (objetivo evolutivo)**: usar el inventario del agente para organizar la migración por módulos y, en fases posteriores, conectar traducción y validación diferencial. Esa integración todavía no debe darse por completada.
+
+### Usar solo el traductor
+
+No hay instalación ni dependencias externas: requiere Python 3.10+ y basta con `cobol2py.py`.
+
+### Usar solo el agente
+
+Requiere Python 3.10+ y el archivo `cobol2py_agent.py`; genera un plan de análisis, no una traducción ejecutable.
+
+
 
 ```bash
 curl -O https://raw.githubusercontent.com/orbitalronin94/cobol2py/main/cobol2py.py
@@ -68,7 +80,7 @@ python tests/browser_smoke.py
 
 ## Agente de modernización de repositorios
 
-¿Tu sistema tiene cientos de programas COBOL, copybooks compartidos, llamadas entre módulos, JCL y SQL? El primer componente del agente analiza un repositorio completo y produce un inventario y un plan de migración revisable. Es determinista, no instala dependencias y **no modifica ni ejecuta los programas analizados**.
+¿Tu sistema tiene cientos de programas COBOL, copybooks compartidos, llamadas entre módulos, JCL y SQL? Ejecuta el agente de forma independiente del traductor: analiza un repositorio completo y produce un inventario y un plan de migración revisable. Es determinista, no instala dependencias externas y **no modifica ni ejecuta los programas analizados**. No necesitas ejecutar `cobol2py.py` para generar este informe.
 
 ```bash
 python cobol2py_agent.py /ruta/al/sistema \
