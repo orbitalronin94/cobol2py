@@ -334,3 +334,13 @@ Añadir una sección con:
 - **Consecuencias:** hay una entrada útil para planificar sistemas multiarchivo, pero las referencias se resuelven con heurísticas de texto y nombre; el informe necesita revisión humana y no prueba completitud ni equivalencia.
 - **Validación:** pruebas unitarias sintéticas para inventario, dependencias COPY/CALL/JCL/SQL, referencias sin resolver, indicadores de riesgo y serialización JSON. Estas pruebas no se han ejecutado automáticamente en esta modificación.
 - **Revisión:** reconsiderar el diseño cuando existan fixtures representativos de repositorios reales y evidencia de precisión/recall del grafo, antes de automatizar escrituras o reparaciones.
+
+
+## D-036 — Mantener sincronizada la demo HTML con el traductor
+
+- **Fecha:** 2026-10-27.
+- **Estado:** aceptada.
+- **Contexto:** la mejora del resolvedor de copybooks añadió soporte acotado para parejas de pseudo-texto en `COPY ... REPLACING`, pero la copia del traductor embebida en `web/index.html` quedó desactualizada y falló la prueba de coherencia.
+- **Decisión:** sincronizar el bloque `translator-source` con el contenido exacto de `cobol2py.py` en cada cambio del motor y mantener la prueba `test_embedded_translator_stays_in_sync_with_python_source` como guardarraíl.
+- **Consecuencias:** la demo ejecuta el mismo código Python que el traductor de línea de comandos; los cambios al traductor deben incluir una actualización del HTML embebido. Esto no elimina las limitaciones semánticas del traductor ni las necesidades de conectividad de Pyodide.
+- **Validación:** el bloque embebido se ha regenerado desde el archivo fuente. La suite completa y el resultado del workflow de CI de esta revisión quedan pendientes de confirmación.
