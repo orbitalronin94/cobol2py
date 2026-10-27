@@ -4,9 +4,9 @@
 
 La compatibilidad se debe expresar por construcción y por caso de prueba, no como una etiqueta absoluta. Una traducción puede ser sintácticamente válida y aun así cambiar resultados, formato de datos, flujo de control, efectos de E/S o códigos de salida.
 
-El benchmark actual considera que un caso coincide cuando el `stdout` y el código de retorno del Python generado son iguales a los del ejecutable COBOL compilado por GnuCOBOL. El comando termina con código distinto de cero si el candidato tiene discrepancias o una referencia no compila; `--report-only` se reserva para ejecuciones exploratorias que no deban bloquear CI. El manifiesto contiene 100 programas. El corpus amplía la variedad de casos, pero sigue siendo curado y sesgado hacia construcciones concretas. No mide todos los dialectos, cláusulas, estados de error ni combinaciones de sentencias.
+El benchmark actual considera que un caso coincide cuando el `stdout` y el código de retorno del Python generado son iguales a los del ejecutable COBOL compilado por GnuCOBOL. El comando termina con código distinto de cero si el candidato tiene discrepancias o una referencia no compila; `--report-only` se reserva para ejecuciones exploratorias que no deban bloquear CI. El manifiesto contiene 101 programas. El corpus amplía la variedad de casos, pero sigue siendo curado y sesgado hacia construcciones concretas. No mide todos los dialectos, cláusulas, estados de error ni combinaciones de sentencias.
 
-## Áreas cubiertas por el corpus actual (100 casos)
+## Áreas cubiertas por el corpus actual (101 casos)
 
 Consulta la lista autoritativa en [`benchmarks/cases.json`](../benchmarks/cases.json). A nivel general, incluye:
 
@@ -17,7 +17,7 @@ Consulta la lista autoritativa en [`benchmarks/cases.json`](../benchmarks/cases.
 - Comparaciones y condiciones `IF/ELSE`, incluidas algunas condiciones compuestas y anidadas.
 - `PERFORM TIMES` y llamadas a párrafos.
 - `EVALUATE` escalar con `WHEN`, `WHEN OTHER`, `EVALUATE TRUE/FALSE` y rangos `THRU` en casos acotados.
-- `COPY` con expansión recursiva, búsqueda por directorios y diagnósticos de faltantes/ciclos; una prueba unitaria cubre parejas simples de pseudo-texto en `REPLACING`.
+- `COPY` con expansión recursiva, búsqueda por directorios y diagnósticos de faltantes/ciclos; el corpus diferencial incluye un caso de pareja simple de pseudo-texto en `REPLACING`.
 - Grupos de datos como diccionarios anidados y referencias básicas a campos hijos.
 - Backend Java sobre el mismo AST para el subconjunto cubierto por sus fixtures de compilación/salida.
 - Herramienta de diagnóstico GnuCOBOL con `-ftraceall` y snapshots de campos escalares, grupos y elementos `OCCURS` antes de terminar.
@@ -121,3 +121,8 @@ COPY FIELD REPLACING ==:FIELD-NAME:== BY ==WS-CODE==.
 Aplica las sustituciones al texto leído del copybook antes de analizarlo. La coincidencia es literal, insensible a mayúsculas/minúsculas y no se interpreta como expresión regular. Esto es una implementación acotada, no el algoritmo completo de sustitución léxica de COBOL: no debe suponerse que respete límites de tokens, todas las reglas de pseudo-texto o todas las variantes de dialecto. Si la cláusula no coincide con la forma admitida, el traductor deja una advertencia explícita de copybook no resuelto en lugar de omitirla silenciosamente.
 
 La regresión unitaria `test_copy_replacing_applies_pseudo_text_before_parsing` comprueba el caso cubierto. Ese test no forma parte de la puntuación del benchmark diferencial de 100 programas, por lo que no debe presentarse como evidencia de equivalencia general ni como cobertura de reemplazos complejos.
+
+
+## Regresión diferencial de COPY REPLACING
+
+El caso `copy-replacing-basic` usa `samples/copy_replacing.cbl` y `samples/COPY-REPLACING-REC.cpy` para comparar el programa traducido con el resultado compilado por GnuCOBOL. Verifica el subconjunto de reemplazo de un nombre de campo por otro; no cubre varias parejas, pseudo-texto con múltiples tokens ni reglas avanzadas de dialecto.
