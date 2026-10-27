@@ -1,6 +1,6 @@
 # Triage de diagnósticos del piloto sobre samples
 
-> Informe estático generado por CI a partir del código actual. El artefacto descargable del run [40520567099](https://github.com/orbitalronin94/cobol2py/actions/runs/40520567099) contiene el JSON/Markdown completos, traducciones generadas e inventario. Esta página conserva la clasificación de la línea base para revisión y no sustituye el artefacto por commit.
+> Informe estático generado por CI a partir del código actual. El artefacto descargable [modernization-pilot-diagnostics](https://github.com/orbitalronin94/cobol2py/actions/runs/40520567099/artifacts/12740274709) contiene el JSON/Markdown completos, traducciones generadas e inventario. Esta página conserva la clasificación de la línea base para revisión y no sustituye el artefacto por commit.
 
 ## Resultado actual
 
@@ -67,7 +67,8 @@ La línea base anterior tenía 36 fuentes con diagnósticos, incluyendo `bench_4
 
 ## Evidencia y siguiente paso
 
-- [CI del piloto, benchmark diferencial y artefacto](https://github.com/orbitalronin94/cobol2py/actions/runs/40520567099)
+- [CI del piloto y benchmark diferencial](https://github.com/orbitalronin94/cobol2py/actions/runs/40520567099)
+- [Descargar el artefacto del piloto](https://github.com/orbitalronin94/cobol2py/actions/runs/40520567099/artifacts/12740274709)
 - [Roadmap de modernización](roadmap-two-weeks.md)
 - [Alcance de compatibilidad](compatibility.md)
 
