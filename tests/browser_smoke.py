@@ -29,11 +29,18 @@ async def main() -> None:
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     errors: list[str] = []
+    dialog_messages: list[str] = []
+
+    async def capture_dialog(dialog):
+        dialog_messages.append(dialog.message)
+        await dialog.accept()
+
     try:
         async with async_playwright() as playwright:
             browser = await playwright.chromium.launch()
             page = await browser.new_page()
             page.on("pageerror", lambda error: errors.append(str(error)))
+            page.on("dialog", capture_dialog)
             await page.goto(f"http://127.0.0.1:{server.server_port}/index.html", wait_until="domcontentloaded")
             await page.locator("#example").click()
             await page.locator("#translate").click()
@@ -66,7 +73,13 @@ async def main() -> None:
                 },
             ])
             await page.locator("#analyze").click()
-            await page.locator("#results").wait_for(state="visible")
+            try:
+                await page.locator("#results").wait_for(state="visible", timeout=5000)
+            except Exception as error:
+                raise AssertionError(
+                    "Agent analysis failed; dialogs=" + repr(dialog_messages)
+                    + "; browser errors=" + repr(errors)
+                ) from error
             stats = await page.locator("#stats").inner_text()
             unresolved = await page.locator("#unresolved").inner_text()
             if "2" not in stats or "MISSING" not in unresolved:
