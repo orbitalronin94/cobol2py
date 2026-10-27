@@ -386,6 +386,95 @@ class TranslationTests(unittest.TestCase):
         self.assertEqual(output, ['# COBOL no traducido: CALL "SUBPGM"'])
 
 
+class DynamicControlFlowTests(unittest.TestCase):
+    def test_alter_redirects_goto_and_dispatcher_unwinds_current_paragraph(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. ALTERTEST.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-COUNT PIC 9 VALUE 0.
+PROCEDURE DIVISION.
+MAIN-LOGIC.
+    ALTER P-X TO PROCEED TO P-Y.
+    GO TO P-X.
+    DISPLAY "BAD".
+P-X.
+    DISPLAY "X".
+P-Y.
+    DISPLAY "Y".
+    STOP RUN.
+"""
+        program = cobol2py.parse_cobol(source, source_format="free")
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<generated-cobol>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        from contextlib import redirect_stdout
+        from io import StringIO
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["_cobol_dispatch"]("MAIN-LOGIC")
+        self.assertEqual(output.getvalue(), "Y\\n")
+
+    def test_go_to_depending_on_uses_one_based_selector(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. DEPENDINGTEST.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-STEP PIC 9 VALUE 2.
+PROCEDURE DIVISION.
+MAIN-LOGIC.
+    GO TO P-A P-B DEPENDING ON WS-STEP.
+    DISPLAY "FALLTHROUGH".
+P-A.
+    DISPLAY "A".
+    STOP RUN.
+P-B.
+    DISPLAY "B".
+    STOP RUN.
+"""
+        program = cobol2py.parse_cobol(source, source_format="free")
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<generated-cobol>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        from contextlib import redirect_stdout
+        from io import StringIO
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["_cobol_dispatch"]("MAIN-LOGIC")
+        self.assertEqual(output.getvalue(), "B\\n")
+
+    def test_go_to_depending_out_of_range_does_not_transfer(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. DEPENDINGRANGE.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-STEP PIC 9 VALUE 9.
+PROCEDURE DIVISION.
+MAIN-LOGIC.
+    GO TO P-A P-B DEPENDING ON WS-STEP.
+    DISPLAY "FALLTHROUGH".
+P-A.
+    DISPLAY "A".
+    STOP RUN.
+P-B.
+    DISPLAY "B".
+    STOP RUN.
+"""
+        program = cobol2py.parse_cobol(source, source_format="free")
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<generated-cobol>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        from contextlib import redirect_stdout
+        from io import StringIO
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["_cobol_dispatch"]("MAIN-LOGIC")
+        self.assertEqual(output.getvalue(), "FALLTHROUGH\\nA\\n")
+
+
 class GnuCobolTraceTests(unittest.TestCase):
     def test_trace_instrumentation_emits_each_scalar_before_program_exit(self):
         from tools.gnucobol_trace import instrument_source
