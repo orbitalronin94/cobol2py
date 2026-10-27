@@ -46,6 +46,8 @@ El calendario de diez días describe la primera iteración y ya se han entregado
 
 Este bloque se añade a la línea de trabajo v0.8: cerrar fallos que pueden producir Python sintácticamente válido pero con comportamiento COBOL distinto. La fixture de referencia es `LABERINTO-COBOL`, que combina `ALTER`, `GO TO ... DEPENDING ON`, `REDEFINES`, saltos entre párrafos y datos numéricos compartidos.
 
+**Estado de implementación en `main` (27-10-2026):** se añadió un dispatcher de párrafos para `GO TO`, destinos mutables para `ALTER`, selección ordinal para `GO TO ... DEPENDING ON` y un buffer compartido para overlays simples con `PIC X/A` y numéricos enteros sin signo, incluidos grupos overlay con campos elementales. También se añadieron regresiones unitarias. Estas tareas siguen sin marcarse como terminadas hasta validar la ejecución de la suite, la sincronización web y una comparación real con GnuCOBOL. Overlays con signo, escala implícita, packed decimal, arrays o layouts no representables deben seguir generando diagnóstico.
+
 - [ ] **Caracterizar primero con GnuCOBOL:** guardar fuente original, versión/flags del compilador, stdout y código de retorno. Registrar el resultado como fixture diferencial versionada.
 - [ ] **Implementar `ALTER`:** modelar el destino del `GO TO` alterable como estado mutable consultado en tiempo de ejecución. Cada `ALTER` posterior debe reemplazar el destino anterior; no convertir la sentencia en comentario ni congelar el destino durante la traducción.
 - [ ] **Implementar `GO TO ... DEPENDING ON`:** preservar la selección ordinal COBOL basada en 1. Añadir pruebas para cada destino válido y para selector fuera de rango; en este ejemplo, si no se toma ninguna rama, debe respetarse la sentencia siguiente del párrafo.
