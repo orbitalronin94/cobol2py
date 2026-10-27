@@ -54,6 +54,7 @@ No se promete compatibilidad completa con todos los dialectos, traducción autom
 - [ ] Ampliar las pruebas diferenciales en otras áreas priorizadas.
 - [x] Mejorar el inventario con filtrado de comentarios y referencias ambiguas; el flujo extremo a extremo sigue pendiente.
 - [ ] Ejecutar y revisar CI y benchmark del commit actual; confirmar la sincronización de la demo HTML.
-- [ ] Completar la integración extremo a extremo del agente con traducción y validación.
+- [x] Conectar inventario, traducción del subconjunto y comprobación sintáctica en `tools/modernize_pilot.py`; el informe separa sintaxis de equivalencia semántica.
+- [ ] Ejecutar el piloto sobre `samples` y revisar el reporte de cada fuente.
 
 Este registro es deliberadamente conservador: una tarea solo se marca como terminada cuando hay evidencia comprobable en el repositorio o en CI.
