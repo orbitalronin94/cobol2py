@@ -100,7 +100,7 @@ El piloto falla si una traducción no puede generarse o si el Python generado no
 
 Abre [`web/agent.html`](../web/agent.html) en un navegador moderno o sírvelo como archivo estático junto a `web/index.html`. Selecciona varios archivos o una carpeta si el navegador ofrece esa opción. La página produce un inventario resumido y deja descargar JSON o Markdown con contadores, características, dependencias detectadas, referencias no resueltas y referencias ambiguas.
 
-La interfaz procesa los archivos seleccionados en el navegador y no realiza peticiones de red con el contenido. Es deliberadamente una **demo heurística**, con detección de comentarios y referencias más sencilla que la implementación Python; no debe utilizarse como inventario definitivo. No ejecuta COBOL ni Python generado, no valida equivalencia semántica y puede dar falsos positivos/negativos. Para un informe auditable y reproducible, usa el CLI Python. Los tests de contrato de esta página se ejecutan con:
+La interfaz procesa los archivos seleccionados en el navegador y no realiza peticiones de red con el contenido. Es deliberadamente una **demo heurística**, con detección de comentarios y referencias más sencilla que la implementación Python; no debe utilizarse como inventario definitivo. Distingue destinos literales de `CALL` y los identificadores dinámicos en `dynamic_calls`, pero no puede resolver el valor que tendrán estos últimos en ejecución. No ejecuta COBOL ni Python generado, no valida equivalencia semántica y puede dar falsos positivos/negativos. Para un informe auditable y reproducible, usa el CLI Python. Los tests de contrato de esta página se ejecutan con:
 
 ```bash
 python -m unittest discover -s tests -p 'test_agent_html.py' -v
