@@ -475,6 +475,31 @@ P-B.
         self.assertEqual(output.getvalue(), "FALLTHROUGH\nA\n")
 
 
+
+    def test_full_laberinto_control_flow_redefines_end_to_end(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+        from pathlib import Path
+
+        source_path = Path(__file__).resolve().parents[1] / "samples" / "laberinto_cobol.cbl"
+        source = source_path.read_text(encoding="utf-8")
+        program = cobol2py.parse_cobol(source, source_path=source_path)
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<laberinto-cobol>", "exec")
+        namespace = {"__name__": "generated_test"}
+        output = StringIO()
+        with redirect_stdout(output):
+            exec(generated, namespace)
+        self.assertEqual(
+            output.getvalue(),
+            "INICIO DEL LABERINTO COBOL\\n"
+            "INICIO DEL LABERINTO COBOL\\n"
+            "RESULTADO FINAL ACUMULADOR: 222240\\n",
+            generated,
+        )
+        self.assertEqual(namespace["_cobol_storage"]["WS-RAW-INPUT"], "9999911111")
+        self.assertEqual(namespace["_cobol_alter_targets"]["PUNTO-X"], "PUNTO-Y")
+
 class RedefinesStorageTests(unittest.TestCase):
     def test_redefines_group_fields_share_the_base_buffer(self):
         from contextlib import redirect_stdout
