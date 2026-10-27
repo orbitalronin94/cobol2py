@@ -67,8 +67,19 @@ def preprocess(source: str, source_format: str = "auto") -> list[tuple[int, str]
 
     # Blank sequence areas make fixed/free format inherently ambiguous. Allow
     # callers to override the heuristic explicitly when source layout is known.
+    code_beyond_fixed_area = any(
+        len(line) > 72
+        and re.search(
+            r"\b(?:END-IF|END-PERFORM|END-EVALUATE|DISPLAY|MOVE|COMPUTE|PERFORM|STOP\s+RUN)\b",
+            line[72:],
+            re.IGNORECASE,
+        )
+        for line in lines[:20]
+    )
     fixed_format = source_format == "fixed" or (
-        source_format == "auto" and any(looks_fixed(line) for line in lines[:20])
+        source_format == "auto"
+        and not code_beyond_fixed_area
+        and any(looks_fixed(line) for line in lines[:20])
     )
     out: list[tuple[int, str]] = []
     for i, raw in enumerate(lines, 1):
@@ -2102,28 +2113,13 @@ def collect_diagnostics(prog: Program, target_language: str = "python") -> list[
     def visit(nodes: list[Node], paragraph: str) -> None:
         for node in nodes:
             if node.kind == "malformed":
-                # A valid single-line IF can be split into parser units while
-                # the scope stack still sees the inline END-IF on the opening
-                # source line. Differential coverage confirms this pattern;
-                # avoid reporting that specific parser false positive.
-                opening_line = re.search(r"source line (\d+)", node.text)
-                inline_if_closed = (
-                    node.text.startswith("Unclosed IF opened at source line")
-                    and opening_line is not None
-                    and any(
-                        line_number == int(opening_line.group(1))
-                        and re.search(r"\bIF\b.*\bEND-IF\b", source_line, re.IGNORECASE)
-                        for line_number, source_line in prog.raw_lines
-                    )
-                )
-                if not inline_if_closed:
-                    diagnostics.append({
-                        "code": "MALFORMED_CONTROL_FLOW",
-                        "severity": "error",
-                        "line": node.line,
-                        "message": node.text,
-                        "paragraph": paragraph,
-                    })
+                diagnostics.append({
+                    "code": "MALFORMED_CONTROL_FLOW",
+                    "severity": "error",
+                    "line": node.line,
+                    "message": node.text,
+                    "paragraph": paragraph,
+                })
             elif node.kind == "stmt":
                 if re.match(
                     r"^(?:ADD|SUBTRACT|MULTIPLY|DIVIDE|COMPUTE)\b",
