@@ -4,7 +4,8 @@ Esta carpeta documenta el diseño actual, las decisiones técnicas, el alcance s
 
 ## Documentos
 
-- [Arquitectura](architecture.md): flujo de traducción, estructuras internas y límites.
+- [Arquitectura](architecture.md): flujo de traducción, estructuras internas, límites y arquitectura del agente de repositorio.
+- [Agente de modernización](repo-modernization-agent.md): uso del inventario multiarchivo, esquema de informes y plan de migración.
 - [Registro de decisiones](decisions.md): decisiones tomadas, motivación, consecuencias y estado.
 - [Compatibilidad COBOL](compatibility.md): comportamientos implementados, verificación y limitaciones conocidas.
 - [Proceso de cambios](change-process.md): cómo proponer, medir y documentar mejoras.
