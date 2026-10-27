@@ -859,6 +859,10 @@ PROCEDURE DIVISION.
     DISPLAY WS-COUNT.
     MULTIPLY 2 BY WS-COUNT.
     DISPLAY WS-COUNT.
+    SUBTRACT 1 FROM WS-COUNT.
+    DISPLAY WS-COUNT.
+    DIVIDE 2 INTO WS-COUNT.
+    DISPLAY WS-COUNT.
     STOP RUN.
 """
         program = cobol2py.parse_cobol(source, source_format="free")
@@ -870,7 +874,7 @@ PROCEDURE DIVISION.
         output = StringIO()
         with redirect_stdout(output):
             namespace["main"]()
-        self.assertEqual(output.getvalue(), "00\n99\n98\n")
+        self.assertEqual(output.getvalue(), "00\n99\n98\n97\n48\n")
 
     def test_move_numeric_pic_keeps_rightmost_digits(self):
         from contextlib import redirect_stdout
