@@ -6,6 +6,8 @@ El calendario de diez días describe la primera iteración y ya se han entregado
 
 ### Fase A — Precisión del inventario estático
 
+- [ ] Validar en CI la puntuación heurística de complejidad añadida al agente: señales, pesos, nivel LOW/MEDIUM/HIGH y orden del informe. El score prioriza revisión; no debe presentarse como estimación de esfuerzo ni prueba de alcance en runtime.
+
 - [x] Generar un triage reproducible por archivo para las fuentes con diagnósticos: categoría primaria, categorías presentes, códigos y líneas, y estado de revisión humana pendiente. El informe se publica como artefacto CI.
 - [ ] Adjudicar manualmente los 35 archivos que aún tienen avisos. Se corrigió un falso positivo de la línea base (IF inline truncado por detección de formato); el detalle está en docs/pilot-diagnostics-baseline.md.
 - [x] Separar referencias `CALL` literales de llamadas dinámicas mediante identificadores, sin inventar destinos estáticos para llamadas cuyo valor solo se conoce en ejecución. Implementado en el agente Python y la demo web; los destinos dinámicos quedan en `dynamic_calls` y no se cuentan como referencias literales sin resolver. Hay pruebas de regresión de unidad y de navegador.
