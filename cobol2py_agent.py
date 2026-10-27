@@ -20,7 +20,7 @@ COPY_EXTENSIONS = {".cpy", ".copy"}
 JCL_EXTENSIONS = {".jcl", ".job"}
 SQL_EXTENSIONS = {".sql"}
 SKIP_DIRS = {".git", ".venv", "venv", "__pycache__", "node_modules", "dist", "build"}
-COPY_RE = re.compile(r"\bCOPY\s+([A-Z0-9_$#@-]+)", re.I)
+COPY_RE = re.compile(r"\bCOPY\s+([A-Z0-9_$#@./\\-]+)", re.I)
 CALL_LITERAL_RE = re.compile(r'''\bCALL\s+['"]([^'"]+)['"]''', re.I)
 CALL_DYNAMIC_RE = re.compile(r'''\bCALL\s+([A-Z0-9_$#@-]+)\b''', re.I)
 PROGRAM_RE = re.compile(r"\bPROGRAM-ID\s*\.\s*([A-Z0-9_$#@-]+)", re.I)
@@ -152,7 +152,7 @@ def analyze_repository(root: Path) -> dict[str, Any]:
         if program_id:
             symbols[program_id].append(rel)
 
-        copies = sorted({m.group(1).upper() for m in COPY_RE.finditer(code_source)}) if kind in {"cobol", "copybook"} else []
+        copies = sorted({m.group(1).upper().rstrip(".") for m in COPY_RE.finditer(code_source)}) if kind in {"cobol", "copybook"} else []
         calls = sorted({m.group(1).upper() for m in CALL_LITERAL_RE.finditer(analysis_source) if code_source[m.start():m.start() + 4].upper() == "CALL"}) if kind == "cobol" else []
         dynamic_calls = sorted({m.group(1).upper() for m in CALL_DYNAMIC_RE.finditer(code_source)}) if kind == "cobol" else []
         exec_programs = sorted({m.group(1).upper() for m in EXEC_PGM_RE.finditer(code_source)}) if kind == "jcl" else []
@@ -207,7 +207,42 @@ def analyze_repository(root: Path) -> dict[str, Any]:
         }
 
     def resolve(name: str) -> list[str]:
-        return sorted(set(symbols.get(name.upper(), [])))
+        normalized = name.replace("\\", "/").rstrip(".")
+        key = Path(normalized).stem.upper()
+        return sorted(set(symbols.get(key, symbols.get(normalized.upper(), []))))
+
+    paths_by_casefold = {path.casefold(): path for path in records}
+
+    def resolve_copy(source_rel: str, target: str) -> list[str]:
+        """Prefer a source-relative copybook before falling back to name lookup."""
+        normalized = target.replace("\\", "/").rstrip(".")
+        target_path = Path(normalized)
+        source_parent = Path(source_rel).parent
+        explicit_path = "/" in normalized
+        if explicit_path:
+            candidates = [source_parent / target_path]
+            if not target_path.suffix:
+                candidates.extend(
+                    source_parent / (normalized + suffix)
+                    for suffix in (".cpy", ".copy", ".CPY", ".COPY")
+                )
+            for candidate in candidates:
+                relative = __import__("os").path.normpath(candidate.as_posix())
+                matched = paths_by_casefold.get(relative.casefold())
+                if matched and records[matched]["kind"] == "copybook" and matched != source_rel:
+                    return [matched]
+            return []
+
+        key = target_path.stem.upper()
+        all_matches = [
+            path for path in resolve(key)
+            if path != source_rel and records[path]["kind"] == "copybook"
+        ]
+        local = [
+            path for path in all_matches
+            if Path(path).parent.as_posix().casefold() == source_parent.as_posix().casefold()
+        ]
+        return local or all_matches
 
     edges: list[dict[str, str]] = []
     unresolved: list[dict[str, str]] = []
@@ -219,12 +254,10 @@ def analyze_repository(root: Path) -> dict[str, Any]:
         references += [("jcl-exec", name) for name in item["jcl_programs"]]
         references += [("sql-include", name) for name in item["sql_includes"]]
         for relation, target in references:
-            candidates = [p for p in resolve(target) if p != rel]
-            # A COPY should resolve to a copybook if possible, not to an identically named program.
             if relation == "copy":
-                copy_candidates = [p for p in candidates if records[p]["kind"] == "copybook"]
-                if copy_candidates:
-                    candidates = copy_candidates
+                candidates = resolve_copy(rel, target)
+            else:
+                candidates = [p for p in resolve(target) if p != rel]
             if candidates:
                 edges.extend({"source": rel, "target": candidate, "relation": relation, "symbol": target}
                              for candidate in candidates)
