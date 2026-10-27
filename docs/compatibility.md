@@ -135,3 +135,8 @@ Las sentencias básicas `ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE` y `COMPUTE` apli
 ## Detección automática de formato fuente
 
 El modo `auto` evita inferir formato fijo únicamente por sangría cuando detecta verbos COBOL más allá de la columna 72 en las primeras líneas; así conserva terminadores como `END-IF` en fuentes con formato libre indentado. La inferencia sigue siendo heurística: cuando el formato del compilador está definido por el proyecto, se recomienda indicar `--format fixed` o `--format free` explícitamente y validar con el compilador de referencia.
+
+
+### Búsqueda binaria y tablas con longitud activa
+
+El backend Python implementa un subconjunto explícito de `SEARCH ALL` para tablas de registros `OCCURS` que declaran `ASCENDING KEY`, `INDEXED BY` y, opcionalmente, `DEPENDING ON`. La búsqueda limita el rango a la longitud activa y usa índices COBOL base 1 al exponer el índice encontrado. Esto no implica soporte general para todas las formas de `SEARCH`, claves múltiples, tablas multidimensionales ni reglas de dialecto. Los párrafos llamados mediante `PERFORM` se emiten como funciones Python; una llamada recursiva produce una salida por cada marco que ejecuta sentencias después del retorno, como en la fixture de regresión. La fixture no forma parte del corpus diferencial GnuCOBOL hasta validar su salida contra ese compilador.
