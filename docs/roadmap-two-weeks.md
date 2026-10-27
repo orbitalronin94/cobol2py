@@ -45,12 +45,13 @@ No se promete compatibilidad completa con todos los dialectos, traducción autom
 ## Registro de progreso
 
 - [x] Corregir la divergencia entre `web/index.html` y `cobol2py.py` y ampliar las pruebas de `COPY ... REPLACING`.
-- [ ] Completar una línea base actualizada de todos los workflows y clasificar brechas prioritarias.
+- [x] Registrar una línea base actualizada de workflows y clasificar el primer defecto de CI.
 - [x] Mejorar el análisis estático para reducir dependencias falsas procedentes de comentarios.
 - [x] Marcar referencias con varios destinos candidatos en el informe JSON y Markdown.
 - [x] Añadir un caso diferencial COBOL/GnuCOBOL para `COPY ... REPLACING` básico.
+- [x] Añadir un caso diferencial de `COPY ... REPLACING` (101/101 casos coinciden en el commit `2b6ab18`).
 - [ ] Ampliar las pruebas diferenciales en otras áreas priorizadas.
-- [ ] Revisar el agente y el flujo de extremo a extremo.
+- [x] Mejorar el inventario con filtrado de comentarios y referencias ambiguas; el flujo extremo a extremo sigue pendiente.
 - [ ] Cerrar con CI verde y documentación sincronizada.
 
 Este registro es deliberadamente conservador: una tarea solo se marca como terminada cuando hay evidencia comprobable en el repositorio o en CI.
