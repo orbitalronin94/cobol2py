@@ -188,7 +188,7 @@ Y lo dice. No falla en silencio.
 | COBOL | Estado |
 |---|---|
 | `EVALUATE/WHEN/WHEN OTHER` | Traducción básica a `if/elif/else`; rangos `THRU` y `EVALUATE TRUE` acotados. |
-| `COPY` simple | Expansión recursiva desde el directorio fuente y rutas `--copybook-path`; ciclos y faltantes quedan como advertencias. También admite pares de pseudo-texto `==texto== BY ==texto==` en `REPLACING`; bibliotecas y reglas avanzadas siguen pendientes. |
+| `COPY` / copybooks | Expansión recursiva desde el directorio fuente y rutas `--copybook-path`; ciclos y faltantes quedan como advertencias. También admite pares de pseudo-texto `==texto== BY ==texto==` en `REPLACING`; bibliotecas y reglas avanzadas siguen pendientes. |
 | `CALL` a subprogramas | Pendiente. |
 | `FILE SECTION`, I/O | Pendiente. |
 | `SORT`, `SEARCH`, `MERGE` | Pendiente. |
@@ -356,7 +356,7 @@ python benchmarks/run_benchmark.py --translator cobol2py.py
 **v0.0.7 — Copybook resolver**
 - [x] Localizar `COPY nombre.CPY.` junto al fuente y en rutas explícitas; expandir antes del parseo.
 - [x] Detectar ciclos y dejar constancia de copybooks no resueltos.
-Alcance no cubierto: `COPY ... REPLACING` y bibliotecas calificadas.
+Alcance no cubierto: bibliotecas calificadas y reglas avanzadas de `REPLACING`.
 
 **v0.0.8 — Jerarquía de datos**
 - [x] Modelar grupos COBOL y campos hijos como diccionarios anidados, preservando la relación padre/hijo.
