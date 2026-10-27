@@ -1,0 +1,1 @@
+01 FIELD-NAME PIC X(4).
