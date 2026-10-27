@@ -312,6 +312,7 @@ class CobolVar:
     occurs: Optional[int] = None
     depending_on: Optional[str] = None
     parent_name: Optional[str] = None
+    redefines: Optional[str] = None
 
     def _base_py_type(self) -> str:
         if self.pic is None:
@@ -463,11 +464,113 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
             occurs=int(occ_m.group(1)) if occ_m else None,
             depending_on=occ_m.group(2) if occ_m and occ_m.group(2) else None,
             parent_name=parent.name if parent else None,
+            redefines=(re.search(r"\bREDEFINES\s+([A-Za-z0-9-]+)", rest, re.IGNORECASE).group(1).upper()
+                       if re.search(r"\bREDEFINES\s+([A-Za-z0-9-]+)", rest, re.IGNORECASE) else None),
         )
         variables.append(variable)
         if level != 77:
             hierarchy.append(variable)
     return variables
+
+def _simple_storage_width(variable: CobolVar, variables: dict[str, CobolVar]) -> Optional[int]:
+    """Return width for the deliberately small DISPLAY-storage subset."""
+    if variable.is_array:
+        return None
+    if variable.is_group:
+        children = [item for item in variables.values()
+                    if item.parent_name and item.parent_name.upper() == variable.name.upper()]
+        widths = [_simple_storage_width(child, variables) for child in children]
+        return sum(widths) if widths and all(width is not None for width in widths) else None
+    if not variable.pic:
+        return None
+    pic = variable.pic.upper()
+    if any(char in pic for char in "SVP"):
+        return None
+    if "X" in pic or "A" in pic:
+        return pic_character_count(pic)
+    if "9" in pic:
+        return pic_digit_count(pic)
+    return None
+
+
+def build_overlay_layout(
+    variables: dict[str, CobolVar],
+) -> tuple[dict[str, dict[str, object]], dict[str, int]]:
+    """Map supported REDEFINES views onto a shared root buffer with offsets."""
+    fields: dict[str, dict[str, object]] = {}
+    buffers: dict[str, int] = {}
+    roots = [item for item in variables.values() if not item.parent_name]
+    for overlay in roots:
+        if not overlay.redefines:
+            continue
+        base = variables.get(overlay.redefines.upper())
+        if base is None or base.parent_name or base.is_array:
+            continue
+        base_width = _simple_storage_width(base, variables)
+        overlay_width = _simple_storage_width(overlay, variables)
+        if base_width is None or overlay_width is None:
+            continue
+        buffer_width = max(base_width, overlay_width)
+        buffers[base.name.upper()] = max(buffers.get(base.name.upper(), 0), buffer_width)
+        if not base.is_group and base.pic:
+            base_kind = "alpha" if any(char in base.pic.upper() for char in "XA") else "numeric"
+            fields[base.name.upper()] = {
+                "base": base.name.upper(), "offset": 0, "width": base_width, "kind": base_kind,
+            }
+
+        def add_view(variable: CobolVar, offset: int) -> int:
+            width = _simple_storage_width(variable, variables)
+            if width is None:
+                raise ValueError("unsupported overlay view")
+            if variable.is_group:
+                cursor = offset
+                children = [item for item in variables.values()
+                            if item.parent_name and item.parent_name.upper() == variable.name.upper()]
+                if not children:
+                    raise ValueError("empty overlay group")
+                for child in children:
+                    cursor = add_view(child, cursor)
+                return cursor
+            kind = "alpha" if variable.pic and any(char in variable.pic.upper() for char in "XA") else "numeric"
+            fields[variable.name.upper()] = {
+                "base": base.name.upper(), "offset": offset, "width": width, "kind": kind,
+            }
+            return offset + width
+
+        try:
+            add_view(overlay, 0)
+        except ValueError:
+            for name, metadata in list(fields.items()):
+                if metadata.get("base") == base.name.upper():
+                    fields.pop(name, None)
+            buffers.pop(base.name.upper(), None)
+    return fields, buffers
+
+
+def overlay_storage_initial_value(variable: CobolVar, width: int) -> str:
+    """Create initial DISPLAY bytes for a supported root storage field."""
+    pic = (variable.pic or "").upper()
+    if "X" in pic or "A" in pic:
+        if variable.value is None:
+            return " " * width
+        value = variable.value.strip()
+        all_value = decode_cobol_all_literal(value)
+        quoted = decode_cobol_quoted_literal(value)
+        if all_value is not None:
+            return (all_value * width)[:width]
+        if quoted is not None:
+            return quoted[:width].ljust(width)
+        if value.upper() in ("SPACE", "SPACES"):
+            return " " * width
+        if value.upper() in ("LOW-VALUE", "LOW-VALUES"):
+            return "\x00" * width
+        if value.upper() in ("HIGH-VALUE", "HIGH-VALUES"):
+            return "\xff" * width
+        return " " * width
+    if "9" in pic and variable.value and re.fullmatch(r"[+-]?\d+", variable.value.strip()):
+        return str(abs(int(variable.value)) % (10 ** width)).zfill(width)
+    return "0" * width
+
 
 # Patch 3: verbos que abren sentencia. Se usan para partir buffers concatenados.
 STATEMENT_VERBS = frozenset({
@@ -886,6 +989,21 @@ def normalize_name(name: str) -> str:
 
     return re.sub(r"\(([A-Za-z0-9_-]+)\)", normalize_subscript, normalized)
 
+def emit_assignment(target: str, value: str, variables: Optional[dict[str, CobolVar]] = None) -> str:
+    """Route supported REDEFINES assignments through the shared storage buffer."""
+    variable_map = variables or {}
+    match = re.fullmatch(
+        r"([A-Za-z0-9-]+)(?:\([A-Za-z0-9_-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?",
+        target.strip(), re.IGNORECASE,
+    )
+    if match:
+        field_name = match.group(1).upper()
+        overlay_fields, _ = build_overlay_layout(variable_map)
+        if field_name in overlay_fields and "(" not in target:
+            return f"_cobol_set({field_name!r}, {value})"
+    return f"{normalize_data_reference(target, variable_map)} = {value}"
+
+
 def normalize_data_reference(
     name: str,
     variables: Optional[dict[str, CobolVar]] = None,
@@ -901,6 +1019,9 @@ def normalize_data_reference(
         return normalize_name(text)
     field_name, subscript, qualifier = match.groups()
     variable_map = variables or {}
+    overlay_fields, _overlay_buffers = build_overlay_layout(variable_map)
+    if not subscript and field_name.upper() in overlay_fields:
+        return f"_cobol_get({field_name.upper()!r})"
     if qualifier:
         parent_expr = normalize_data_reference(qualifier, variable_map)
         expr = f"{parent_expr}[{normalize_name(field_name)!r}]"
@@ -1310,12 +1431,12 @@ def translate_statement(
         base = re.match(r"[A-Za-z0-9-]+", target)
         variable = variables.get(base.group(0).upper()) if base and variables else None
         if variable is None or not variable.pic:
-            return [f"{target_expr} = input()"]
+            return [emit_assignment(target, "input()", variables)]
         pic = variable.pic.upper()
         if any(char in pic for char in ("X", "A")):
             width = pic_character_count(pic)
             if width:
-                return [f"{target_expr} = str(input())[:{width}].ljust({width})"]
+                return [emit_assignment(target, f"str(input())[:{width}].ljust({width})", variables)]
             return [f"{target_expr} = input()"]
         if "9" in pic:
             digits = pic_digit_count(pic)
@@ -1333,21 +1454,21 @@ def translate_statement(
                 )
             else:
                 value = f"int(_cobol_accept_value) % (10 ** {digits})"
-            return ["_cobol_accept_value = input()", f"{target_expr} = {value}"]
+            return ["_cobol_accept_value = input()", emit_assignment(target, value, variables)]
         return [f"{target_expr} = input()"]
 
     m = re.match(rf"MOVE\s+(.+?)\s+TO\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
         target = m.group(2)
         value = translate_move_value(m.group(1), target, variables or {})
-        return [f"{normalize_data_reference(target, variables)} = {value}"]
+        return [emit_assignment(target, value, variables)]
 
     m = re.match(rf"COMPUTE\s+({DATA_REF_PATTERN})\s*=\s*(.+)", s, re.IGNORECASE)
     if m:
         target = m.group(1)
         target_expr = normalize_data_reference(target, variables)
         expression = translate_expr(m.group(2), variables)
-        return [f"{target_expr} = {fit_numeric_expression(expression, target, variables or {})}"]
+        return [emit_assignment(target, fit_numeric_expression(expression, target, variables or {}), variables)]
 
     # Patch 4: ADD con múltiples operandos
     m = re.match(rf"ADD\s+(.+?)\s+TO\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
@@ -1357,7 +1478,7 @@ def translate_statement(
         target = m.group(2)
         target_expr = normalize_data_reference(target, variables)
         expression = f"{target_expr} + ({sum_expr})"
-        return [f"{target_expr} = {fit_numeric_expression(expression, target, variables or {})}"]
+        return [emit_assignment(target, fit_numeric_expression(expression, target, variables or {}), variables)]
 
     m = re.match(rf"SUBTRACT\s+(.+?)\s+FROM\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
@@ -1366,21 +1487,21 @@ def translate_statement(
         target = m.group(2)
         target_expr = normalize_data_reference(target, variables)
         expression = f"{target_expr} - ({sum_expr})"
-        return [f"{target_expr} = {fit_numeric_expression(expression, target, variables or {})}"]
+        return [emit_assignment(target, fit_numeric_expression(expression, target, variables or {}), variables)]
 
     m = re.match(rf"MULTIPLY\s+(.+?)\s+BY\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
         target = m.group(2)
         target_expr = normalize_data_reference(target, variables)
         expression = f"{target_expr} * ({translate_literal(m.group(1), variables)})"
-        return [f"{target_expr} = {fit_numeric_expression(expression, target, variables or {})}"]
+        return [emit_assignment(target, fit_numeric_expression(expression, target, variables or {}), variables)]
 
     m = re.match(rf"DIVIDE\s+(.+?)\s+INTO\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
         target = m.group(2)
         target_expr = normalize_data_reference(target, variables)
         expression = f"{target_expr} / ({translate_literal(m.group(1), variables)})"
-        return [f"{target_expr} = {fit_numeric_expression(expression, target, variables or {})}"]
+        return [emit_assignment(target, fit_numeric_expression(expression, target, variables or {}), variables)]
 
     m = re.match(r"PERFORM\s+([A-Za-z0-9\-]+)\s+(\d+)\s+TIMES", s, re.IGNORECASE)
     if m and m.group(1).upper() in paragraphs:
@@ -2096,6 +2217,8 @@ def emit_python(prog: Program) -> str:
     lines.append("Generado por cobol2py.py — v0.0.8")
     lines.append('"""')
     lines.append("")
+    variables_by_name = {variable.name.upper(): variable for variable in prog.variables}
+    overlay_fields, overlay_buffers = build_overlay_layout(variables_by_name)
     lines.append("class _CobolStopRun(Exception):")
     lines.append('    """Internal signal for COBOL STOP RUN; caught by the entry paragraph."""')
     lines.append("    pass")
@@ -2130,7 +2253,10 @@ def emit_python(prog: Program) -> str:
             return "{" + fields + "}"
 
         root_variables = [variable for variable in prog.variables if not variable.parent_name]
+        overlay_root_names = {item.name.upper() for item in root_variables if item.redefines}
         for variable in root_variables:
+            if variable.name.upper() in overlay_buffers or variable.name.upper() in overlay_root_names:
+                continue
             default = nested_default(variable)
             if variable.is_group:
                 lines.append(
@@ -2150,10 +2276,36 @@ def emit_python(prog: Program) -> str:
 
     para_names = set(prog.paragraphs.keys())
     variables_by_name = {variable.name.upper(): variable for variable in prog.variables}
+    overlay_fields, overlay_buffers = build_overlay_layout(variables_by_name)
     alter_targets = {name: name for name in para_names if name != "__MAIN__"}
     lines.append("_cobol_alter_targets = " + repr(alter_targets))
     lines.append("")
     lines.append("_cobol_stopped = False")
+    lines.append("")
+    initial_buffers = {
+        base_name: overlay_storage_initial_value(variables_by_name[base_name], width)
+        for base_name, width in overlay_buffers.items()
+    }
+    lines.append("_cobol_storage = " + repr(initial_buffers))
+    lines.append("_cobol_overlay_fields = " + repr(overlay_fields))
+    lines.append("")
+    lines.append("def _cobol_get(name):")
+    lines.append("    field = _cobol_overlay_fields[name]")
+    lines.append("    raw = _cobol_storage[field['base']][field['offset']:field['offset'] + field['width']]")
+    lines.append("    return raw if field['kind'] == 'alpha' else int(raw or '0')")
+    lines.append("")
+    lines.append("def _cobol_set(name, value):")
+    lines.append("    field = _cobol_overlay_fields[name]")
+    lines.append("    base = field['base']")
+    lines.append("    offset = field['offset']")
+    lines.append("    width = field['width']")
+    lines.append("    if field['kind'] == 'alpha':")
+    lines.append("        text = str(value)[:width].ljust(width)")
+    lines.append("    else:")
+    lines.append("        text = str(abs(int(value)) % (10 ** width)).zfill(width)")
+    lines.append("    raw = _cobol_storage[base]")
+    lines.append("    _cobol_storage[base] = raw[:offset] + text + raw[offset + width:]")
+    lines.append("    return value")
     lines.append("")
     order = [p for p in prog.paragraph_order if p != "__MAIN__"]
     if "__MAIN__" in prog.paragraphs and prog.paragraphs["__MAIN__"]:
@@ -2249,6 +2401,13 @@ def collect_diagnostics(prog: Program, target_language: str = "python") -> list[
             "message": message,
         })
 
+    variables_by_name = {variable.name.upper(): variable for variable in prog.variables}
+    _overlay_fields, overlay_buffers = build_overlay_layout(variables_by_name)
+    supported_overlay_names = {
+        variable.name.upper() for variable in prog.variables
+        if variable.redefines and variable.redefines.upper() in overlay_buffers
+    }
+
     for line_number, source_line in prog.raw_lines:
         if re.match(r"^\s*66\s+[A-Za-z0-9-]+\s+.*\bRENAMES\b", source_line, re.IGNORECASE):
             diagnostics.append({
@@ -2264,11 +2423,12 @@ def collect_diagnostics(prog: Program, target_language: str = "python") -> list[
                 "line": line_number,
                 "message": source_line.strip(),
             })
-        if re.match(
-            r"^\s*\d{1,2}\s+[A-Za-z0-9-]+\s+.*\bREDEFINES\b",
+        overlay_match = re.match(
+            r"^\s*\d{1,2}\s+([A-Za-z0-9-]+)\s+.*\bREDEFINES\b",
             source_line,
             re.IGNORECASE,
-        ):
+        )
+        if overlay_match and overlay_match.group(1).upper() not in supported_overlay_names:
             diagnostics.append({
                 "code": "UNSUPPORTED_STORAGE_OVERLAY",
                 "severity": "warning",
