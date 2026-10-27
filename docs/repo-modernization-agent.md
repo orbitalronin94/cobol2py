@@ -93,7 +93,7 @@ python tools/modernize_pilot.py samples --out-dir /tmp/cobol2py-pilot
 python -m unittest discover -s tests -p 'test_modernize_pilot.py' -v
 ```
 
-El piloto falla si una traducción no puede generarse o si el Python generado no pasa `compile()`; los diagnósticos de compatibilidad se conservan en `translation-report.json`. En la ejecución CI del commit `1fb78c6`, el árbol `samples` produjo 108 traducciones, cero errores de sintaxis y cero errores de traducción; 36 fuentes tienen diagnósticos que requieren revisión. Para demostrar equivalencia de comportamiento, ejecutar además el benchmark diferencial con GnuCOBOL.
+El piloto falla si una traducción no puede generarse o si el Python generado no pasa `compile()`; los diagnósticos de compatibilidad se conservan en `translation-report.json`. El informe usa `schema_version: 2`, registra la versión del traductor, clasifica cada diagnóstico (`known-limitation`, `dependency-resolution`, `possible-defect` o `review-required`) y muestra el detalle por fuente, línea, código y mensaje. Los campos `semantic_status: not-evaluated` y `validation.semantics: not-evaluated` son deliberados: enlazar una fixture del manifiesto no significa que el piloto la haya ejecutado. El job de CI publica `translation-report.json`, `translation-report.md` e inventarios como artefacto `modernization-pilot-diagnostics`. En la ejecución CI del commit `1fb78c6`, el árbol `samples` produjo 108 traducciones, cero errores de sintaxis y cero errores de traducción; 36 fuentes tienen diagnósticos que requieren revisión. Para demostrar equivalencia de comportamiento, ejecutar además el benchmark diferencial con GnuCOBOL.
 
 
 ## Interfaz web del agente
