@@ -84,12 +84,13 @@ Las pruebas de este módulo usan repositorios temporales sintéticos y no requie
 
 ## Flujo piloto integrado
 
-`tools/modernize_pilot.py` conecta el inventario estático con la traducción del subconjunto COBOL y una comprobación de sintaxis del Python generado. Escribe inventario Markdown/JSON, fuentes traducidos y un informe por programa; no ejecuta los programas generados y declara expresamente que la equivalencia semántica no se ha probado. El directorio de salida debe quedar fuera del árbol analizado para no contaminar el inventario en ejecuciones repetidas.
+`tools/modernize_pilot.py` conecta el inventario estático con la traducción del subconjunto COBOL y una comprobación de sintaxis del Python generado. Escribe inventario Markdown/JSON, fuentes traducidos y un informe por programa; no ejecuta los programas generados y declara expresamente que la equivalencia semántica no se ha probado. El directorio de salida debe quedar fuera del árbol analizado para no contaminar el inventario en ejecuciones repetidas. La opción explícita `--differential` ejecuta únicamente los casos de `benchmarks/cases.json` cuyas rutas coinciden exactamente con fuentes inventariadas, y compara stdout y código de retorno con GnuCOBOL. Puede ejecutar código traducido, por eso nunca se activa por defecto ni forma parte del inventario estático. Un caso sin fixture queda `not-applicable`; un caso no ejecutado queda `not-evaluated`; discrepancias y fallos de referencia quedan diferenciados en el informe.
 
 Ejemplo reproducible desde la raíz del repositorio:
 
 ```bash
 python tools/modernize_pilot.py samples --out-dir /tmp/cobol2py-pilot
+python tools/modernize_pilot.py samples --out-dir /tmp/cobol2py-pilot --differential
 python -m unittest discover -s tests -p 'test_modernize_pilot.py' -v
 ```
 
