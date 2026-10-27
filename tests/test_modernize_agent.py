@@ -78,6 +78,33 @@ PROCEDURE DIVISION.
         paths = {x["path"] for x in plan["files"]}
         self.assertEqual(paths, {"src/ok.cbl"})
 
+    def test_ignores_commented_out_references(self):
+        self.write("MAIN.cbl", """IDENTIFICATION DIVISION.
+PROGRAM-ID. MAIN.
+PROCEDURE DIVISION.
+*> COPY MISSING-COPY.
+*> CALL "MISSING-CALL".
+    DISPLAY "LIVE". *> COPY ALSO-MISSING.
+    STOP RUN.
+""")
+        self.write("RUN.jcl", """//* COMMENTED EXEC PGM=GHOST
+//STEP1 EXEC PGM=MAIN
+//* DD DSN=GHOST.DATA
+""")
+        self.write("query.sql", """-- INCLUDE MISSING-SQL
+SELECT '-- not a comment marker in this literal' FROM SYSIBM.SYSDUMMY1;
+""")
+        plan = analyze_repository(self.root)
+        unresolved = {(item["relation"], item["symbol"])
+                      for item in plan["unresolved_references"]}
+        self.assertNotIn(("copy", "MISSING-COPY"), unresolved)
+        self.assertNotIn(("call", "MISSING-CALL"), unresolved)
+        self.assertNotIn(("copy", "ALSO-MISSING"), unresolved)
+        self.assertNotIn(("jcl-exec", "GHOST"), unresolved)
+        self.assertNotIn(("sql-include", "MISSING-SQL"), unresolved)
+        run = next(item for item in plan["files"] if item["path"] == "RUN.jcl")
+        self.assertEqual(run["jcl_programs"], ["MAIN"])
+
     def test_json_serializable(self):
         self.write("ONE.cbl", "IDENTIFICATION DIVISION. PROGRAM-ID. ONE.")
         encoded = json.dumps(analyze_repository(self.root))
