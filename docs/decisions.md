@@ -378,4 +378,4 @@ Añadir una sección con:
 
 - **Estado:** aceptada para el subconjunto probado.
 - **Decisión:** traducir el resultado de `ADD operandos TO receptor GIVING destino` al destino separado, y permitir que el elemento base y sus vistas `REDEFINES` sean hermanos dentro de un grupo de datos.
-- **Consecuencias:** el almacenamiento físico compartido prevalece sobre la representación anidada de los grupos en Python; `LABERINTO-COBOL` cubre conjuntamente `ALTER`, `GO TO ... DEPENDING ON`, `REDEFINES` anidado y `ADD ... GIVING`.
+- **Consecuencias:** el almacenamiento físico compartido prevalece sobre la representación anidada de los grupos en Python; la fixture diferencial `LABERINTO-COBOL` cubre `ALTER`, `GO TO ... DEPENDING ON`, `REDEFINES` anidado y `ADD ... GIVING`. `samples/laberinto_cobol_original.cbl` conserva además la declaración `PIC S9(9) COMP` original para regresión de ejecución; el formato de salida DISPLAY de campos signed COMP no se certifica con el benchmark diferencial.
