@@ -126,3 +126,8 @@ La regresión unitaria `test_copy_replacing_applies_pseudo_text_before_parsing` 
 ## Regresión diferencial de COPY REPLACING
 
 El caso `copy-replacing-basic` usa `samples/copy_replacing.cbl` y `samples/R.cpy` para comparar el programa traducido con el resultado compilado por GnuCOBOL. Verifica dos parejas sencillas en una sola cláusula: renombrado de campo y reemplazo del texto de una cláusula `PIC`. No cubre pseudo-texto complejo, límites léxicos generales ni reglas avanzadas de dialecto.
+
+
+## Aritmética y tamaño del campo receptor
+
+Las sentencias básicas `ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE` y `COMPUTE` aplican una adaptación acotada al PIC numérico receptor: se conserva la capacidad de dígitos y se descartan dígitos de orden superior en los casos simples cubiertos. La fixture diferencial `arithmetic-receiving-pic` valida overflow de `PIC 99` con GnuCOBOL. Esto no implementa toda la semántica de `ON SIZE ERROR`, redondeo, escalado `P`, ni todas las reglas de signo y precisión decimal; los casos fuera del subconjunto deben tratarse como limitación.
