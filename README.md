@@ -21,7 +21,8 @@ Hay miles de sistemas críticos corriendo COBOL en bancos, aseguradoras y admini
 El proyecto ha evolucionado desde un traductor de COBOL a Python hacia un repositorio que también incluye planificación de modernizaciones a escala de sistema. Los componentes comparten repositorio y objetivo, pero **no dependen uno del otro para su uso básico**.
 
 - **Traductor (`cobol2py.py`)**: recibe un programa COBOL y emite Python o Java. Puede descargarse y utilizarse por sí solo; no necesita `cobol2py_agent.py`.
-- **Agente (`cobol2py_agent.py`)**: inspecciona un repositorio con múltiples programas y artefactos relacionados, y genera un inventario y un plan de migración en Markdown/JSON. No invoca el traductor, no cambia los fuentes y no necesita que el traductor se ejecute.
+- **Agente (`cobol2py_agent.py`)**: inspecciona un repositorio con múltiples programas y artefactos relacionados, y genera un inventario y un plan de migración en Markdown/JSON. No modifica los fuentes.
+- **Piloto integrado (`tools/modernize_pilot.py`)**: conecta inventario y traducción del subconjunto a Python, comprueba la sintaxis generada y crea un informe por archivo; no ejecuta las traducciones ni prueba equivalencia semántica.
 - **Flujo combinado (objetivo evolutivo)**: usar el inventario del agente para organizar la migración por módulos y, en fases posteriores, conectar traducción y validación diferencial. Esa integración todavía no debe darse por completada.
 
 ### Usar solo el traductor
