@@ -64,7 +64,7 @@ El modelo de lenguaje, si se añade, debe proponer explicaciones o cambios acota
 ## Pruebas
 
 ```bash
-python -m unittest tests.test_modernize_agent -v
+python -m unittest discover -s tests -p 'test_modernize_agent.py' -v
 python -m unittest discover -s tests -v
 ```
 
