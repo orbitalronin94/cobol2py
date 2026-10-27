@@ -551,7 +551,7 @@ class CopybookTests(unittest.TestCase):
         with TemporaryDirectory() as temp:
             root = Path(temp)
             (root / "FIELD.cpy").write_text(
-                "01 :FIELD-NAME: PIC X(4) VALUE \"AB\".\n",
+                "01 :FIELD-NAME: PIC :FIELD-PIC: VALUE \"AB\".\n",
                 encoding="utf-8",
             )
             source = "\n".join([
@@ -559,7 +559,9 @@ class CopybookTests(unittest.TestCase):
                 "PROGRAM-ID. REPLACETEST.",
                 "DATA DIVISION.",
                 "WORKING-STORAGE SECTION.",
-                "COPY FIELD REPLACING ==:FIELD-NAME:== BY ==WS-CODE==.",
+                "COPY FIELD REPLACING "
+                "==:FIELD-NAME:== BY ==WS-CODE== "
+                "==:FIELD-PIC:== BY ==X(4)==.",
                 "PROCEDURE DIVISION.",
                 "MAIN.",
                 "STOP RUN.",
@@ -568,7 +570,34 @@ class CopybookTests(unittest.TestCase):
                 source, source_format="free", copybook_paths=[root]
             )
             self.assertEqual([v.name for v in program.variables], ["WS-CODE"])
+            self.assertEqual(program.variables[0].pic, "X(4)")
             self.assertEqual(program.unresolved_copybooks, [])
+
+    def test_copy_replacing_unsupported_clause_is_reported(self):
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "FIELD.cpy").write_text(
+                "01 WS-CODE PIC X(4).\n", encoding="utf-8"
+            )
+            source = "\n".join([
+                "DATA DIVISION.",
+                "WORKING-STORAGE SECTION.",
+                "COPY FIELD REPLACING OLD BY NEW.",
+                "PROCEDURE DIVISION.",
+                "MAIN.",
+                "STOP RUN.",
+            ])
+            program = cobol2py.parse_cobol(
+                source, source_format="free", copybook_paths=[root]
+            )
+            self.assertTrue(any(
+                "COPYBOOK UNSUPPORTED CLAUSE" in warning
+                for warning in program.unresolved_copybooks
+            ))
+            self.assertIn("COPYBOOK RESOLUTION WARNING", cobol2py.emit_python(program))
 
     def test_resolves_nested_copybooks_and_reports_cycles(self):
         from pathlib import Path
