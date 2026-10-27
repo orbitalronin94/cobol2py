@@ -1586,10 +1586,11 @@ class MultiTableDiabolicoTests(unittest.TestCase):
         self.assertEqual(
             output.getvalue(),
             "INICIO DE DIABLURA NUMERO 2\\n"
-            + "VALOR RECURSIVO FINAL: 000000700\\n" * 5,
+            + "VALOR RECURSIVO FINAL: 000000700\\n",
             generated,
         )
-        self.assertEqual(namespace["ws_dynamic_table"]["ws_item"][4]["ws_item_id"], "EAGLE")
-        self.assertEqual(namespace["ws_dynamic_table"]["ws_item"][4]["ws_item_val"], 500)
-        self.assertEqual(namespace["ws_control"]["ws_found_idx"], 5)
+        self.assertEqual(namespace["ws_dynamic_table"]["ws_item"][3]["ws_item_id"], "EAGLE")
+        self.assertEqual(namespace["ws_dynamic_table"]["ws_item"][3]["ws_item_val"], 500)
+        self.assertEqual(namespace["ws_control"]["ws_found_idx"], 4)
+        self.assertEqual(namespace["ws_idx"], 4)
         self.assertEqual(namespace["ws_control"]["ws_result_num"], 700)
