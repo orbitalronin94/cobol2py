@@ -5,7 +5,7 @@
 ## Cambios incluidos
 
 - **Semántica numérica acotada:** las operaciones aritméticas básicas aplican el tamaño del PIC receptor para los campos numéricos simples, evitando que un `PIC 99` retenga tres dígitos tras el overflow.
-- **Corpus diferencial ampliado:** 102 fixtures COBOL comparadas con GnuCOBOL. El commit de validación obtuvo 102/102 coincidencias exactas de salida y código de retorno (100 %), incluida `arithmetic-receiving-pic`.
+- **Corpus diferencial ampliado:** 102 fixtures COBOL comparadas con GnuCOBOL. El commit de validación obtuvo 102/102 coincidencias exactas de salida y código de retorno (100 %), incluida `arithmetic-receiving-pic`, que cubre `ADD`, `COMPUTE`, `MULTIPLY`, `SUBTRACT` y `DIVIDE` sobre `PIC 99`.
 - **COPY REPLACING:** fixture diferencial que cubre dos parejas sencillas de pseudo-texto en una cláusula.
 - **Inventario multiarchivo:** se excluyen comentarios COBOL/JCL/SQL reconocidos y se reportan referencias con varios destinos posibles.
 - **Piloto integrado:** `tools/modernize_pilot.py` conecta inventario, traducción del subconjunto y comprobación de sintaxis; genera reportes Markdown/JSON sin ejecutar los programas producidos.
