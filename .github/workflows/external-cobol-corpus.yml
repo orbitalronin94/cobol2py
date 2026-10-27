@@ -1,0 +1,80 @@
+name: external-cobol-corpus
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Number of standalone COBOL programs to compare against GnuCOBOL"
+        required: true
+        default: "500"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  external-corpus:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout tested revision
+        uses: actions/checkout@v4
+
+      - name: Download pinned X-COBOL v2 archive
+        run: |
+          curl --fail --location --retry 3 --retry-delay 2 \
+            "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" \
+            --output /tmp/COBOL_Files.zip
+          ls -lh /tmp/COBOL_Files.zip
+
+      - name: Build isolated benchmark image
+        run: docker build -f benchmarks/Dockerfile.external -t cobol2py-external-benchmark .
+
+      - name: Run benchmark without network access
+        env:
+          TARGET: ${{ inputs.target }}
+          CONTAINER_NAME: cobol2py-external-${{ github.run_id }}
+        shell: bash
+        run: |
+          set +e
+          docker run --name "$CONTAINER_NAME" \
+            --network none \
+            --cap-drop=ALL \
+            --security-opt=no-new-privileges \
+            --pids-limit=128 \
+            --memory=4g \
+            --cpus=2 \
+            --read-only \
+            --tmpfs /tmp:rw,exec,nosuid,nodev,size=3g \
+            --mount "type=bind,source=$GITHUB_WORKSPACE,target=/workspace,readonly" \
+            --mount "type=bind,source=/tmp/COBOL_Files.zip,target=/input.zip,readonly" \
+            --workdir /workspace \
+            cobol2py-external-benchmark \
+            benchmarks/run_external_corpus.py \
+            --archive /input.zip \
+            --translator /workspace/cobol2py.py \
+            --output /tmp/external-report \
+            --target "$TARGET"
+          benchmark_status=$?
+          mkdir -p "$GITHUB_WORKSPACE/external-corpus-artifacts"
+          docker cp "$CONTAINER_NAME:/tmp/external-report/." "$GITHUB_WORKSPACE/external-corpus-artifacts/" 2>/dev/null
+          docker rm "$CONTAINER_NAME" >/dev/null 2>&1
+          exit "$benchmark_status"
+
+      - name: Publish benchmark summary
+        if: always()
+        run: |
+          if [ -f external-corpus-artifacts/external-corpus-report.md ]; then
+            cat external-corpus-artifacts/external-corpus-report.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No benchmark report was produced; inspect the container and download logs." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload benchmark report (no source corpus)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: external-cobol-corpus-report-${{ github.run_number }}
+          path: external-corpus-artifacts/
+          if-no-files-found: warn
+          retention-days: 90
