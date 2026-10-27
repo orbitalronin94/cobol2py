@@ -493,9 +493,9 @@ P-B.
             namespace["_cobol_dispatch"]("MAIN-LOGIC")
         self.assertEqual(
             output.getvalue(),
-            "INICIO DEL LABERINTO COBOL\\n"
-            "INICIO DEL LABERINTO COBOL\\n"
-            "RESULTADO FINAL ACUMULADOR: 222240\\n",
+            "INICIO DEL LABERINTO COBOL\n"
+            "INICIO DEL LABERINTO COBOL\n"
+            "RESULTADO FINAL ACUMULADOR: 222240\n",
             generated,
         )
         self.assertEqual(namespace["_cobol_storage"]["WS-RAW-INPUT"], "9999911111")
