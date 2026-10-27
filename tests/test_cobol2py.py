@@ -399,9 +399,12 @@ MAIN-LOGIC.
     GO TO P-X.
     DISPLAY "BAD".
 P-X.
-    DISPLAY "X".
+    GO TO P-Z.
 P-Y.
     DISPLAY "Y".
+    STOP RUN.
+P-Z.
+    DISPLAY "Z".
     STOP RUN.
 """
         program = cobol2py.parse_cobol(source, source_format="free")
@@ -499,6 +502,9 @@ P-B.
             generated,
         )
         self.assertEqual(namespace["_cobol_storage"]["WS-RAW-INPUT"], "9999911111")
+        self.assertEqual(namespace["_cobol_get"]("WS-A"), 99999)
+        self.assertEqual(namespace["_cobol_get"]("WS-B"), 11111)
+        self.assertEqual(namespace["ws_control_vars"]["ws_accumulator"], 222240)
         self.assertEqual(namespace["_cobol_alter_targets"]["PUNTO-X"], "PUNTO-Y")
 
 class RedefinesStorageTests(unittest.TestCase):
