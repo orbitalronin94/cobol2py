@@ -240,6 +240,7 @@ def render_markdown(plan: dict[str, Any]) -> str:
         f"- Resolved dependency edges: **{summary['dependency_edges']}**",
         f"- Unresolved references: **{summary['unresolved_references']}**",
         f"- Ambiguous references: **{summary.get('ambiguous_references', 0)}**", "",
+        f"- Dynamic CALL targets (not statically resolved): **{summary.get('dynamic_call_targets', 0)}**", "",
         "## Recommended migration sequence", "",
     ]
     for stage in plan["recommended_sequence"]:
