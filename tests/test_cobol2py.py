@@ -846,6 +846,32 @@ class EndToEndTests(unittest.TestCase):
             generated,
         )
 
+    def test_arithmetic_results_fit_receiving_numeric_pic(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. ARITHSIZE.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-COUNT PIC 99 VALUE 99.
+PROCEDURE DIVISION.
+    ADD 1 TO WS-COUNT.
+    DISPLAY WS-COUNT.
+    COMPUTE WS-COUNT = WS-COUNT + 99.
+    DISPLAY WS-COUNT.
+    MULTIPLY 2 BY WS-COUNT.
+    DISPLAY WS-COUNT.
+    STOP RUN.
+"""
+        program = cobol2py.parse_cobol(source, source_format="free")
+        generated = cobol2py.emit_python(program)
+        namespace = {"__name__": "not_main"}
+        exec(generated, namespace)
+        from contextlib import redirect_stdout
+        from io import StringIO
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "00\n99\n98\n")
+
     def test_move_numeric_pic_keeps_rightmost_digits(self):
         from contextlib import redirect_stdout
         from io import StringIO
