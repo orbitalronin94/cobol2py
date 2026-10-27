@@ -164,7 +164,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gnucobol
           python tools/modernize_pilot.py samples --out-dir /tmp/cobol2py-pilot --differential
-          python -c "import json; p=json.load(open('/tmp/cobol2py-pilot/translation-report.json', encoding='utf-8')); d=p['differential_validation']; assert p['semantic_validation'] == 'matched', p['semantic_validation']; assert d['case_count'] == 103, d['case_count']; assert all(x['status'] == 'matched' for x in d['cases']); print('Differential pilot matched:', d['case_count'], 'fixtures')"
+          python -c "import json; p=json.load(open('/tmp/cobol2py-pilot/translation-report.json', encoding='utf-8')); d=p['differential_validation']; assert p['semantic_validation'] == 'matched', p['semantic_validation']; assert d['case_count'] == 104, d['case_count']; assert all(x['status'] == 'matched' for x in d['cases']); print('Differential pilot matched:', d['case_count'], 'fixtures')"
           cat /tmp/cobol2py-pilot/translation-report.md
       - name: Publish pilot diagnostic report
         uses: actions/upload-artifact@v4
