@@ -91,7 +91,7 @@ Un LLM futuro podrá explicar hallazgos y proponer cambios acotados, pero no deb
 
 ```bash
 python cobol2py_agent.py /ruta/al/sistema --out migration-plan.md --json-out migration-plan.json
-python -m unittest tests.test_modernize_agent -v
+python -m unittest discover -s tests -p 'test_modernize_agent.py' -v
 ```
 
 El JSON versionado contiene `summary`, `files`, `dependencies`, `unresolved_references`, `recommended_sequence`, `review_first` y `limitations`. La resolución por nombre no es un enlazador: puede haber referencias dinámicas, destinos externos, ambigüedad y falsos positivos. Consulta [repo-modernization-agent.md](repo-modernization-agent.md) para el uso, el esquema y las limitaciones.
