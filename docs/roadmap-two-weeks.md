@@ -35,7 +35,7 @@ El calendario de diez días describe la primera iteración y ya se han entregado
 
 ### Fase D — Semántica del traductor
 
-- [ ] Priorizar discrepancias por impacto en datos, control de flujo y E/S; cada cambio semántico debe incluir un caso mínimo.
+- [x] Priorizar discrepancias diferenciales por pistas de riesgo derivadas de las features (high/medium/low) y ordenar el informe por prioridad. Es una heurística para orientar la revisión, no una evaluación de severidad definitiva; cada corrección semántica sigue necesitando un caso mínimo.
 - [x] Revisar y documentar límites de aritmética `PIC`, signo, escala, redondeo y `ON SIZE ERROR`; la implementación completa de estas reglas permanece fuera del alcance validado y no se declara soportada.
 - [x] Mantener sincronizado `web/index.html` con `cobol2py.py` mediante test de igualdad del bloque embebido en CI.
 - [x] Mantener el benchmark basado en fixtures reproducibles; documentar que compara stdout y código de retorno, no todos los efectos externos.
@@ -120,7 +120,7 @@ Esta escala resume entregables acumulados del proyecto para ordenar el roadmap. 
 | v0.3 — Verificación diferencial | Corpus versionado comparado con GnuCOBOL | 102 casos medidos en la línea base documentada; la puntuación solo describe ese corpus |
 | v0.4 — Datos y preprocesado | Mejoras acotadas de tamaño PIC y COPY REPLACING, con regresiones | No cubre toda la semántica de escala, signo, redondeo ni pseudo-texto |
 | v0.5 — Inventario de cartera | Agente multiarchivo, dependencias, referencias ambiguas y destinos dinámicos | Análisis estático por nombres, no enlazado completo |
-| v0.6 — Piloto integrado | Inventario → traducción del subconjunto → comprobación sintáctica por archivo | No ejecuta código generado ni certifica comportamiento |
+| v0.6 — Piloto integrado | Inventario → traducción del subconjunto → comprobación sintáctica por archivo | Por defecto no ejecuta código generado; el modo diferencial explícito solo ejecuta fixtures exactas y no certifica comportamiento global |
 | v0.7 — Acceso y cobertura web | Demo standalone del traductor y demo local del agente; prueba de navegador | La UI del agente sigue siendo heurística y trabaja con los archivos que el usuario selecciona |
 | v0.8 — Evidencia auditable | Esquema de informe versionado, clasificación de diagnósticos, enlace exacto a fixtures candidatas, detalle por archivo y artefacto de CI | La clasificación automática prioriza revisión; no sustituye la decisión de un especialista ni convierte una fixture enlazada en prueba ejecutada |
 
@@ -132,8 +132,8 @@ Esta escala resume entregables acumulados del proyecto para ordenar el roadmap. 
 - [x] Las fixtures diferenciales solo se enlazan cuando la ruta de origen coincide exactamente con la del manifiesto; el enlace no afirma que se hayan ejecutado.
 - [x] CI valida el contrato del informe y publica los reportes del piloto como artefacto descargable.
 - [x] Las llamadas CALL literales y dinámicas se distinguen en el agente CLI y en la demo web, con pruebas unitarias y de navegador.
-- [ ] La clasificación automática de los 36 archivos con diagnósticos debe revisarse humanamente antes de usarla para decidir una migración real. El reporte generado por CI es el backlog verificable para esa revisión; los avisos no se descartan como falsos positivos sin evidencia.
-- [ ] La equivalencia semántica sigue siendo una comprobación por caso con GnuCOBOL y entradas representativas, no una propiedad global del piloto.
+- [ ] Revisar humanamente los 35 archivos que siguen con avisos conocidos de aritmética/PIC. Se corrigió un falso positivo de la línea base de 36; el [triage por fuente](pilot-diagnostics-baseline.md) documenta los restantes. No usar la clasificación automática como autorización de migración.
+- [x] La equivalencia se informa por caso y de forma opt-in: 102/102 fixtures coinciden en stdout/código de retorno. Esto no equivale a una garantía global ni cubre todas las entradas o efectos externos.
 
 ### Siguiente ciclo después de 0.8
 
