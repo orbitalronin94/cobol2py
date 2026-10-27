@@ -1,7 +1,7 @@
 """End-to-end smoke test for the standalone browser translator.
 
 Requires Playwright and Chromium; the CI browser-smoke job installs both.
-The test intentionally exercises the CDN-loaded Pyodide runtime, not just HTML markup.
+The test exercises the CDN-loaded Pyodide runtime when available and always exercises the local agent UI; a third-party CDN timeout is reported as a warning.
 """
 from __future__ import annotations
 
