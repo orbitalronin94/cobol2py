@@ -2,6 +2,16 @@
   "version": 1,
   "cases": [
     {
+      "id": "control-flow-redefines",
+      "path": "samples/control_flow_redefines.cbl",
+      "features": [
+        "ALTER dynamic destination",
+        "GO TO DEPENDING ON ordinal dispatch",
+        "REDEFINES shared storage",
+        "cross-paragraph dispatcher"
+      ]
+    },
+    {
       "id": "realtest",
       "path": "samples/realtest.cbl",
       "features": [
