@@ -93,3 +93,14 @@ python -m unittest discover -s tests -p 'test_modernize_pilot.py' -v
 ```
 
 El piloto falla si una traducción no puede generarse o si el Python generado no pasa `compile()`; los diagnósticos de compatibilidad se conservan en `translation-report.json`. En la ejecución CI del commit `1fb78c6`, el árbol `samples` produjo 108 traducciones, cero errores de sintaxis y cero errores de traducción; 36 fuentes tienen diagnósticos que requieren revisión. Para demostrar equivalencia de comportamiento, ejecutar además el benchmark diferencial con GnuCOBOL.
+
+
+## Interfaz web del agente
+
+Abre [`web/agent.html`](../web/agent.html) en un navegador moderno o sírvelo como archivo estático junto a `web/index.html`. Selecciona varios archivos o una carpeta si el navegador ofrece esa opción. La página produce un inventario resumido y deja descargar JSON o Markdown con contadores, características, dependencias detectadas, referencias no resueltas y referencias ambiguas.
+
+La interfaz procesa los archivos seleccionados en el navegador y no realiza peticiones de red con el contenido. Es deliberadamente una **demo heurística**, con detección de comentarios y referencias más sencilla que la implementación Python; no debe utilizarse como inventario definitivo. No ejecuta COBOL ni Python generado, no valida equivalencia semántica y puede dar falsos positivos/negativos. Para un informe auditable y reproducible, usa el CLI Python. Los tests de contrato de esta página se ejecutan con:
+
+```bash
+python -m unittest discover -s tests -p 'test_agent_html.py' -v
+```
