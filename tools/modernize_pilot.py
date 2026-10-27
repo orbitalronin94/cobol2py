@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -61,13 +62,78 @@ def _differential_fixtures(source_path: Path) -> list[dict[str, Any]]:
     except (OSError, json.JSONDecodeError):
         return []
     return [
-        {"id": case.get("id"), "features": case.get("features", [])}
+        {"id": case.get("id"), "path": case.get("path"), "features": case.get("features", [])}
         for case in cases
         if (REPOSITORY_ROOT / case.get("path", "")).resolve() == source_path.resolve()
     ]
 
 
-def run_pilot(root: Path, output_dir: Path) -> dict[str, Any]:
+def _run_differential(results: list[dict[str, Any]], output_dir: Path) -> dict[str, Any]:
+    """Run only manifest fixtures exactly associated with inventoried source paths."""
+    selected_ids = {
+        fixture["id"]
+        for item in results
+        for fixture in item.get("differential_fixtures", [])
+    }
+    if not selected_ids:
+        return {"status": "not-applicable", "case_count": 0, "cases": []}
+
+    manifest = json.loads((REPOSITORY_ROOT / "benchmarks" / "cases.json").read_text(encoding="utf-8"))
+    selected = [case for case in manifest.get("cases", []) if case.get("id") in selected_ids]
+    manifest_path = output_dir / "differential-cases.json"
+    manifest_path.write_text(json.dumps({"version": manifest.get("version", 1), "cases": selected}, indent=2) + "\\n", encoding="utf-8")
+    report_path = output_dir / "differential-report.json"
+    markdown_path = output_dir / "differential-report.md"
+    command = [
+        sys.executable, str(REPOSITORY_ROOT / "benchmarks" / "run_benchmark.py"),
+        "--manifest", str(manifest_path), "--translator", str(REPOSITORY_ROOT / "cobol2py.py"),
+        "--json", str(report_path), "--markdown", str(markdown_path), "--report-only",
+    ]
+    try:
+        completed = subprocess.run(
+            command, cwd=REPOSITORY_ROOT, text=True, capture_output=True,
+            timeout=max(120, len(selected) * 15), check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        return {"status": "reference-error", "case_count": len(selected), "cases": [], "error": str(error)}
+    if not report_path.is_file():
+        return {
+            "status": "reference-error", "case_count": len(selected), "cases": [],
+            "error": completed.stderr.strip()[-2000:] or f"benchmark exited {completed.returncode} without a report",
+        }
+    try:
+        benchmark = json.loads(report_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        return {"status": "reference-error", "case_count": len(selected), "cases": [], "error": str(error)}
+
+    cases = []
+    for case in benchmark.get("cases", []):
+        if not case.get("compile_ok", False) or not case.get("reference_ok", True):
+            status = "reference-error"
+        elif (case.get("candidate") or {}).get("matched", False):
+            status = "matched"
+        else:
+            status = "discrepancy"
+        cases.append({"id": case.get("id"), "path": case.get("path"), "status": status,
+                      "reason": (case.get("candidate") or {}).get("reason") or case.get("compile_error") or case.get("reference_error")})
+    overall = "matched" if cases and all(case["status"] == "matched" for case in cases) else (
+        "discrepancy" if any(case["status"] == "discrepancy" for case in cases) else "reference-error"
+    )
+    status_by_id = {case["id"]: case["status"] for case in cases}
+    for item in results:
+        matched = [status_by_id[fixture["id"]] for fixture in item.get("differential_fixtures", []) if fixture["id"] in status_by_id]
+        if matched:
+            item["semantic_status"] = "matched" if all(status == "matched" for status in matched) else (
+                "discrepancy" if "discrepancy" in matched else "reference-error"
+            )
+        elif differential:
+            item["semantic_status"] = "not-applicable"
+    return {"status": overall, "case_count": len(cases), "cases": cases,
+            "report": report_path.name, "markdown": markdown_path.name,
+            "runner_returncode": completed.returncode}
+
+
+def run_pilot(root: Path, output_dir: Path, *, differential: bool = False) -> dict[str, Any]:
     root = root.resolve()
     output_dir = output_dir.resolve()
     if not root.is_dir():
