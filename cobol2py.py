@@ -531,9 +531,9 @@ def resolve_copybooks(
             name, suffix = match.groups()
             replacements: list[tuple[str, str]] = []
             if suffix.strip():
-                clause = re.match(r"^\\s*REPLACING\\s+(.+?)\\s*$", suffix, re.IGNORECASE)
+                clause = re.match(r"^\s*REPLACING\s+(.+?)\s*$", suffix, re.IGNORECASE)
                 pair_pattern = re.compile(
-                    r"==\\s*(.*?)\\s*==\\s+BY\\s+==\\s*(.*?)\\s*==",
+                    r"==\s*(.*?)\s*==\s+BY\s+==\s*(.*?)\s*==",
                     re.IGNORECASE,
                 )
                 if clause:
