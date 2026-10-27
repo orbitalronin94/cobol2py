@@ -153,6 +153,12 @@ jobs:
           python-version: "3.12"
       - name: Run dedicated agent unit tests
         run: python -m unittest discover -s tests -p 'test_modernize_agent.py' -v
+      - name: Test and smoke-test integrated modernization pilot
+        run: |
+          python -m unittest discover -s tests -p 'test_modernize_pilot.py' -v
+          python tools/modernize_pilot.py samples --out-dir /tmp/cobol2py-pilot
+          python -c "import json; p=json.load(open('/tmp/cobol2py-pilot/translation-report.json', encoding='utf-8')); assert p['translation_summary']['source_files'] > 0; assert p['translation_summary']['syntax_errors'] == 0; assert p['translation_summary']['translation_errors'] == 0; assert p['semantic_validation'] == 'not-performed'; print('Pilot report OK:', p['translation_summary'])"
+
       - name: Smoke-test repository inventory and JSON report
         run: |
           python cobol2py_agent.py . --out /tmp/migration-plan.md --json-out /tmp/migration-plan.json
