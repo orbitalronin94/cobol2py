@@ -323,3 +323,14 @@ Añadir una sección con:
 - **Contexto:** el backend Python no aplica todavía padding al literal de la izquierda y el backend Java no convierte todas esas formas a comparación por valor.
 - **Consecuencias:** `--strict` señala los casos directos detectados; expresiones compuestas o cualificadas pueden quedar fuera del patrón.
 - **Validación:** prueba unitaria con literal a la izquierda; la suite completa aún no se ha confirmado en CI.
+
+## D-013 — Separar el análisis de cartera del traductor
+
+- **Fecha:** 2026-10-27.
+- **Estado:** aceptada para la primera iteración.
+- **Contexto:** modernizar una aplicación empresarial requiere entender programas, copybooks, llamadas, JCL y SQL antes de traducir módulos de forma aislada.
+- **Decisión:** añadir `cobol2py_agent.py`, un analizador estático de repositorio que genera informes Markdown/JSON y un plan por etapas. Se mantiene independiente del traductor actual y sin dependencias externas.
+- **Alternativas:** reemplazar el traductor por un agente LLM o integrar de inmediato un framework de agentes. Se descartan en esta fase porque añaden variabilidad y complejidad antes de disponer de un inventario y criterios de verificación.
+- **Consecuencias:** hay una entrada útil para planificar sistemas multiarchivo, pero las referencias se resuelven con heurísticas de texto y nombre; el informe necesita revisión humana y no prueba completitud ni equivalencia.
+- **Validación:** pruebas unitarias sintéticas para inventario, dependencias COPY/CALL/JCL/SQL, referencias sin resolver, indicadores de riesgo y serialización JSON. Estas pruebas no se han ejecutado automáticamente en esta modificación.
+- **Revisión:** reconsiderar el diseño cuando existan fixtures representativos de repositorios reales y evidencia de precisión/recall del grafo, antes de automatizar escrituras o reparaciones.
