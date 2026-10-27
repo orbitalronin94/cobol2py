@@ -37,7 +37,7 @@ jobs:
 
       - name: Run benchmark without network access
         env:
-          TARGET: ${{ inputs.target }}
+          TARGET: ${{ inputs.target || '500' }}
           CONTAINER_NAME: cobol2py-external-${{ github.run_id }}
         shell: bash
         run: |
