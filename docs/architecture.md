@@ -10,12 +10,13 @@ El soporte es incremental: se incorporan construcciones cuando hay implementaci�
 
 La implementación actual en `cobol2py.py` sigue, de forma simplificada, estas etapas:
 
-1. **Preprocesado** — `preprocess()` detecta o aplica el formato de fuente y normaliza las líneas útiles, conservando números de línea para diagnóstico y análisis.
-2. **Modelo de datos** — `CobolVar`, `Node` y `Program` representan variables, unidades de procedimiento y el programa analizado.
-3. **Variables** — `parse_variables()` interpreta las declaraciones de almacenamiento que el traductor reconoce, incluidos usos básicos de `PIC`, `VALUE` y `OCCURS`.
-4. **Procedimientos** — `split_paragraph_into_units()`, `build_tree()` y `parse_procedure()` separan sentencias y construyen una estructura de control para las construcciones soportadas.
-5. **Expresiones y sentencias** — funciones como `translate_expr()`, `translate_condition()` y `translate_statement()` traducen nombres, expresiones y verbos COBOL a Python.
-6. **Emisión** — `emit_python()` genera el archivo Python final y el punto de entrada.
+1. **Resolución de copybooks** — `resolve_copybooks()` expande `COPY` recursivos antes del análisis, buscando junto al fuente, en las rutas `--copybook-path` y en el directorio de trabajo; los faltantes y ciclos se registran como advertencias. La forma de `REPLACING` admitida se limita a parejas simples de pseudo-texto.
+2. **Preprocesado** — `preprocess()` detecta o aplica el formato de fuente y normaliza las líneas útiles, conservando números de línea para diagnóstico y análisis.
+3. **Modelo de datos** — `CobolVar`, `Node` y `Program` representan variables, unidades de procedimiento y el programa analizado.
+4. **Variables** — `parse_variables()` interpreta las declaraciones de almacenamiento que el traductor reconoce, incluidos usos básicos de `PIC`, `VALUE` y `OCCURS`.
+5. **Procedimientos** — `split_paragraph_into_units()`, `build_tree()` y `parse_procedure()` separan sentencias y construyen una estructura de control para las construcciones soportadas.
+6. **Expresiones y sentencias** — funciones como `translate_expr()`, `translate_condition()` y `translate_statement()` traducen nombres, expresiones y verbos COBOL a Python.
+7. **Emisión** — `emit_python()` genera el archivo Python final y el punto de entrada.
 
 Estos pasos describen la organización actual, no una gramática COBOL formal. No se debe asumir que cualquier programa aceptado por un compilador COBOL puede analizarse correctamente aquí.
 
@@ -97,3 +98,10 @@ python -m unittest discover -s tests -p 'test_modernize_agent.py' -v
 El JSON versionado contiene `summary`, `files`, `dependencies`, `unresolved_references`, `recommended_sequence`, `review_first` y `limitations`. La resolución por nombre no es un enlazador: puede haber referencias dinámicas, destinos externos, ambigüedad y falsos positivos. Consulta [repo-modernization-agent.md](repo-modernization-agent.md) para el uso, el esquema y las limitaciones.
 
 La futura automatización debe operar en un workspace aislado, producir diffs inspeccionables y pedir revisión ante incertidumbre. No debe tener acceso implícito a credenciales de producción ni aceptar cambios sin ejecutar las verificaciones acordadas.
+
+
+## Resolución de copybooks
+
+`resolve_copybooks()` procesa directivas `COPY` antes del parseo. El orden de búsqueda es el directorio del archivo fuente (si se conoce), cada ruta repetida en `--copybook-path` y el directorio de trabajo actual; los copybooks anidados se expanden recursivamente y los ciclos se informan.
+
+El subconjunto de `REPLACING` implementado acepta una o más parejas `==texto anterior== BY ==texto nuevo==`. Las sustituciones se aplican al texto del copybook con coincidencia literal e insensible a mayúsculas/minúsculas. No es un preprocesador conforme a toda la gramática COBOL: bibliotecas calificadas y otras cláusulas se dejan como advertencias visibles. La demo HTML autónoma debe mantener una copia exacta de `cobol2py.py`; `tests/test_standalone_html.py` valida esa sincronización para evitar que la versión web quede desactualizada.
