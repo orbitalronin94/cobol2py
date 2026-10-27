@@ -233,7 +233,7 @@ Además del traductor de un solo archivo, el repositorio incluye un primer plani
 python cobol2py_agent.py /ruta/al/sistema \
   --out reports/migration-plan.md \
   --json-out reports/migration-plan.json
-python -m unittest tests.test_modernize_agent -v
+python -m unittest discover -s tests -p 'test_modernize_agent.py' -v
 ```
 
 El informe enumera los artefactos detectados, las dependencias que logra resolver por nombre, las referencias pendientes y las construcciones que conviene revisar primero. Es una ayuda para planificar, no un parser completo, un migrador autónomo ni una prueba de equivalencia. Consulta [la guía del agente](docs/repo-modernization-agent.md) y [la arquitectura](docs/architecture.md) para conocer el alcance y el diseño previsto.
