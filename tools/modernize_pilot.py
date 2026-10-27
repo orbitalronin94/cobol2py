@@ -17,6 +17,56 @@ import cobol2py
 import cobol2py_agent
 
 
+DIAGNOSTIC_CLASSIFICATIONS = {
+    "COPYBOOK_RESOLUTION": "dependency-resolution",
+    "MALFORMED_CONTROL_FLOW": "possible-defect",
+    "UNSUPPORTED_STATEMENT": "possible-defect",
+    "PYTHON_IDENTIFIER_COLLISION": "possible-defect",
+    "EVALUATE_WITHOUT_WHEN": "possible-defect",
+    "ARITHMETIC_SIZE_ERROR_UNSUPPORTED": "known-limitation",
+    "PARTIAL_NUMERIC_PIC_SEMANTICS": "known-limitation",
+    "UNSUPPORTED_STORAGE_OVERLAY": "known-limitation",
+    "UNSUPPORTED_RENAMES": "known-limitation",
+    "UNSUPPORTED_CONDITION_NAME_88": "known-limitation",
+    "OCCURS_GROUP_UNSUPPORTED": "known-limitation",
+    "OCCURS_DEPENDING_ON_UNSUPPORTED": "known-limitation",
+    "UNSUPPORTED_EVALUATE_ALSO": "known-limitation",
+    "ALPHANUMERIC_ORDER_COMPARISON_UNSUPPORTED": "known-limitation",
+    "ALPHANUMERIC_FIELD_COMPARISON_UNSUPPORTED": "known-limitation",
+    "ALPHANUMERIC_LITERAL_LEFT_COMPARISON_UNSUPPORTED": "known-limitation",
+    "EVALUATE_ALPHANUMERIC_PADDING_UNSUPPORTED": "known-limitation",
+}
+
+
+def classify_diagnostic(diagnostic: dict[str, Any]) -> dict[str, Any]:
+    """Add a review category without changing the translator's diagnostic meaning."""
+    result = dict(diagnostic)
+    result["classification"] = DIAGNOSTIC_CLASSIFICATIONS.get(str(diagnostic.get("code", "")), "review-required")
+    result["review_required"] = result["classification"] != "known-limitation"
+    return result
+
+
+def _translator_version() -> str:
+    """Read the human-maintained version from the translator module docstring."""
+    import re
+    match = re.search(r"\\bv(\\d+\\.\\d+\\.\\d+)\\b", cobol2py.__doc__ or "")
+    return match.group(1) if match else "unknown"
+
+
+def _differential_fixtures(source_path: Path) -> list[dict[str, Any]]:
+    """Return exact manifest path matches; never infer semantic validation from a match."""
+    manifest = REPOSITORY_ROOT / "benchmarks" / "cases.json"
+    try:
+        cases = json.loads(manifest.read_text(encoding="utf-8")).get("cases", [])
+    except (OSError, json.JSONDecodeError):
+        return []
+    return [
+        {"id": case.get("id"), "features": case.get("features", [])}
+        for case in cases
+        if (REPOSITORY_ROOT / case.get("path", "")).resolve() == source_path.resolve()
+    ]
+
+
 def run_pilot(root: Path, output_dir: Path) -> dict[str, Any]:
     root = root.resolve()
     output_dir = output_dir.resolve()
