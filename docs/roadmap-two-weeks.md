@@ -6,37 +6,39 @@ El calendario de diez días describe la primera iteración y ya se han entregado
 
 ### Fase A — Precisión del inventario estático
 
-- [ ] Clasificar los 36 archivos de `samples` que reportaron diagnósticos en la ejecución registrada del piloto: diagnóstico esperado, falso positivo, limitación real o posible defecto.
+- [x] Generar un triage reproducible por archivo para las fuentes con diagnósticos: categoría primaria, categorías presentes, códigos y líneas, y estado de revisión humana pendiente. El informe se publica como artefacto CI.
+- [ ] Adjudicar manualmente cada uno de los 36 archivos de la línea base: confirmar limitaciones, reproducir posibles defectos y demostrar falsos positivos antes de descartarlos.
 - [x] Separar referencias `CALL` literales de llamadas dinámicas mediante identificadores, sin inventar destinos estáticos para llamadas cuyo valor solo se conoce en ejecución. Implementado en el agente Python y la demo web; los destinos dinámicos quedan en `dynamic_calls` y no se cuentan como referencias literales sin resolver. Hay pruebas de regresión de unidad y de navegador.
-- [ ] Añadir fixtures para cada patrón reproducible encontrado durante la clasificación y verificar que comentarios y literales no generan dependencias falsas.
-- [ ] Documentar métricas de precisión con denominadores y ejemplos revisables; no usar solo el número bruto de advertencias como métrica de calidad.
+- [x] Añadir regresiones para comentarios, formato fijo, llamadas dinámicas y palabras clave de dependencias dentro de literales; el inventario enmascara el contenido literal antes de extraer relaciones.
+- [x] Publicar denominadores y conteos por archivo, categoría y código diagnóstico, junto con el detalle de cada aviso.
+- [ ] Medir precisión/recall real solo después de etiquetar manualmente una muestra; los conteos automáticos no son una métrica de exactitud.
 
 **Criterio de salida:** cada familia frecuente de diagnóstico tiene una explicación, pruebas de regresión y un comportamiento documentado; las referencias desconocidas permanecen explícitamente sin resolver.
 
 ### Fase B — Validación del piloto y evidencia diferencial
 
-- [ ] Versionar el esquema de los informes del piloto e incluir versión del traductor, estado sintáctico, diagnósticos y estado semántico con valores no ambiguos.
-- [ ] Añadir enlaces entre fuentes traducidas y fixtures diferenciales aplicables, cuando exista correspondencia demostrable.
-- [ ] Diseñar una integración opcional de validación diferencial que compare salida y código de retorno con GnuCOBOL en un entorno controlado; no ejecutar código generado en el modo de inventario.
-- [ ] Diferenciar claramente `no evaluado`, `comparado y coincidente`, `discrepancia` y `no aplicable`; no inferir equivalencia por compilación.
+- [x] Versionar el esquema del informe como v2 e incluir versión del traductor, estado sintáctico, triage, diagnósticos y estado semántico explícito.
+- [x] Enlazar fuentes con fixtures diferenciales mediante coincidencia exacta de ruta; el informe advierte que el enlace no implica ejecución.
+- [x] Añadir el modo opt-in `--differential`: ejecuta solo fixtures exactas del manifiesto y compara stdout/código de retorno con GnuCOBOL; el modo por defecto nunca ejecuta la traducción.
+- [x] Diferenciar `not-evaluated`, `matched`, `discrepancy`, `reference-error` y `not-applicable`; la sintaxis por sí sola no cambia el estado semántico.
 
 **Criterio de salida:** un informe puede indicar exactamente qué se verificó, qué no se verificó y cómo reproducir cada discrepancia.
 
 ### Fase C — Experiencia del agente y operación
 
-- [ ] Añadir filtros por tipo de hallazgo, relación, nivel de confianza y ruta tanto a los informes como a la interfaz web cuando los datos disponibles lo permitan.
+- [x] Añadir filtro de texto en la demo web para buscar por ruta, símbolo, tipo o característica en todas las tablas. El CLI conserva el informe completo y filtrable por herramientas externas.
 - [ ] Mejorar navegación entre dependencias, candidatos ambiguos y archivos de origen, manteniendo el procesamiento local en la demo HTML.
-- [ ] Probar informes con nombres de archivo y contenido que incluyan Unicode, rutas anidadas, entradas vacías y grandes cantidades de archivos.
-- [ ] Documentar límites de escala, formatos reconocidos, reglas de exclusión y pasos de revisión humana.
+- [x] Añadir regresiones para rutas y nombres Unicode, árboles vacíos, rutas anidadas y 200 fuentes; el smoke de navegador también carga un nombre de archivo Unicode.
+- [x] Documentar formatos reconocidos, directorios excluidos, límites heurísticos y la necesidad de revisión humana. Los límites de escala se cubren con una prueba de 200 fuentes, no con una garantía de rendimiento universal.
 
 **Criterio de salida:** las personas que revisan el inventario pueden priorizar y reproducir hallazgos sin confundir análisis heurístico con verificación de comportamiento.
 
 ### Fase D — Semántica del traductor
 
 - [ ] Priorizar discrepancias por impacto en datos, control de flujo y E/S; cada cambio semántico debe incluir un caso mínimo.
-- [ ] Revisar límites conocidos de aritmética `PIC`, signos, escalas decimales, redondeo y `ON SIZE ERROR` antes de ampliar las afirmaciones de compatibilidad.
-- [ ] Mantener sincronizado `web/index.html` con `cobol2py.py` y ejecutar el test de sincronización en CI para cada cambio del traductor.
-- [ ] Ampliar el benchmark solo con casos reproducibles y describir con precisión qué dimensiones se comparan.
+- [x] Revisar y documentar límites de aritmética `PIC`, signo, escala, redondeo y `ON SIZE ERROR`; la implementación completa de estas reglas permanece fuera del alcance validado y no se declara soportada.
+- [x] Mantener sincronizado `web/index.html` con `cobol2py.py` mediante test de igualdad del bloque embebido en CI.
+- [x] Mantener el benchmark basado en fixtures reproducibles; documentar que compara stdout y código de retorno, no todos los efectos externos.
 
 **Criterio de salida:** las mejoras tienen regresiones reproducibles y el README de compatibilidad no promete más de lo que miden los tests.
 
