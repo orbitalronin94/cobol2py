@@ -447,7 +447,7 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
     # source lines as part of a variable.
     declarations: list[tuple[int, str]] = []
     continuation = re.compile(
-        r"^\\s*(?:ASCENDING|DESCENDING|INDEXED|DEPENDING|PIC(?:TURE)?|VALUE|USAGE|SIGN|OCCURS|REDEFINES)\\b",
+        r"^\s*(?:ASCENDING|DESCENDING|INDEXED|DEPENDING|PIC(?:TURE)?|VALUE|USAGE|SIGN|OCCURS|REDEFINES)\b",
         re.IGNORECASE,
     )
     for line_number, source_line in lines:
