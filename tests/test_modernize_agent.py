@@ -22,6 +22,23 @@ class RepositoryAnalysisTests(unittest.TestCase):
         path.write_text(content, encoding="utf-8")
         return path
 
+    def test_unicode_nested_paths_and_empty_repository(self):
+        path = self.write("módulos/área/PROGRÁMA.cbl", """IDENTIFICATION DIVISION.
+PROGRAM-ID. PROGRAMA.
+PROCEDURE DIVISION.
+    STOP RUN.
+""")
+        plan = analyze_repository(self.root)
+        self.assertIn("módulos/área/PROGRÁMA.cbl", [item["path"] for item in plan["files"]])
+        self.assertEqual(plan["summary"]["cobol_programs"], 1)
+        self.assertEqual(plan["unresolved_references"], [])
+
+        with tempfile.TemporaryDirectory() as empty:
+            empty_plan = analyze_repository(Path(empty))
+        self.assertEqual(empty_plan["summary"]["files"], 0)
+        self.assertEqual(empty_plan["dependencies"], [])
+        self.assertEqual(empty_plan["unresolved_references"], [])
+
     def test_inventory_and_copy_dependency(self):
         self.write("MAIN.cbl", """IDENTIFICATION DIVISION.
 PROGRAM-ID. MAINPROG.
