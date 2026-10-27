@@ -145,6 +145,29 @@ PROCEDURE DIVISION.
         self.assertEqual(plan["summary"]["ambiguous_references"], 1)
         self.assertIn("Ambiguous references", render_markdown(plan))
 
+    def test_separates_literal_and_dynamic_call_targets(self):
+        self.write("MAIN.cbl", """IDENTIFICATION DIVISION.
+PROGRAM-ID. MAIN.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-PROGRAM PIC X(8) VALUE "SUBPROG".
+PROCEDURE DIVISION.
+    CALL "SUBPROG".
+    CALL WS-PROGRAM.
+    STOP RUN.
+""")
+        self.write("SUBPROG.cbl", "IDENTIFICATION DIVISION.\\nPROGRAM-ID. SUBPROG.\\n")
+        plan = analyze_repository(self.root)
+        main = next(item for item in plan["files"] if item["path"] == "MAIN.cbl")
+        self.assertEqual(main["calls"], ["SUBPROG"])
+        self.assertEqual(main["dynamic_calls"], ["WS-PROGRAM"])
+        self.assertFalse(any(item["relation"] == "call" and item["symbol"] == "WS-PROGRAM"
+                             for item in plan["unresolved_references"]))
+        self.assertEqual(plan["summary"]["dynamic_call_targets"], 1)
+        report = render_markdown(plan)
+        self.assertIn("Dynamic CALL targets", report)
+        self.assertIn("WS-PROGRAM", report)
+
     def test_json_serializable(self):
         self.write("ONE.cbl", "IDENTIFICATION DIVISION. PROGRAM-ID. ONE.")
         encoded = json.dumps(analyze_repository(self.root))
