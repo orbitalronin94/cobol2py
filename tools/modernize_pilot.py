@@ -8,6 +8,11 @@ import sys
 from pathlib import Path
 from typing import Any
 
+# Executing this file directly sets sys.path[0] to tools/, not the repository root.
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+if str(REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPOSITORY_ROOT))
+
 import cobol2py
 import cobol2py_agent
 
