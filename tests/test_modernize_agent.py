@@ -104,6 +104,23 @@ PROCEDURE DIVISION.
         paths = {x["path"] for x in plan["files"]}
         self.assertEqual(paths, {"src/ok.cbl"})
 
+    def test_ignores_dependency_keywords_inside_literals(self):
+        self.write("MAIN.cbl", """IDENTIFICATION DIVISION.
+PROGRAM-ID. MAIN.
+PROCEDURE DIVISION.
+    DISPLAY "COPY GHOST".
+    DISPLAY "CALL MISSING".
+    DISPLAY "EXEC SQL INCLUDE SQLGHOST".
+    STOP RUN.
+""")
+        plan = analyze_repository(self.root)
+        main = next(item for item in plan["files"] if item["path"] == "MAIN.cbl")
+        self.assertEqual(main["copybooks"], [])
+        self.assertEqual(main["calls"], [])
+        self.assertEqual(main["dynamic_calls"], [])
+        self.assertEqual(main["sql_includes"], [])
+        self.assertEqual(plan["unresolved_references"], [])
+
     def test_ignores_commented_out_references(self):
         self.write("MAIN.cbl", """IDENTIFICATION DIVISION.
 PROGRAM-ID. MAIN.
