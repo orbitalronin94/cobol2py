@@ -92,4 +92,4 @@ python tools/modernize_pilot.py samples --out-dir /tmp/cobol2py-pilot
 python -m unittest discover -s tests -p 'test_modernize_pilot.py' -v
 ```
 
-El piloto falla si una traducción no puede generarse o si el Python generado no pasa `compile()`; los diagnósticos de compatibilidad se conservan en `translation-report.json`. Para demostrar equivalencia de comportamiento, ejecutar además el benchmark diferencial con GnuCOBOL.
+El piloto falla si una traducción no puede generarse o si el Python generado no pasa `compile()`; los diagnósticos de compatibilidad se conservan en `translation-report.json`. En la ejecución CI del commit `1fb78c6`, el árbol `samples` produjo 108 traducciones, cero errores de sintaxis y cero errores de traducción; 36 fuentes tienen diagnósticos que requieren revisión. Para demostrar equivalencia de comportamiento, ejecutar además el benchmark diferencial con GnuCOBOL.
