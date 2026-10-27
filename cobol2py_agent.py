@@ -75,6 +75,29 @@ def _strip_inline_comment(line: str, marker: str) -> str:
     return line
 
 
+def _mask_literals(source: str) -> str:
+    """Replace quoted literal contents with spaces while preserving offsets and newlines."""
+    chars = list(source)
+    quote: str | None = None
+    index = 0
+    while index < len(source):
+        char = source[index]
+        if quote is not None:
+            if char != "\n":
+                chars[index] = " "
+            if char == quote:
+                if index + 1 < len(source) and source[index + 1] == quote:
+                    chars[index + 1] = " "
+                    index += 2
+                    continue
+                quote = None
+        elif char in ("'", '"'):
+            quote = char
+            chars[index] = " "
+        index += 1
+    return "".join(chars)
+
+
 def _analysis_source(source: str, kind: str) -> str:
     """Strip comments before regex inventory so commented-out code is not a dependency."""
     lines = source.splitlines()
@@ -121,19 +144,20 @@ def analyze_repository(root: Path) -> dict[str, Any]:
         )
         source = _read_text(path)
         analysis_source = _analysis_source(source, kind)
-        program_match = PROGRAM_RE.search(analysis_source) if kind == "cobol" else None
+        code_source = _mask_literals(analysis_source)
+        program_match = PROGRAM_RE.search(code_source) if kind == "cobol" else None
         program_id = program_match.group(1).upper() if program_match else None
         stem = path.stem.upper()
         symbols[stem].append(rel)
         if program_id:
             symbols[program_id].append(rel)
 
-        copies = sorted({m.group(1).upper() for m in COPY_RE.finditer(analysis_source)}) if kind in {"cobol", "copybook"} else []
-        calls = sorted({m.group(1).upper() for m in CALL_LITERAL_RE.finditer(analysis_source)}) if kind == "cobol" else []
-        dynamic_calls = sorted({m.group(1).upper() for m in CALL_DYNAMIC_RE.finditer(analysis_source)}) if kind == "cobol" else []
-        exec_programs = sorted({m.group(1).upper() for m in EXEC_PGM_RE.finditer(analysis_source)}) if kind == "jcl" else []
-        jcl_datasets = sorted({m.group(1).strip("\'\"").upper() for m in JCL_DSN_RE.finditer(analysis_source)}) if kind == "jcl" else []
-        sql_includes = sorted({m.group(1).upper() for m in INCLUDE_RE.finditer(analysis_source)}) if kind in {"cobol", "sql"} else []
+        copies = sorted({m.group(1).upper() for m in COPY_RE.finditer(code_source)}) if kind in {"cobol", "copybook"} else []
+        calls = sorted({m.group(1).upper() for m in CALL_LITERAL_RE.finditer(analysis_source) if code_source[m.start():m.start() + 4].upper() == "CALL"}) if kind == "cobol" else []
+        dynamic_calls = sorted({m.group(1).upper() for m in CALL_DYNAMIC_RE.finditer(code_source)}) if kind == "cobol" else []
+        exec_programs = sorted({m.group(1).upper() for m in EXEC_PGM_RE.finditer(code_source)}) if kind == "jcl" else []
+        jcl_datasets = sorted({m.group(1).strip("\\'\"").upper() for m in JCL_DSN_RE.finditer(analysis_source) if code_source[m.start():m.start() + 3].upper() == "DSN"}) if kind == "jcl" else []
+        sql_includes = sorted({m.group(1).upper() for m in INCLUDE_RE.finditer(code_source)}) if kind in {"cobol", "sql"} else []
         features = []
         for pattern, label in (
             (r"\bEXEC\s+SQL\b", "embedded-sql"),
@@ -144,7 +168,7 @@ def analyze_repository(root: Path) -> dict[str, Any]:
             (r"\bSORT\b|\bMERGE\b", "sort-merge"),
             (r"\bCALL\b", "subprogram-calls"),
         ):
-            if re.search(pattern, analysis_source, re.I | re.S):
+            if re.search(pattern, code_source, re.I | re.S):
                 features.append(label)
         records[rel] = {
             "path": rel, "kind": kind, "program_id": program_id,
