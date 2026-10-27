@@ -475,6 +475,42 @@ P-B.
         self.assertEqual(output.getvalue(), "FALLTHROUGH\\nA\\n")
 
 
+class RedefinesStorageTests(unittest.TestCase):
+    def test_redefines_group_fields_share_the_base_buffer(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. REDEFINESDEMO.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-RAW-INPUT PIC X(10).
+01 WS-VIEW REDEFINES WS-RAW-INPUT.
+   05 WS-A PIC 9(5).
+   05 WS-B PIC 9(5).
+01 WS-TOTAL PIC 9(6) VALUE 0.
+PROCEDURE DIVISION.
+MAIN.
+    MOVE "9999911111" TO WS-RAW-INPUT.
+    ADD WS-A WS-B TO WS-TOTAL.
+    DISPLAY WS-A.
+    DISPLAY WS-B.
+    DISPLAY WS-TOTAL.
+    STOP RUN.
+"""
+        program = cobol2py.parse_cobol(source, source_format="free")
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<redefines-storage>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "99999\n11111\n111110\n", generated)
+        diagnostics = cobol2py.collect_diagnostics(program)
+        self.assertNotIn("UNSUPPORTED_STORAGE_OVERLAY", {item["code"] for item in diagnostics})
+        self.assertEqual(namespace["_cobol_storage"]["WS-RAW-INPUT"], "9999911111")
+
 class GnuCobolTraceTests(unittest.TestCase):
     def test_trace_instrumentation_emits_each_scalar_before_program_exit(self):
         from tools.gnucobol_trace import instrument_source
