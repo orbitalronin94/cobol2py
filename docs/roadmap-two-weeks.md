@@ -60,3 +60,5 @@ No se promete compatibilidad completa con todos los dialectos, traducción autom
 - [x] Ejecutar el piloto sobre `samples`: 108/108 fuentes traducidas, 0 errores de sintaxis, 0 errores de traducción y 36 fuentes con diagnósticos para revisión.
 
 Este registro es deliberadamente conservador: una tarea solo se marca como terminada cuando hay evidencia comprobable en el repositorio o en CI.
+
+- [x] Añadir una segunda interfaz HTML independiente para el agente: selección local de archivos, inventario resumido, referencias sin resolver/ambiguas y exportación Markdown/JSON. Añadir pruebas de contrato y documentar que el análisis del navegador es heurístico y no sustituye al CLI Python.
