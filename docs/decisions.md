@@ -344,3 +344,32 @@ Añadir una sección con:
 - **Decisión:** sincronizar el bloque `translator-source` con el contenido exacto de `cobol2py.py` en cada cambio del motor y mantener la prueba `test_embedded_translator_stays_in_sync_with_python_source` como guardarraíl.
 - **Consecuencias:** la demo ejecuta el mismo código Python que el traductor de línea de comandos; los cambios al traductor deben incluir una actualización del HTML embebido. Esto no elimina las limitaciones semánticas del traductor ni las necesidades de conectividad de Pyodide.
 - **Validación:** el bloque embebido se ha regenerado desde el archivo fuente. La suite completa y el resultado del workflow de CI de esta revisión quedan pendientes de confirmación.
+
+## D-037 — Detectar código más allá de la columna 72 antes de inferir formato fijo
+
+- **Fecha:** 2026-10-27.
+- **Estado:** aceptada para el modo auto.
+- **Decisión:** si una línea larga tiene verbos COBOL de control/sentencia más allá de la columna 72, no inferir formato fijo solo por la sangría de siete espacios. Mantener el contenido para que un END-IF inline no se trunque silenciosamente.
+- **Contexto:** el piloto detectó un MALFORMED_CONTROL_FLOW en bench_43_table_first.cbl; la línea contenía END-IF fuera de la zona fija y la heurística lo descartaba.
+- **Consecuencias:** se reduce un falso positivo de diagnóstico y se mantiene la traducción de la fixture; los proyectos con formato conocido deben seguir indicando fixed/free explícitamente cuando haya ambigüedad.
+- **Validación:** regresión de conservación de END-IF, test de sincronización HTML y benchmark diferencial de 102 casos.
+
+
+## D-038 — Enmascarar literales antes de extraer dependencias estáticas
+
+- **Fecha:** 2026-10-27.
+- **Estado:** aceptada para el inventario CLI y la demo web.
+- **Decisión:** conservar offsets y saltos de línea, pero enmascarar el contenido entre comillas antes de detectar COPY, PROGRAM-ID, CALL dinámico, EXEC PGM, INCLUDE y características. Los destinos CALL entre comillas se extraen solo si el verbo CALL está fuera de un literal.
+- **Contexto:** patrones como DISPLAY "COPY GHOST" podían producir aristas falsas en un inventario basado en expresiones regulares.
+- **Consecuencias:** menos falsos positivos procedentes de cadenas; la extracción sigue siendo heurística y no sustituye un parser de dialecto.
+- **Validación:** tests para palabras clave dentro de literales, llamadas literales/dinámicas y smoke test del navegador.
+
+
+## D-039 — Separar el piloto sintáctico de la ejecución diferencial opt-in
+
+- **Fecha:** 2026-10-27.
+- **Estado:** aceptada.
+- **Decisión:** el piloto usa esquema v2, clasifica diagnósticos y enlaza fixtures por ruta exacta. Solo el flag explícito --differential ejecuta fixtures del manifiesto contra GnuCOBOL; por defecto no ejecuta el código generado.
+- **Contexto:** compilar sintácticamente no demuestra equivalencia, y ejecutar fuentes arbitrarias durante un inventario puede tener efectos no deseados.
+- **Consecuencias:** cada archivo declara not-evaluated, matched, discrepancy, reference-error o not-applicable. Los reportes incluyen detalle por fuente y se publican como artefacto de CI.
+- **Validación:** CI del piloto: 108/108 fuentes traducidas, cero errores sintácticos/de traducción y 102/102 fixtures diferenciales coincidentes en stdout/código de retorno. Quedan 35 fuentes con avisos de aritmética/PIC que requieren revisión humana.
