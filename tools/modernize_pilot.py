@@ -42,7 +42,7 @@ def classify_diagnostic(diagnostic: dict[str, Any]) -> dict[str, Any]:
     """Add a review category without changing the translator's diagnostic meaning."""
     result = dict(diagnostic)
     result["classification"] = DIAGNOSTIC_CLASSIFICATIONS.get(str(diagnostic.get("code", "")), "review-required")
-    result["review_required"] = result["classification"] != "known-limitation"
+    result["review_required"] = True
     return result
 
 
@@ -199,6 +199,12 @@ def run_pilot(root: Path, output_dir: Path) -> dict[str, Any]:
     lines += ["", "## Diagnostic classification", "", "| Classification | Count |", "|---|---:|"]
     for classification, count in sorted(summary["diagnostic_classifications"].items()):
         lines.append("| \x60" + classification + "\x60 | " + str(count) + " |")
+    lines += ["", "## Diagnostic details by source", "", "| Source | Line | Code | Classification | Message |", "|---|---:|---|---|---|"]
+    for item in results:
+        for diagnostic in item["diagnostics"]:
+            line = diagnostic.get("line") if diagnostic.get("line") is not None else "—"
+            message = str(diagnostic.get("message", "")).replace("|", "\\|").replace("\\n", " ")
+            lines.append("| `" + item["source"] + "` | " + str(line) + " | `" + str(diagnostic.get("code", "UNKNOWN")) + "` | `" + diagnostic["classification"] + "` | " + message + " |")
     lines += ["", "## Diagnostic codes", "", "| Code | Count | Classification |", "|---|---:|---|"]
     for code, count in sorted(summary["diagnostic_codes"].items()):
         classification = DIAGNOSTIC_CLASSIFICATIONS.get(code, "review-required")
