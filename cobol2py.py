@@ -1057,6 +1057,39 @@ def translate_statement(
 
     if upper in ("STOP RUN", "STOP RUN."):
         return ["raise _CobolStopRun"]
+
+    # ALTER changes the destination of a later GO TO to the altered paragraph.
+    m = re.fullmatch(r"ALTER\s+([A-Za-z0-9-]+)\s+TO\s+PROCEED\s+TO\s+([A-Za-z0-9-]+)", s, re.IGNORECASE)
+    if m:
+        altered, target = (part.upper() for part in m.groups())
+        if altered in paragraphs and target in paragraphs:
+            return [f"_cobol_alter_targets[{altered!r}] = {target!r}"]
+        return [f"# COBOL no traducido: {s}"]
+
+    # GO TO ... DEPENDING ON uses ordinal (1-based) selection. An out-of-range
+    # selector performs no transfer and execution continues with the next statement.
+    m = re.fullmatch(
+        r"GO\s+TO\s+([A-Za-z0-9-]+(?:\s+[A-Za-z0-9-]+)*)\s+DEPENDING\s+ON\s+([A-Za-z0-9-]+)",
+        s, re.IGNORECASE,
+    )
+    if m:
+        targets = [item.upper() for item in m.group(1).split()]
+        selector = normalize_data_reference(m.group(2), variables)
+        if targets and all(target in paragraphs for target in targets):
+            choices = ", ".join(repr(target) for target in targets)
+            return [
+                f"_cobol_selector = int({selector})",
+                f"if 1 <= _cobol_selector <= {len(targets)}:",
+                f"raise _CobolGoTo(({choices})[_cobol_selector - 1])",
+            ]
+        return [f"# COBOL no traducido: {s}"]
+
+    m = re.fullmatch(r"GO\s+TO\s+([A-Za-z0-9-]+)", s, re.IGNORECASE)
+    if m:
+        target = m.group(1).upper()
+        if target in paragraphs:
+            return [f"raise _CobolGoTo(_cobol_alter_targets[{target!r}])"]
+        return [f"# COBOL no traducido: {s}"]
     if upper.startswith("EXIT PROGRAM") or upper == "GOBACK":
         return ["return"]
     if upper in ("CONTINUE", "EXIT"):
@@ -1869,6 +1902,11 @@ def emit_python(prog: Program) -> str:
     lines.append('    """Internal signal for COBOL STOP RUN; caught by the entry paragraph."""')
     lines.append("    pass")
     lines.append("")
+    lines.append("class _CobolGoTo(Exception):")
+    lines.append("    def __init__(self, target):")
+    lines.append("        super().__init__(target)")
+    lines.append("        self.target = target")
+    lines.append("")
     for warning in prog.unresolved_copybooks:
         lines.append(f"# COPYBOOK RESOLUTION WARNING: {warning}")
     if prog.unresolved_copybooks:
@@ -1914,6 +1952,9 @@ def emit_python(prog: Program) -> str:
 
     para_names = set(prog.paragraphs.keys())
     variables_by_name = {variable.name.upper(): variable for variable in prog.variables}
+    alter_targets = {name: name for name in para_names if name != "__MAIN__"}
+    lines.append("_cobol_alter_targets = " + repr(alter_targets))
+    lines.append("")
     order = [p for p in prog.paragraph_order if p != "__MAIN__"]
     if "__MAIN__" in prog.paragraphs and prog.paragraphs["__MAIN__"]:
         order = ["__MAIN__"] + order
@@ -1940,20 +1981,45 @@ def emit_python(prog: Program) -> str:
             lines.append("    global " + ", ".join(global_vars))
         body = translate_paragraph(nodes, para_names, variables_by_name)
         body = body if body else ["    pass"]
-        if para_name == entrypoint:
-            lines.append("    try:")
-            lines.extend("    " + line if line else line for line in body)
-            lines.append("    except _CobolStopRun:")
-            lines.append("        return")
-        else:
-            lines.extend(body)
+        # The dispatcher catches STOP RUN and non-local GO TO transfers.
+        # Keep paragraph bodies free of local catches to preserve transfer semantics.
+        lines.extend(body)
         lines.append("")
 
+    dispatch_order = [name for name in order if name in prog.paragraphs]
+    dispatch_map = {
+        name: ("main" if name == "__MAIN__" else normalize_name(name))
+        for name in dispatch_order
+        if prog.paragraphs.get(name)
+    }
+    lines.append("_cobol_paragraph_functions = {")
+    for source_name, function_name in dispatch_map.items():
+        lines.append(f"    {source_name!r}: {function_name},")
+    lines.append("}")
+    lines.append("")
+    lines.append("def _cobol_dispatch(entry):")
+    lines.append("    order = " + repr(dispatch_order))
+    lines.append("    if entry not in order:")
+    lines.append("        raise ValueError(f'Unknown COBOL paragraph: {entry}')")
+    lines.append("    index = order.index(entry)")
+    lines.append("    while index < len(order):")
+    lines.append("        paragraph = order[index]")
+    lines.append("        try:")
+    lines.append("            function = _cobol_paragraph_functions.get(paragraph)")
+    lines.append("            if function is not None:")
+    lines.append("                function()")
+    lines.append("        except _CobolStopRun:")
+    lines.append("            return")
+    lines.append("        except _CobolGoTo as transfer:")
+    lines.append("            if transfer.target not in order:")
+    lines.append("                raise ValueError(f'Unknown COBOL GO TO target: {transfer.target}')")
+    lines.append("            index = order.index(transfer.target)")
+    lines.append("            continue")
+    lines.append("        index += 1")
+    lines.append("")
     lines.append('if __name__ == "__main__":')
-    if "__MAIN__" in prog.paragraphs and prog.paragraphs["__MAIN__"]:
-        lines.append("    main()")
-    elif order:
-        lines.append(f"    {normalize_name(order[0])}()")
+    if dispatch_order:
+        lines.append(f"    _cobol_dispatch({dispatch_order[0]!r})")
     else:
         lines.append("    pass")
 
