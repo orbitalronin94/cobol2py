@@ -247,7 +247,7 @@ def run_pilot(root: Path, output_dir: Path, *, differential: bool = False) -> di
             "differential_fixture_links_are_candidates_only": True,
         },
         "limitations": [
-            "Generated programs are syntax-checked but not executed.",
+            "By default, generated programs are syntax-checked but not executed; --differential explicitly executes only exact manifest fixtures.",
             "Syntax validity and static diagnostics do not prove behavioral equivalence.",
             "Use the differential benchmark with GnuCOBOL for supported, executable cases.",
         ],
@@ -314,7 +314,7 @@ def run_pilot(root: Path, output_dir: Path, *, differential: bool = False) -> di
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Inventory COBOL sources, translate each program, and syntax-check the generated Python."
+        description="Inventory COBOL sources, translate each program, syntax-check output, and optionally run exact differential fixtures."
     )
     parser.add_argument("root", nargs="?", default="samples", help="source tree to inspect (default: samples)")
     parser.add_argument("--out-dir", type=Path, default=Path("/tmp/cobol2py-pilot"),
