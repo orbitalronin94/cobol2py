@@ -2200,6 +2200,13 @@ def collect_diagnostics(prog: Program, target_language: str = "python") -> list[
             "message": message,
         })
 
+    variables_by_name = {variable.name.upper(): variable for variable in prog.variables}
+    _overlay_fields, overlay_buffers = build_overlay_layout(variables_by_name)
+    supported_overlay_names = {
+        variable.name.upper() for variable in prog.variables
+        if variable.redefines and variable.redefines.upper() in overlay_buffers
+    }
+
     for line_number, source_line in prog.raw_lines:
         if re.match(r"^\s*66\s+[A-Za-z0-9-]+\s+.*\bRENAMES\b", source_line, re.IGNORECASE):
             diagnostics.append({
@@ -2215,11 +2222,12 @@ def collect_diagnostics(prog: Program, target_language: str = "python") -> list[
                 "line": line_number,
                 "message": source_line.strip(),
             })
-        if re.match(
-            r"^\s*\d{1,2}\s+[A-Za-z0-9-]+\s+.*\bREDEFINES\b",
+        overlay_match = re.match(
+            r"^\s*\d{1,2}\s+([A-Za-z0-9-]+)\s+.*\bREDEFINES\b",
             source_line,
             re.IGNORECASE,
-        ):
+        )
+        if overlay_match and overlay_match.group(1).upper() not in supported_overlay_names:
             diagnostics.append({
                 "code": "UNSUPPORTED_STORAGE_OVERLAY",
                 "severity": "warning",
