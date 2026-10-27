@@ -6,20 +6,20 @@
 
 La traducción busca **leerse** y, para el subconjunto cubierto por regresiones diferenciales, también ejecutarse. No promete equivalencia completa de COBOL: las construcciones no soportadas quedan documentadas o señaladas explícitamente.
 
-## Roadmap: estado actual y siguiente etapa
+## Roadmap: hito de madurez 0.8
 
-El plan inicial de diez días se ha superado en varios entregables: el traductor cuenta con un corpus diferencial de 102 casos; el agente produce inventarios multiarchivo con referencias ambiguas; y el piloto conecta inventario, traducción y validación sintáctica. La interfaz web del agente también permite inspección local y exportación de informes. Esto **no significa que la modernización general esté terminada**: el siguiente ciclo se centra en calidad del análisis, semántica y trazabilidad.
+El plan inicial de diez días se ha ampliado hasta un hito de ingeniería 0.8: traductor con corpus diferencial acotado, agente multiarchivo, piloto de traducción con comprobación sintáctica, demo web y reportes con clasificación de diagnósticos. **0.8 describe la madurez del flujo de trabajo, no una publicación oficial ni compatibilidad completa con COBOL.** La versión del motor continúa siendo la que declara el encabezado de cobol2py.py.
 
-| Etapa | Estado | Objetivo / salida verificable |
+| Área | Estado actual | Evidencia y límite |
 |---|---|---|
-| Base fiable del traductor | Implementada para el subconjunto medido | Regresiones unitarias, benchmark diferencial con GnuCOBOL y documentación explícita de límites |
-| Inventario y piloto integrado | Implementado como piloto | Inventario JSON/Markdown, traducción por archivo, comprobación sintáctica e informe de diagnósticos; sin afirmar equivalencia semántica |
-| Agente de navegador | Implementado como demo heurística | `web/agent.html`, selección de archivos/carpeta, referencias pendientes/ambiguas y exportación local |
-| **Fase siguiente: precisión del inventario** | **En curso** | Clasificar diagnósticos de `samples`, separar llamadas literales de llamadas dinámicas, reducir falsos positivos y cubrir cada corrección con fixtures |
-| **Fase siguiente: validación de migración** | Pendiente | Incorporar al informe del piloto referencias a casos diferenciales aplicables, resultados de ejecución de referencia y estado explícito de validación semántica |
-| **Fase siguiente: experiencia y trazabilidad** | Pendiente | Mejorar navegación entre hallazgos y archivos, esquema de informes versionado, pruebas de extremo a extremo y guía de uso reproducible |
+| Traductor y benchmark | Base estable para el subconjunto medido | Corpus versionado de 102 casos con GnuCOBOL; no es una estimación de compatibilidad general |
+| Inventario multiarchivo | Implementado con clasificación estática | Dependencias resueltas, sin resolver, ambiguas y CALL dinámicas; los nombres no prueban enlazado en ejecución |
+| Piloto integrado | Informe de esquema v2 | Traducción, sintaxis, clasificación por código/categoría y enlaces exactos a fixtures candidatas; no ejecuta los programas generados |
+| Agente web | Demo heurística local | Selección de archivos, hallazgos y exportación; el análisis web no sustituye al CLI Python |
+| Evidencia de CI | Integrada | CI valida el contrato del informe y publica el informe del piloto como artefacto para revisión |
+| Revisión de los 36 archivos con diagnósticos | Triage automatizado; revisión humana pendiente | El informe generado por CI lista archivo, línea, código, categoría y mensaje. No se deben descartar avisos sin evidencia |
 
-El roadmap detallado, con criterios de aceptación y registro de evidencia, está en [`docs/roadmap-two-weeks.md`](docs/roadmap-two-weeks.md). La siguiente etapa se considera terminada solo cuando sus cambios estén cubiertos por pruebas y CI; no se ocultan diagnósticos para mejorar métricas.
+El roadmap detallado, con los hitos de madurez v0.1–v0.8 y el siguiente ciclo hacia 0.9/1.0, está en [docs/roadmap-two-weeks.md](docs/roadmap-two-weeks.md). La clasificación automática ayuda a priorizar; no declara por sí sola que un hallazgo sea un falso positivo ni que un programa sea seguro para migrar.
 
 ---
 
