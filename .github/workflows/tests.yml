@@ -147,5 +147,5 @@ jobs:
       - name: Smoke-test repository inventory and JSON report
         run: |
           python cobol2py_agent.py . --out /tmp/migration-plan.md --json-out /tmp/migration-plan.json
-          python -c "import json; p=json.load(open('/tmp/migration-plan.json', encoding='utf-8')); assert p['schema_version'] == 1; assert isinstance(p['files'], list); assert isinstance(p['dependencies'], list); assert isinstance(p['unresolved_references'], list); print('Agent report schema OK; files:', p['summary']['files'])"
+          python -c "import json; p=json.load(open('/tmp/migration-plan.json', encoding='utf-8')); assert p['schema_version'] == 1; assert isinstance(p['files'], list); assert isinstance(p['dependencies'], list); assert isinstance(p['unresolved_references'], list); assert isinstance(p['ambiguous_references'], list); assert isinstance(p['summary']['ambiguous_references'], int); print('Agent report schema OK; files:', p['summary']['files'])"
           test -s /tmp/migration-plan.md
