@@ -528,7 +528,7 @@ MAIN.
         with redirect_stdout(output):
             namespace["_cobol_dispatch"]("MAIN-LOGIC")
 
-        self.assertEqual(output.getvalue(), "000146\\n", generated)
+        self.assertEqual(output.getvalue(), "000146\n", generated)
         self.assertEqual(namespace["_cobol_storage"]["WS-RAW"], "1234")
         self.assertEqual(namespace["_cobol_alter_targets"]["P-X"], "P-Y")
         diagnostic_codes = {item["code"] for item in cobol2py.collect_diagnostics(program)}
