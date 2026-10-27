@@ -110,6 +110,7 @@ python cobol2py_agent.py /ruta/al/sistema \
 El informe incluye:
 - Inventario de programas COBOL, copybooks, ficheros JCL y SQL.
 - Referencias detectadas mediante `COPY`, `CALL`, `EXEC PGM`, inclusiones SQL y datasets JCL.
+- Resolución de `COPY` que prioriza el copybook del directorio fuente, admite rutas relativas explícitas dentro del árbol inspeccionado y conserva las referencias ambiguas/no resueltas cuando no hay un destino seguro.
 - Dependencias resueltas por nombre, referencias sin resolver y referencias ambiguas con varias rutas candidatas.
 - El análisis excluye comentarios reconocidos y enmascara literales antes de detectar dependencias; sigue siendo heurístico y no sustituye un parser completo.
 - Construcciones que necesitan revisión y etapas sugeridas para una migración por oleadas.
