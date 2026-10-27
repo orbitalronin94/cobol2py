@@ -64,7 +64,7 @@ async def main() -> None:
                 {
                     "name": "MAIN.cbl",
                     "mimeType": "text/plain",
-                    "buffer": b'IDENTIFICATION DIVISION.\\nPROGRAM-ID. MAIN.\\nPROCEDURE DIVISION.\\n CALL "SUBPROG".\\n CALL "MISSING".\\n STOP RUN.\\n',
+                    "buffer": b'IDENTIFICATION DIVISION.\\nPROGRAM-ID. MAIN.\\nPROCEDURE DIVISION.\\n CALL "SUBPROG".\\n CALL "MISSING".\\n CALL WS-PROGRAM.\\n STOP RUN.\\n',
                 },
                 {
                     "name": "SUBPROG.cbl",
@@ -82,8 +82,9 @@ async def main() -> None:
                 ) from error
             stats = await page.locator("#stats").inner_text()
             unresolved = await page.locator("#unresolved").inner_text()
-            if "2" not in stats or "MISSING" not in unresolved:
-                raise AssertionError("Agent inventory missed expected files/reference: " + stats + " / " + unresolved)
+            dynamic_calls = await page.locator("#dynamic").inner_text()
+            if "2" not in stats or "MISSING" not in unresolved or "WS-PROGRAM" not in dynamic_calls:
+                raise AssertionError("Agent inventory missed expected files/reference/dynamic CALL: " + stats + " / " + unresolved + " / " + dynamic_calls)
             async with page.expect_download() as download_info:
                 await page.locator("#json").click()
             download = await download_info.value
