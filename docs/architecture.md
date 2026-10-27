@@ -110,3 +110,8 @@ El subconjunto de `REPLACING` implementado acepta una o más parejas `==texto an
 ## Precisión del inventario estático
 
 Antes de buscar referencias, el agente elimina comentarios COBOL `*>` (y registros de comentario en formato fijo), comentarios de línea JCL `//*` y comentarios SQL `--`, respetando comillas al retirar marcadores inline. Esto reduce dependencias falsas procedentes de código comentado. La extracción sigue basada en expresiones regulares, no en parsers completos por lenguaje; literales, continuaciones, formatos de proveedor y construcciones inusuales pueden producir falsos positivos o referencias omitidas. Los informes deben revisarse antes de usarse para planificar una migración.
+
+
+## Ajuste de aritmética al PIC receptor
+
+Las sentencias aritméticas básicas pasan por `fit_numeric_expression` cuando el destino tiene un PIC numérico de dígitos simples. La conversión limita el resultado a la capacidad de almacenamiento representada y evita que un `PIC 99` conserve valores como `100` tras una suma. Es una aproximación del subconjunto probado, no un motor decimal COBOL: las reglas de `ON SIZE ERROR`, redondeo, `P` y precisión decimal compleja siguen fuera de cobertura.
