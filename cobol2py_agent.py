@@ -156,6 +156,7 @@ def analyze_repository(root: Path) -> dict[str, Any]:
 
     edges: list[dict[str, str]] = []
     unresolved: list[dict[str, str]] = []
+    ambiguous: list[dict[str, Any]] = []
     for rel, item in records.items():
         references: list[tuple[str, str]] = []
         references += [("copy", name) for name in item["copybooks"]]
@@ -172,6 +173,11 @@ def analyze_repository(root: Path) -> dict[str, Any]:
             if candidates:
                 edges.extend({"source": rel, "target": candidate, "relation": relation, "symbol": target}
                              for candidate in candidates)
+                if len(candidates) > 1:
+                    ambiguous.append({
+                        "source": rel, "relation": relation, "symbol": target,
+                        "candidates": candidates,
+                    })
             else:
                 unresolved.append({"source": rel, "relation": relation, "symbol": target})
 
@@ -190,10 +196,12 @@ def analyze_repository(root: Path) -> dict[str, Any]:
             "files": len(records), "cobol_programs": cobol_count,
             "copybooks": copy_count, "jcl_files": jcl_count, "sql_files": sql_count,
             "dependency_edges": len(edges), "unresolved_references": len(unresolved),
+            "ambiguous_references": len(ambiguous),
         },
         "files": list(records.values()),
         "dependencies": edges,
         "unresolved_references": unresolved,
+        "ambiguous_references": ambiguous,
         "recommended_sequence": [
             {"stage": 1, "name": "Baseline and inventory", "exit_criteria": "Inventory reviewed; source format, compiler and runtime assumptions recorded."},
             {"stage": 2, "name": "Dependency closure", "exit_criteria": "COPY/CALL/JCL/SQL references resolved or explicitly classified as external."},
@@ -227,7 +235,8 @@ def render_markdown(plan: dict[str, Any]) -> str:
         f"- JCL files: **{summary['jcl_files']}**",
         f"- SQL files: **{summary['sql_files']}**",
         f"- Resolved dependency edges: **{summary['dependency_edges']}**",
-        f"- Unresolved references: **{summary['unresolved_references']}**", "",
+        f"- Unresolved references: **{summary['unresolved_references']}**",
+        f"- Ambiguous references: **{summary.get('ambiguous_references', 0)}**", "",
         "## Recommended migration sequence", "",
     ]
     for stage in plan["recommended_sequence"]:
@@ -244,6 +253,17 @@ def render_markdown(plan: dict[str, Any]) -> str:
         lines += [f"| `{e['source']}` | {e['relation']} | `{e['symbol']}` |" for e in plan["unresolved_references"]]
     else:
         lines.append("No unresolved references were detected by the current heuristics.")
+    lines += ["", "## Ambiguous references", ""]
+    if plan.get("ambiguous_references"):
+        lines += ["| Source | Relation | Symbol | Candidate paths |", "|---|---|---|---|"]
+        lines += [
+            f"| `{item['source']}` | {item['relation']} | `{item['symbol']}` | "
+            + ", ".join(f"`{candidate}`" for candidate in item["candidates"])
+            + " |"
+            for item in plan["ambiguous_references"]
+        ]
+    else:
+        lines.append("No ambiguous references were detected by name-based static analysis.")
     lines += ["", "## JCL datasets detected", ""]
     dataset_rows = [(item["path"], dataset) for item in plan["files"] for dataset in item.get("jcl_datasets", [])]
     if dataset_rows:
