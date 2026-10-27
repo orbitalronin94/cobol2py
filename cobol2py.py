@@ -854,7 +854,7 @@ def normalize_data_reference(
     """Map a COBOL data-name (including OF/IN qualification) into nested dicts."""
     text = name.strip()
     match = re.fullmatch(
-        r"([A-Za-z0-9-]+)(?:\(([A-Za-z0-9_-]+)\))?(?:\s+(?:OF|IN)\s+([A-Za-z0-9-]+))?",
+        r"([A-Za-z0-9-]+)(?:\s*\(([A-Za-z0-9_-]+)\))?(?:\s+(?:OF|IN)\s+([A-Za-z0-9-]+))?",
         text,
         re.IGNORECASE,
     )
@@ -958,7 +958,7 @@ def translate_expr(
         flags=re.IGNORECASE,
     )
     expr = re.sub(
-        r"\b([A-Za-z][A-Za-z0-9-]*)\(([A-Za-z0-9_-]+)\)",
+        r"\b([A-Za-z][A-Za-z0-9-]*)\s*\(([A-Za-z0-9_-]+)\)",
         lambda match: normalize_data_reference(match.group(0), variables),
         expr,
     )
@@ -1212,7 +1212,7 @@ def split_cobol_items(s: str) -> list[str]:
     return tokens
 
 
-DATA_REF_PATTERN = r"[A-Za-z0-9-]+(?:\([A-Za-z0-9_-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?"
+DATA_REF_PATTERN = r"[A-Za-z0-9-]+(?:\s*\([A-Za-z0-9_-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?"
 
 
 def translate_statement(
