@@ -42,6 +42,22 @@ El calendario de diez días describe la primera iteración y ya se han entregado
 
 **Criterio de salida:** las mejoras tienen regresiones reproducibles y el README de compatibilidad no promete más de lo que miden los tests.
 
+### Fase E — Semántica de flujo dinámico y almacenamiento compartido (v0.8.x)
+
+Este bloque se añade a la línea de trabajo v0.8: cerrar fallos que pueden producir Python sintácticamente válido pero con comportamiento COBOL distinto. La fixture de referencia es `LABERINTO-COBOL`, que combina `ALTER`, `GO TO ... DEPENDING ON`, `REDEFINES`, saltos entre párrafos y datos numéricos compartidos.
+
+- [ ] **Caracterizar primero con GnuCOBOL:** guardar fuente original, versión/flags del compilador, stdout y código de retorno. Registrar el resultado como fixture diferencial versionada.
+- [ ] **Implementar `ALTER`:** modelar el destino del `GO TO` alterable como estado mutable consultado en tiempo de ejecución. Cada `ALTER` posterior debe reemplazar el destino anterior; no convertir la sentencia en comentario ni congelar el destino durante la traducción.
+- [ ] **Implementar `GO TO ... DEPENDING ON`:** preservar la selección ordinal COBOL basada en 1. Añadir pruebas para cada destino válido y para selector fuera de rango; en este ejemplo, si no se toma ninguna rama, debe respetarse la sentencia siguiente del párrafo.
+- [ ] **Implementar `REDEFINES`:** describir offsets, longitudes y vistas del almacenamiento base; leer/escribir una vista debe reflejarse en las demás. No emitir diccionarios vacíos independientes para campos que se superponen.
+- [ ] **Preservar el flujo de párrafos:** representar saltos arbitrarios sin introducir retornos de función que no existen en COBOL. Verificar el comportamiento de los ciclos y del reinicio de `MAIN-LOGIC`.
+- [ ] **Añadir pruebas unitarias mínimas:** destinos `ALTER` antes y después de la mutación, selección de cada ordinal, rango inválido, lecturas `REDEFINES` antes/después de modificar el búfer y layouts válidos/invalidos para PIC numérico.
+- [ ] **Añadir regresión integrada:** traducir y ejecutar la fixture solo en el job diferencial opt-in y comparar stdout y código de retorno con GnuCOBOL. La compilación de Python no cuenta como validación semántica.
+- [ ] **Exponer límites sin degradación silenciosa:** hasta que cada construcción esté implementada y probada, emitir diagnóstico explícito y clasificar la traducción como incompleta; no reemplazar instrucciones por comentarios sin que el informe lo refleje.
+- [ ] **Sincronizar las interfaces:** mantener `web/index.html` alineado con `cobol2py.py` y añadir el contrato del diagnóstico en las pruebas de la demo.
+
+**Criterio de salida:** las pruebas específicas de cada construcción y la fixture integrada coinciden con GnuCOBOL en stdout/código de retorno; los casos no soportados quedan explícitamente diagnosticados. El resultado solo certifica los casos medidos, no compatibilidad general con `ALTER`, `REDEFINES` ni todos los dialectos COBOL.
+
 ### Cadencia de revisión
 
 Al cerrar cada bloque, actualizar el estado de esta lista, el README, las notas de versión cuando proceda y la evidencia de CI. Si el análisis revela una limitación que no se puede resolver con seguridad, registrar la limitación y el diagnóstico en lugar de ocultarlos.
@@ -134,6 +150,18 @@ Esta escala resume entregables acumulados del proyecto para ordenar el roadmap. 
 - [x] Las llamadas CALL literales y dinámicas se distinguen en el agente CLI y en la demo web, con pruebas unitarias y de navegador.
 - [ ] Revisar humanamente los 35 archivos que siguen con avisos conocidos de aritmética/PIC. Se corrigió un falso positivo de la línea base de 36; el [triage por fuente](pilot-diagnostics-baseline.md) documenta los restantes. No usar la clasificación automática como autorización de migración.
 - [x] La equivalencia se informa por caso y de forma opt-in: 102/102 fixtures coinciden en stdout/código de retorno. Esto no equivale a una garantía global ni cubre todas las entradas o efectos externos.
+
+### Trabajo prioritario de cierre v0.8.x
+
+Antes de ampliar el alcance a más verbos, priorizar estas brechas semánticas con una fixture end-to-end:
+
+1. `ALTER`: destino de salto mutable en ejecución, con una prueba que demuestre que un segundo ALTER sustituye al primero.
+2. `GO TO ... DEPENDING ON`: selección 1-based, pruebas de todos los ordinales y comportamiento fuera de rango.
+3. `REDEFINES`: almacenamiento compartido, offsets/longitudes verificables y coherencia entre vistas después de una escritura.
+4. Flujo de párrafos: saltos y ciclos sin retornos artificiales de llamadas Python.
+5. Evidencia diferencial: LABERINTO-COBOL frente a GnuCOBOL, incluyendo stdout y código de retorno, con versión/flags del compilador registrados.
+
+La salida de referencia debe obtenerse ejecutando la fuente COBOL con el compilador de referencia; no asumir que una traducción manual representa por sí sola la semántica del dialecto. El valor final del acumulador que se espera del ejemplo es 222240 y el mensaje inicial aparece dos veces, pero estos valores deben quedar confirmados por la fixture diferencial antes de considerarlos baseline oficial.
 
 ### Siguiente ciclo después de 0.8
 
