@@ -21,7 +21,8 @@ JCL_EXTENSIONS = {".jcl", ".job"}
 SQL_EXTENSIONS = {".sql"}
 SKIP_DIRS = {".git", ".venv", "venv", "__pycache__", "node_modules", "dist", "build"}
 COPY_RE = re.compile(r"\bCOPY\s+([A-Z0-9_$#@-]+)", re.I)
-CALL_RE = re.compile(r"""\bCALL\s+(?:['"]([^'"]+)['"]|([A-Z0-9_$#@-]+))""", re.I)
+CALL_LITERAL_RE = re.compile(r'''\bCALL\s+['"]([^'"]+)['"]''', re.I)
+CALL_DYNAMIC_RE = re.compile(r'''\bCALL\s+([A-Z0-9_$#@-]+)\b''', re.I)
 PROGRAM_RE = re.compile(r"\bPROGRAM-ID\s*\.\s*([A-Z0-9_$#@-]+)", re.I)
 EXEC_PGM_RE = re.compile(r"\bEXEC\s+PGM\s*=\s*([A-Z0-9_$#@-]+)", re.I)
 JCL_DSN_RE = re.compile(r"\bDSN\s*=\s*([^,\s]+)", re.I)
@@ -128,7 +129,8 @@ def analyze_repository(root: Path) -> dict[str, Any]:
             symbols[program_id].append(rel)
 
         copies = sorted({m.group(1).upper() for m in COPY_RE.finditer(analysis_source)}) if kind in {"cobol", "copybook"} else []
-        calls = sorted({(m.group(1) or m.group(2)).upper() for m in CALL_RE.finditer(analysis_source)}) if kind == "cobol" else []
+        calls = sorted({m.group(1).upper() for m in CALL_LITERAL_RE.finditer(analysis_source)}) if kind == "cobol" else []
+        dynamic_calls = sorted({m.group(1).upper() for m in CALL_DYNAMIC_RE.finditer(analysis_source)}) if kind == "cobol" else []
         exec_programs = sorted({m.group(1).upper() for m in EXEC_PGM_RE.finditer(analysis_source)}) if kind == "jcl" else []
         jcl_datasets = sorted({m.group(1).strip("\'\"").upper() for m in JCL_DSN_RE.finditer(analysis_source)}) if kind == "jcl" else []
         sql_includes = sorted({m.group(1).upper() for m in INCLUDE_RE.finditer(analysis_source)}) if kind in {"cobol", "sql"} else []
@@ -146,7 +148,7 @@ def analyze_repository(root: Path) -> dict[str, Any]:
                 features.append(label)
         records[rel] = {
             "path": rel, "kind": kind, "program_id": program_id,
-            "copybooks": copies, "calls": calls, "jcl_programs": exec_programs,
+            "copybooks": copies, "calls": calls, "dynamic_calls": dynamic_calls, "jcl_programs": exec_programs,
             "jcl_datasets": jcl_datasets, "sql_includes": sql_includes, "features": features,
             "lines": len(source.splitlines()),
         }
