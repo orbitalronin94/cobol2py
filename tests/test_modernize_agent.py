@@ -90,8 +90,8 @@ COPY CUSTOMER-REC.
 PROCEDURE DIVISION.
     STOP RUN.
 """)
-        self.write("src/CUSTOMER-REC.cpy", "01 WS-LOCAL PIC X(4).\\n")
-        self.write("shared/CUSTOMER-REC.cpy", "01 WS-SHARED PIC X(4).\\n")
+        self.write("src/CUSTOMER-REC.cpy", "01 WS-LOCAL PIC X(4).\n")
+        self.write("shared/CUSTOMER-REC.cpy", "01 WS-SHARED PIC X(4).\n")
 
         plan = analyze_repository(self.root)
         edges = [edge for edge in plan["dependencies"]
@@ -109,7 +109,7 @@ COPY copy/RECORD.cpy.
 PROCEDURE DIVISION.
     STOP RUN.
 """)
-        self.write("copy/RECORD.cpy", "01 WS-REC PIC X(4).\\n")
+        self.write("copy/RECORD.cpy", "01 WS-REC PIC X(4).\n")
 
         plan = analyze_repository(self.root)
         edges = [edge for edge in plan["dependencies"]
