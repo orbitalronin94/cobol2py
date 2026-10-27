@@ -10,6 +10,7 @@ Esta carpeta documenta el diseño actual, las decisiones técnicas, el alcance s
 - [Compatibilidad COBOL](compatibility.md): comportamientos implementados, verificación y limitaciones conocidas.
 - [Proceso de cambios](change-process.md): cómo proponer, medir y documentar mejoras.
 - [Roadmap de dos semanas](roadmap-two-weeks.md): calendario de ejecución, entregables, aceptación y seguimiento.
+- [Notas de versión 0.1.0-rc1](release-notes-0.1.0-rc1.md): alcance, resultados medidos y limitaciones del candidato.
 
 ## Principio de mantenimiento
 
