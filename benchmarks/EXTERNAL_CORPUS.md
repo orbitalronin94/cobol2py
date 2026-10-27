@@ -46,4 +46,4 @@ The report separately records how many files were discovered, screened, rejected
 
 ## Output
 
-The workflow uploads `external-corpus-report.json` and `external-corpus-report.md` as a 90-day artifact. It never uploads the source archive or extracted source files. A candidate mismatch makes the benchmark fail while preserving the report for analysis.
+The workflow uploads `external-corpus-report.json` and `external-corpus-report.md` as a 90-day artifact. It never uploads the source archive or extracted source files. The workflow's success status means the requested sample was measured successfully; it does **not** mean every translated program passed. Candidate mismatches are counted in the report so we can establish the baseline. The run fails only if it cannot reach the requested sample size or the benchmark infrastructure fails.
