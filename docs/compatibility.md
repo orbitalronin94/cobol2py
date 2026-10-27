@@ -125,4 +125,4 @@ La regresión unitaria `test_copy_replacing_applies_pseudo_text_before_parsing` 
 
 ## Regresión diferencial de COPY REPLACING
 
-El caso `copy-replacing-basic` usa `samples/copy_replacing.cbl` y `samples/COPY-REPLACING-REC.cpy` para comparar el programa traducido con el resultado compilado por GnuCOBOL. Verifica el subconjunto de reemplazo de un nombre de campo por otro; no cubre varias parejas, pseudo-texto con múltiples tokens ni reglas avanzadas de dialecto.
+El caso `copy-replacing-basic` usa `samples/copy_replacing.cbl` y `samples/COPY-REPLACING-REC.cpy` para comparar el programa traducido con el resultado compilado por GnuCOBOL. Verifica dos parejas sencillas en una sola cláusula: renombrado de campo y reemplazo del texto de una cláusula `PIC`. No cubre pseudo-texto complejo, límites léxicos generales ni reglas avanzadas de dialecto.
