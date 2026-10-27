@@ -9,6 +9,7 @@ Esta carpeta documenta el diseño actual, las decisiones técnicas, el alcance s
 - [Registro de decisiones](decisions.md): decisiones tomadas, motivación, consecuencias y estado.
 - [Compatibilidad COBOL](compatibility.md): comportamientos implementados, verificación y limitaciones conocidas.
 - [Proceso de cambios](change-process.md): cómo proponer, medir y documentar mejoras.
+- [Roadmap de dos semanas](roadmap-two-weeks.md): calendario de ejecución, entregables, aceptación y seguimiento.
 
 ## Principio de mantenimiento
 
