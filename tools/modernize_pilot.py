@@ -49,7 +49,7 @@ def classify_diagnostic(diagnostic: dict[str, Any]) -> dict[str, Any]:
 def _translator_version() -> str:
     """Read the human-maintained version from the translator module docstring."""
     import re
-    match = re.search(r"\\bv(\\d+\\.\\d+\\.\\d+)\\b", cobol2py.__doc__ or "")
+    match = re.search(r"\bv(\d+\.\d+\.\d+)\b", cobol2py.__doc__ or "")
     return match.group(1) if match else "unknown"
 
 
