@@ -292,6 +292,17 @@ python -m unittest discover -s tests -p 'test_modernize_agent.py' -v
 
 El informe enumera los artefactos detectados, las dependencias que logra resolver por nombre, las referencias pendientes y las construcciones que conviene revisar primero. Es una ayuda para planificar, no un parser completo, un migrador autónomo ni una prueba de equivalencia. Consulta [la guía del agente](docs/repo-modernization-agent.md) y [la arquitectura](docs/architecture.md) para conocer el alcance y el diseño previsto.
 
+
+### Piloto de modernización integrado
+
+Ejecuta inventario, traducción del subconjunto y comprobación sintáctica sin ejecutar los programas generados:
+
+```bash
+python tools/modernize_pilot.py samples --out-dir /tmp/cobol2py-pilot
+```
+
+Genera inventario Markdown/JSON, archivos Python traducidos y un informe por programa. El directorio de salida debe estar fuera del árbol de fuentes. El piloto no prueba equivalencia semántica; usa el benchmark diferencial con GnuCOBOL para los casos ejecutables.
+
 ## Documentación de ingeniería
 
 La documentación de arquitectura, decisiones de diseño, alcance de compatibilidad, proceso de cambios y ejecución por fases está en [`docs/`](docs/README.md). Consulta el [roadmap de modernización de dos semanas](docs/roadmap-two-weeks.md) para el calendario, los criterios de aceptación y el registro de progreso. Los cambios semánticos deben incluir pruebas y, cuando sea posible, una comparación diferencial con GnuCOBOL. El porcentaje del benchmark mide únicamente los casos versionados; no demuestra equivalencia general.
@@ -322,7 +333,7 @@ python cobol2py.py programa.cbl --diagnostics-json
 
 `--format auto` es el valor predeterminado; como las columnas de secuencia en blanco pueden aparecer tanto en formato fijo como en fuentes libres indentadas, no siempre es posible inferir el formato con certeza.
 
-GitHub Actions ejecuta las pruebas con Python 3.10–3.13 y compara, mediante el benchmark diferencial, 101 programas COBOL contra GnuCOBOL. Los casos cubren `DISPLAY`, campos `PIC X/9`, `MOVE`, operaciones aritméticas, condiciones simples y compuestas, `IF` anidados, `PERFORM TIMES`, párrafos y tablas/subíndices. La suite de unittest mantiene además sus regresiones de runtime. La cobertura sigue limitada al corpus versionado y al subconjunto probado; no demuestra equivalencia semántica general ni certifica una migración. La compilación sintáctica de la salida, por sí sola, tampoco prueba equivalencia.
+GitHub Actions ejecuta las pruebas con Python 3.10–3.13 y compara, mediante el benchmark diferencial, 102 programas COBOL contra GnuCOBOL. Los casos cubren `DISPLAY`, campos `PIC X/9`, `MOVE`, operaciones aritméticas, condiciones simples y compuestas, `IF` anidados, `PERFORM TIMES`, párrafos y tablas/subíndices. La suite de unittest mantiene además sus regresiones de runtime. La cobertura sigue limitada al corpus versionado y al subconjunto probado; no demuestra equivalencia semántica general ni certifica una migración. La compilación sintáctica de la salida, por sí sola, tampoco prueba equivalencia.
 
 ---
 
@@ -333,7 +344,7 @@ El workflow `differential-benchmark.yml` falla si cualquier caso del candidato n
 - **Métrica principal:** porcentaje de programas cuyo `stdout` y código de salida coinciden exactamente con GnuCOBOL.
 - **Comparación entre versiones:** ejecuta el snapshot inicial fijado en `02fde4b` y el candidato actual sobre el mismo corpus de la revisión evaluada, y muestra el cambio en puntos porcentuales.
 - **Fallos visibles:** errores de compilación COBOL, traducción, ejecución Python y diferencias de salida cuentan como fallos del caso y aparecen en el detalle.
-- **Corpus versionado:** `benchmarks/cases.json` define 102 programas y las capacidades cubiertas, incluidos casos de `COPY ... REPLACING` y overflow aritmético del campo receptor contrastados con GnuCOBOL. La revisión histórica del PR #9 obtuvo 100/100 coincidencias en el corpus de 100 casos que existía entonces; el snapshot inicial obtuvo 16/100 sobre aquel mismo corpus. En el commit [`9364ba6`](https://github.com/orbitalronin94/cobol2py/commit/9364ba6f8fd28e0f089409e91f826068d87c1502), el candidato obtuvo 101/101 coincidencias exactas (100 %) en el corpus de entonces, incluido un caso con dos parejas `COPY REPLACING`. El corpus se amplió después con `arithmetic-receiving-pic`; consulta el workflow diferencial más reciente para su resultado. El resultado mide solo los casos versionados, no la equivalencia general de COBOL. Para añadir un caso, incorpora un programa COBOL autónomo en `samples/` y una entrada al manifiesto; no elimines casos difíciles solo para subir la puntuación.
+- **Corpus versionado:** `benchmarks/cases.json` define 102 programas y las capacidades cubiertas, incluidos casos de `COPY ... REPLACING` y overflow aritmético del campo receptor contrastados con GnuCOBOL. La revisión histórica del PR #9 obtuvo 100/100 coincidencias en el corpus de 100 casos que existía entonces; el snapshot inicial obtuvo 16/100 sobre aquel mismo corpus. En el commit [`9364ba6`](https://github.com/orbitalronin94/cobol2py/commit/9364ba6f8fd28e0f089409e91f826068d87c1502), el candidato obtuvo 101/101 coincidencias exactas (100 %) en el corpus de entonces, incluido un caso con dos parejas `COPY REPLACING`. En el commit [`1fb78c6`](https://github.com/orbitalronin94/cobol2py/commit/1fb78c6c606260451ca255227645586b0a39cfec), el corpus de 102 casos obtuvo **102/102 coincidencias exactas (100 %)**, incluida la nueva fixture `arithmetic-receiving-pic`. El workflow [diferencial](https://github.com/orbitalronin94/cobol2py/actions/runs/40495907365) pasó; esto solo acredita los casos versionados. El resultado mide solo los casos versionados, no la equivalencia general de COBOL. Para añadir un caso, incorpora un programa COBOL autónomo en `samples/` y una entrada al manifiesto; no elimines casos difíciles solo para subir la puntuación.
 - **Interpretación prudente:** la métrica mide únicamente estos fixtures; no equivale al porcentaje de COBOL del mundo real que se traduce correctamente. Los casos deben crecer en variedad y complejidad, no solo en cantidad.
 
 El runner compila cada referencia con el directorio del fuente como ruta de búsqueda de copybooks, para que los casos con `COPY` puedan compilarse desde la raíz del repositorio. Para ejecutar el benchmark localmente (requiere Python y GnuCOBOL):
