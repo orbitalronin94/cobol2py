@@ -379,3 +379,11 @@ Añadir una sección con:
 - **Estado:** aceptada para el subconjunto probado.
 - **Decisión:** traducir el resultado de `ADD operandos TO receptor GIVING destino` al destino separado, y permitir que el elemento base y sus vistas `REDEFINES` sean hermanos dentro de un grupo de datos.
 - **Consecuencias:** el almacenamiento físico compartido prevalece sobre la representación anidada de los grupos en Python; la fixture diferencial `LABERINTO-COBOL` cubre `ALTER`, `GO TO ... DEPENDING ON`, `REDEFINES` anidado y `ADD ... GIVING`. `samples/laberinto_cobol_original.cbl` conserva además la declaración `PIC S9(9) COMP` original para regresión de ejecución; el formato de salida DISPLAY de campos signed COMP no se certifica con el benchmark diferencial.
+
+
+## D-041 — Implementar un subconjunto verificable de SEARCH ALL
+
+- **Estado:** aceptada para el subconjunto probado.
+- **Decisión:** representar tablas `OCCURS` de registros como listas de diccionarios, conservar la longitud máxima y limitar `SEARCH ALL` por `DEPENDING ON`; requerir `ASCENDING KEY` y `INDEXED BY` y traducir la búsqueda como búsqueda binaria con conversión del índice base 1.
+- **Contexto:** la fixture inicial no declaraba una clave ascendente y sus claves no estaban ordenadas, por lo que no constituía un caso válido para `SEARCH ALL`. También omitía los efectos de salida al desenrollar el `PERFORM` recursivo.
+- **Consecuencias:** se añadió una fixture corregida y una prueba unitaria; no se anuncia coincidencia diferencial hasta ejecutar la fixture con GnuCOBOL.
