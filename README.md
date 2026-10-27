@@ -13,7 +13,7 @@ El plan inicial de diez días se ha ampliado hasta un hito de ingeniería 0.8: t
 | Área | Estado actual | Evidencia y límite |
 |---|---|---|
 | Traductor y benchmark | Base estable para el subconjunto medido | Corpus versionado de 102 casos con GnuCOBOL; no es una estimación de compatibilidad general |
-| Inventario multiarchivo | Implementado con clasificación estática | Dependencias resueltas, sin resolver, ambiguas y CALL dinámicas; los nombres no prueban enlazado en ejecución |
+| Inventario multiarchivo | Implementado con clasificación estática y score heurístico en curso de validación | Dependencias resueltas, sin resolver, ambiguas, CALL dinámicas y niveles LOW/MEDIUM/HIGH para priorizar `ALTER`, `GO TO ... DEPENDING ON`, `REDEFINES` y otras construcciones; los nombres no prueban enlazado en ejecución |
 | Piloto integrado | Informe de esquema v2 | Traducción, sintaxis, clasificación por código/categoría y enlaces exactos a fixtures candidatas; por defecto no ejecuta el código generado |
 | Agente web | Demo heurística local | Selección de archivos, hallazgos y exportación; el análisis web no sustituye al CLI Python |
 | Evidencia de CI | Integrada | CI valida el contrato del informe y publica el informe del piloto como artefacto para revisión |
