@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.modernize_pilot import run_pilot
+from tools.modernize_pilot import classify_diagnostic, run_pilot
 
 
 class ModernizePilotTests(unittest.TestCase):
@@ -32,12 +32,28 @@ PROCEDURE DIVISION.
             self.assertEqual(report["translation_summary"]["translated"], 1)
             self.assertEqual(report["translation_summary"]["syntax_errors"], 0)
             self.assertEqual(report["semantic_validation"], "not-performed")
+            self.assertEqual(report["schema_version"], 2)
+            self.assertIn("translator", report["tool_versions"])
+            self.assertEqual(report["validation"]["semantics"], "not-evaluated")
+            self.assertEqual(report["results"][0]["semantic_status"], "not-evaluated")
+            self.assertIn("diagnostic_classifications", report["translation_summary"])
             self.assertTrue((output / "inventory.json").is_file())
             self.assertTrue((output / "inventory.md").is_file())
             self.assertTrue((output / "translation-report.md").is_file())
             self.assertTrue((output / "translated" / "MAIN.py").is_file())
             saved = json.loads((output / "translation-report.json").read_text(encoding="utf-8"))
             self.assertIn(saved["results"][0]["status"], ("translated", "translated-with-diagnostics"))
+
+    def test_classifies_known_limits_separately_from_possible_defects(self):
+        known = classify_diagnostic({"code": "ARITHMETIC_SIZE_ERROR_UNSUPPORTED", "severity": "warning"})
+        defect = classify_diagnostic({"code": "MALFORMED_CONTROL_FLOW", "severity": "error"})
+        unknown = classify_diagnostic({"code": "FUTURE_DIAGNOSTIC", "severity": "warning"})
+        self.assertEqual(known["classification"], "known-limitation")
+        self.assertFalse(known["review_required"])
+        self.assertEqual(defect["classification"], "possible-defect")
+        self.assertTrue(defect["review_required"])
+        self.assertEqual(unknown["classification"], "review-required")
+        self.assertTrue(unknown["review_required"])
 
     def test_rejects_output_inside_source_root(self):
         with tempfile.TemporaryDirectory() as temporary:
