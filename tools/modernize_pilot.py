@@ -265,7 +265,7 @@ def run_pilot(root: Path, output_dir: Path, *, differential: bool = False) -> di
         f"- Syntax errors: **{summary['syntax_errors']}**",
         f"- Translation errors: **{summary['translation_errors']}**",
         f"- Files with diagnostics: **{summary['files_with_diagnostics']}**", "",
-        "**Behavioral equivalence was not tested by this command.**", "",
+        ("**Differential status: " + report["semantic_validation"] + ".**" if differential else "**Behavioral equivalence was not tested by this command.**"), "",
         "## Per-file results", "",
         "| Source | Status | Syntax valid | Diagnostics |",
         "|---|---|---:|---:|",
@@ -294,6 +294,18 @@ def run_pilot(root: Path, output_dir: Path, *, differential: bool = False) -> di
     for item in results:
         fixture_ids = ", ".join("\x60" + str(fixture["id"]) + "\x60" for fixture in item.get("differential_fixtures", [])) or "—"
         lines.append("| \x60" + item["source"] + "\x60 | " + fixture_ids + " | \x60" + item["semantic_status"] + "\x60 |")
+    lines += ["", "## Differential validation", "",
+        "- Overall status: \x60" + report["semantic_validation"] + "\x60",
+        "- Cases evaluated: " + str(differential_report["case_count"]), ""]
+    if differential_report.get("cases"):
+        lines += ["| Fixture | Status | Detail |", "|---|---|---|"]
+        for case in differential_report["cases"]:
+            reason = str(case.get("reason") or "—").replace("|", "\\|").replace("\\n", " ")
+            lines.append("| \x60" + str(case.get("id")) + "\x60 | \x60" + case["status"] + "\x60 | " + reason + " |")
+    elif not differential:
+        lines.append("Differential execution was not requested. Use --differential to run only exact manifest matches.")
+    else:
+        lines.append("No exact differential fixtures were associated with the selected source files.")
     lines += ["", "## Validation boundary", ""]
     lines += [f"- {lim}" for lim in report["limitations"]]
     (output_dir / "translation-report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -307,15 +319,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("root", nargs="?", default="samples", help="source tree to inspect (default: samples)")
     parser.add_argument("--out-dir", type=Path, default=Path("/tmp/cobol2py-pilot"),
                         help="output directory outside the source root (default: /tmp/cobol2py-pilot)")
+    parser.add_argument("--differential", action="store_true", help="explicitly compare exact manifest fixtures against GnuCOBOL; executes only those fixture cases")
     args = parser.parse_args(argv)
     try:
-        report = run_pilot(Path(args.root), args.out_dir)
+        report = run_pilot(Path(args.root), args.out_dir, differential=args.differential)
     except (OSError, ValueError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
     summary = report["translation_summary"]
     print(json.dumps(summary, indent=2))
-    return 1 if summary["syntax_errors"] or summary["translation_errors"] else 0
+    return 1 if (summary["syntax_errors"] or summary["translation_errors"] or report["semantic_validation"] in ("discrepancy", "reference-error")) else 0
 
 
 if __name__ == "__main__":
