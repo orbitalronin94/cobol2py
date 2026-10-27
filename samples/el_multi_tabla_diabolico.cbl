@@ -63,4 +63,4 @@
        DISPLAY "VALOR RECURSIVO FINAL: " WS-RESULT-OUT
        END-IF.
        EXIT.
-       
+
