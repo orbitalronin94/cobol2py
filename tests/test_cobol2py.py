@@ -490,6 +490,7 @@ P-B.
         output = StringIO()
         with redirect_stdout(output):
             exec(generated, namespace)
+            namespace["_cobol_dispatch"]("MAIN-LOGIC")
         self.assertEqual(
             output.getvalue(),
             "INICIO DEL LABERINTO COBOL\\n"
