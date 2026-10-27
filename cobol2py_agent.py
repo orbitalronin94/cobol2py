@@ -54,6 +54,55 @@ def discover_files(root: Path) -> list[Path]:
     return sorted(files, key=lambda p: p.as_posix().casefold())
 
 
+def _strip_inline_comment(line: str, marker: str) -> str:
+    """Remove a language comment marker only when it occurs outside literals."""
+    quote: str | None = None
+    index = 0
+    while index < len(line):
+        char = line[index]
+        if quote is not None:
+            if char == quote:
+                if index + 1 < len(line) and line[index + 1] == quote:
+                    index += 2
+                    continue
+                quote = None
+        elif char in ("'", '"'):
+            quote = char
+        elif line.startswith(marker, index):
+            return line[:index]
+        index += 1
+    return line
+
+
+def _analysis_source(source: str, kind: str) -> str:
+    """Strip comments before regex inventory so commented-out code is not a dependency."""
+    lines = source.splitlines()
+    if kind in {"cobol", "copybook"}:
+        # Fixed-format comment/debug indicators occupy column 7 after six
+        # sequence columns. Preserve line count while removing comment records.
+        fixed_format = any(
+            len(line) >= 7
+            and re.fullmatch(r"[ 0-9]{6}", line[:6])
+            and line[6] in (" ", "*", "/", "D", "d", "-")
+            for line in lines[:20]
+        )
+        cleaned: list[str] = []
+        for line in lines:
+            if fixed_format and len(line) >= 7 and re.fullmatch(r"[ 0-9]{6}", line[:6]):
+                indicator = line[6]
+                if indicator in ("*", "/"):
+                    cleaned.append("")
+                    continue
+                line = line[7:72]
+            cleaned.append(_strip_inline_comment(line, "*>"))
+        return "\n".join(cleaned)
+    if kind == "jcl":
+        return "\n".join("" if line.lstrip().startswith("//*") else line for line in lines)
+    if kind == "sql":
+        return "\n".join(_strip_inline_comment(line, "--") for line in lines)
+    return source
+
+
 def analyze_repository(root: Path) -> dict[str, Any]:
     root = root.resolve()
     discovered = discover_files(root)
@@ -70,18 +119,19 @@ def analyze_repository(root: Path) -> dict[str, Any]:
             "cobol"
         )
         source = _read_text(path)
-        program_match = PROGRAM_RE.search(source) if kind == "cobol" else None
+        analysis_source = _analysis_source(source, kind)
+        program_match = PROGRAM_RE.search(analysis_source) if kind == "cobol" else None
         program_id = program_match.group(1).upper() if program_match else None
         stem = path.stem.upper()
         symbols[stem].append(rel)
         if program_id:
             symbols[program_id].append(rel)
 
-        copies = sorted({m.group(1).upper() for m in COPY_RE.finditer(source)}) if kind in {"cobol", "copybook"} else []
-        calls = sorted({(m.group(1) or m.group(2)).upper() for m in CALL_RE.finditer(source)}) if kind == "cobol" else []
-        exec_programs = sorted({m.group(1).upper() for m in EXEC_PGM_RE.finditer(source)}) if kind == "jcl" else []
-        jcl_datasets = sorted({m.group(1).strip("\'\"").upper() for m in JCL_DSN_RE.finditer(source)}) if kind == "jcl" else []
-        sql_includes = sorted({m.group(1).upper() for m in INCLUDE_RE.finditer(source)}) if kind in {"cobol", "sql"} else []
+        copies = sorted({m.group(1).upper() for m in COPY_RE.finditer(analysis_source)}) if kind in {"cobol", "copybook"} else []
+        calls = sorted({(m.group(1) or m.group(2)).upper() for m in CALL_RE.finditer(analysis_source)}) if kind == "cobol" else []
+        exec_programs = sorted({m.group(1).upper() for m in EXEC_PGM_RE.finditer(analysis_source)}) if kind == "jcl" else []
+        jcl_datasets = sorted({m.group(1).strip("\'\"").upper() for m in JCL_DSN_RE.finditer(analysis_source)}) if kind == "jcl" else []
+        sql_includes = sorted({m.group(1).upper() for m in INCLUDE_RE.finditer(analysis_source)}) if kind in {"cobol", "sql"} else []
         features = []
         for pattern, label in (
             (r"\bEXEC\s+SQL\b", "embedded-sql"),
@@ -92,7 +142,7 @@ def analyze_repository(root: Path) -> dict[str, Any]:
             (r"\bSORT\b|\bMERGE\b", "sort-merge"),
             (r"\bCALL\b", "subprogram-calls"),
         ):
-            if re.search(pattern, source, re.I | re.S):
+            if re.search(pattern, analysis_source, re.I | re.S):
                 features.append(label)
         records[rel] = {
             "path": rel, "kind": kind, "program_id": program_id,
