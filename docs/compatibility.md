@@ -131,3 +131,7 @@ El caso `copy-replacing-basic` usa `samples/copy_replacing.cbl` y `samples/R.cpy
 ## Aritmética y tamaño del campo receptor
 
 Las sentencias básicas `ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE` y `COMPUTE` aplican una adaptación acotada al PIC numérico receptor: se conserva la capacidad de dígitos y se descartan dígitos de orden superior en los casos simples cubiertos. La fixture diferencial `arithmetic-receiving-pic` valida overflow de `PIC 99` en `ADD`, `COMPUTE`, `MULTIPLY` y `SUBTRACT`, además de la truncación de `DIVIDE`, con GnuCOBOL. Esto no implementa toda la semántica de `ON SIZE ERROR`, redondeo, escalado `P`, ni todas las reglas de signo y precisión decimal; los casos fuera del subconjunto deben tratarse como limitación.
+
+## Detección automática de formato fuente
+
+El modo `auto` evita inferir formato fijo únicamente por sangría cuando detecta verbos COBOL más allá de la columna 72 en las primeras líneas; así conserva terminadores como `END-IF` en fuentes con formato libre indentado. La inferencia sigue siendo heurística: cuando el formato del compilador está definido por el proyecto, se recomienda indicar `--format fixed` o `--format free` explícitamente y validar con el compilador de referencia.
