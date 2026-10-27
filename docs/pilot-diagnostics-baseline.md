@@ -1,6 +1,6 @@
 # Triage de diagnósticos del piloto sobre samples
 
-> Informe estático generado por CI a partir del código actual. El artefacto descargable [modernization-pilot-diagnostics](https://github.com/orbitalronin94/cobol2py/actions/runs/40520567099/artifacts/12740274709) contiene el JSON/Markdown completos, traducciones generadas e inventario. Esta página conserva la clasificación de la línea base para revisión y no sustituye el artefacto por commit.
+> Informe estático generado por CI a partir del código actual. El artefacto descargable [modernization-pilot-diagnostics](https://github.com/orbitalronin94/cobol2py/actions/runs/40521702715/artifacts/12742122278) contiene el JSON/Markdown completos, traducciones generadas e inventario. Esta página conserva la clasificación de la línea base para revisión y no sustituye el artefacto por commit.
 
 ## Resultado actual
 
@@ -21,43 +21,43 @@ La línea base anterior tenía 36 fuentes con diagnósticos, incluyendo `bench_4
 
 ## Clasificación por fuente
 
-| Fuente | Avisos | Códigos | Triage | Revisión |
-|---|---:|---|---|---|
-| `arithmetic_size.cbl` | 5 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_061_numeric-61.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_062_numeric-62.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_063_numeric-63.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_064_numeric-64.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_065_numeric-65.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_066_numeric-66.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_067_numeric-67.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_068_numeric-68.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_074_perform-74.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_075_perform-75.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_076_perform-76.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_077_numeric-77.cbl` | 3 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_087_numeric-87.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_088_numeric-88.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_089_numeric-89.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_090_numeric-90.cbl` | 2 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_091_numeric-91.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_096_perform-96.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_097_numeric-97.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_099_numeric-99.cbl` | 2 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_12_numeric_add.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_13_numeric_subtract.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_14_numeric_multiply.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_15_numeric_compute.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_16_compute_expr.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_33_numeric_increment.cbl` | 2 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_34_numeric_decrement.cbl` | 2 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_38_compute_subtract.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_39_compute_multiply.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `bench_40_compute_divide_exact.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `hello.cbl` | 3 | `PARTIAL_NUMERIC_PIC_SEMANTICS`, `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `java_backend.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
-| `numeric_semantics.cbl` | 2 | `PARTIAL_NUMERIC_PIC_SEMANTICS` | known-limitations-only | pendiente |
-| `realtest.cbl` | 3 | `PARTIAL_NUMERIC_PIC_SEMANTICS`, `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | known-limitations-only | pendiente |
+| Fuente | Avisos | Códigos | Fixture diferencial | Estado de fixture | Triage | Revisión humana |
+|---|---:|---|---|---|---|---|
+| `arithmetic_size.cbl` | 5 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `arithmetic-receiving-pic` | `matched` | known-limitations-only | pendiente |
+| `bench_061_numeric-61.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `numeric-61` | `matched` | known-limitations-only | pendiente |
+| `bench_062_numeric-62.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `numeric-62` | `matched` | known-limitations-only | pendiente |
+| `bench_063_numeric-63.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `numeric-63` | `matched` | known-limitations-only | pendiente |
+| `bench_064_numeric-64.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `numeric-64` | `matched` | known-limitations-only | pendiente |
+| `bench_065_numeric-65.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `numeric-65` | `matched` | known-limitations-only | pendiente |
+| `bench_066_numeric-66.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `numeric-66` | `matched` | known-limitations-only | pendiente |
+| `bench_067_numeric-67.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `numeric-67` | `matched` | known-limitations-only | pendiente |
+| `bench_068_numeric-68.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `numeric-68` | `matched` | known-limitations-only | pendiente |
+| `bench_074_perform-74.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `perform-74` | `matched` | known-limitations-only | pendiente |
+| `bench_075_perform-75.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `perform-75` | `matched` | known-limitations-only | pendiente |
+| `bench_076_perform-76.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `perform-76` | `matched` | known-limitations-only | pendiente |
+| `bench_077_numeric-77.cbl` | 3 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `numeric-77` | `matched` | known-limitations-only | pendiente |
+| `bench_087_numeric-87.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `numeric-87` | `matched` | known-limitations-only | pendiente |
+| `bench_088_numeric-88.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `numeric-88` | `matched` | known-limitations-only | pendiente |
+| `bench_089_numeric-89.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `numeric-89` | `matched` | known-limitations-only | pendiente |
+| `bench_090_numeric-90.cbl` | 2 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `numeric-90` | `matched` | known-limitations-only | pendiente |
+| `bench_091_numeric-91.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `numeric-91` | `matched` | known-limitations-only | pendiente |
+| `bench_096_perform-96.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `perform-96` | `matched` | known-limitations-only | pendiente |
+| `bench_097_numeric-97.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `numeric-97` | `matched` | known-limitations-only | pendiente |
+| `bench_099_numeric-99.cbl` | 2 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `numeric-99` | `matched` | known-limitations-only | pendiente |
+| `bench_12_numeric_add.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `numeric-add` | `matched` | known-limitations-only | pendiente |
+| `bench_13_numeric_subtract.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `numeric-subtract` | `matched` | known-limitations-only | pendiente |
+| `bench_14_numeric_multiply.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `numeric-multiply` | `matched` | known-limitations-only | pendiente |
+| `bench_15_numeric_compute.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `numeric-compute` | `matched` | known-limitations-only | pendiente |
+| `bench_16_compute_expr.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `numeric-compute-expression` | `matched` | known-limitations-only | pendiente |
+| `bench_33_numeric_increment.cbl` | 2 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `numeric-increment` | `matched` | known-limitations-only | pendiente |
+| `bench_34_numeric_decrement.cbl` | 2 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `numeric-decrement` | `matched` | known-limitations-only | pendiente |
+| `bench_38_compute_subtract.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `compute-subtract` | `matched` | known-limitations-only | pendiente |
+| `bench_39_compute_multiply.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `compute-multiply` | `matched` | known-limitations-only | pendiente |
+| `bench_40_compute_divide_exact.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `compute-divide-exact` | `matched` | known-limitations-only | pendiente |
+| `hello.cbl` | 3 | `PARTIAL_NUMERIC_PIC_SEMANTICS`, `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | — | `not-applicable` | known-limitations-only | pendiente |
+| `java_backend.cbl` | 1 | `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | — | `not-applicable` | known-limitations-only | pendiente |
+| `numeric_semantics.cbl` | 2 | `PARTIAL_NUMERIC_PIC_SEMANTICS` | — | `not-applicable` | known-limitations-only | pendiente |
+| `realtest.cbl` | 3 | `PARTIAL_NUMERIC_PIC_SEMANTICS`, `ARITHMETIC_SIZE_ERROR_UNSUPPORTED` | `realtest` | `matched` | known-limitations-only | pendiente |
 
 ## Qué significan los códigos
 
@@ -67,7 +67,7 @@ La línea base anterior tenía 36 fuentes con diagnósticos, incluyendo `bench_4
 
 ## Evidencia y siguiente paso
 
-- [CI del piloto y benchmark diferencial](https://github.com/orbitalronin94/cobol2py/actions/runs/40520567099)
+- [CI del piloto y benchmark diferencial](https://github.com/orbitalronin94/cobol2py/actions/runs/40521702715)
 - [Descargar el artefacto del piloto](https://github.com/orbitalronin94/cobol2py/actions/runs/40520567099/artifacts/12740274709)
 - [Roadmap de modernización](roadmap-two-weeks.md)
 - [Alcance de compatibilidad](compatibility.md)
