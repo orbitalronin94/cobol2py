@@ -105,3 +105,8 @@ La futura automatización debe operar en un workspace aislado, producir diffs in
 `resolve_copybooks()` procesa directivas `COPY` antes del parseo. El orden de búsqueda es el directorio del archivo fuente (si se conoce), cada ruta repetida en `--copybook-path` y el directorio de trabajo actual; los copybooks anidados se expanden recursivamente y los ciclos se informan.
 
 El subconjunto de `REPLACING` implementado acepta una o más parejas `==texto anterior== BY ==texto nuevo==`. Las sustituciones se aplican al texto del copybook con coincidencia literal e insensible a mayúsculas/minúsculas. No es un preprocesador conforme a toda la gramática COBOL: bibliotecas calificadas y otras cláusulas se dejan como advertencias visibles. La demo HTML autónoma debe mantener una copia exacta de `cobol2py.py`; `tests/test_standalone_html.py` valida esa sincronización para evitar que la versión web quede desactualizada.
+
+
+## Precisión del inventario estático
+
+Antes de buscar referencias, el agente elimina comentarios COBOL `*>` (y registros de comentario en formato fijo), comentarios de línea JCL `//*` y comentarios SQL `--`, respetando comillas al retirar marcadores inline. Esto reduce dependencias falsas procedentes de código comentado. La extracción sigue basada en expresiones regulares, no en parsers completos por lenguaje; literales, continuaciones, formatos de proveedor y construcciones inusuales pueden producir falsos positivos o referencias omitidas. Los informes deben revisarse antes de usarse para planificar una migración.
