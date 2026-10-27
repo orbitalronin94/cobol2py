@@ -6,7 +6,7 @@ El calendario de diez días describe la primera iteración y ya se han entregado
 
 ### Fase A — Precisión del inventario estático
 
-- [ ] Validar en CI la puntuación heurística de complejidad añadida al agente: señales, pesos, nivel LOW/MEDIUM/HIGH y orden del informe. El score prioriza revisión; no debe presentarse como estimación de esfuerzo ni prueba de alcance en runtime.
+- [x] Validar en CI la puntuación heurística de complejidad del agente: señales, pesos, nivel LOW/MEDIUM/HIGH y exposición de las señales en el informe. El score prioriza revisión; no debe presentarse como estimación de esfuerzo ni prueba de alcance en runtime.
 
 - [x] Generar un triage reproducible por archivo para las fuentes con diagnósticos: categoría primaria, categorías presentes, códigos y líneas, y estado de revisión humana pendiente. El informe se publica como artefacto CI.
 - [ ] Adjudicar manualmente los 35 archivos que aún tienen avisos. Se corrigió un falso positivo de la línea base (IF inline truncado por detección de formato); el detalle está en docs/pilot-diagnostics-baseline.md.
@@ -48,15 +48,15 @@ El calendario de diez días describe la primera iteración y ya se han entregado
 
 Este bloque se añade a la línea de trabajo v0.8: cerrar fallos que pueden producir Python sintácticamente válido pero con comportamiento COBOL distinto. La fixture de referencia es `LABERINTO-COBOL`, que combina `ALTER`, `GO TO ... DEPENDING ON`, `REDEFINES`, saltos entre párrafos y datos numéricos compartidos.
 
-**Estado de implementación en `main` (27-10-2026):** ya existe un dispatcher de párrafos para `GO TO`, destinos mutables para `ALTER`, selección ordinal para `GO TO ... DEPENDING ON` y un buffer compartido para overlays simples con `PIC X/A` y numéricos enteros sin signo. Las pruebas unitarias individuales ya estaban presentes y se añadió `samples/control_flow_redefines.cbl`, que combina las tres construcciones y queda registrada en `benchmarks/cases.json`. La implementación está en `main`; el cierre sigue pendiente hasta que CI y GnuCOBOL confirmen stdout/código de retorno y se verifique la sincronización web. Overlays con signo, escala implícita, packed decimal, arrays o layouts no representables deben seguir generando diagnóstico.
+**Estado de implementación en `main` (27-10-2026):** existe un dispatcher de párrafos para `GO TO`, destinos mutables para `ALTER`, selección ordinal para `GO TO ... DEPENDING ON` y un buffer compartido para overlays simples con `PIC X/A` y numéricos enteros sin signo. La fixture `samples/control_flow_redefines.cbl` pasa la comparación diferencial con GnuCOBOL; el corpus total actual es 103/103. La suite pasa en Python 3.10–3.13 y verifica la sincronización de la demo HTML. El ejemplo más amplio `LABERINTO-COBOL` y los overlays con signo, escala implícita, packed decimal, arrays o layouts complejos siguen fuera de la validación cerrada y deben conservar diagnósticos explícitos.
 
-- [ ] **Caracterizar `LABERINTO-COBOL` con GnuCOBOL:** registrar versión/flags, stdout y código de retorno antes de fijar su salida esperada como baseline oficial.
+- [ ] **Caracterizar el ejemplo completo `LABERINTO-COBOL` con GnuCOBOL:** registrar versión/flags, stdout y código de retorno antes de fijar su salida esperada como baseline oficial. La fixture simplificada `control_flow_redefines.cbl` ya está validada por separado.
 - [x] **Implementación inicial de `ALTER`:** modelar el destino del `GO TO` alterable como estado mutable consultado en tiempo de ejecución. Cada `ALTER` posterior debe reemplazar el destino anterior; no convertir la sentencia en comentario ni congelar el destino durante la traducción.
 - [x] **Implementación inicial de `GO TO ... DEPENDING ON`:** preservar la selección ordinal COBOL basada en 1. Añadir pruebas para cada destino válido y para selector fuera de rango; en este ejemplo, si no se toma ninguna rama, debe respetarse la sentencia siguiente del párrafo.
-- [x] **Implementación inicial de `REDEFINES`:** describir offsets, longitudes y vistas del almacenamiento base; leer/escribir una vista debe reflejarse en las demás. No emitir diccionarios vacíos independientes para campos que se superponen.
-- [ ] **Preservar el flujo de párrafos:** representar saltos arbitrarios sin introducir retornos de función que no existen en COBOL. Verificar el comportamiento de los ciclos y del reinicio de `MAIN-LOGIC`.
+- [x] **Implementación y regresión de `REDEFINES` simple:** describir offsets, longitudes y vistas del almacenamiento base; leer/escribir una vista se refleja en las demás. No emitir diccionarios vacíos independientes para campos que se superponen.
+- [x] **Preservar el flujo de párrafos en el subconjunto probado:** el dispatcher representa saltos entre párrafos sin introducir retornos de función artificiales; la fixture integrada valida el salto y la transferencia dinámica. El ciclo completo de `LABERINTO-COBOL` sigue pendiente.
 - [x] **Pruebas unitarias mínimas:** destinos `ALTER` antes y después de la mutación, selección de cada ordinal, rango inválido, lecturas `REDEFINES` antes/después de modificar el búfer y layouts válidos/invalidos para PIC numérico.
-- [ ] **Validar regresión integrada:** ejecutar `samples/control_flow_redefines.cbl` en el job diferencial opt-in y comparar stdout/código de retorno con GnuCOBOL. La fixture ya está en el manifiesto; la compilación de Python no cuenta como validación semántica.
+- [x] **Validar regresión integrada simplificada:** `samples/control_flow_redefines.cbl` pasa en el job diferencial; stdout y código de retorno coinciden con GnuCOBOL. La fixture del ejemplo completo `LABERINTO-COBOL` sigue pendiente.
 - [ ] **Exponer límites sin degradación silenciosa:** hasta que cada construcción esté implementada y probada, emitir diagnóstico explícito y clasificar la traducción como incompleta; no reemplazar instrucciones por comentarios sin que el informe lo refleje.
 - [ ] **Sincronizar las interfaces:** mantener `web/index.html` alineado con `cobol2py.py` y añadir el contrato del diagnóstico en las pruebas de la demo.
 
@@ -153,7 +153,7 @@ Esta escala resume entregables acumulados del proyecto para ordenar el roadmap. 
 - [x] CI valida el contrato del informe y publica los reportes del piloto como artefacto descargable.
 - [x] Las llamadas CALL literales y dinámicas se distinguen en el agente CLI y en la demo web, con pruebas unitarias y de navegador.
 - [ ] Revisar humanamente los 35 archivos que siguen con avisos conocidos de aritmética/PIC. Se corrigió un falso positivo de la línea base de 36; el [triage por fuente](pilot-diagnostics-baseline.md) documenta los restantes. No usar la clasificación automática como autorización de migración.
-- [x] La equivalencia se informa por caso y de forma opt-in: 102/102 fixtures coinciden en stdout/código de retorno. Esto no equivale a una garantía global ni cubre todas las entradas o efectos externos.
+- [x] La equivalencia se informa por caso y de forma opt-in: el corpus actual de 103/103 fixtures coincide en stdout/código de retorno. Esto no equivale a una garantía global ni cubre todas las entradas o efectos externos.
 
 ### Trabajo prioritario de cierre v0.8.x
 
