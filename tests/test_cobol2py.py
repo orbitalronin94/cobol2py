@@ -511,6 +511,30 @@ MAIN.
         self.assertNotIn("UNSUPPORTED_STORAGE_OVERLAY", {item["code"] for item in diagnostics})
         self.assertEqual(namespace["_cobol_storage"]["WS-RAW-INPUT"], "9999911111")
 
+    def test_combined_alter_computed_goto_and_redefines_storage(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+        from pathlib import Path
+
+        source_path = Path(__file__).resolve().parents[1] / "samples" / "control_flow_redefines.cbl"
+        source = source_path.read_text(encoding="utf-8")
+        program = cobol2py.parse_cobol(source, source_format="free", source_path=source_path)
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<combined-control-overlay>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["_cobol_dispatch"]("MAIN-LOGIC")
+
+        self.assertEqual(output.getvalue(), "000146\\n", generated)
+        self.assertEqual(namespace["_cobol_storage"]["WS-RAW"], "1234")
+        self.assertEqual(namespace["_cobol_alter_targets"]["P-X"], "P-Y")
+        diagnostic_codes = {item["code"] for item in cobol2py.collect_diagnostics(program)}
+        self.assertNotIn("UNSUPPORTED_STORAGE_OVERLAY", diagnostic_codes)
+        self.assertNotIn("UNSUPPORTED_STATEMENT", diagnostic_codes)
+
 class GnuCobolTraceTests(unittest.TestCase):
     def test_trace_instrumentation_emits_each_scalar_before_program_exit(self):
         from tools.gnucobol_trace import instrument_source
