@@ -106,3 +106,38 @@ No se promete compatibilidad completa con todos los dialectos, traducción autom
 Este registro es deliberadamente conservador: una tarea solo se marca como terminada cuando hay evidencia comprobable en el repositorio o en CI.
 
 - [x] Añadir una segunda interfaz HTML independiente para el agente: selección local de archivos, inventario resumido, referencias sin resolver/ambiguas y exportación Markdown/JSON. Añadir pruebas de contrato y documentar que el análisis del navegador es heurístico y no sustituye al CLI Python. El smoke de Playwright comprueba carga de archivos, detección de referencia ausente y exportación JSON.
+
+## Hitos de madurez ampliados: v0.1 → v0.8
+
+Esta escala resume entregables acumulados del proyecto para ordenar el roadmap. **No afirma que existan tags o publicaciones oficiales con cada número**; la versión del traductor sigue siendo la que declara cobol2py.py. El hito 0.8 describe madurez del flujo de ingeniería, no compatibilidad general con COBOL.
+
+| Hito | Entregable que queda como base | Evidencia / límite |
+|---|---|---|
+| v0.1 — Traductor autónomo | CLI de un archivo, salida Python y pruebas unitarias iniciales | La sintaxis generada no garantiza equivalencia |
+| v0.2 — Diagnósticos explícitos | Modo estricto, diagnósticos JSON y advertencias de construcciones parciales | Solo se detectan las formas cubiertas por las heurísticas actuales |
+| v0.3 — Verificación diferencial | Corpus versionado comparado con GnuCOBOL | 102 casos medidos en la línea base documentada; la puntuación solo describe ese corpus |
+| v0.4 — Datos y preprocesado | Mejoras acotadas de tamaño PIC y COPY REPLACING, con regresiones | No cubre toda la semántica de escala, signo, redondeo ni pseudo-texto |
+| v0.5 — Inventario de cartera | Agente multiarchivo, dependencias, referencias ambiguas y destinos dinámicos | Análisis estático por nombres, no enlazado completo |
+| v0.6 — Piloto integrado | Inventario → traducción del subconjunto → comprobación sintáctica por archivo | No ejecuta código generado ni certifica comportamiento |
+| v0.7 — Acceso y cobertura web | Demo standalone del traductor y demo local del agente; prueba de navegador | La UI del agente sigue siendo heurística y trabaja con los archivos que el usuario selecciona |
+| v0.8 — Evidencia auditable | Esquema de informe versionado, clasificación de diagnósticos, enlace exacto a fixtures candidatas, detalle por archivo y artefacto de CI | La clasificación automática prioriza revisión; no sustituye la decisión de un especialista ni convierte una fixture enlazada en prueba ejecutada |
+
+### Definición de terminado para el hito 0.8
+
+- [x] Los diagnósticos del piloto tienen una categoría explícita y se cuentan por código y categoría.
+- [x] El informe incluye detalle por archivo, línea, código y mensaje, además del estado sintáctico.
+- [x] El esquema identifica la versión del traductor y separa not-evaluated de una validación semántica real.
+- [x] Las fixtures diferenciales solo se enlazan cuando la ruta de origen coincide exactamente con la del manifiesto; el enlace no afirma que se hayan ejecutado.
+- [x] CI valida el contrato del informe y publica los reportes del piloto como artefacto descargable.
+- [x] Las llamadas CALL literales y dinámicas se distinguen en el agente CLI y en la demo web, con pruebas unitarias y de navegador.
+- [ ] La clasificación automática de los 36 archivos con diagnósticos debe revisarse humanamente antes de usarla para decidir una migración real. El reporte generado por CI es el backlog verificable para esa revisión; los avisos no se descartan como falsos positivos sin evidencia.
+- [ ] La equivalencia semántica sigue siendo una comprobación por caso con GnuCOBOL y entradas representativas, no una propiedad global del piloto.
+
+### Siguiente ciclo después de 0.8
+
+1. **0.8.x — Cierre de revisión:** adjudicar cada diagnóstico de samples como limitación confirmada, falso positivo reproducible, posible defecto o dependencia externa; convertir cada falso positivo/defecto en regresión.
+2. **0.9 — Validación diferencial por módulo:** ejecutar solo fixtures identificadas y aprobadas explícitamente; guardar stdout, código de retorno, versión de GnuCOBOL y resultado reproducible. Nunca ejecutar traducciones arbitrarias durante el inventario estático.
+3. **0.10 — Navegación y filtros:** filtros de hallazgos por código/categoría/ruta, navegación entre aristas y fuentes, y pruebas con Unicode, rutas profundas y repositorios grandes.
+4. **1.0 — Criterios de adopción:** contratos de informe estables, documentación de dialectos/entornos soportados, matriz de compatibilidad revisada y CI obligatoria verde. No depende de alcanzar un porcentaje universal de COBOL soportado.
+
+El criterio de avance no es el número de versión: cada hito exige cambios integrados, regresiones, evidencia de CI y límites documentados. Un hallazgo no se marca como falso positivo solo porque la salida Python compile.
