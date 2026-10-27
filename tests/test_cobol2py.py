@@ -1585,8 +1585,8 @@ class MultiTableDiabolicoTests(unittest.TestCase):
             namespace["_cobol_dispatch"]("MAIN-LOGIC")
         self.assertEqual(
             output.getvalue(),
-            "INICIO DE DIABLURA NUMERO 2\\n"
-            + "VALOR RECURSIVO FINAL: 000000700\\n",
+            "INICIO DE DIABLURA NUMERO 2\n"
+            + "VALOR RECURSIVO FINAL: 000000700\n",
             generated,
         )
         self.assertEqual(namespace["ws_dynamic_table"]["ws_item"][3]["ws_item_id"], "EAGLE")
