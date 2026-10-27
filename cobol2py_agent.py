@@ -379,8 +379,12 @@ def render_markdown(plan: dict[str, Any]) -> str:
     lines += ["", "## Review first", ""]
     if plan["review_first"]:
         for item in plan["review_first"]:
+            reasons = ', '.join(reason['construct'] for reason in item.get('complexity_reasons', []))
+            details = ', '.join(item['features'])
+            if reasons:
+                details = f"{details}; complexity signals: {reasons}" if details else reasons
             lines.append(f"- `{item['path']}` — **{item.get('complexity_level', 'UNKNOWN')}** "
-                         f"(score {item.get('complexity_score', 0)}): {', '.join(item['features'])}")
+                         f"(score {item.get('complexity_score', 0)}): {details}")
     else:
         lines.append("No flagged constructs were detected. This does not mean the code is low risk.")
     lines += ["", "## Limitations", ""]
