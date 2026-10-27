@@ -1,1 +1,1 @@
-       01 FIELD-NAME PIC X(4).
+              01 FIELD-NAME PIC FIELD-PIC.
