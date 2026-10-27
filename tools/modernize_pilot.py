@@ -169,6 +169,9 @@ def run_pilot(root: Path, output_dir: Path, *, differential: bool = False) -> di
             "diagnostics": [],
             "status": "translation-error",
             "semantic_status": "not-evaluated",
+            "triage_status": "pending-analysis",
+            "triage_categories": [],
+            "human_review_status": "pending",
             "differential_fixtures": _differential_fixtures(source_path),
         }
         try:
@@ -199,6 +202,21 @@ def run_pilot(root: Path, output_dir: Path, *, differential: bool = False) -> di
             )
         except Exception as error:  # keep a per-file report instead of aborting the estate scan
             result["error"] = f"{type(error).__name__}: {error}"
+        categories = sorted({diagnostic["classification"] for diagnostic in result["diagnostics"]})
+        result["triage_categories"] = categories
+        if result["status"] == "translation-error":
+            result["triage_status"] = "translation-error"
+        elif not categories:
+            result["triage_status"] = "no-static-diagnostics"
+        elif "possible-defect" in categories:
+            result["triage_status"] = "possible-defect"
+        elif "review-required" in categories:
+            result["triage_status"] = "review-required"
+        elif "dependency-resolution" in categories:
+            result["triage_status"] = "dependency-resolution"
+        else:
+            result["triage_status"] = "known-limitations-only"
+        result["human_review_status"] = "pending" if categories or result["status"] == "translation-error" else "not-flagged"
         results.append(result)
 
     summary = {
@@ -210,6 +228,8 @@ def run_pilot(root: Path, output_dir: Path, *, differential: bool = False) -> di
         "diagnostic_count": sum(len(item["diagnostics"]) for item in results),
         "diagnostic_classifications": {},
         "diagnostic_codes": {},
+        "triage_status_counts": {},
+        "files_pending_human_review": 0,
     }
     for item in results:
         for diagnostic in item["diagnostics"]:
@@ -217,6 +237,12 @@ def run_pilot(root: Path, output_dir: Path, *, differential: bool = False) -> di
             code = diagnostic.get("code", "UNKNOWN")
             summary["diagnostic_classifications"][classification] = summary["diagnostic_classifications"].get(classification, 0) + 1
             summary["diagnostic_codes"][code] = summary["diagnostic_codes"].get(code, 0) + 1
+
+    for item in results:
+        status = item["triage_status"]
+        summary["triage_status_counts"][status] = summary["triage_status_counts"].get(status, 0) + 1
+        if item["human_review_status"] == "pending":
+            summary["files_pending_human_review"] += 1
 
     differential_report = {"status": "not-evaluated", "case_count": 0, "cases": []}
     if differential:
@@ -267,13 +293,14 @@ def run_pilot(root: Path, output_dir: Path, *, differential: bool = False) -> di
         f"- Files with diagnostics: **{summary['files_with_diagnostics']}**", "",
         ("**Differential status: " + report["semantic_validation"] + ".**" if differential else "**Behavioral equivalence was not tested by this command.**"), "",
         "## Per-file results", "",
-        "| Source | Status | Syntax valid | Diagnostics |",
-        "|---|---|---:|---:|",
+        "| Source | Status | Syntax valid | Diagnostics | Triage | Categories | Human review |",
+        "|---|---|---:|---:|---|---|---|",
     ]
     for item in results:
         lines.append(
             f"| `{item['source']}` | {item['status']} | "
-            f"{'yes' if item['syntax_valid'] else 'no'} | {len(item['diagnostics'])} |"
+            f"{'yes' if item['syntax_valid'] else 'no'} | {len(item['diagnostics'])} | "
+            f"{item['triage_status']} | {', '.join(item['triage_categories']) or '—'} | {item['human_review_status']} |"
         )
     lines += ["", "## Diagnostic classification", "", "| Classification | Count |", "|---|---:|"]
     for classification, count in sorted(summary["diagnostic_classifications"].items()):
