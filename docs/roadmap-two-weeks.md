@@ -51,10 +51,11 @@ No se promete compatibilidad completa con todos los dialectos, traducción autom
 - [x] Añadir un caso diferencial COBOL/GnuCOBOL para `COPY ... REPLACING` básico.
 - [x] Añadir un caso diferencial de `COPY ... REPLACING` con dos parejas (101/101 casos coinciden en el commit `9364ba6`).
 - [x] Añadir una fixture diferencial para overflow de `PIC 99` en `ADD`, `COMPUTE` y `MULTIPLY`; validar el resultado en GnuCOBOL.
-- [ ] Ampliar las pruebas diferenciales en otras áreas priorizadas.
-- [x] Mejorar el inventario con filtrado de comentarios y referencias ambiguas; el flujo extremo a extremo sigue pendiente.
-- [ ] Ejecutar y revisar CI y benchmark del commit actual; confirmar la sincronización de la demo HTML.
+- [x] Ampliar el corpus diferencial a 102 casos: `arithmetic-receiving-pic` verifica `ADD`, `COMPUTE` y `MULTIPLY` con overflow de `PIC 99`.
+- [x] Mejorar el inventario con filtrado de comentarios y referencias ambiguas.
+- [x] Integrar inventario → traducción → comprobación de sintaxis con informe auditable.
+- [x] Ejecutar y revisar CI y benchmark del commit `1fb78c6`: suite completa verde y benchmark 102/102; la demo HTML coincide exactamente con `cobol2py.py`.
 - [x] Conectar inventario, traducción del subconjunto y comprobación sintáctica en `tools/modernize_pilot.py`; el informe separa sintaxis de equivalencia semántica.
-- [ ] Ejecutar el piloto sobre `samples` y revisar el reporte de cada fuente.
+- [x] Ejecutar el piloto sobre `samples`: 108/108 fuentes traducidas, 0 errores de sintaxis, 0 errores de traducción y 36 fuentes con diagnósticos para revisión.
 
 Este registro es deliberadamente conservador: una tarea solo se marca como terminada cuando hay evidencia comprobable en el repositorio o en CI.
