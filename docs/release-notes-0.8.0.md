@@ -10,6 +10,7 @@
 - **Triage de 108 fuentes:** CI confirma 108 traducciones, 0 errores de sintaxis, 0 errores de traducción y 35 fuentes con 50 diagnósticos conocidos (46 avisos de aritmética y 4 de PIC parcial). Se corrigió un falso positivo de formato en `bench_43_table_first.cbl`; la revisión humana de los 35 archivos restantes sigue pendiente.
 - **Trazabilidad diferencial:** se enlazan fixtures candidatas solo cuando la ruta de fuente coincide exactamente con el manifiesto. El modo opt-in --differential ejecuta solo esas fixtures y registra estado por caso; un enlace sin ejecutar no implica equivalencia.
 - **Informe revisable:** el Markdown incluye resumen por categoría y código, detalle por archivo y una lista de fixtures candidatas.
+- **Prioridad de discrepancias:** el informe diferencial ordena los casos por una pista de riesgo derivada de sus features (alta/media/baja). Es una heurística de triage, no una clasificación de severidad probada.
 - **CI:** el job de modernización valida el contrato del informe y publica los ficheros del piloto como artefacto temporal para inspección. El modo diferencial opt-in coincidió en 102/102 fixtures con GnuCOBOL en stdout y código de retorno.
 - **Experiencia web:** filtro de texto global, pruebas de rutas Unicode y casos con palabras clave dentro de literales.
 - **Formato fuente:** el modo auto conserva terminadores de control más allá de columna 72 cuando detecta código largo indentado.
@@ -41,4 +42,4 @@ En GitHub Actions, el artefacto se publica con el nombre `modernization-pilot-di
 
 ## Criterio de aceptación
 
-El hito 0.8 se considera una mejora de trazabilidad y proceso, no una certificación de compatibilidad. El detalle por fuente está en [pilot-diagnostics-baseline.md](pilot-diagnostics-baseline.md). Para avanzar hacia 0.9, hay que revisar los resultados por archivo, convertir falsos positivos y defectos confirmados en regresiones, y ejecutar comparación diferencial solo en casos aprobados y reproducibles.
+El hito 0.8 se considera una mejora de trazabilidad y proceso, no una certificación de compatibilidad. El baseline actual está en [pilot-diagnostics-baseline.md](pilot-diagnostics-baseline.md): 35 fuentes mantienen 50 avisos de aritmética/PIC; la revisión humana continúa pendiente. El detalle por fuente está en [pilot-diagnostics-baseline.md](pilot-diagnostics-baseline.md). Para avanzar hacia 0.9, hay que revisar los resultados por archivo, convertir falsos positivos y defectos confirmados en regresiones, y ejecutar comparación diferencial solo en casos aprobados y reproducibles.
