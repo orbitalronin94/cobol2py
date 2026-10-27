@@ -80,6 +80,7 @@ def analyze_repository(root: Path) -> dict[str, Any]:
         copies = sorted({m.group(1).upper() for m in COPY_RE.finditer(source)}) if kind in {"cobol", "copybook"} else []
         calls = sorted({(m.group(1) or m.group(2)).upper() for m in CALL_RE.finditer(source)}) if kind == "cobol" else []
         exec_programs = sorted({m.group(1).upper() for m in EXEC_PGM_RE.finditer(source)}) if kind == "jcl" else []
+        jcl_datasets = sorted({m.group(1).strip("\'\"").upper() for m in JCL_DSN_RE.finditer(source)}) if kind == "jcl" else []
         sql_includes = sorted({m.group(1).upper() for m in INCLUDE_RE.finditer(source)}) if kind in {"cobol", "sql"} else []
         features = []
         for pattern, label in (
@@ -96,7 +97,7 @@ def analyze_repository(root: Path) -> dict[str, Any]:
         records[rel] = {
             "path": rel, "kind": kind, "program_id": program_id,
             "copybooks": copies, "calls": calls, "jcl_programs": exec_programs,
-            "sql_includes": sql_includes, "features": features,
+            "jcl_datasets": jcl_datasets, "sql_includes": sql_includes, "features": features,
             "lines": len(source.splitlines()),
         }
 
@@ -193,6 +194,13 @@ def render_markdown(plan: dict[str, Any]) -> str:
         lines += [f"| `{e['source']}` | {e['relation']} | `{e['symbol']}` |" for e in plan["unresolved_references"]]
     else:
         lines.append("No unresolved references were detected by the current heuristics.")
+    lines += ["", "## JCL datasets detected", ""]
+    dataset_rows = [(item["path"], dataset) for item in plan["files"] for dataset in item.get("jcl_datasets", [])]
+    if dataset_rows:
+        lines += ["| JCL file | DSN |", "|---|---|"]
+        lines += [f"| `{path}` | `{dataset}` |" for path, dataset in dataset_rows]
+    else:
+        lines.append("No DSN= references were detected in JCL files.")
     lines += ["", "## Review first", ""]
     if plan["review_first"]:
         for item in plan["review_first"]:
