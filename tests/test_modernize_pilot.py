@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 import cobol2py
-from tools.modernize_pilot import REPOSITORY_ROOT, _differential_fixtures, classify_diagnostic, run_pilot
+from tools.modernize_pilot import REPOSITORY_ROOT, _differential_fixtures, _impact_priority, classify_diagnostic, run_pilot
 
 
 class ModernizePilotTests(unittest.TestCase):
@@ -47,6 +47,11 @@ PROCEDURE DIVISION.
             self.assertTrue((output / "translated" / "MAIN.py").is_file())
             saved = json.loads((output / "translation-report.json").read_text(encoding="utf-8"))
             self.assertIn(saved["results"][0]["status"], ("translated", "translated-with-diagnostics"))
+
+    def test_differential_impact_priority_uses_feature_hints(self):
+        self.assertEqual(_impact_priority(["ADD receiving PIC overflow"]), "high")
+        self.assertEqual(_impact_priority(["numeric MOVE truncation"]), "high")
+        self.assertEqual(_impact_priority(["DISPLAY literal with punctuation"]), "low")
 
     def test_valid_inline_if_has_no_malformed_control_flow_diagnostic(self):
         source_path = REPOSITORY_ROOT / "samples" / "bench_43_table_first.cbl"
