@@ -50,6 +50,8 @@ PROCEDURE DIVISION.
                             for e in plan["dependencies"]))
         self.assertTrue(any(e["relation"] == "jcl-exec" and e["symbol"] == "MAINPROG"
                             for e in plan["dependencies"]))
+        nightly = next(x for x in plan["files"] if x["path"] == "jcl/NIGHTLY.jcl")
+        self.assertEqual(nightly["jcl_datasets"], ["APP.OUT"])
         self.assertTrue(any(e["relation"] == "sql-include" and e["symbol"] == "SQLCA"
                             for e in plan["dependencies"]))
 
