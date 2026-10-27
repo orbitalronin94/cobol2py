@@ -474,11 +474,11 @@ def resolve_copybooks(
     copybook_paths: Optional[list[str | Path]] = None,
     source_path: Optional[str | Path] = None,
 ) -> tuple[str, list[str]]:
-    """Expand simple COPY directives, recording missing files and cycles.
+    """Expand COPY directives, including simple pseudo-text REPLACING.
 
     Search order is the source file's directory, each explicit --copybook-path
-    directory, then the current working directory. COPY ... REPLACING and
-    library-qualified COPY forms are intentionally reported as unresolved.
+    directory, then the current working directory. Library-qualified forms and
+    replacement clauses outside the supported pseudo-text form are reported.
     """
     roots: list[Path] = []
     if source_path is not None:
@@ -529,10 +529,27 @@ def resolve_copybooks(
                 output.append(line)
                 continue
             name, suffix = match.groups()
+            replacements: list[tuple[str, str]] = []
             if suffix.strip():
-                record(f"COPYBOOK UNSUPPORTED CLAUSE: {line.strip()}")
-                output.append(f"*> COBOL2PY UNRESOLVED COPYBOOK: {line.strip()}")
-                continue
+                clause = re.match(r"^\\s*REPLACING\\s+(.+?)\\s*$", suffix, re.IGNORECASE)
+                pair_pattern = re.compile(
+                    r"==\\s*(.*?)\\s*==\\s+BY\\s+==\\s*(.*?)\\s*==",
+                    re.IGNORECASE,
+                )
+                if clause:
+                    clause_text = clause.group(1)
+                    pairs = list(pair_pattern.finditer(clause_text))
+                    remainder = pair_pattern.sub("", clause_text).strip()
+                    if pairs and not remainder:
+                        replacements = [(pair.group(1), pair.group(2)) for pair in pairs]
+                    else:
+                        record(f"COPYBOOK UNSUPPORTED CLAUSE: {line.strip()}")
+                        output.append(f"*> COBOL2PY UNRESOLVED COPYBOOK: {line.strip()}")
+                        continue
+                else:
+                    record(f"COPYBOOK UNSUPPORTED CLAUSE: {line.strip()}")
+                    output.append(f"*> COBOL2PY UNRESOLVED COPYBOOK: {line.strip()}")
+                    continue
             resolved = locate(name, search_roots)
             if resolved is None:
                 record(f"COPYBOOK NOT FOUND: {name} (searched: {', '.join(str(p) for p in search_roots)})")
@@ -549,6 +566,10 @@ def resolve_copybooks(
                 record(f"COPYBOOK READ ERROR: {resolved}: {exc}")
                 output.append(f"*> COBOL2PY UNRESOLVED COPYBOOK: {name}")
                 continue
+            # Apply only explicit pseudo-text pairs. Escaping the old text keeps
+            # replacement contents literal rather than interpreting them as regex.
+            for old_text, new_text in replacements:
+                nested_source = re.sub(re.escape(old_text), lambda _: new_text, nested_source, flags=re.IGNORECASE)
             nested_roots = [resolved.parent] + [root for root in search_roots if root != resolved.parent]
             output.extend(expand(nested_source, nested_roots, stack + [resolved]))
         return output
