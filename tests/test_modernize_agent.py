@@ -42,7 +42,7 @@ PROCEDURE DIVISION.
     def test_inventory_handles_hundreds_of_nested_sources(self):
         for index in range(200):
             self.write(f"familia-{index % 8:02d}/PROG-{index:03d}.cbl",
-                       f"IDENTIFICATION DIVISION.\\nPROGRAM-ID. PROG{index:03d}.\\nPROCEDURE DIVISION.\\n STOP RUN.\\n")
+                       f"IDENTIFICATION DIVISION.\nPROGRAM-ID. PROG{index:03d}.\nPROCEDURE DIVISION.\n STOP RUN.\n")
         plan = analyze_repository(self.root)
         self.assertEqual(plan["summary"]["cobol_programs"], 200)
         self.assertEqual(len(plan["files"]), 200)
