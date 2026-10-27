@@ -199,6 +199,7 @@ def analyze_repository(root: Path) -> dict[str, Any]:
             "copybooks": copy_count, "jcl_files": jcl_count, "sql_files": sql_count,
             "dependency_edges": len(edges), "unresolved_references": len(unresolved),
             "ambiguous_references": len(ambiguous),
+            "dynamic_call_targets": sum(len(item["dynamic_calls"]) for item in records.values()),
         },
         "files": list(records.values()),
         "dependencies": edges,
@@ -255,6 +256,15 @@ def render_markdown(plan: dict[str, Any]) -> str:
         lines += [f"| `{e['source']}` | {e['relation']} | `{e['symbol']}` |" for e in plan["unresolved_references"]]
     else:
         lines.append("No unresolved references were detected by the current heuristics.")
+    lines += ["", "## Dynamic CALL targets", ""]
+    dynamic_rows = [(item["path"], target) for item in plan["files"] for target in item.get("dynamic_calls", [])]
+    if dynamic_rows:
+        lines += ["| Source | Target identifier |", "|---|---|"]
+        lines += ["| " + path + " | " + target + " |" for path, target in dynamic_rows]
+        lines.append("")
+        lines.append("These targets are identifiers, not literal program names. Their runtime values cannot be resolved by this static name-based analysis.")
+    else:
+        lines.append("No unquoted CALL identifiers were detected.")
     lines += ["", "## Ambiguous references", ""]
     if plan.get("ambiguous_references"):
         lines += ["| Source | Relation | Symbol | Candidate paths |", "|---|---|---|---|"]
