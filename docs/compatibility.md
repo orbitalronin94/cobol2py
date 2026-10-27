@@ -25,7 +25,7 @@ Consulta la lista autoritativa en [`benchmarks/cases.json`](../benchmarks/cases.
 
 La lista exacta de características por caso está en el manifiesto; este resumen no amplía por sí mismo el soporte.
 
-En la revisión de PR #9, el traductor candidato coincidió en **100/100 casos (100%)** con GnuCOBOL en `stdout` y código de salida; el snapshot inicial coincidió en **16/100 (16%)** sobre el mismo corpus. No hubo fallos de compilación de las referencias COBOL. Estos resultados son específicos de esa revisión y del manifiesto versionado; no equivalen a una certificación del lenguaje COBOL.
+En la revisión histórica de PR #9, el traductor candidato coincidió en **100/100 casos (100%)** con GnuCOBOL en `stdout` y código de salida; el snapshot inicial coincidió en **16/100 (16%)** sobre aquel corpus. En el commit [`2b6ab18`](https://github.com/orbitalronin94/cobol2py/commit/2b6ab18ad10f2aace74d24082ccde41139969264), el corpus ampliado de 101 casos obtuvo **101/101 coincidencias (100%)**. El nuevo caso `copy-replacing-basic` pasa en el candidato, mientras que el snapshot inicial no lo soporta. No hubo fallos de compilación de las referencias COBOL. Estos resultados son específicos de esa revisión y del manifiesto versionado; no equivalen a una certificación del lenguaje COBOL.
 
 ## Qué no se debe inferir
 
