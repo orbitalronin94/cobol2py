@@ -196,6 +196,19 @@ def run_pilot(root: Path, output_dir: Path) -> dict[str, Any]:
             f"| `{item['source']}` | {item['status']} | "
             f"{'yes' if item['syntax_valid'] else 'no'} | {len(item['diagnostics'])} |"
         )
+    lines += ["", "## Diagnostic classification", "", "| Classification | Count |", "|---|---:|"]
+    for classification, count in sorted(summary["diagnostic_classifications"].items()):
+        lines.append("| \x60" + classification + "\x60 | " + str(count) + " |")
+    lines += ["", "## Diagnostic codes", "", "| Code | Count | Classification |", "|---|---:|---|"]
+    for code, count in sorted(summary["diagnostic_codes"].items()):
+        classification = DIAGNOSTIC_CLASSIFICATIONS.get(code, "review-required")
+        lines.append("| \x60" + code + "\x60 | " + str(count) + " | \x60" + classification + "\x60 |")
+    lines += ["", "## Candidate differential fixtures", "",
+        "Fixture links identify exact source-path matches in the versioned manifest; they do not mean this pilot ran those cases or proved semantic equivalence.", "",
+        "| Source | Candidate fixture IDs | Semantic status |", "|---|---|---|"]
+    for item in results:
+        fixture_ids = ", ".join("\x60" + str(fixture["id"]) + "\x60" for fixture in item.get("differential_fixtures", [])) or "—"
+        lines.append("| \x60" + item["source"] + "\x60 | " + fixture_ids + " | \x60" + item["semantic_status"] + "\x60 |")
     lines += ["", "## Validation boundary", ""]
     lines += [f"- {lim}" for lim in report["limitations"]]
     (output_dir / "translation-report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
