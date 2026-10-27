@@ -751,6 +751,17 @@
         "ADD ... TO ... GIVING",
         "looping paragraph control flow"
       ]
+    },
+    {
+      "id": "el-multi-tabla-diabolico",
+      "path": "samples/el_multi_tabla_diabolico.cbl",
+      "features": [
+        "OCCURS DEPENDING ON active length",
+        "ASCENDING KEY and INDEXED BY",
+        "SEARCH ALL binary search",
+        "base-1 SET index semantics",
+        "recursive PERFORM with single base-case DISPLAY"
+      ]
     }
   ]
 }
