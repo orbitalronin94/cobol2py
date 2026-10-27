@@ -218,16 +218,31 @@ def run_pilot(root: Path, output_dir: Path, *, differential: bool = False) -> di
             summary["diagnostic_classifications"][classification] = summary["diagnostic_classifications"].get(classification, 0) + 1
             summary["diagnostic_codes"][code] = summary["diagnostic_codes"].get(code, 0) + 1
 
+    differential_report = {"status": "not-evaluated", "case_count": 0, "cases": []}
+    if differential:
+        differential_report = _run_differential(results, output_dir)
+        for item in results:
+            if not item.get("differential_fixtures"):
+                item["semantic_status"] = "not-applicable"
+    semantic_validation = differential_report["status"] if differential else "not-performed"
+    summary["semantic_status_counts"] = {}
+    for item in results:
+        status = item["semantic_status"]
+        summary["semantic_status_counts"][status] = summary["semantic_status_counts"].get(status, 0) + 1
+    summary["differential_case_count"] = differential_report["case_count"]
+
+
     report = {
         "schema_version": 2,
         "tool_versions": {"translator": _translator_version(), "pilot_schema": 2},
         "root": str(root),
         "inventory_summary": inventory["summary"],
         "translation_summary": summary,
-        "semantic_validation": "not-performed",
+        "semantic_validation": semantic_validation,
+        "differential_validation": differential_report,
         "validation": {
             "syntax": "checked-per-file",
-            "semantics": "not-evaluated",
+            "semantics": differential_report["status"] if differential else "not-evaluated",
             "comparison_dimensions": ["stdout", "return-code"],
             "differential_fixture_links_are_candidates_only": True,
         },
