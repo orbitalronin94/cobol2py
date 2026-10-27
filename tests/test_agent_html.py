@@ -21,6 +21,8 @@ class AgentHtmlTests(unittest.TestCase):
         self.assertIn('id="dynamic"', html)
         self.assertIn('id="result-filter"', html)
         self.assertIn('filtered-out', html)
+        self.assertIn('function maskLiterals', html)
+        self.assertIn('literalCalls(clean,code)', html)
         self.assertIn('No se ejecuta', html) if 'No se ejecuta' in html else self.assertIn('no ejecuta', html.lower())
 
     def test_agent_ui_does_not_send_source_to_a_server(self):
