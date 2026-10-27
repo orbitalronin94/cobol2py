@@ -225,7 +225,10 @@ def analyze_repository(root: Path) -> dict[str, Any]:
                     for suffix in (".cpy", ".copy", ".CPY", ".COPY")
                 )
             for candidate in candidates:
-                relative = __import__("os").path.normpath(candidate.as_posix())
+                try:
+                    relative = (root / candidate).resolve().relative_to(root).as_posix()
+                except ValueError:
+                    continue
                 matched = paths_by_casefold.get(relative.casefold())
                 if matched and records[matched]["kind"] == "copybook" and matched != source_rel:
                     return [matched]
