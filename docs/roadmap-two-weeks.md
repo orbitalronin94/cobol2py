@@ -55,6 +55,7 @@ No se promete compatibilidad completa con todos los dialectos, traducción autom
 - [x] Mejorar el inventario con filtrado de comentarios y referencias ambiguas.
 - [x] Integrar inventario → traducción → comprobación de sintaxis con informe auditable.
 - [x] Ejecutar y revisar CI y benchmark del commit `1fb78c6`: suite completa verde y benchmark 102/102; la demo HTML coincide exactamente con `cobol2py.py`.
+- [x] Preparar notas de candidato `0.1.0-rc1` con alcance, evidencia de pruebas y limitaciones.
 - [x] Conectar inventario, traducción del subconjunto y comprobación sintáctica en `tools/modernize_pilot.py`; el informe separa sintaxis de equivalencia semántica.
 - [x] Ejecutar el piloto sobre `samples`: 108/108 fuentes traducidas, 0 errores de sintaxis, 0 errores de traducción y 36 fuentes con diagnósticos para revisión.
 
