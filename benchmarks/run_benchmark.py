@@ -104,7 +104,10 @@ def main() -> int:
             with tempfile.TemporaryDirectory(dir=root, prefix=case["id"] + "-") as case_tmp:
                 work = Path(case_tmp)
                 try:
-                    compile_result = run(["cobc", "-x", "-o", str(work / "reference"), str(source)])
+                    compile_result = run([
+                        "cobc", "-x", "-I", str(source.resolve().parent),
+                        "-o", str(work / "reference"), str(source),
+                    ])
                 except (OSError, subprocess.TimeoutExpired) as exc:
                     compile_result = None
                     item["compile_error"] = str(exc)
