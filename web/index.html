@@ -311,6 +311,8 @@ class CobolVar:
     is_array: bool = False
     occurs: Optional[int] = None
     depending_on: Optional[str] = None
+    indexed_by: Optional[str] = None
+    ascending_key: Optional[str] = None
     parent_name: Optional[str] = None
     redefines: Optional[str] = None
 
@@ -429,7 +431,7 @@ RE_VALUE = re.compile(
 )
 # Patch 2: OCCURS dinámico
 RE_OCCURS = re.compile(
-    r"OCCURS\s+(?:\d+\s+TO\s+)?(\d+)\s+TIMES"
+    r"OCCURS\s+(?:\d+\s+TO\s+)?(\d+)(?:\s+TIMES)?"
     r"(?:\s+DEPENDING\s+ON\s+([A-Za-z0-9\-]+))?",
     re.IGNORECASE,
 )
@@ -472,6 +474,10 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
             is_array=occ_m is not None,
             occurs=int(occ_m.group(1)) if occ_m else None,
             depending_on=occ_m.group(2) if occ_m and occ_m.group(2) else None,
+            indexed_by=(re.search(r"\bINDEXED\s+BY\s+([A-Za-z0-9-]+)", rest, re.IGNORECASE).group(1).upper()
+                        if re.search(r"\bINDEXED\s+BY\s+([A-Za-z0-9-]+)", rest, re.IGNORECASE) else None),
+            ascending_key=(re.search(r"\bASCENDING\s+KEY\s+(?:IS\s+)?([A-Za-z0-9-]+)", rest, re.IGNORECASE).group(1).upper()
+                           if re.search(r"\bASCENDING\s+KEY\s+(?:IS\s+)?([A-Za-z0-9-]+)", rest, re.IGNORECASE) else None),
             parent_name=parent.name if parent else None,
             redefines=(re.search(r"\bREDEFINES\s+([A-Za-z0-9-]+)", rest, re.IGNORECASE).group(1).upper()
                        if re.search(r"\bREDEFINES\s+([A-Za-z0-9-]+)", rest, re.IGNORECASE) else None),
@@ -658,9 +664,9 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
 
         # Scope terminators must be standalone parser units. Otherwise a
         # preceding DISPLAY without a period can absorb END-IF as an operand.
-        if upper in ("END-IF", "END-PERFORM", "END-EVALUATE"):
+        if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH") or upper.startswith("AT END") or upper.startswith("SEARCH ALL "):
             flush()
-            units.append((num, upper))
+            units.append((num, upper if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH") else text.strip()))
             continue
 
         if not buffer:
@@ -669,7 +675,9 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
 
         ends_unit = (
             text.endswith(".")
-            or upper in ("END-IF", "END-PERFORM", "END-EVALUATE")
+            or upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH")
+            or upper.startswith("SEARCH ALL ")
+            or upper.startswith("AT END")
             or upper.endswith("THEN")
             or upper.startswith("EVALUATE")
             or upper.startswith("WHEN ")
@@ -704,19 +712,29 @@ def build_tree(units: list[tuple[int, str]]) -> list[Node]:
             continue
 
         if upper.startswith("WHEN "):
-            if stack and stack[-1][0] == "evaluate":
+            if stack and stack[-1][0] in ("evaluate", "search_all"):
                 branch = Node(kind="when", text=normalized[5:].strip(), line=line)
                 stack[-1][1].body.append(branch)
                 current_list = branch.then_branch
             else:
-                current_list.append(Node(kind="malformed", text=f"{normalized} without matching EVALUATE", line=line))
+                current_list.append(Node(kind="malformed", text=f"{normalized} without matching EVALUATE/SEARCH", line=line))
             continue
 
-        if upper in ("END-IF", "END-PERFORM", "END-EVALUATE"):
+        if upper.startswith("AT END"):
+            if stack and stack[-1][0] == "search_all":
+                branch = Node(kind="when", text="AT END", line=line)
+                stack[-1][1].body.append(branch)
+                current_list = branch.then_branch
+            else:
+                current_list.append(Node(kind="malformed", text=f"{normalized} without matching SEARCH ALL", line=line))
+            continue
+
+        if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH"):
             expected = {
                 "END-IF": "if",
                 "END-PERFORM": "perform",
                 "END-EVALUATE": "evaluate",
+                "END-SEARCH": "search_all",
             }[upper]
             if stack and stack[-1][0] == expected:
                 _, _, parent_list = stack.pop()
@@ -751,6 +769,13 @@ def build_tree(units: list[tuple[int, str]]) -> list[Node]:
             node = Node(kind="perform_inline", text=normalized, line=line)
             current_list.append(node)
             stack.append(("perform", node, current_list))
+            current_list = node.body
+            continue
+
+        if upper.startswith("SEARCH ALL "):
+            node = Node(kind="search_all", text=normalized, line=line)
+            current_list.append(node)
+            stack.append(("search_all", node, current_list))
             current_list = node.body
             continue
 
@@ -1039,16 +1064,23 @@ def normalize_data_reference(
     overlay_fields, _overlay_buffers = build_overlay_layout(variable_map)
     if not subscript and field_name.upper() in overlay_fields:
         return f"_cobol_get({field_name.upper()!r})"
+    variable = variable_map.get(field_name.upper())
     if qualifier:
         parent_expr = normalize_data_reference(qualifier, variable_map)
+        parent_variable = variable_map.get(qualifier.upper())
+        if parent_variable is not None and parent_variable.is_array and parent_variable.is_group and subscript:
+            index_expr = str(int(subscript) - 1) if subscript.isdigit() else f"{normalize_name(subscript)} - 1"
+            return f"{parent_expr}[{index_expr}][{normalize_name(field_name)!r}]"
+        expr = f"{parent_expr}[{normalize_name(field_name)!r}]"
+    elif variable is not None and variable.parent_name:
+        parent_expr = normalize_data_reference(variable.parent_name, variable_map)
+        parent_variable = variable_map.get(variable.parent_name.upper())
+        if parent_variable is not None and parent_variable.is_array and parent_variable.is_group and subscript:
+            index_expr = str(int(subscript) - 1) if subscript.isdigit() else f"{normalize_name(subscript)} - 1"
+            return f"{parent_expr}[{index_expr}][{normalize_name(field_name)!r}]"
         expr = f"{parent_expr}[{normalize_name(field_name)!r}]"
     else:
-        variable = variable_map.get(field_name.upper())
-        if variable is not None and variable.parent_name:
-            parent_expr = normalize_data_reference(variable.parent_name, variable_map)
-            expr = f"{parent_expr}[{normalize_name(field_name)!r}]"
-        else:
-            expr = normalize_name(field_name)
+        expr = normalize_name(field_name)
     if subscript:
         if subscript.isdigit():
             expr += f"[{int(subscript) - 1}]"
@@ -1478,6 +1510,11 @@ def translate_statement(
             return ["_cobol_accept_value = input()", emit_assignment(target, value, variables)]
         return [f"{target_expr} = input()"]
 
+    m = re.fullmatch(rf"SET\s+({DATA_REF_PATTERN})\s+TO\s+(.+)", s, re.IGNORECASE)
+    if m:
+        target, source = m.groups()
+        return [emit_assignment(target, translate_literal(source, variables), variables)]
+
     m = re.match(rf"MOVE\s+(.+?)\s+TO\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
         target = m.group(2)
@@ -1614,6 +1651,42 @@ def translate_nodes(
             if not body or all(not line.strip() or line.strip().startswith("#") for line in body):
                 body = ["    " * (indent + 1) + "pass"]
             out.extend(body)
+
+        elif node.kind == "search_all":
+            table_match = re.match(r"SEARCH\s+ALL\s+([A-Za-z0-9-]+)", node.text, re.IGNORECASE)
+            table_name = table_match.group(1).upper() if table_match else ""
+            table = (variables or {}).get(table_name)
+            when_branch = next((branch for branch in node.body if branch.kind == "when" and branch.text.upper() != "AT END"), None)
+            at_end_branch = next((branch for branch in node.body if branch.kind == "when" and branch.text.upper() == "AT END"), None)
+            key_match = re.match(r"([A-Za-z0-9-]+)\s*\(\s*([A-Za-z0-9_-]+)\s*\)\s*=\s*(.+)", when_branch.text, re.IGNORECASE) if when_branch else None
+            key_name = key_match.group(1).upper() if key_match else (table.ascending_key if table else None)
+            index_name = key_match.group(2).upper() if key_match else (table.indexed_by if table else None)
+            search_value = key_match.group(3).strip() if key_match else None
+            if table is None or not table.is_array or not table.is_group or not table.ascending_key or not key_match or key_name != table.ascending_key or not index_name:
+                out.append("    " * indent + f"# SEARCH ALL no traducido: {node.text} (requiere tabla OCCURS con ASCENDING KEY y WHEN soportado)")
+            else:
+                table_expr = normalize_data_reference(table_name, variables)
+                key_expr = lambda index: f"{table_expr}[{index}][{normalize_name(key_name)!r}]"
+                target_expr = translate_literal(search_value, variables)
+                size_expr = normalize_data_reference(table.depending_on, variables) if table.depending_on else str(table.occurs or 0)
+                prefix = "    " * indent
+                temp = f"_cobol_search_{node.line}"
+                out.append(prefix + f"{temp}_size = min(max(0, int({size_expr})), {table.occurs or 0})")
+                out.append(prefix + f"{temp}_lo = 0")
+                out.append(prefix + f"{temp}_hi = {temp}_size")
+                out.append(prefix + f"while {temp}_lo < {temp}_hi:")
+                out.append(prefix + f"    {temp}_mid = ({temp}_lo + {temp}_hi) // 2")
+                out.append(prefix + f"    if {key_expr(temp + '_mid')} < {target_expr}:")
+                out.append(prefix + f"        {temp}_lo = {temp}_mid + 1")
+                out.append(prefix + "    else:")
+                out.append(prefix + f"        {temp}_hi = {temp}_mid")
+                out.append(prefix + f"if {temp}_lo < {temp}_size and {key_expr(temp + '_lo')} == {target_expr}:")
+                out.append(prefix + f"    {normalize_name(index_name)} = {temp}_lo + 1")
+                branch_body = translate_nodes(when_branch.then_branch, paragraphs, indent + 1, variables, current_paragraph)
+                out.extend(branch_body or [prefix + "    pass"])
+                out.append(prefix + "else:")
+                end_body = translate_nodes(at_end_branch.then_branch, paragraphs, indent + 1, variables, current_paragraph) if at_end_branch else []
+                out.extend(end_body or [prefix + "    pass"])
 
         elif node.kind == "evaluate":
             subject = node.text[len("EVALUATE"):].strip()
@@ -2289,7 +2362,10 @@ def emit_python(prog: Program) -> str:
                 f"{normalize_name(child.name)!r}: {nested_default(child)}"
                 for child in children
             )
-            return "{" + fields + "}"
+            record = "{" + fields + "}"
+            if variable.is_array:
+                return f"[{record} for _ in range({variable.occurs or 0})]"
+            return record
 
         root_variables = [variable for variable in prog.variables if not variable.parent_name]
         supported_overlay_roots = {
@@ -2315,6 +2391,11 @@ def emit_python(prog: Program) -> str:
                 comment += f" VALUE {variable.value}"
             lines.append(f"{normalize_name(variable.name)}: {variable.py_type()} = {default}{comment}")
         lines.append("")
+        for variable in prog.variables:
+            if variable.indexed_by:
+                lines.append(f"{normalize_name(variable.indexed_by)} = 1  # INDEXED BY {variable.indexed_by}")
+        if any(variable.indexed_by for variable in prog.variables):
+            lines.append("")
 
     para_names = set(prog.paragraphs.keys())
     variables_by_name = {variable.name.upper(): variable for variable in prog.variables}
@@ -2372,6 +2453,10 @@ def emit_python(prog: Program) -> str:
         # generated module. Declare them global so statements mutate shared
         # COBOL storage instead of creating Python locals.
         global_vars = [normalize_name(v.name) for v in prog.variables if not v.parent_name]
+        global_vars.extend(
+            normalize_name(v.indexed_by) for v in prog.variables
+            if v.indexed_by and normalize_name(v.indexed_by) not in global_vars
+        )
         if global_vars:
             lines.append("    global " + ", ".join(global_vars))
         body = translate_paragraph(
@@ -2482,7 +2567,7 @@ def collect_diagnostics(prog: Program, target_language: str = "python") -> list[
             })
 
     for variable in prog.variables:
-        if variable.is_group and variable.is_array:
+        if variable.is_group and variable.is_array and not (variable.indexed_by and variable.ascending_key):
             diagnostics.append({
                 "code": "OCCURS_GROUP_UNSUPPORTED",
                 "severity": "warning",
@@ -2498,7 +2583,7 @@ def collect_diagnostics(prog: Program, target_language: str = "python") -> list[
                     "is not represented as a list of records"
                 ),
             })
-        if variable.depending_on:
+        if variable.depending_on and not (variable.is_group and variable.is_array and variable.indexed_by and variable.ascending_key):
             diagnostics.append({
                 "code": "OCCURS_DEPENDING_ON_UNSUPPORTED",
                 "severity": "warning",
