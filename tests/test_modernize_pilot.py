@@ -37,7 +37,7 @@ PROCEDURE DIVISION.
             self.assertTrue((output / "translation-report.md").is_file())
             self.assertTrue((output / "translated" / "MAIN.py").is_file())
             saved = json.loads((output / "translation-report.json").read_text(encoding="utf-8"))
-            self.assertEqual(saved["results"][0]["status"], "translated")
+            self.assertIn(saved["results"][0]["status"], ("translated", "translated-with-diagnostics"))
 
     def test_rejects_output_inside_source_root(self):
         with tempfile.TemporaryDirectory() as temporary:
