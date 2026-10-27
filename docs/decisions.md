@@ -373,3 +373,9 @@ Añadir una sección con:
 - **Contexto:** compilar sintácticamente no demuestra equivalencia, y ejecutar fuentes arbitrarias durante un inventario puede tener efectos no deseados.
 - **Consecuencias:** cada archivo declara not-evaluated, matched, discrepancy, reference-error o not-applicable. Los reportes incluyen detalle por fuente y se publican como artefacto de CI.
 - **Validación:** CI del piloto: 108/108 fuentes traducidas, cero errores sintácticos/de traducción y 102/102 fixtures diferenciales coincidentes en stdout/código de retorno. Quedan 35 fuentes con avisos de aritmética/PIC que requieren revisión humana.
+
+## D-040 — Soportar ADD ... TO ... GIVING y REDEFINES anidados
+
+- **Estado:** aceptada para el subconjunto probado.
+- **Decisión:** traducir el resultado de `ADD operandos TO receptor GIVING destino` al destino separado, y permitir que el elemento base y sus vistas `REDEFINES` sean hermanos dentro de un grupo de datos.
+- **Consecuencias:** el almacenamiento físico compartido prevalece sobre la representación anidada de los grupos en Python; `LABERINTO-COBOL` cubre conjuntamente `ALTER`, `GO TO ... DEPENDING ON`, `REDEFINES` anidado y `ADD ... GIVING`.
