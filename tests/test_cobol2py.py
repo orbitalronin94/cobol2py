@@ -1565,3 +1565,31 @@ class DiagnosticTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MultiTableDiabolicoTests(unittest.TestCase):
+    def test_dynamic_occurs_search_all_and_recursive_perform(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+        from pathlib import Path
+
+        source_path = Path(__file__).resolve().parents[1] / "samples" / "el_multi_tabla_diabolico.cbl"
+        source = source_path.read_text(encoding="utf-8")
+        program = cobol2py.parse_cobol(source, source_path=source_path)
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<el-multi-tabla-diabolico>", "exec")
+        namespace = {"__name__": "generated_test"}
+        output = StringIO()
+        with redirect_stdout(output):
+            exec(generated, namespace)
+            namespace["_cobol_dispatch"]("MAIN-LOGIC")
+        self.assertEqual(
+            output.getvalue(),
+            "INICIO DE DIABLURA NUMERO 2\\n"
+            + "VALOR RECURSIVO FINAL: 000000700\\n" * 5,
+            generated,
+        )
+        self.assertEqual(namespace["ws_dynamic_table"]["ws_item"][4]["ws_item_id"], "EAGLE")
+        self.assertEqual(namespace["ws_dynamic_table"]["ws_item"][4]["ws_item_val"], 500)
+        self.assertEqual(namespace["ws_control"]["ws_found_idx"], 5)
+        self.assertEqual(namespace["ws_control"]["ws_result_num"], 700)
