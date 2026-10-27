@@ -224,6 +224,20 @@ python web_demo.py
 
 La interfaz es una herramienta de prueba; no valida la equivalencia semántica ni convierte la salida en apta para producción.
 
+
+## Agente de modernización de repositorios
+
+Además del traductor de un solo archivo, el repositorio incluye un primer planificador estático para analizar aplicaciones COBOL con copybooks, JCL y SQL. No requiere dependencias externas ni modifica los programas analizados.
+
+```bash
+python cobol2py_agent.py /ruta/al/sistema \
+  --out reports/migration-plan.md \
+  --json-out reports/migration-plan.json
+python -m unittest tests.test_modernize_agent -v
+```
+
+El informe enumera los artefactos detectados, las dependencias que logra resolver por nombre, las referencias pendientes y las construcciones que conviene revisar primero. Es una ayuda para planificar, no un parser completo, un migrador autónomo ni una prueba de equivalencia. Consulta [la guía del agente](docs/repo-modernization-agent.md) y [la arquitectura](docs/architecture.md) para conocer el alcance y el diseño previsto.
+
 ## Documentación de ingeniería
 
 La documentación de arquitectura, decisiones de diseño, alcance de compatibilidad y proceso de cambios está en [`docs/`](docs/README.md). Los cambios semánticos deben incluir pruebas y, cuando sea posible, una comparación diferencial con GnuCOBOL. El porcentaje del benchmark mide únicamente los casos versionados; no demuestra equivalencia general.
@@ -336,16 +350,3 @@ Esto no es un producto. Es una herramienta. Y las herramientas se comparten.
 
 
 Los nombres de datos o párrafos que coinciden con palabras reservadas de Python/Java se generan con el prefijo `cobol_`; esto evita conflictos sintácticos, aunque los identificadores de salida ya no coinciden literalmente con los nombres COBOL.
-
-## Agente de modernización de repositorios
-
-Además del traductor de un solo archivo, el repositorio incluye un primer planificador estático para analizar aplicaciones COBOL con copybooks, JCL y SQL. No requiere dependencias externas ni modifica los programas analizados.
-
-```bash
-python cobol2py_agent.py /ruta/al/sistema \
-  --out reports/migration-plan.md \
-  --json-out reports/migration-plan.json
-python -m unittest tests.test_modernize_agent -v
-```
-
-El informe enumera los artefactos detectados, las dependencias que logra resolver por nombre, las referencias pendientes y las construcciones que conviene revisar primero. Es una ayuda para planificar, no un parser completo, un migrador autónomo ni una prueba de equivalencia. Consulta [la guía del agente](docs/repo-modernization-agent.md) y [la arquitectura](docs/architecture.md) para conocer el alcance y el diseño previsto.
