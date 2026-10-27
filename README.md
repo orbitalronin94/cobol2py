@@ -14,7 +14,7 @@ El plan inicial de diez días se ha ampliado hasta un hito de ingeniería 0.8: t
 |---|---|---|
 | Traductor y benchmark | Base estable para el subconjunto medido | Corpus versionado de 102 casos con GnuCOBOL; no es una estimación de compatibilidad general |
 | Inventario multiarchivo | Implementado con clasificación estática | Dependencias resueltas, sin resolver, ambiguas y CALL dinámicas; los nombres no prueban enlazado en ejecución |
-| Piloto integrado | Informe de esquema v2 | Traducción, sintaxis, clasificación por código/categoría y enlaces exactos a fixtures candidatas; no ejecuta los programas generados |
+| Piloto integrado | Informe de esquema v2 | Traducción, sintaxis, clasificación por código/categoría y enlaces exactos a fixtures candidatas; por defecto no ejecuta el código generado |
 | Agente web | Demo heurística local | Selección de archivos, hallazgos y exportación; el análisis web no sustituye al CLI Python |
 | Evidencia de CI | Integrada | CI valida el contrato del informe y publica el informe del piloto como artefacto para revisión |
 | Revisión de los diagnósticos de samples | Triage automatizado: 35 archivos con limitaciones conocidas; 1 falso positivo corregido | El [baseline de triage](docs/pilot-diagnostics-baseline.md) enumera cada fuente. La revisión humana de los 35 casos sigue pendiente |
@@ -37,8 +37,8 @@ El proyecto ha evolucionado desde un traductor de COBOL a Python hacia un reposi
 
 - **Traductor (`cobol2py.py`)**: recibe un programa COBOL y emite Python o Java. Puede descargarse y utilizarse por sí solo; no necesita `cobol2py_agent.py`.
 - **Agente (`cobol2py_agent.py`)**: inspecciona un repositorio con múltiples programas y artefactos relacionados, y genera un inventario y un plan de migración en Markdown/JSON. No modifica los fuentes.
-- **Piloto integrado (`tools/modernize_pilot.py`)**: conecta inventario y traducción del subconjunto a Python, comprueba la sintaxis generada y crea un informe por archivo; no ejecuta las traducciones ni prueba equivalencia semántica.
-- **Flujo combinado (piloto implementado)**: `tools/modernize_pilot.py` conecta inventario, traducción del subconjunto y comprobación sintáctica, y genera informes auditables. La comparación diferencial automatizada sigue siendo un paso separado; el piloto no ejecuta el Python generado ni prueba equivalencia semántica.
+- **Piloto integrado (`tools/modernize_pilot.py`)**: conecta inventario y traducción del subconjunto a Python, comprueba sintaxis y crea un informe por archivo. Por defecto no ejecuta el código generado; el flag explícito `--differential` ejecuta únicamente fixtures de ruta exacta y compara stdout/código de retorno con GnuCOBOL.
+- **Evidencia medida**: el piloto traduce 108/108 fuentes de `samples` sin errores de sintaxis ni de traducción. En el modo diferencial opt-in, 102/102 fixtures versionadas coinciden con GnuCOBOL en stdout y código de retorno. Esto no demuestra equivalencia para entradas no medidas ni efectos externos.
 
 ### Usar solo el traductor
 
