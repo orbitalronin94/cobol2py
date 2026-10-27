@@ -119,6 +119,32 @@ SELECT '-- not a comment marker in this literal' FROM SYSIBM.SYSDUMMY1;
         fixed = next(item for item in plan["files"] if item["path"] == "FIXED.cbl")
         self.assertEqual(fixed["program_id"], "FIXED")
 
+    def test_reports_ambiguous_dependency_targets(self):
+        self.write("MAIN.cbl", """IDENTIFICATION DIVISION.
+PROGRAM-ID. MAIN.
+PROCEDURE DIVISION.
+    CALL "SUBPROG".
+    STOP RUN.
+""")
+        self.write("src_a/SUBPROG.cbl", """IDENTIFICATION DIVISION.
+PROGRAM-ID. SUBPROG.
+PROCEDURE DIVISION.
+    GOBACK.
+""")
+        self.write("src_b/OTHER.cbl", """IDENTIFICATION DIVISION.
+PROGRAM-ID. SUBPROG.
+PROCEDURE DIVISION.
+    GOBACK.
+""")
+        plan = analyze_repository(self.root)
+        matches = [item for item in plan["ambiguous_references"]
+                   if item["source"] == "MAIN.cbl" and item["relation"] == "call"]
+        self.assertEqual(len(matches), 1)
+        self.assertEqual(matches[0]["symbol"], "SUBPROG")
+        self.assertEqual(len(matches[0]["candidates"]), 2)
+        self.assertEqual(plan["summary"]["ambiguous_references"], 1)
+        self.assertIn("Ambiguous references", render_markdown(plan))
+
     def test_json_serializable(self):
         self.write("ONE.cbl", "IDENTIFICATION DIVISION. PROGRAM-ID. ONE.")
         encoded = json.dumps(analyze_repository(self.root))
