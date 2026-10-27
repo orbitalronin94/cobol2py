@@ -739,6 +739,16 @@
         "SUBTRACT receiving PIC sizing",
         "DIVIDE receiving PIC truncation"
       ]
+    },
+    {
+      "id": "laberinto-cobol",
+      "path": "samples/laberinto_cobol.cbl",
+      "features": [
+        "ALTER target mutation across paragraph dispatch",
+        "GO TO DEPENDING ON ordinal routing and out-of-range fallthrough",
+        "REDEFINES shared storage for numeric views",
+        "looping paragraph control flow"
+      ]
     }
   ]
 }
