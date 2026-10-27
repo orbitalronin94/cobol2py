@@ -15,7 +15,7 @@
 
 - Suite completa de GitHub Actions en Python 3.10, 3.11, 3.12 y 3.13: pasó en el commit de código `4280bff`.
 - [Benchmark diferencial 102/102 con las cinco operaciones aritméticas](https://github.com/orbitalronin94/cobol2py/actions/runs/40496463428).
-- [Suite de pruebas del commit de código](https://github.com/orbitalronin94/cobol2py/actions/runs/40495907342).
+- [Suite completa de pruebas del commit de código](https://github.com/orbitalronin94/cobol2py/actions/runs/40496456454).
 - Piloto sobre `samples`: 108 programas fuente traducidos, 0 errores de sintaxis, 0 errores de traducción y 36 archivos con diagnósticos para revisión.
 
 ## Limitaciones conocidas
