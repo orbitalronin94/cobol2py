@@ -746,7 +746,9 @@
       "features": [
         "ALTER target mutation across paragraph dispatch",
         "GO TO DEPENDING ON ordinal routing and out-of-range fallthrough",
-        "REDEFINES shared storage for numeric views",
+        "REDEFINES shared storage for numeric and alphanumeric views",
+        "nested WORKING-STORAGE group overlay",
+        "ADD ... TO ... GIVING",
         "looping paragraph control flow"
       ]
     }
