@@ -62,7 +62,7 @@ PROCEDURE DIVISION.
             output = base / "pilot-output"
             root.mkdir()
             (root / "LOCAL.cbl").write_text(
-                "IDENTIFICATION DIVISION.\\nPROGRAM-ID. LOCAL.\\nPROCEDURE DIVISION.\\n STOP RUN.\\n",
+                "IDENTIFICATION DIVISION.\nPROGRAM-ID. LOCAL.\nPROCEDURE DIVISION.\n STOP RUN.\n",
                 encoding="utf-8",
             )
             report = run_pilot(root, output, differential=True)
