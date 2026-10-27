@@ -68,6 +68,25 @@ def _differential_fixtures(source_path: Path) -> list[dict[str, Any]]:
     ]
 
 
+def _impact_priority(features: list[str]) -> str:
+    """Heuristic triage priority for a differential mismatch, not a severity proof."""
+    text = " ".join(features).casefold()
+    high_risk = (
+        "overflow", "receiving pic", "subscript", "table", "copy replacing",
+        "nested if", "compound", "perform", "paragraph call", "exact division",
+        "truncation", "size error",
+    )
+    medium_risk = (
+        "if", "compare", "numeric", "move", "arithmetic", "add", "subtract",
+        "multiply", "compute", "divide", "alphanumeric",
+    )
+    if any(marker in text for marker in high_risk):
+        return "high"
+    if any(marker in text for marker in medium_risk):
+        return "medium"
+    return "low"
+
+
 def _run_differential(results: list[dict[str, Any]], output_dir: Path) -> dict[str, Any]:
     """Run only manifest fixtures exactly associated with inventoried source paths."""
     selected_ids = {
@@ -114,8 +133,12 @@ def _run_differential(results: list[dict[str, Any]], output_dir: Path) -> dict[s
             status = "matched"
         else:
             status = "discrepancy"
+        features = case.get("features", [])
         cases.append({"id": case.get("id"), "path": case.get("path"), "status": status,
+                      "features": features, "impact_priority": _impact_priority(features),
                       "reason": (case.get("candidate") or {}).get("reason") or case.get("compile_error") or case.get("reference_error")})
+    priority_order = {"high": 0, "medium": 1, "low": 2}
+    cases.sort(key=lambda case: (priority_order.get(case["impact_priority"], 3), case.get("id") or ""))
     overall = "matched" if cases and all(case["status"] == "matched" for case in cases) else (
         "discrepancy" if any(case["status"] == "discrepancy" for case in cases) else "reference-error"
     )
@@ -325,10 +348,11 @@ def run_pilot(root: Path, output_dir: Path, *, differential: bool = False) -> di
         "- Overall status: \x60" + report["semantic_validation"] + "\x60",
         "- Cases evaluated: " + str(differential_report["case_count"]), ""]
     if differential_report.get("cases"):
-        lines += ["| Fixture | Status | Detail |", "|---|---|---|"]
+        lines += ["| Fixture | Priority | Features | Status | Detail |", "|---|---|---|---|---|"]
         for case in differential_report["cases"]:
             reason = str(case.get("reason") or "—").replace("|", "\\|").replace("\\n", " ")
-            lines.append("| \x60" + str(case.get("id")) + "\x60 | \x60" + case["status"] + "\x60 | " + reason + " |")
+            features = ", ".join(case.get("features", [])) or "—"
+            lines.append("| \x60" + str(case.get("id")) + "\x60 | " + case["impact_priority"] + " | " + features + " | \x60" + case["status"] + "\x60 | " + reason + " |")
     elif not differential:
         lines.append("Differential execution was not requested. Use --differential to run only exact manifest matches.")
     else:
