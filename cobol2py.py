@@ -836,7 +836,7 @@ def emit_assignment(target: str, value: str, variables: Optional[dict[str, Cobol
     """Route supported REDEFINES assignments through the shared storage buffer."""
     variable_map = variables or {}
     match = re.fullmatch(
-        r"([A-Za-z0-9-]+)(?:\([A-Za-z0-9_-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?",
+        r"([A-Za-z0-9-]+)(?:\s*\([A-Za-z0-9_-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?",
         target.strip(), re.IGNORECASE,
     )
     if match:
@@ -952,7 +952,7 @@ def translate_expr(
     # Rewrite qualified data-names first; unqualified child names are resolved
     # through the parsed hierarchy when they are unambiguous in the model.
     expr = re.sub(
-        r"\b[A-Za-z][A-Za-z0-9-]*(?:\([A-Za-z0-9_-]+\))?\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*",
+        r"\b[A-Za-z][A-Za-z0-9-]*(?:\s*\([A-Za-z0-9_-]+\))?\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*",
         lambda match: normalize_data_reference(match.group(0), variables),
         expr,
         flags=re.IGNORECASE,
@@ -1198,7 +1198,7 @@ def translate_move_value(source: str, target: str, variables: dict[str, CobolVar
 
 
 COBOL_TOKEN_RE = re.compile(
-    r'"(?:[^"]|"")*"|\'(?:[^\']|\'\')*\'|[A-Za-z][A-Za-z0-9-]*(?:\([A-Za-z0-9_-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*)?|,?\s*|(?:\S+)',
+    r'"(?:[^"]|"")*"|\'(?:[^\']|\'\')*\'|[A-Za-z][A-Za-z0-9-]*(?:\s*\([A-Za-z0-9_-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*)?|,?\s*|(?:\S+)',
     re.IGNORECASE,
 )
 
