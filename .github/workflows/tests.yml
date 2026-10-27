@@ -60,6 +60,15 @@ jobs:
           python /tmp/move_semantics.py > /tmp/move-python.out
           diff -u /tmp/move-cobol.out /tmp/move-python.out
 
+      - name: Compare arithmetic receiving PIC size semantics
+        run: |
+          cobc -x -o /tmp/arithmetic_size samples/arithmetic_size.cbl
+          /tmp/arithmetic_size > /tmp/arithmetic-cobol.out
+          python cobol2py.py samples/arithmetic_size.cbl > /tmp/arithmetic_size.py
+          python -m py_compile /tmp/arithmetic_size.py
+          python /tmp/arithmetic_size.py > /tmp/arithmetic-python.out
+          diff -u /tmp/arithmetic-cobol.out /tmp/arithmetic-python.out
+
       - name: Compare signed and implied-decimal MOVE semantics
         run: |
           cobc -x -o /tmp/numeric_semantics samples/numeric_semantics.cbl
