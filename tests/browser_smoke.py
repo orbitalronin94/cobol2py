@@ -64,7 +64,7 @@ async def main() -> None:
                 {
                     "name": "MAIN.cbl",
                     "mimeType": "text/plain",
-                    "buffer": b'IDENTIFICATION DIVISION.\\nPROGRAM-ID. MAIN.\\nPROCEDURE DIVISION.\\n CALL "SUBPROG".\\n CALL "MISSING".\\n CALL WS-PROGRAM.\\n STOP RUN.\\n',
+                    "buffer": b'IDENTIFICATION DIVISION.\\nPROGRAM-ID. MAIN.\\nPROCEDURE DIVISION.\\n DISPLAY "COPY GHOST CALL GHOST EXEC SQL INCLUDE SQLGHOST".\\n CALL "SUBPROG".\\n CALL "MISSING".\\n CALL WS-PROGRAM.\\n STOP RUN.\\n',
                 },
                 {
                     "name": "SUBPROG.cbl",
@@ -88,7 +88,7 @@ async def main() -> None:
             stats = await page.locator("#stats").inner_text()
             unresolved = await page.locator("#unresolved").inner_text()
             dynamic_calls = await page.locator("#dynamic").inner_text()
-            if "3" not in stats or "MISSING" not in unresolved or "WS-PROGRAM" not in dynamic_calls:
+            if "3" not in stats or "MISSING" not in unresolved or "WS-PROGRAM" not in dynamic_calls or "GHOST" in unresolved or "SQLGHOST" in unresolved:
                 raise AssertionError("Agent inventory missed expected files/reference/dynamic CALL: " + stats + " / " + unresolved + " / " + dynamic_calls)
             inventory = await page.locator("#inventory").inner_text()
             if "PROGRÁMA.cbl" not in inventory:
