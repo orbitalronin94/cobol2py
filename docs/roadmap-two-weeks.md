@@ -7,7 +7,7 @@ El calendario de diez días describe la primera iteración y ya se han entregado
 ### Fase A — Precisión del inventario estático
 
 - [x] Generar un triage reproducible por archivo para las fuentes con diagnósticos: categoría primaria, categorías presentes, códigos y líneas, y estado de revisión humana pendiente. El informe se publica como artefacto CI.
-- [ ] Adjudicar manualmente cada uno de los 36 archivos de la línea base: confirmar limitaciones, reproducir posibles defectos y demostrar falsos positivos antes de descartarlos.
+- [ ] Adjudicar manualmente los 35 archivos que aún tienen avisos. Se corrigió un falso positivo de la línea base (IF inline truncado por detección de formato); el detalle está en docs/pilot-diagnostics-baseline.md.
 - [x] Separar referencias `CALL` literales de llamadas dinámicas mediante identificadores, sin inventar destinos estáticos para llamadas cuyo valor solo se conoce en ejecución. Implementado en el agente Python y la demo web; los destinos dinámicos quedan en `dynamic_calls` y no se cuentan como referencias literales sin resolver. Hay pruebas de regresión de unidad y de navegador.
 - [x] Añadir regresiones para comentarios, formato fijo, llamadas dinámicas y palabras clave de dependencias dentro de literales; el inventario enmascara el contenido literal antes de extraer relaciones.
 - [x] Publicar denominadores y conteos por archivo, categoría y código diagnóstico, junto con el detalle de cada aviso.
