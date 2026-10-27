@@ -51,7 +51,7 @@ No se promete compatibilidad completa con todos los dialectos, traducción autom
 - [x] Añadir un caso diferencial COBOL/GnuCOBOL para `COPY ... REPLACING` básico.
 - [x] Añadir un caso diferencial de `COPY ... REPLACING` con dos parejas (101/101 casos coinciden en el commit `9364ba6`).
 - [x] Añadir una fixture diferencial para overflow de `PIC 99` en `ADD`, `COMPUTE` y `MULTIPLY`; validar el resultado en GnuCOBOL.
-- [x] Ampliar el corpus diferencial a 102 casos: `arithmetic-receiving-pic` verifica `ADD`, `COMPUTE` y `MULTIPLY` con overflow de `PIC 99`.
+- [x] Ampliar el corpus diferencial a 102 casos: `arithmetic-receiving-pic` verifica el ajuste a `PIC 99` en `ADD`, `COMPUTE`, `MULTIPLY`, `SUBTRACT` y `DIVIDE`.
 - [x] Mejorar el inventario con filtrado de comentarios y referencias ambiguas.
 - [x] Integrar inventario → traducción → comprobación de sintaxis con informe auditable.
 - [x] Ejecutar y revisar CI y benchmark del commit `1fb78c6`: suite completa verde y benchmark 102/102; la demo HTML coincide exactamente con `cobol2py.py`.
