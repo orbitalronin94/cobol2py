@@ -10,4 +10,8 @@
            DISPLAY WS-COUNT.
            MULTIPLY 2 BY WS-COUNT.
            DISPLAY WS-COUNT.
+           SUBTRACT 1 FROM WS-COUNT.
+           DISPLAY WS-COUNT.
+           DIVIDE 2 INTO WS-COUNT.
+           DISPLAY WS-COUNT.
            STOP RUN.
