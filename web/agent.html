@@ -17,7 +17,8 @@
 <section id="results" class="hidden">
 <div class="stats" id="stats"></div>
 <section class="panel"><h2>2. Referencias sin resolver</h2><p class="muted">Símbolos COPY/CALL/JCL/SQL para los que no se detectó un destino entre los archivos seleccionados.</p><div class="tablewrap"><table><thead><tr><th>Origen</th><th>Tipo</th><th>Símbolo</th></tr></thead><tbody id="unresolved"></tbody></table></div></section>
-<section class="panel"><h2>3. Referencias ambiguas</h2><div class="tablewrap"><table><thead><tr><th>Origen</th><th>Tipo</th><th>Símbolo</th><th>Candidatos</th></tr></thead><tbody id="ambiguous"></tbody></table></div></section>
+<section class="panel"><h2>3. Llamadas dinámicas</h2><p class="muted">Identificadores usados como destino de CALL; su valor en ejecución no se puede resolver por nombre estático.</p><div class="tablewrap"><table><thead><tr><th>Origen</th><th>Identificador</th></tr></thead><tbody id="dynamic"></tbody></table></div></section>
+<section class="panel"><h2>4. Referencias ambiguas</h2><div class="tablewrap"><table><thead><tr><th>Origen</th><th>Tipo</th><th>Símbolo</th><th>Candidatos</th></tr></thead><tbody id="ambiguous"></tbody></table></div></section>
 <section class="panel"><h2>4. Inventario de archivos</h2><div class="tablewrap"><table><thead><tr><th>Archivo</th><th>Tipo</th><th>Programa</th><th>Características</th><th>Líneas</th></tr></thead><tbody id="inventory"></tbody></table></div>
 <div class="toolbar"><button id="json" class="primary">Exportar JSON</button><button id="markdown">Exportar Markdown</button></div></section>
 </section>
