@@ -1,5 +1,49 @@
 # Roadmap de modernización de dos semanas
 
+## Continuidad del roadmap: fase posterior al piloto
+
+El calendario de diez días describe la primera iteración y ya se han entregado sus principales artefactos. No debe interpretarse como el límite del proyecto. Esta sección amplía el plan con el trabajo que sigue; los elementos pendientes no se consideran completados hasta aportar pruebas y evidencia de CI.
+
+### Fase A — Precisión del inventario estático
+
+- [ ] Clasificar los 36 archivos de `samples` que reportaron diagnósticos en la ejecución registrada del piloto: diagnóstico esperado, falso positivo, limitación real o posible defecto.
+- [ ] Separar referencias `CALL` literales de llamadas dinámicas mediante identificadores, sin inventar destinos estáticos para llamadas cuyo valor solo se conoce en ejecución.
+- [ ] Añadir fixtures para cada patrón reproducible encontrado durante la clasificación y verificar que comentarios y literales no generan dependencias falsas.
+- [ ] Documentar métricas de precisión con denominadores y ejemplos revisables; no usar solo el número bruto de advertencias como métrica de calidad.
+
+**Criterio de salida:** cada familia frecuente de diagnóstico tiene una explicación, pruebas de regresión y un comportamiento documentado; las referencias desconocidas permanecen explícitamente sin resolver.
+
+### Fase B — Validación del piloto y evidencia diferencial
+
+- [ ] Versionar el esquema de los informes del piloto e incluir versión del traductor, estado sintáctico, diagnósticos y estado semántico con valores no ambiguos.
+- [ ] Añadir enlaces entre fuentes traducidas y fixtures diferenciales aplicables, cuando exista correspondencia demostrable.
+- [ ] Diseñar una integración opcional de validación diferencial que compare salida y código de retorno con GnuCOBOL en un entorno controlado; no ejecutar código generado en el modo de inventario.
+- [ ] Diferenciar claramente `no evaluado`, `comparado y coincidente`, `discrepancia` y `no aplicable`; no inferir equivalencia por compilación.
+
+**Criterio de salida:** un informe puede indicar exactamente qué se verificó, qué no se verificó y cómo reproducir cada discrepancia.
+
+### Fase C — Experiencia del agente y operación
+
+- [ ] Añadir filtros por tipo de hallazgo, relación, nivel de confianza y ruta tanto a los informes como a la interfaz web cuando los datos disponibles lo permitan.
+- [ ] Mejorar navegación entre dependencias, candidatos ambiguos y archivos de origen, manteniendo el procesamiento local en la demo HTML.
+- [ ] Probar informes con nombres de archivo y contenido que incluyan Unicode, rutas anidadas, entradas vacías y grandes cantidades de archivos.
+- [ ] Documentar límites de escala, formatos reconocidos, reglas de exclusión y pasos de revisión humana.
+
+**Criterio de salida:** las personas que revisan el inventario pueden priorizar y reproducir hallazgos sin confundir análisis heurístico con verificación de comportamiento.
+
+### Fase D — Semántica del traductor
+
+- [ ] Priorizar discrepancias por impacto en datos, control de flujo y E/S; cada cambio semántico debe incluir un caso mínimo.
+- [ ] Revisar límites conocidos de aritmética `PIC`, signos, escalas decimales, redondeo y `ON SIZE ERROR` antes de ampliar las afirmaciones de compatibilidad.
+- [ ] Mantener sincronizado `web/index.html` con `cobol2py.py` y ejecutar el test de sincronización en CI para cada cambio del traductor.
+- [ ] Ampliar el benchmark solo con casos reproducibles y describir con precisión qué dimensiones se comparan.
+
+**Criterio de salida:** las mejoras tienen regresiones reproducibles y el README de compatibilidad no promete más de lo que miden los tests.
+
+### Cadencia de revisión
+
+Al cerrar cada bloque, actualizar el estado de esta lista, el README, las notas de versión cuando proceda y la evidencia de CI. Si el análisis revela una limitación que no se puede resolver con seguridad, registrar la limitación y el diagnóstico en lugar de ocultarlos.
+
 ## Objetivo
 
 Mejorar la fiabilidad verificable de `cobol2py` y la utilidad de su agente de inventario sin presentar el subconjunto implementado como compatibilidad COBOL completa. El plan se ejecuta en diez días laborables; se puede paralelizar por responsabilidad, pero cada cambio entra integrado y probado.
