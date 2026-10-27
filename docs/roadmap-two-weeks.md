@@ -49,7 +49,7 @@ No se promete compatibilidad completa con todos los dialectos, traducción autom
 - [x] Mejorar el análisis estático para reducir dependencias falsas procedentes de comentarios.
 - [x] Marcar referencias con varios destinos candidatos en el informe JSON y Markdown.
 - [x] Añadir un caso diferencial COBOL/GnuCOBOL para `COPY ... REPLACING` básico.
-- [x] Añadir un caso diferencial de `COPY ... REPLACING` (101/101 casos coinciden en el commit `2b6ab18`).
+- [x] Añadir un caso diferencial de `COPY ... REPLACING` con dos parejas (101/101 casos coinciden en el commit `9364ba6`).
 - [ ] Ampliar las pruebas diferenciales en otras áreas priorizadas.
 - [x] Mejorar el inventario con filtrado de comentarios y referencias ambiguas; el flujo extremo a extremo sigue pendiente.
 - [ ] Cerrar con CI verde y documentación sincronizada.
