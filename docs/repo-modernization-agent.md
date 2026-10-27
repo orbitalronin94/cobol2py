@@ -104,3 +104,5 @@ La interfaz procesa los archivos seleccionados en el navegador y no realiza peti
 ```bash
 python -m unittest discover -s tests -p 'test_agent_html.py' -v
 ```
+
+El smoke test de Playwright (`python tests/browser_smoke.py`, dentro del job `browser-smoke`) también abre ambas páginas, verifica una traducción en Chromium, carga fuentes COBOL sintéticas en el agente, comprueba una referencia ausente y confirma la descarga JSON.
