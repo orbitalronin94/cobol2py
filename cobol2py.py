@@ -297,15 +297,23 @@ def _simple_storage_width(variable: CobolVar, variables: dict[str, CobolVar]) ->
 def build_overlay_layout(
     variables: dict[str, CobolVar],
 ) -> tuple[dict[str, dict[str, object]], dict[str, int]]:
-    """Map supported REDEFINES views onto a shared root buffer with offsets."""
+    """Map supported REDEFINES views onto a shared buffer with offsets.
+
+    The base item and its redefining views may be children of a WORKING-STORAGE
+    group; COBOL's storage overlay is independent of the Python nesting used to
+    represent that group.
+    """
     fields: dict[str, dict[str, object]] = {}
     buffers: dict[str, int] = {}
-    roots = [item for item in variables.values() if not item.parent_name]
-    for overlay in roots:
+    for overlay in variables.values():
         if not overlay.redefines:
             continue
         base = variables.get(overlay.redefines.upper())
-        if base is None or base.parent_name or base.is_array:
+        if (
+            base is None
+            or base.parent_name != overlay.parent_name
+            or base.is_array
+        ):
             continue
         base_width = _simple_storage_width(base, variables)
         overlay_width = _simple_storage_width(overlay, variables)
@@ -1276,6 +1284,19 @@ def translate_statement(
         return [emit_assignment(target, fit_numeric_expression(expression, target, variables or {}), variables)]
 
     # Patch 4: ADD con múltiples operandos
+    # ADD ... TO ... GIVING stores the sum in a separate receiving item.
+    m = re.match(
+        rf"ADD\s+(.+?)\s+TO\s+({DATA_REF_PATTERN})\s+GIVING\s+({DATA_REF_PATTERN})$",
+        s, re.IGNORECASE,
+    )
+    if m:
+        operands = split_cobol_items(m.group(1))
+        sum_expr = " + ".join(translate_literal(o, variables) for o in operands)
+        receiver = normalize_data_reference(m.group(2), variables)
+        target = m.group(3)
+        expression = f"{receiver} + ({sum_expr})"
+        return [emit_assignment(target, fit_numeric_expression(expression, target, variables or {}), variables)]
+
     m = re.match(rf"ADD\s+(.+?)\s+TO\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
         operands = split_cobol_items(m.group(1))
