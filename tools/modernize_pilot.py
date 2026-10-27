@@ -104,6 +104,8 @@ def run_pilot(root: Path, output_dir: Path) -> dict[str, Any]:
             "syntax_valid": False,
             "diagnostics": [],
             "status": "translation-error",
+            "semantic_status": "not-evaluated",
+            "differential_fixtures": _differential_fixtures(source_path),
         }
         try:
             source = source_path.read_text(encoding="utf-8", errors="replace")
@@ -114,7 +116,7 @@ def run_pilot(root: Path, output_dir: Path) -> dict[str, Any]:
                 source_path=source_path,
             )
             generated = cobol2py.emit_python(program)
-            diagnostics = cobol2py.collect_diagnostics(program)
+            diagnostics = [classify_diagnostic(item) for item in cobol2py.collect_diagnostics(program)]
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_text(generated + "\n", encoding="utf-8")
             try:
@@ -141,13 +143,30 @@ def run_pilot(root: Path, output_dir: Path) -> dict[str, Any]:
         "syntax_errors": sum(item["status"] == "syntax-error" for item in results),
         "translation_errors": sum(item["status"] == "translation-error" for item in results),
         "files_with_diagnostics": sum(bool(item["diagnostics"]) for item in results),
+        "diagnostic_count": sum(len(item["diagnostics"]) for item in results),
+        "diagnostic_classifications": {},
+        "diagnostic_codes": {},
     }
+    for item in results:
+        for diagnostic in item["diagnostics"]:
+            classification = diagnostic["classification"]
+            code = diagnostic.get("code", "UNKNOWN")
+            summary["diagnostic_classifications"][classification] = summary["diagnostic_classifications"].get(classification, 0) + 1
+            summary["diagnostic_codes"][code] = summary["diagnostic_codes"].get(code, 0) + 1
+
     report = {
-        "schema_version": 1,
+        "schema_version": 2,
+        "tool_versions": {"translator": _translator_version(), "pilot_schema": 2},
         "root": str(root),
         "inventory_summary": inventory["summary"],
         "translation_summary": summary,
         "semantic_validation": "not-performed",
+        "validation": {
+            "syntax": "checked-per-file",
+            "semantics": "not-evaluated",
+            "comparison_dimensions": ["stdout", "return-code"],
+            "differential_fixture_links_are_candidates_only": True,
+        },
         "limitations": [
             "Generated programs are syntax-checked but not executed.",
             "Syntax validity and static diagnostics do not prove behavioral equivalence.",
