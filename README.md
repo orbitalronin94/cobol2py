@@ -42,6 +42,7 @@ El proyecto ha evolucionado desde un traductor de COBOL a Python hacia un reposi
 - **Agente (`cobol2py_agent.py`)**: inspecciona un repositorio con múltiples programas y artefactos relacionados, y genera un inventario y un plan de migración en Markdown/JSON. No modifica los fuentes.
 - **Piloto integrado (`tools/modernize_pilot.py`)**: conecta inventario y traducción del subconjunto a Python, comprueba sintaxis y crea un informe por archivo. Por defecto no ejecuta el código generado; el flag explícito `--differential` ejecuta únicamente fixtures de ruta exacta y compara stdout/código de retorno con GnuCOBOL.
 - **Evidencia medida**: el piloto traduce 108/108 fuentes de `samples` sin errores de sintaxis ni de traducción. En el modo diferencial opt-in, 105/105 fixtures versionadas coinciden con GnuCOBOL en stdout y código de retorno. Esto no demuestra equivalencia para entradas no medidas ni efectos externos.
+- **Corpus externo amplio (nuevo, ejecución manual)**: el workflow [`external-cobol-corpus`](.github/workflows/external-cobol-corpus.yml) toma una muestra determinista de 500 fuentes del dataset público [X-COBOL v2](https://zenodo.org/records/14269462), las compara con GnuCOBOL en un contenedor sin red y publica solo hashes y resultados. El benchmark está preparado, pero su porcentaje no se publicará hasta completar la primera ejecución; véase [metodología y límites](benchmarks/EXTERNAL_CORPUS.md).
 
 ### Usar solo el traductor
 
