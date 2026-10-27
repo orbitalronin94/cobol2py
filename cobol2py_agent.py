@@ -207,9 +207,7 @@ def analyze_repository(root: Path) -> dict[str, Any]:
         }
 
     def resolve(name: str) -> list[str]:
-        normalized = name.replace("\\", "/").rstrip(".")
-        key = Path(normalized).stem.upper()
-        return sorted(set(symbols.get(key, symbols.get(normalized.upper(), []))))
+        return sorted(set(symbols.get(name.upper(), [])))
 
     paths_by_casefold = {path.casefold(): path for path in records}
 
@@ -235,7 +233,7 @@ def analyze_repository(root: Path) -> dict[str, Any]:
 
         key = target_path.stem.upper()
         all_matches = [
-            path for path in resolve(key)
+            path for path in sorted(set(symbols.get(key, [])))
             if path != source_rel and records[path]["kind"] == "copybook"
         ]
         local = [
