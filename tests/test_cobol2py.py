@@ -414,7 +414,7 @@ P-Y.
         output = StringIO()
         with redirect_stdout(output):
             namespace["_cobol_dispatch"]("MAIN-LOGIC")
-        self.assertEqual(output.getvalue(), "Y\\n")
+        self.assertEqual(output.getvalue(), "Y\n")
 
     def test_go_to_depending_on_uses_one_based_selector(self):
         source = """IDENTIFICATION DIVISION.
@@ -443,7 +443,7 @@ P-B.
         output = StringIO()
         with redirect_stdout(output):
             namespace["_cobol_dispatch"]("MAIN-LOGIC")
-        self.assertEqual(output.getvalue(), "B\\n")
+        self.assertEqual(output.getvalue(), "B\n")
 
     def test_go_to_depending_out_of_range_does_not_transfer(self):
         source = """IDENTIFICATION DIVISION.
@@ -472,7 +472,7 @@ P-B.
         output = StringIO()
         with redirect_stdout(output):
             namespace["_cobol_dispatch"]("MAIN-LOGIC")
-        self.assertEqual(output.getvalue(), "FALLTHROUGH\\nA\\n")
+        self.assertEqual(output.getvalue(), "FALLTHROUGH\nA\n")
 
 
 class RedefinesStorageTests(unittest.TestCase):
