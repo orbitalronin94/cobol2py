@@ -725,7 +725,9 @@
       "features": [
         "ADD receiving PIC overflow",
         "COMPUTE receiving PIC overflow",
-        "MULTIPLY receiving PIC overflow"
+        "MULTIPLY receiving PIC overflow",
+        "SUBTRACT receiving PIC sizing",
+        "DIVIDE receiving PIC truncation"
       ]
     }
   ]
