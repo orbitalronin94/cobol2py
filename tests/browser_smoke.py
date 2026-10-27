@@ -71,6 +71,11 @@ async def main() -> None:
                     "mimeType": "text/plain",
                     "buffer": b"IDENTIFICATION DIVISION.\\nPROGRAM-ID. SUBPROG.\\nPROCEDURE DIVISION.\\n GOBACK.\\n",
                 },
+                {
+                    "name": "PROGRÁMA.cbl",
+                    "mimeType": "text/plain",
+                    "buffer": "IDENTIFICATION DIVISION.\\nPROGRAM-ID. PROGRAMA.\\nPROCEDURE DIVISION.\\n STOP RUN.\\n".encode("utf-8"),
+                },
             ])
             await page.locator("#analyze").click()
             try:
@@ -83,8 +88,16 @@ async def main() -> None:
             stats = await page.locator("#stats").inner_text()
             unresolved = await page.locator("#unresolved").inner_text()
             dynamic_calls = await page.locator("#dynamic").inner_text()
-            if "2" not in stats or "MISSING" not in unresolved or "WS-PROGRAM" not in dynamic_calls:
+            if "3" not in stats or "MISSING" not in unresolved or "WS-PROGRAM" not in dynamic_calls:
                 raise AssertionError("Agent inventory missed expected files/reference/dynamic CALL: " + stats + " / " + unresolved + " / " + dynamic_calls)
+            inventory = await page.locator("#inventory").inner_text()
+            if "PROGRÁMA.cbl" not in inventory:
+                raise AssertionError("Agent inventory did not preserve Unicode filenames: " + inventory)
+            await page.locator("#result-filter").fill("WS-PROGRAM")
+            filtered_dynamic = await page.locator("#dynamic").inner_text()
+            if "WS-PROGRAM" not in filtered_dynamic:
+                raise AssertionError("Browser result filter hid its matching dynamic CALL")
+            await page.locator("#result-filter").fill("")
             async with page.expect_download() as download_info:
                 await page.locator("#json").click()
             download = await download_info.value
