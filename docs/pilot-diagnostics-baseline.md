@@ -13,7 +13,7 @@
 - Clasificación automática: **50 limitaciones conocidas**, **0 posibles defectos** en la revisión actual
 - Códigos: **46 ARITHMETIC_SIZE_ERROR_UNSUPPORTED**, **4 PARTIAL_NUMERIC_PIC_SEMANTICS**
 - Revisión humana pendiente: **35 archivos**
-- Validación diferencial explícita: **102/102 fixtures coincidentes** en stdout y código de retorno con GnuCOBOL; las otras 6 fuentes no tienen fixture exacta en el manifiesto y figuran como no aplicables.
+- Validación diferencial explícita: **105/105 fixtures coincidentes** en stdout y código de retorno con GnuCOBOL; las otras 6 fuentes no tienen fixture exacta en el manifiesto y figuran como no aplicables.
 
 ## Corrección de falso positivo
 
@@ -72,4 +72,4 @@ La línea base anterior tenía 36 fuentes con diagnósticos, incluyendo `bench_4
 - [Roadmap de modernización](roadmap-two-weeks.md)
 - [Alcance de compatibilidad](compatibility.md)
 
-La siguiente tarea manual es revisar los 35 archivos según los requisitos del sistema objetivo y convertir cualquier discrepancia real en un caso mínimo. La cobertura diferencial es útil pero no cubre todos los valores de entrada, dialectos ni efectos externos.
+La siguiente tarea manual es revisar los 35 archivos según los requisitos del sistema objetivo y convertir cualquier discrepancia real en un caso mínimo. La cobertura diferencial es útil pero no cubre todos los valores de entrada, dialectos ni efectos externos. La cifra de 105/105 corresponde al manifiesto actual y debe actualizarse junto con el artefacto cuando cambie el corpus.
