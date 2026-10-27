@@ -108,7 +108,7 @@ El informe incluye:
 - Inventario de programas COBOL, copybooks, ficheros JCL y SQL.
 - Referencias detectadas mediante `COPY`, `CALL`, `EXEC PGM`, inclusiones SQL y datasets JCL.
 - Dependencias resueltas por nombre, referencias sin resolver y referencias ambiguas con varias rutas candidatas.
-- El análisis excluye comentarios COBOL/JCL/SQL reconocidos, aunque sigue siendo heurístico.
+- El análisis excluye comentarios reconocidos y enmascara literales antes de detectar dependencias; sigue siendo heurístico y no sustituye un parser completo.
 - Construcciones que necesitan revisión y etapas sugeridas para una migración por oleadas.
 
 Este es el **primer bloque**, no el agente autónomo completo: el análisis usa heurísticas de texto, puede pasar por alto referencias dinámicas y no demuestra equivalencia semántica. El siguiente paso es integrar el traductor existente y la verificación diferencial como un flujo por módulo. Consulta la [guía del agente](docs/repo-modernization-agent.md) y la [arquitectura](docs/architecture.md).
