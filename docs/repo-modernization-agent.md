@@ -28,7 +28,8 @@ El análisis omite directorios de control y salida comunes (`.git`, entornos vir
 
 El JSON usa `schema_version: 1` y contiene:
 
-- `summary`: contadores del inventario.
+- `summary`: contadores del inventario, incluido `dynamic_call_targets`.
+- En cada elemento de `files`, `calls` contiene destinos literales de CALL entre comillas; `dynamic_calls` contiene identificadores usados en CALL sin comillas, que no se pueden resolver por nombre estático.
 - `files`: ruta relativa, tipo, `PROGRAM-ID`, referencias encontradas, indicadores de riesgo y número de líneas.
 - `dependencies`: aristas `source -> target` con relación y símbolo.
 - `unresolved_references`: referencias para las que no se encontró un destino local.
@@ -37,7 +38,7 @@ El JSON usa `schema_version: 1` y contiene:
 - `review_first`: módulos con construcciones que merecen análisis adicional.
 - `limitations`: límites conocidos de este análisis.
 
-Las relaciones se resuelven por nombres de archivo y `PROGRAM-ID`; no son un análisis completo de enlazado. Si un símbolo tiene varios destinos posibles, el informe lo conserva como dependencia y lo señala también en `ambiguous_references` para que no se trate como resuelto de forma unívoca. Los comentarios COBOL, JCL y SQL reconocidos se excluyen del escaneo; la extracción sigue basada en expresiones regulares, así que literales y construcciones poco habituales aún pueden producir falsos positivos. Las llamadas dinámicas, convenciones de nombres propias, bibliotecas externas y artefactos generados pueden quedar sin resolver. Revisa el informe antes de usarlo como plan de trabajo.
+Las relaciones se resuelven por nombres de archivo y `PROGRAM-ID`; no son un análisis completo de enlazado. Los CALL entre comillas se tratan como nombres literales y se incluyen en el grafo; los CALL sin comillas se inventarían como `dynamic_calls`, sin marcarlos erróneamente como referencias literales no resueltas. Si un símbolo tiene varios destinos posibles, el informe lo conserva como dependencia y lo señala también en `ambiguous_references` para que no se trate como resuelto de forma unívoca. Los comentarios COBOL, JCL y SQL reconocidos se excluyen del escaneo; la extracción sigue basada en expresiones regulares, así que literales y construcciones poco habituales aún pueden producir falsos positivos. Las llamadas dinámicas, convenciones de nombres propias, bibliotecas externas y artefactos generados pueden quedar sin resolver. Revisa el informe antes de usarlo como plan de trabajo.
 
 ## Flujo previsto para una modernización de empresa
 
