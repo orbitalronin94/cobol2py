@@ -718,6 +718,15 @@
       "features": [
         "final corpus marker"
       ]
+    },
+    {
+      "id": "arithmetic-receiving-pic",
+      "path": "samples/arithmetic_size.cbl",
+      "features": [
+        "ADD receiving PIC overflow",
+        "COMPUTE receiving PIC overflow",
+        "MULTIPLY receiving PIC overflow"
+      ]
     }
   ]
 }
