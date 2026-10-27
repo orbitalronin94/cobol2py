@@ -368,7 +368,7 @@ class CobolVar:
             self.pic
             and "9" in self.pic.upper()
             and self.value is not None
-            and re.fullmatch(r"[+-]?\\d+", self.value.strip())
+            and self.value.strip().lstrip("+-").isdigit()
         ):
             initial = str(int(self.value.strip()))
         if self.is_array:
