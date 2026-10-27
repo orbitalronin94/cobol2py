@@ -167,13 +167,42 @@ def analyze_repository(root: Path) -> dict[str, Any]:
             (r"\bFILE\s+CONTROL\b|\bSELECT\s+.+\s+ASSIGN\b", "file-io"),
             (r"\bSORT\b|\bMERGE\b", "sort-merge"),
             (r"\bCALL\b", "subprogram-calls"),
+            (r"\bALTER\b", "alter-dynamic-control-flow"),
+            (r"\bGO\s+TO\b", "goto-control-flow"),
+            (r"\bGO\s+TO\b[^.]*\bDEPENDING\s+ON\b", "computed-goto"),
         ):
             if re.search(pattern, code_source, re.I | re.S):
                 features.append(label)
+
+        # Heuristic triage only: weights surface high-risk constructs; they are
+        # not a correctness claim, measured effort, or proof of runtime reachability.
+        complexity_signals = (
+            (r"\bALTER\b", "ALTER", 5),
+            (r"\bGO\s+TO\b[^.]*\bDEPENDING\s+ON\b", "GO TO DEPENDING ON", 5),
+            (r"\bREDEFINES\b", "REDEFINES", 4),
+            (r"\bGO\s+TO\b", "GO TO", 2),
+            (r"\bPERFORM\b[^.]*\bUNTIL\b", "PERFORM UNTIL", 2),
+            (r"\bEXEC\s+(?:SQL|CICS)\b", "embedded SQL/CICS", 3),
+            (r"\bCALL\s+[A-Za-z0-9_$#@-]+\b", "dynamic CALL identifier", 3),
+            (r"\bCOPY\b", "COPY dependency", 1),
+        )
+        complexity_reasons = [
+            {"construct": label, "weight": weight}
+            for pattern, label, weight in complexity_signals
+            if re.search(pattern, code_source, re.I | re.S)
+        ]
+        complexity_score = sum(item["weight"] for item in complexity_reasons)
+        complexity_level = (
+            "HIGH" if complexity_score >= 5 else
+            "MEDIUM" if complexity_score >= 2 else
+            "LOW"
+        )
         records[rel] = {
             "path": rel, "kind": kind, "program_id": program_id,
             "copybooks": copies, "calls": calls, "dynamic_calls": dynamic_calls, "jcl_programs": exec_programs,
             "jcl_datasets": jcl_datasets, "sql_includes": sql_includes, "features": features,
+            "complexity_score": complexity_score, "complexity_level": complexity_level,
+            "complexity_reasons": complexity_reasons,
             "lines": len(source.splitlines()),
         }
 
@@ -224,6 +253,7 @@ def analyze_repository(root: Path) -> dict[str, Any]:
             "dependency_edges": len(edges), "unresolved_references": len(unresolved),
             "ambiguous_references": len(ambiguous),
             "dynamic_call_targets": sum(len(item["dynamic_calls"]) for item in records.values()),
+            "high_complexity_files": sum(item.get("complexity_level") == "HIGH" for item in records.values()),
         },
         "files": list(records.values()),
         "dependencies": edges,
@@ -237,10 +267,13 @@ def analyze_repository(root: Path) -> dict[str, Any]:
             {"stage": 5, "name": "Verified migration waves", "exit_criteria": "Each wave has reviewed diffs, test evidence, rollback path and an exception report."},
         ],
         "review_first": [
-            {"path": item["path"], "features": item["features"], "reason": "Contains constructs or integrations that need explicit semantic and runtime validation."}
-            for item in risky
+            {"path": item["path"], "features": item["features"], "complexity_score": item["complexity_score"],
+             "complexity_level": item["complexity_level"], "complexity_reasons": item["complexity_reasons"],
+             "reason": "Contains constructs or integrations that need explicit semantic and runtime validation."}
+            for item in sorted(risky, key=lambda item: (-item["complexity_score"], -len(item["features"]), item["path"].casefold()))
         ],
         "limitations": [
+            "Complexity scores are deterministic heuristics for triage, not measured effort, runtime reachability, or semantic support.",
             "Static text analysis only; this is not a complete COBOL parser or linker.",
             "Name-based dependency resolution can be ambiguous and cannot prove runtime reachability.",
             "Dynamic CALL targets, generated source, vendor-specific syntax and external systems may be missed.",
@@ -263,7 +296,8 @@ def render_markdown(plan: dict[str, Any]) -> str:
         f"- SQL files: **{summary['sql_files']}**",
         f"- Resolved dependency edges: **{summary['dependency_edges']}**",
         f"- Unresolved references: **{summary['unresolved_references']}**",
-        f"- Ambiguous references: **{summary.get('ambiguous_references', 0)}**", "",
+        f"- Ambiguous references: **{summary.get('ambiguous_references', 0)}**",
+        f"- High-complexity files (heuristic): **{summary.get('high_complexity_files', 0)}**", "",
         f"- Dynamic CALL targets (not statically resolved): **{summary.get('dynamic_call_targets', 0)}**", "",
         "## Recommended migration sequence", "",
     ]
@@ -311,7 +345,8 @@ def render_markdown(plan: dict[str, Any]) -> str:
     lines += ["", "## Review first", ""]
     if plan["review_first"]:
         for item in plan["review_first"]:
-            lines.append(f"- `{item['path']}`: {', '.join(item['features'])}")
+            lines.append(f"- `{item['path']}` — **{item.get('complexity_level', 'UNKNOWN')}** "
+                         f"(score {item.get('complexity_score', 0)}): {', '.join(item['features'])}")
     else:
         lines.append("No flagged constructs were detected. This does not mean the code is low risk.")
     lines += ["", "## Limitations", ""]
