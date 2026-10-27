@@ -96,6 +96,44 @@ PROCEDURE DIVISION.
         self.assertIn("subprogram-calls", payroll["features"])
         self.assertIn("Limitations", render_markdown(plan))
 
+    def test_complexity_scoring_flags_dynamic_control_flow_and_overlays(self):
+        self.write("HIGH-RISK.cbl", """IDENTIFICATION DIVISION.
+PROGRAM-ID. HIGH-RISK.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-RAW PIC X(10).
+01 WS-NUM REDEFINES WS-RAW PIC 9(10).
+01 WS-STEP PIC 9.
+PROCEDURE DIVISION.
+MAIN-LOGIC.
+    ALTER POINT-X TO PROCEED TO POINT-Y.
+    GO TO POINT-A POINT-B DEPENDING ON WS-STEP.
+    STOP RUN.
+""")
+        self.write("LOW-RISK.cbl", """IDENTIFICATION DIVISION.
+PROGRAM-ID. LOW-RISK.
+PROCEDURE DIVISION.
+    DISPLAY "ALTER X GO TO A REDEFINES B".
+    *> GO TO A B DEPENDING ON WS-STEP.
+    STOP RUN.
+""")
+        plan = analyze_repository(self.root)
+        high = next(item for item in plan["files"] if item["path"] == "HIGH-RISK.cbl")
+        low = next(item for item in plan["files"] if item["path"] == "LOW-RISK.cbl")
+
+        self.assertEqual(high["complexity_level"], "HIGH")
+        self.assertGreaterEqual(high["complexity_score"], 10)
+        self.assertIn("alter-dynamic-control-flow", high["features"])
+        self.assertIn("computed-goto", high["features"])
+        self.assertIn("redefines", high["features"])
+        self.assertEqual(low["complexity_level"], "LOW")
+        self.assertEqual(low["complexity_score"], 0)
+        self.assertEqual(plan["summary"]["high_complexity_files"], 1)
+        markdown = render_markdown(plan)
+        self.assertIn("High-complexity files (heuristic)", markdown)
+        self.assertIn("GO TO DEPENDING ON", markdown)
+        self.assertIn("HIGH", markdown)
+
     def test_ignores_generated_and_hidden_directories(self):
         self.write(".git/ignored.cbl", "IDENTIFICATION DIVISION. PROGRAM-ID. NOPE.")
         self.write("build/generated.cbl", "IDENTIFICATION DIVISION. PROGRAM-ID. NOPE.")
