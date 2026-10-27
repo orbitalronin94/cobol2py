@@ -2,7 +2,7 @@
 
 > Traductor mínimo de COBOL a Python. Un archivo. Cero dependencias. Solo stdlib.
 
-`cobol2py` pela la capa dura del código legado y deja ver la lógica de negocio que llevaba décadas enterrada bajo una sintaxis que nadie recuerda. No es una herramienta de migración. No es un IDE. No es un producto. Es un script que entra un `.cbl` y sale un `.py` legible.
+`cobol2py` pela la capa dura del código legado y deja ver la lógica de negocio que llevaba décadas enterrada bajo una sintaxis que nadie recuerda. El núcleo sigue siendo un traductor pequeño de un archivo COBOL a Python legible; el repositorio también incluye un **agente inicial de análisis y planificación para sistemas empresariales multiarchivo**. No es todavía un migrador autónomo ni promete equivalencia completa.
 
 La traducción busca **leerse** y, para el subconjunto cubierto por regresiones diferenciales, también ejecutarse. No promete equivalencia completa de COBOL: las construcciones no soportadas quedan documentadas o señaladas explícitamente.
 
@@ -63,6 +63,31 @@ To exercise the standalone HTML in a real browser (requires Chromium and interne
 python -m pip install playwright==1.56.0
 python -m playwright install chromium
 python tests/browser_smoke.py
+```
+
+
+## Agente de modernización de repositorios
+
+¿Tu sistema tiene cientos de programas COBOL, copybooks compartidos, llamadas entre módulos, JCL y SQL? El primer componente del agente analiza un repositorio completo y produce un inventario y un plan de migración revisable. Es determinista, no instala dependencias y **no modifica ni ejecuta los programas analizados**.
+
+```bash
+python cobol2py_agent.py /ruta/al/sistema \
+  --out reports/migration-plan.md \
+  --json-out reports/migration-plan.json
+```
+
+El informe incluye:
+- Inventario de programas COBOL, copybooks, ficheros JCL y SQL.
+- Referencias detectadas mediante `COPY`, `CALL`, `EXEC PGM`, inclusiones SQL y datasets JCL.
+- Dependencias resueltas por nombre y referencias sin resolver.
+- Construcciones que necesitan revisión y etapas sugeridas para una migración por oleadas.
+
+Este es el **primer bloque**, no el agente autónomo completo: el análisis usa heurísticas de texto, puede pasar por alto referencias dinámicas y no demuestra equivalencia semántica. El siguiente paso es integrar el traductor existente y la verificación diferencial como un flujo por módulo. Consulta la [guía del agente](docs/repo-modernization-agent.md) y la [arquitectura](docs/architecture.md).
+
+Pruebas del componente:
+
+```bash
+python -m unittest discover -s tests -p 'test_modernize_agent.py' -v
 ```
 
 ---
