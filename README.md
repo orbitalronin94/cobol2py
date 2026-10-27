@@ -12,15 +12,15 @@ El plan inicial de diez días se ha ampliado hasta un hito de ingeniería 0.8: t
 
 | Área | Estado actual | Evidencia y límite |
 |---|---|---|
-| Traductor y benchmark | 104/104 fixtures coinciden con GnuCOBOL en CI | La fixture `control-flow-redefines` compila como COBOL de formato fijo y coincide en stdout/código de retorno; la equivalencia sigue limitada al corpus versionado |
-| Inventario multiarchivo | Implementado con clasificación estática y score heurístico en curso de validación | Dependencias resueltas, sin resolver, ambiguas, CALL dinámicas y niveles LOW/MEDIUM/HIGH para priorizar `ALTER`, `GO TO ... DEPENDING ON`, `REDEFINES` y otras construcciones; los nombres no prueban enlazado en ejecución |
+| Traductor y benchmark | Base estable para el subconjunto medido | Corpus versionado de 102 casos con GnuCOBOL; no es una estimación de compatibilidad general |
+| Inventario multiarchivo | Implementado con clasificación estática | Dependencias resueltas, sin resolver, ambiguas y CALL dinámicas; los nombres no prueban enlazado en ejecución |
 | Piloto integrado | Informe de esquema v2 | Traducción, sintaxis, clasificación por código/categoría y enlaces exactos a fixtures candidatas; por defecto no ejecuta el código generado |
 | Agente web | Demo heurística local | Selección de archivos, hallazgos y exportación; el análisis web no sustituye al CLI Python |
 | Evidencia de CI | Integrada | CI valida el contrato del informe y publica el informe del piloto como artefacto para revisión |
 | Revisión de los diagnósticos de samples | Triage automatizado: 35 archivos con limitaciones conocidas; 1 falso positivo corregido | El [baseline de triage](docs/pilot-diagnostics-baseline.md) enumera cada fuente. La revisión humana de los 35 casos sigue pendiente |
-| Semántica de control y almacenamiento (objetivo v0.8.x) | En curso: primera implementación en `main`; falta validación CI/diferencial | `ALTER`, `GO TO ... DEPENDING ON` y overlays `REDEFINES` simples tienen código y regresiones añadidas; no declarar soporte cerrado hasta ejecutar pruebas y comparar con GnuCOBOL |
+| Semántica de control y almacenamiento (objetivo v0.8.x) | Pendiente prioritario: `ALTER`, `GO TO ... DEPENDING ON` y `REDEFINES` | Caso de regresión LABERINTO-COBOL; exige preservar el flujo dinámico y las vistas de almacenamiento compartido, con comparación diferencial frente a GnuCOBOL |
 
-El objetivo v0.8.x cubre `ALTER` con destino mutable, `GO TO ... DEPENDING ON` con selección ordinal base 1 y comportamiento fuera de rango, y `REDEFINES` con almacenamiento compartido para layouts simples. Tanto `control_flow_redefines.cbl` como `laberinto_cobol.cbl` coinciden con GnuCOBOL en CI; el segundo comprueba el recorrido completo y el resultado final `222240`. Esto no declara soporte general para otros layouts o dialectos.
+El objetivo de cierre de v0.8.x incluye cerrar brechas semánticas de alto impacto antes de ampliar la cobertura: `ALTER` debe cambiar en ejecución el destino del salto asociado, `GO TO ... DEPENDING ON` debe conservar la selección ordinal COBOL (base 1 y comportamiento fuera de rango), y `REDEFINES` debe compartir almacenamiento físico en vez de generar diccionarios independientes. El caso `LABERINTO-COBOL` será una regresión diferencial end-to-end; no se marcará como soportado hasta que coincidan salida y código de retorno con GnuCOBOL y haya pruebas específicas de cada construcción.
 
 El roadmap detallado, con los hitos de madurez v0.1–v0.8 y el siguiente ciclo hacia 0.9/1.0, está en [docs/roadmap-two-weeks.md](docs/roadmap-two-weeks.md). La clasificación automática ayuda a priorizar; no declara por sí sola que un hallazgo sea un falso positivo ni que un programa sea seguro para migrar.
 
@@ -41,7 +41,7 @@ El proyecto ha evolucionado desde un traductor de COBOL a Python hacia un reposi
 - **Traductor (`cobol2py.py`)**: recibe un programa COBOL y emite Python o Java. Puede descargarse y utilizarse por sí solo; no necesita `cobol2py_agent.py`.
 - **Agente (`cobol2py_agent.py`)**: inspecciona un repositorio con múltiples programas y artefactos relacionados, y genera un inventario y un plan de migración en Markdown/JSON. No modifica los fuentes.
 - **Piloto integrado (`tools/modernize_pilot.py`)**: conecta inventario y traducción del subconjunto a Python, comprueba sintaxis y crea un informe por archivo. Por defecto no ejecuta el código generado; el flag explícito `--differential` ejecuta únicamente fixtures de ruta exacta y compara stdout/código de retorno con GnuCOBOL.
-- **Evidencia de CI actual**: el piloto tradujo 108/108 fuentes de `samples` sin errores de sintaxis ni de traducción en la medición registrada, y el corpus diferencial actual obtuvo **104/104 coincidencias exactas** con GnuCOBOL en stdout y código de retorno. Las fixtures `samples/control_flow_redefines.cbl` y `samples/laberinto_cobol.cbl` validan conjuntamente `ALTER`, `GO TO ... DEPENDING ON`, `REDEFINES` y el despacho entre párrafos. La segunda reproduce el recorrido completo y coincide con GnuCOBOL; esto acredita solo los casos medidos, no compatibilidad general.
+- **Evidencia medida**: el piloto traduce 108/108 fuentes de `samples` sin errores de sintaxis ni de traducción. En el modo diferencial opt-in, 102/102 fixtures versionadas coinciden con GnuCOBOL en stdout y código de retorno. Esto no demuestra equivalencia para entradas no medidas ni efectos externos.
 
 ### Usar solo el traductor
 
@@ -110,7 +110,6 @@ python cobol2py_agent.py /ruta/al/sistema \
 El informe incluye:
 - Inventario de programas COBOL, copybooks, ficheros JCL y SQL.
 - Referencias detectadas mediante `COPY`, `CALL`, `EXEC PGM`, inclusiones SQL y datasets JCL.
-- Resolución de `COPY` que prioriza el copybook del directorio fuente, admite rutas relativas explícitas dentro del árbol inspeccionado y conserva las referencias ambiguas/no resueltas cuando no hay un destino seguro.
 - Dependencias resueltas por nombre, referencias sin resolver y referencias ambiguas con varias rutas candidatas.
 - El análisis excluye comentarios reconocidos y enmascara literales antes de detectar dependencias; sigue siendo heurístico y no sustituye un parser completo.
 - Construcciones que necesitan revisión y etapas sugeridas para una migración por oleadas.
@@ -196,7 +195,7 @@ No es Python perfecto. Es Python **legible**. Y eso es lo que importa.
 | `PERFORM párrafo` | llamada a función |
 | `PERFORM párrafo N TIMES` | `for _ in range(N)` |
 | `PERFORM párrafo UNTIL X` | `while not X` |
-| `ALTER` y `GO TO ... DEPENDING ON` | Subconjunto experimental en Python: destinos mutables y selección ordinal base 1; requiere validación diferencial |\n| `REDEFINES` | Subconjunto experimental: `PIC X/A` y `PIC 9` entero sin signo con buffer compartido; layouts más complejos se diagnostican |\n| `STOP RUN` | Termina el programa; señal propagada en Python y `System.exit(0)` en Java |
+| `STOP RUN` | Termina el programa; señal propagada en Python y `System.exit(0)` en Java |
 | `GOBACK`, `EXIT PROGRAM` | `return` local |
 | `--lang java` | Backend Java básico que consume el mismo árbol de bloques; compila en el subset probado |
 
@@ -213,7 +212,7 @@ Y lo dice. No falla en silencio.
 | `CALL` a subprogramas | Pendiente. |
 | `FILE SECTION`, I/O | Pendiente. |
 | `SORT`, `SEARCH`, `MERGE` | Pendiente. |
-| `REDEFINES` | Los overlays simples de `PIC X/A` y `PIC 9` entero sin signo comparten buffer; signo, escala, arrays, packed decimal y layouts complejos no están garantizados. |
+| `REDEFINES` | Se genera como campos independientes. No hay `Union`. |
 | `STRING`, `UNSTRING`, `INSPECT` | Pendiente. |
 | `CICS`, `DB2`, `IMS` | Fuera de alcance. |
 | COBOL antiguo con varias sentencias por línea | Puede fallar. |
@@ -241,7 +240,7 @@ La pila de bloques ahora conserva ámbitos anidados de `IF`, `PERFORM` y `EVALUA
 Se resuelve `COPY nombre.` o `COPY nombre.CPY.` buscando primero junto al archivo fuente, después en cada `--copybook-path` y finalmente en el directorio de trabajo. Se expanden dependencias anidadas y se detectan ciclos. Se admite una o más parejas de pseudo-texto con la forma `==texto-anterior== BY ==texto-nuevo==`; la sustitución es literal, sin interpretación de expresiones regulares y sin distinguir mayúsculas/minúsculas. No es un preprocesador COBOL completo: bibliotecas calificadas, otras formas de `REPLACING` y reglas avanzadas siguen sin soporte. Faltantes, ciclos, errores de lectura y cláusulas no soportadas quedan en advertencias.
 
 **6. La jerarquía de grupos es una representación simplificada.**
-Los grupos COBOL se emiten como diccionarios anidados y los campos se leen/escriben mediante nombres no cualificados o `OF/IN` básico. `REDEFINES` solo comparte almacenamiento para layouts simples con `PIC X/A` y `PIC 9` entero sin signo. No se modelan de forma general `RENAMES`, nombres de condición de nivel 88, la longitud activa de `OCCURS DEPENDING ON`, overlays con signo/escala/arrays/packed decimal, todos los calificadores ni las reglas completas de inicialización de grupos.
+Los grupos COBOL se emiten como diccionarios anidados y los campos se leen/escriben mediante nombres no cualificados o `OF/IN` básico. No se modelan `REDEFINES`, `RENAMES`, nombres de condición de nivel 88, la longitud activa de `OCCURS DEPENDING ON`, overlays de almacenamiento, todos los calificadores ni las reglas completas de inicialización de grupos.
 
 ---
 
@@ -343,7 +342,7 @@ python cobol2py.py programa.cbl --format free
 python cobol2py.py programa.cbl --copybook-path ./copybooks
 ```
 
-Para convertir advertencias conocidas —sentencias no soportadas, copybooks sin resolver, bloques malformados, layouts `REDEFINES` no soportados, ciertas cláusulas `PIC` numéricas y aritmética sin semántica completa de tamaño— en un error y evitar usar una salida incompleta por accidente:
+Para convertir advertencias conocidas —sentencias no soportadas, copybooks sin resolver, bloques malformados, `REDEFINES`, ciertas cláusulas `PIC` numéricas y aritmética sin semántica completa de tamaño— en un error y evitar usar una salida incompleta por accidente:
 
 ```bash
 python cobol2py.py programa.cbl --strict
@@ -352,7 +351,7 @@ python cobol2py.py programa.cbl --diagnostics-json
 
 `--format auto` es el valor predeterminado; como las columnas de secuencia en blanco pueden aparecer tanto en formato fijo como en fuentes libres indentadas, no siempre es posible inferir el formato con certeza.
 
-GitHub Actions ejecuta las pruebas con Python 3.10–3.13 y compara, mediante el benchmark diferencial, los casos declarados en `benchmarks/cases.json` contra GnuCOBOL. El corpus actual tiene 104/104 coincidencias exactas; la suite mantiene regresiones específicas de control dinámico y almacenamiento compartido. La cobertura sigue limitada al corpus versionado y al subconjunto probado; no demuestra equivalencia semántica general ni certifica una migración. La compilación sintáctica de la salida, por sí sola, tampoco prueba equivalencia.
+GitHub Actions ejecuta las pruebas con Python 3.10–3.13 y compara, mediante el benchmark diferencial, 102 programas COBOL contra GnuCOBOL. Los casos cubren `DISPLAY`, campos `PIC X/9`, `MOVE`, operaciones aritméticas, condiciones simples y compuestas, `IF` anidados, `PERFORM TIMES`, párrafos y tablas/subíndices. La suite de unittest mantiene además sus regresiones de runtime. La cobertura sigue limitada al corpus versionado y al subconjunto probado; no demuestra equivalencia semántica general ni certifica una migración. La compilación sintáctica de la salida, por sí sola, tampoco prueba equivalencia.
 
 ---
 
@@ -363,7 +362,7 @@ El workflow `differential-benchmark.yml` falla si cualquier caso del candidato n
 - **Métrica principal:** porcentaje de programas cuyo `stdout` y código de salida coinciden exactamente con GnuCOBOL.
 - **Comparación entre versiones:** ejecuta el snapshot inicial fijado en `02fde4b` y el candidato actual sobre el mismo corpus de la revisión evaluada, y muestra el cambio en puntos porcentuales.
 - **Fallos visibles:** errores de compilación COBOL, traducción, ejecución Python y diferencias de salida cuentan como fallos del caso y aparecen en el detalle.
-- **Corpus versionado:** `benchmarks/cases.json` declara actualmente 104 programas y el último workflow diferencial completado obtuvo **104/104 coincidencias exactas (100 %)**, incluidas `control-flow-redefines` y `laberinto-cobol`. El corpus incluye casos de `COPY ... REPLACING` y overflow aritmético del campo receptor contrastados con GnuCOBOL. La revisión histórica del PR #9 obtuvo 100/100 coincidencias en el corpus de 100 casos que existía entonces; el snapshot inicial obtuvo 16/100 sobre aquel mismo corpus. En el commit [`9364ba6`](https://github.com/orbitalronin94/cobol2py/commit/9364ba6f8fd28e0f089409e91f826068d87c1502), el candidato obtuvo 101/101 coincidencias exactas (100 %) en el corpus de entonces, incluido un caso con dos parejas `COPY REPLACING`. En el commit [`1fb78c6`](https://github.com/orbitalronin94/cobol2py/commit/1fb78c6c606260451ca255227645586b0a39cfec), el corpus de 102 casos obtuvo **102/102 coincidencias exactas (100 %)**, incluida la nueva fixture `arithmetic-receiving-pic`. El benchmark volvió a pasar con las cinco operaciones aritméticas en la fixture ampliada en el commit [`4280bff`](https://github.com/orbitalronin94/cobol2py/commit/4280bff92d45ee6fd8e960227a6db5ddcb48e9) —102/102— en el [workflow diferencial](https://github.com/orbitalronin94/cobol2py/actions/runs/40496463428); esto solo acredita los casos versionados. El resultado mide solo los casos versionados, no la equivalencia general de COBOL. Para añadir un caso, incorpora un programa COBOL autónomo en `samples/` y una entrada al manifiesto; no elimines casos difíciles solo para subir la puntuación.
+- **Corpus versionado:** `benchmarks/cases.json` define 102 programas y las capacidades cubiertas, incluidos casos de `COPY ... REPLACING` y overflow aritmético del campo receptor contrastados con GnuCOBOL. La revisión histórica del PR #9 obtuvo 100/100 coincidencias en el corpus de 100 casos que existía entonces; el snapshot inicial obtuvo 16/100 sobre aquel mismo corpus. En el commit [`9364ba6`](https://github.com/orbitalronin94/cobol2py/commit/9364ba6f8fd28e0f089409e91f826068d87c1502), el candidato obtuvo 101/101 coincidencias exactas (100 %) en el corpus de entonces, incluido un caso con dos parejas `COPY REPLACING`. En el commit [`1fb78c6`](https://github.com/orbitalronin94/cobol2py/commit/1fb78c6c606260451ca255227645586b0a39cfec), el corpus de 102 casos obtuvo **102/102 coincidencias exactas (100 %)**, incluida la nueva fixture `arithmetic-receiving-pic`. El benchmark volvió a pasar con las cinco operaciones aritméticas en la fixture ampliada en el commit [`4280bff`](https://github.com/orbitalronin94/cobol2py/commit/4280bff92d45ee6fd8e960227a6db5ddcb48e9) —102/102— en el [workflow diferencial](https://github.com/orbitalronin94/cobol2py/actions/runs/40496463428); esto solo acredita los casos versionados. El resultado mide solo los casos versionados, no la equivalencia general de COBOL. Para añadir un caso, incorpora un programa COBOL autónomo en `samples/` y una entrada al manifiesto; no elimines casos difíciles solo para subir la puntuación.
 - **Interpretación prudente:** la métrica mide únicamente estos fixtures; no equivale al porcentaje de COBOL del mundo real que se traduce correctamente. Los casos deben crecer en variedad y complejidad, no solo en cantidad.
 
 El runner compila cada referencia con el directorio del fuente como ruta de búsqueda de copybooks, para que los casos con `COPY` puedan compilarse desde la raíz del repositorio. Para ejecutar el benchmark localmente (requiere Python y GnuCOBOL):
@@ -393,7 +392,7 @@ Alcance no cubierto: bibliotecas calificadas y reglas avanzadas de `REPLACING`.
 **v0.0.8 — Jerarquía de datos**
 - [x] Modelar grupos COBOL y campos hijos como diccionarios anidados, preservando la relación padre/hijo.
 - [x] Traducir referencias básicas a campos anidados y cualificación `OF/IN`.
-Alcance no cubierto: soporte general de `REDEFINES` (solo hay overlays simples experimentales), `RENAMES`, overlays complejos y grupos `OCCURS` complejos.
+Alcance no cubierto: `REDEFINES`, `RENAMES`, overlays y grupos `OCCURS` complejos.
 
 **v0.1.0 — Salida Java**
 - [x] Reactivar el backend Java sobre el mismo AST y exponer `--lang java`.
