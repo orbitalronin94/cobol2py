@@ -551,10 +551,10 @@ class CopybookTests(unittest.TestCase):
         with TemporaryDirectory() as temp:
             root = Path(temp)
             (root / "FIELD.cpy").write_text(
-                "01 :FIELD-NAME: PIC X(4) VALUE \"AB\".\\n",
+                "01 :FIELD-NAME: PIC X(4) VALUE \"AB\".\n",
                 encoding="utf-8",
             )
-            source = "\\n".join([
+            source = "\n".join([
                 "IDENTIFICATION DIVISION.",
                 "PROGRAM-ID. REPLACETEST.",
                 "DATA DIVISION.",
