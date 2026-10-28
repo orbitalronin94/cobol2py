@@ -2177,7 +2177,7 @@ class CompoundRelationEqualityRegressionTests(unittest.TestCase):
 class SemicolonSeparatedSubscriptRegressionTests(unittest.TestCase):
     def test_semicolon_separated_table_subscripts_become_valid_python_indexes(self):
         translated = cobol2py.translate_expr("GRP-TAB2(S21; S22)")
-        self.assertEqual(translated, "grp_tab2[s21 - 1][s22 - 1]")
+        self.assertEqual(translated, "grp_tab2[int(s21) - 1][int(s22) - 1]")
         compile(translated, "<semicolon-subscript>", "eval")
 
 
