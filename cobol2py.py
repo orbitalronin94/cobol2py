@@ -999,7 +999,7 @@ def translate_literal(
         return "True"
     if t.upper() == "FALSE":
         return "False"
-    if re.fullmatch(r"FUNCTION\\s+CURRENT-DATE", t, re.IGNORECASE):
+    if re.fullmatch(r"FUNCTION\s+CURRENT-DATE", t, re.IGNORECASE):
         return "(lambda _dt: _dt.strftime('%Y%m%d%H%M%S') + f'{_dt.microsecond // 10000:02d}' + _dt.strftime('%z'))(__import__('datetime').datetime.now().astimezone())"
     if t.upper() in ("QUOTE", "QUOTES"):
         return repr('"')
@@ -1175,7 +1175,7 @@ def rewrite_outside_literals(text: str, transform) -> str:
 def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = None) -> str:
     # Some source forms attach NEXT SENTENCE directly to an IF line. It is a
     # branch action, not part of the Boolean condition.
-    cond = re.sub(r"\\s+NEXT\\s+SENTENCE\\s*$", "", cond, flags=re.IGNORECASE)
+    cond = re.sub(r"\s+NEXT\s+SENTENCE\s*$", "", cond, flags=re.IGNORECASE)
 
     def rewrite(chunk: str) -> str:
         c = re.sub(r"\bAND\b", "and", chunk, flags=re.IGNORECASE)
