@@ -2204,6 +2204,16 @@ class NestedAndMiscIntrinsicRegressionTests(unittest.TestCase):
         self.assertNotIn("function asin", translated.lower())
         compile(translated, "<nested-intrinsic>", "eval")
 
+    def test_deeply_nested_math_intrinsic_uses_balanced_argument_parsing(self):
+        translated = cobol2py.translate_expr("FUNCTION TAN(1 + ((2 * 3) / 4))")
+        compile(translated, "<deeply-nested-tan>", "eval")
+        self.assertAlmostEqual(eval(translated), __import__("math").tan(2.5))
+
+    def test_nested_rem_and_mod_intrinsics_are_rewritten(self):
+        translated = cobol2py.translate_expr("FUNCTION REM(FUNCTION MOD(17, 5), 3)")
+        compile(translated, "<nested-rem-mod>", "eval")
+        self.assertEqual(eval(translated), 2)
+
     def test_mod_intrinsic_becomes_python_remainder(self):
         translated = cobol2py.translate_expr("FUNCTION MOD(5, 3)")
         self.assertEqual(translated, "(5 % (3))")
