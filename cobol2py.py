@@ -872,7 +872,7 @@ def normalize_data_reference(
     """Map a COBOL data-name (including OF/IN qualification) into nested dicts."""
     text = name.strip()
     match = re.fullmatch(
-        r"([A-Za-z0-9-]+)(?:\s*\(([^()]*)\))?(?:\s+(?:OF|IN)\s+([A-Za-z0-9-]+))?",
+        r"([A-Za-z0-9-]+)(?:\s*\(((?:[^()]|\((?:[^()]*)\))*)\))?(?:\s+(?:OF|IN)\s+([A-Za-z0-9-]+))?",
         text,
         re.IGNORECASE,
     )
@@ -1101,75 +1101,75 @@ def translate_expr(
     }
     for cobol_name, python_name in math_intrinsics.items():
         translated = re.sub(
-            rf"\b(?:function\s+)?{cobol_name}\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
+            rf"\b(?:function\s+)?{cobol_name}\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
             lambda match, name=python_name: f"__import__('math').{name}({intrinsic_argument(match)})",
             translated,
             flags=re.IGNORECASE,
         )
     for cobol_name, python_name in (("min", "min"), ("max", "max"), ("cobol_min", "min"), ("cobol_max", "max")):
         translated = re.sub(
-            rf"\b(?:function\s+)?{cobol_name}\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
+            rf"\b(?:function\s+)?{cobol_name}\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
             lambda match, name=python_name: f"{name}({intrinsic_argument(match)})",
             translated,
             flags=re.IGNORECASE,
         )
     translated = re.sub(
-        r"\b(?:function\s+)?present_value\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
+        r"\b(?:function\s+)?present_value\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
         lambda match: "(lambda _rate, *_payments: sum((_payment / ((1 + _rate) ** _period)) for _period, _payment in enumerate(_payments, 1)))(" + intrinsic_argument(match) + ")",
         translated,
         flags=re.IGNORECASE,
     )
     translated = re.sub(
-        r"\b(?:function\s+)?integer_part\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
+        r"\b(?:function\s+)?integer_part\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
         lambda match: "int(" + intrinsic_argument(match) + ")",
         translated,
         flags=re.IGNORECASE,
     )
     translated = re.sub(
-        r"\b(?:function\s+)?integer\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
+        r"\b(?:function\s+)?integer\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
         lambda match: "__import__('math').floor(" + intrinsic_argument(match) + ")",
         translated,
         flags=re.IGNORECASE,
     )
     translated = re.sub(
-        r"\b(?:function\s+)?ord\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
+        r"\b(?:function\s+)?ord\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
         lambda match: "(ord(" + intrinsic_argument(match) + ") + 1)",
         translated,
         flags=re.IGNORECASE,
     )
     translated = re.sub(
-        r"\b(?:function\s+)?char\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
+        r"\b(?:function\s+)?char\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
         lambda match: "chr(int(" + intrinsic_argument(match) + ") - 1)",
         translated,
         flags=re.IGNORECASE,
     )
 
     translated = re.sub(
-        r"\b(?:function\s+)?numval(?:_c)?\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
+        r"\b(?:function\s+)?numval(?:_c)?\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
         lambda match: "float(" + intrinsic_argument(match) + ")",
         translated,
         flags=re.IGNORECASE,
     )
     translated = re.sub(
-        r"\b(?:function\s+)?lower_case\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
+        r"\b(?:function\s+)?lower_case\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
         lambda match: "(" + intrinsic_argument(match) + ").lower()",
         translated,
         flags=re.IGNORECASE,
     )
     translated = re.sub(
-        r"\b(?:function\s+)?upper_case\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
+        r"\b(?:function\s+)?upper_case\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
         lambda match: "(" + intrinsic_argument(match) + ").upper()",
         translated,
         flags=re.IGNORECASE,
     )
     translated = re.sub(
-        r"\b(?:function\s+)?trim\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
+        r"\b(?:function\s+)?trim\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
         lambda match: "(" + intrinsic_argument(match) + ").strip()",
         translated,
         flags=re.IGNORECASE,
     )
     translated = re.sub(
-        r"\b(?:function\s+)?length\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
+        r"\b(?:function\s+)?length\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
         lambda match: "len(" + intrinsic_argument(match) + ")",
         translated,
         flags=re.IGNORECASE,
