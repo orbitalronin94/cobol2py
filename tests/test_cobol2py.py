@@ -1683,3 +1683,10 @@ class CobolIntrinsicFunctionRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_expr("FUNCTION CURRENT-DATE")
         self.assertIn("datetime.now().astimezone()", translated)
         compile(translated, "<current-date-intrinsic>", "eval")
+
+
+class StandaloneEqualConditionRegressionTests(unittest.TestCase):
+    def test_standalone_equal_phrase_becomes_python_equality(self):
+        translated = cobol2py.translate_condition("FIM-ARQ EQUAL 1")
+        self.assertEqual(translated, "fim_arq == 1")
+        compile(translated, "<standalone-equal>", "eval")
