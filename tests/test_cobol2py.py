@@ -1855,6 +1855,13 @@ class NegatedComparisonAndFigurativeConstantTests(unittest.TestCase):
 
 
 class AllFigurativeConstantRegressionTests(unittest.TestCase):
+    def test_all_literal_is_translated_as_a_single_literal_in_expressions(self):
+        for source, expected in [('ALL "A"', "A"), ("ALL SPACE", " ")]:
+            with self.subTest(source=source):
+                translated = cobol2py.translate_expr(source)
+                self.assertEqual(eval(translated), expected)
+                compile(translated, "<all-literal-expression>", "eval")
+
     def test_all_quote_initializes_fixed_width_field_with_quotes(self):
         variable = cobol2py.CobolVar(level=77, name="IF-D5", pic="X(10)", value="ALL QUOTE")
         self.assertEqual(variable.py_default(), repr('"' * 10))
