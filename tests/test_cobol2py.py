@@ -2166,3 +2166,23 @@ class SemicolonSeparatedSubscriptRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_expr("GRP-TAB2(S21; S22)")
         self.assertEqual(translated, "grp_tab2[s21 - 1][s22 - 1]")
         compile(translated, "<semicolon-subscript>", "eval")
+
+
+class CobolClassConditionRegressionTests(unittest.TestCase):
+    def test_numeric_class_condition_accepts_signed_decimal_values(self):
+        translated = cobol2py.translate_condition("WS-VALUE IS NUMERIC")
+        compile(translated, "<numeric-class-condition>", "eval")
+        self.assertTrue(eval(translated, {"ws_value": "-12.5"}))
+        self.assertFalse(eval(translated, {"ws_value": "12A"}))
+
+    def test_not_alphabetic_class_condition_rejects_digits(self):
+        translated = cobol2py.translate_condition("WS-FUNC IS NOT ALPHABETIC")
+        compile(translated, "<not-alphabetic-class-condition>", "eval")
+        self.assertFalse(eval(translated, {"ws_func": "ABC"}))
+        self.assertTrue(eval(translated, {"ws_func": "AB2"}))
+
+    def test_alphanumeric_class_condition_allows_spaces_and_digits(self):
+        translated = cobol2py.translate_condition("WS-VALUE IS ALPHANUMERIC")
+        compile(translated, "<alphanumeric-class-condition>", "eval")
+        self.assertTrue(eval(translated, {"ws_value": "A 12"}))
+        self.assertFalse(eval(translated, {"ws_value": "A-12"}))

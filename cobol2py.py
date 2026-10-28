@@ -1446,6 +1446,51 @@ def translate_condition(
     # branch action, not part of the Boolean condition.
     cond = re.sub(r"\s+NEXT\s+SENTENCE\s*$", "", cond, flags=re.IGNORECASE)
 
+# Class conditions (IS [NOT] NUMERIC/ALPHABETIC/ALPHANUMERIC) must be
+    # protected before the general IS/NOT rewrites below.
+    class_condition_replacements: dict[str, str] = {}
+
+    def rewrite_class_conditions(chunk: str) -> str:
+        pattern = (
+            r"\b([A-Za-z0-9-]+(?:\s*\([^()]*\))?"
+            r"(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?)"
+            r"\s+(?:IS\s+)?(NOT\s+)?"
+            r"(ALPHABETIC(?:-(?:LOWER|UPPER))?|ALPHANUMERIC|NUMERIC)\b"
+        )
+
+        def replacement(match: re.Match[str]) -> str:
+            operand = translate_expr(match.group(1), variables)
+            class_name = match.group(3).upper()
+            if class_name == "NUMERIC":
+                numeric_pattern = r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)"
+                expression = (
+                    f"(__import__('re').fullmatch({numeric_pattern!r}, "
+                    f"str({operand}).strip()) is not None)"
+                )
+            elif class_name == "ALPHANUMERIC":
+                expression = f"all((_char == ' ' or _char.isalnum()) for _char in str({operand}))"
+            elif class_name == "ALPHABETIC-LOWER":
+                expression = (
+                    f"all((_char == ' ' or (_char.isalpha() and _char.islower())) "
+                    f"for _char in str({operand}))"
+                )
+            elif class_name == "ALPHABETIC-UPPER":
+                expression = (
+                    f"all((_char == ' ' or (_char.isalpha() and _char.isupper())) "
+                    f"for _char in str({operand}))"
+                )
+            else:
+                expression = f"all((_char == ' ' or _char.isalpha()) for _char in str({operand}))"
+            if match.group(2):
+                expression = f"(not ({expression}))"
+            token = f"__COBOL_CLASS_CONDITION_{len(class_condition_replacements)}__"
+            class_condition_replacements[token] = expression
+            return repr(token)
+
+        return re.sub(pattern, replacement, chunk, flags=re.IGNORECASE)
+
+    cond = rewrite_outside_literals(cond, rewrite_class_conditions)
+
     def rewrite(chunk: str) -> str:
         c = re.sub(r"\bAND\b", "and", chunk, flags=re.IGNORECASE)
         c = re.sub(r"\bOR\b", "or", c, flags=re.IGNORECASE)
@@ -1491,6 +1536,8 @@ def translate_condition(
 
     c = rewrite_outside_literals(cond.strip(), rewrite)
     translated = translate_expr(c, variables)
+    for token, expression in class_condition_replacements.items():
+        translated = translated.replace(repr(token), expression)
 
     # COBOL pads the shorter operand with spaces for alphanumeric comparisons.
     # Match a translated data-name (including a table element) against a literal.
