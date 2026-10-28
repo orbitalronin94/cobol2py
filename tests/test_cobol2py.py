@@ -2807,6 +2807,16 @@ class OrdinalIntrinsicRegressionTests(unittest.TestCase):
         self.assertEqual(eval(translated), 3)
         compile(translated, "<ord-max>", "eval")
 
+    def test_ordinal_intrinsics_are_not_left_as_cobol_tokens(self):
+        for source in (
+            "FUNCTION ORD-MIN(4, 2, 1, 7, 2, 0)",
+            "FUNCTION ORD-MAX(4, 2, 7, 7, 2)",
+        ):
+            with self.subTest(source=source):
+                translated = cobol2py.translate_expr(source)
+                self.assertNotIn("function ord_", translated.lower())
+                compile(translated, "<ordinal-intrinsic>", "eval")
+
 
 class MalformedConditionRecoveryTests(unittest.TestCase):
     def test_duplicate_equality_operator_is_collapsed(self):
