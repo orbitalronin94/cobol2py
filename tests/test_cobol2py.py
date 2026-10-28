@@ -2383,3 +2383,13 @@ class InitializeStatementRegressionTests(unittest.TestCase):
             ["ws_rec['ws_name'] = '   '", "ws_rec['ws_count'] = 0"],
         )
         compile("\\n".join(translated), "<initialize-group>", "exec")
+
+
+class BareAlphanumericValueRegressionTests(unittest.TestCase):
+    def test_unquoted_word_value_does_not_emit_unbound_python_name(self):
+        variable = cobol2py.CobolVar(
+            level=2, name="COBOL-IS", pic="X(99)", value="COBOL-IS"
+        )
+        generated = variable.py_default()
+        compile(generated, "<cobol-value-default>", "eval")
+        self.assertEqual(eval(generated), "COBOL-IS".ljust(99))
