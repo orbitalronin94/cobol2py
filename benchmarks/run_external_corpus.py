@@ -185,7 +185,9 @@ def main() -> int:
                             if exception_type and exception_type[0].isupper() and exception_type.replace("_", "").isalnum():
                                 result["candidate_exception_type"] = exception_type
                             if exception_type == "NameError":
-                                missing = re.search(r"name ['\"]([^'\"]+)['\"] is not defined", tail)
+                                # Import locally as a defensive guard in isolated benchmark runners.
+                                import re as _re
+                                missing = _re.search(r"name ['\"]([^'\"]+)['\"] is not defined", tail)
                                 if missing:
                                     result["candidate_missing_name"] = missing.group(1)[:100]
                         if candidate["launched"] and not candidate["timeout"] and result["stdout_match"] and result["returncode_match"]:
