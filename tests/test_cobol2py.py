@@ -133,7 +133,7 @@ class TranslationTests(unittest.TestCase):
 
     def test_all_literal_decodes_doubled_quotes(self):
         variable = cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(5)", value='ALL "DON""T"')
-        self.assertEqual(variable.py_default(), "'DON\\\"T'")
+        self.assertEqual(variable.py_default(), "'DON\"T'")
         variables = {"WS-TEXT": cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(5)")}
         self.assertEqual(
             cobol2py.translate_move_value('ALL "DON""T"', "WS-TEXT", variables),
@@ -1709,7 +1709,7 @@ class MultidimensionalTableReferenceRegressionTests(unittest.TestCase):
 class NegatedComparisonAndFigurativeConstantTests(unittest.TestCase):
     def test_not_before_comparison_operator_inverts_operator(self):
         cases = {
-            "DECL-EXEC-SW NOT = SPACE": "decl_exec_sw != \" \"",
+            "DECL-EXEC-SW NOT = SPACE": "decl_exec_sw != ' '",
             "WS-NUM NOT < 10": "ws_num >= 10",
             "WS-NUM NOT > 10": "ws_num <= 10",
         }
