@@ -1136,7 +1136,7 @@ def translate_expr(
         r"PRESENT_VALUE|INTEGER_PART|INTEGER|ORD|CHAR|MOD|CONCATENATE|RANDOM"
     )
     translated = re.sub(
-        rf"\\bfunction\\s+(?=(?:{intrinsic_call_names})\\s*(?:\\[|\\())",
+        rf"\bfunction\s+(?=(?:{intrinsic_call_names})\s*(?:\[|\())",
         "",
         translated,
         flags=re.IGNORECASE,
