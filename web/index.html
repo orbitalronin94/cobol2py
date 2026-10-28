@@ -2149,6 +2149,16 @@ def translate_condition(
 
     c = rewrite_outside_literals(cond.strip(), rewrite)
     translated = translate_expr(c, variables)
+
+    # Recover from duplicated relation operators and dangling Boolean
+    # connectors found in real-world fixed/free-format source continuations.
+    def repair_condition_syntax(chunk: str) -> str:
+        chunk = re.sub(r"(?<![!<>=])(?:==\s*){2,}", "== ", chunk)
+        chunk = re.sub(r"(?<![!<>=])(?:!=\s*){2,}", "!= ", chunk)
+        chunk = re.sub(r"\s+(?:and|or)\s*$", "", chunk, flags=re.IGNORECASE)
+        return chunk
+
+    translated = rewrite_outside_literals(translated, repair_condition_syntax)
     for token, expression in class_condition_replacements.items():
         translated = translated.replace(json.dumps(token), expression)
 
