@@ -1832,13 +1832,9 @@ def translate_statement(
     # INITIALIZE resets elementary storage by category, not to its VALUE clause.
     # The initial implementation deliberately handles elementary items and
     # non-array groups; complex group tables remain an explicit unsupported case.
-    initialize_match = re.fullmatch(
-        rf"INITIALIZE\\s+({DATA_REF_PATTERN})",
-        s,
-        re.IGNORECASE,
-    )
-    if initialize_match:
-        target = initialize_match.group(1).strip()
+    initialize_prefix = re.match(r"INITIALIZE" + "\\" +", s, re.IGNORECASE)
+    if initialize_prefix:
+        target = s[initialize_prefix.end():].strip()
         variable_map = variables or {}
         root = variable_map.get(target.split()[0].split("(")[0].upper())
         if root is None:
