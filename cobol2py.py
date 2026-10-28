@@ -1004,6 +1004,8 @@ def translate_literal(
         return "False"
     if re.fullmatch(r"FUNCTION\s+CURRENT-DATE", t, re.IGNORECASE):
         return "(lambda _dt: _dt.strftime('%Y%m%d%H%M%S') + f'{_dt.microsecond // 10000:02d}' + _dt.strftime('%z'))(__import__('datetime').datetime.now().astimezone())"
+    if re.match(r"FUNCTION\s+[A-Z][A-Z0-9-]*\s*(?:\(|\[)", t, re.IGNORECASE):
+        return translate_expr(t, variables)
     if t.upper() in ("QUOTE", "QUOTES"):
         return repr('"')
     return normalize_data_reference(t, variables)
