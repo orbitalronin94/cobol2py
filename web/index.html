@@ -1261,14 +1261,22 @@ def normalize_data_reference(
         return normalize_name(text)
     field_name, subscript_text, qualifier, qualifier_subscript = match.groups()
     subscripts = [part.strip() for part in re.split(r"[,;]", subscript_text)] if subscript_text else []
-    if subscript_text and len(subscripts) == 1 and re.fullmatch(
-        r"\s*[A-Za-z0-9_-]+(?:\s+[A-Za-z0-9_-]+)+\s*",
-        subscript_text,
-    ):
-        # Some fixed-format COBOL dialects separate multiple subscripts with
-        # spaces rather than commas. Avoid splitting arithmetic expressions
-        # such as "INDEX + 1" by accepting only bare names/numbers here.
-        subscripts = subscript_text.split()
+    if subscript_text and len(subscripts) == 1:
+        # Some COBOL dialects omit commas between multiple subscripts. Split
+        # only when the entire text can be parsed as two or more simple index
+        # expressions; each index may include a numeric +/- offset.
+        space_separated = re.fullmatch(
+            r"\s*[A-Za-z0-9_-]+(?:\s*[+-]\s*\d+)?"
+            r"(?:\s+[A-Za-z0-9_-]+(?:\s*[+-]\s*\d+)?)+\s*",
+            subscript_text,
+        )
+        if space_separated:
+            parts = re.findall(
+                r"[A-Za-z0-9_-]+(?:\s*[+-]\s*\d+)?",
+                subscript_text,
+            )
+            if len(parts) > 1:
+                subscripts = parts
     variable_map = variables or {}
     overlay_fields, _overlay_buffers = build_overlay_layout(variable_map)
     if not subscripts and field_name.upper() in overlay_fields:
