@@ -213,6 +213,7 @@ class Program:
     paragraph_order: list[str] = field(default_factory=list)
     raw_lines: list[tuple[int, str]] = field(default_factory=list)
     unresolved_copybooks: list[str] = field(default_factory=list)
+    condition_names: dict[str, tuple[str, list[tuple[str, Optional[str]]]]] = field(default_factory=dict)
 
 
 # ============================================================================
@@ -748,6 +749,58 @@ def resolve_copybooks(
     return "\n".join(expand(source, unique_roots, [])), unresolved
 
 
+def parse_condition_names(lines: list[tuple[int, str]]) -> dict[str, tuple[str, list[tuple[str, Optional[str]]]]]:
+    """Parse level-88 condition names into their parent field and allowed values."""
+    declarations: list[tuple[int, str]] = []
+    continuation = re.compile(
+        r"^\s*(?:ASCENDING|DESCENDING|INDEXED|DEPENDING|PIC(?:TURE)?|VALUE(?:S)?|USAGE|SIGN|OCCURS|REDEFINES)\b",
+        re.IGNORECASE,
+    )
+    for line_number, source_line in lines:
+        if RE_VAR.match(source_line):
+            declarations.append((line_number, source_line))
+        elif declarations and continuation.match(source_line):
+            prior_number, prior_text = declarations[-1]
+            declarations[-1] = (prior_number, prior_text.rstrip() + " " + source_line.strip())
+
+    literal_pattern = re.compile(
+        r"""ALL\s+(?:"(?:[^"]|"")*"|'(?:[^']|'')*')|"(?:[^"]|"")*"|'(?:[^']|'')*'|[+-]?\d+(?:\.\d+)?|[A-Za-z][A-Za-z0-9-]*""",
+        re.IGNORECASE,
+    )
+    result: dict[str, tuple[str, list[tuple[str, Optional[str]]]]] = {}
+    parent_name: Optional[str] = None
+    for _, declaration in declarations:
+        match = RE_VAR.match(declaration)
+        if not match:
+            continue
+        level = int(match.group(1))
+        name = match.group(2).upper()
+        rest = match.group(3).strip()
+        if level != 88:
+            parent_name = name
+            continue
+        if not parent_name:
+            continue
+        values_match = re.search(r"\bVALUES?\s+(?:ARE\s+|IS\s+)?(.+)$", rest, re.IGNORECASE)
+        if not values_match:
+            continue
+        raw_values = [token.strip() for token in literal_pattern.findall(values_match.group(1))]
+        raw_values = [value for value in raw_values if value.upper() != "ALL"]
+        pairs: list[tuple[str, Optional[str]]] = []
+        index = 0
+        while index < len(raw_values):
+            low = raw_values[index]
+            if index + 2 < len(raw_values) and raw_values[index + 1].upper() in ("THRU", "THROUGH"):
+                pairs.append((low, raw_values[index + 2]))
+                index += 3
+            else:
+                pairs.append((low, None))
+                index += 1
+        if pairs:
+            result[name] = (parent_name, pairs)
+    return result
+
+
 def parse_cobol(
     source: str,
     source_format: str = "auto",
@@ -786,6 +839,7 @@ def parse_cobol(
                 break
         if ws_start is not None:
             prog.variables = parse_variables(lines[ws_start:end_data])
+            prog.condition_names = parse_condition_names(lines[ws_start:end_data])
 
     if idx_proc >= 0:
         proc_lines = lines[idx_proc + 1:]
