@@ -901,6 +901,34 @@ class CopybookTests(unittest.TestCase):
             self.assertEqual([v.name for v in program.variables], ["WS-NAME"])
             self.assertEqual(program.unresolved_copybooks, [])
 
+    def test_resolves_library_qualified_copy_directives(self):
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "FILE-RECORD.cpy").write_text(
+                "01 FILE-COBOL-RECORD-INFORMATION-REC.\\n"
+                "   05 FILE-RECORD-CODE PIC 9(3).\\n",
+                encoding="utf-8",
+            )
+            source = "\\n".join([
+                "DATA DIVISION.",
+                "WORKING-STORAGE SECTION.",
+                "COPY FILE-RECORD OF COBOL-LIBRARY.",
+                "PROCEDURE DIVISION.",
+                "MAIN.",
+                "STOP RUN.",
+            ])
+            program = cobol2py.parse_cobol(
+                source, source_format="free", copybook_paths=[root]
+            )
+            self.assertIn(
+                "FILE-COBOL-RECORD-INFORMATION-REC",
+                [variable.name for variable in program.variables],
+            )
+            self.assertEqual(program.unresolved_copybooks, [])
+
     def test_copy_replacing_applies_pseudo_text_before_parsing(self):
         from pathlib import Path
         from tempfile import TemporaryDirectory
