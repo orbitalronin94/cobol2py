@@ -1384,11 +1384,11 @@ def translate_expr(
                 else:
                     operand = keyword.match(chunk, operand_start)
                     if operand:
-                        token = chunk[i:operand.end() + operand_start]
+                        token = chunk[i:operand.end()]
                         value = decode_cobol_all_literal(token)
                         if value is not None:
                             out.append(repr(value))
-                            i = operand_start + operand.end()
+                            i = operand.end()
                             continue
             out.append(char)
             i += 1
