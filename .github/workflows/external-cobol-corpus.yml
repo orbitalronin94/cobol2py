@@ -1,8 +1,6 @@
 name: external-cobol-corpus
 
 on:
-  push:
-    branches: ["work/toward-50-all-literals"]
   pull_request:
     paths:
       - ".github/workflows/external-cobol-corpus.yml"
