@@ -2590,3 +2590,15 @@ class AnnuityIntrinsicRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_expr("FUNCTION ANNUITY(0, 10)")
         compile(translated, "<annuity-zero-rate>", "eval")
         self.assertAlmostEqual(eval(translated, {}), 0.1)
+
+
+class TestNumvalIntrinsicRegressionTests(unittest.TestCase):
+    def test_test_numval_returns_zero_for_numeric_text(self):
+        translated = cobol2py.translate_expr("FUNCTION TEST-NUMVAL('123.45')")
+        compile(translated, "<test-numval-valid>", "eval")
+        self.assertEqual(eval(translated, {}), 0)
+
+    def test_test_numval_returns_first_invalid_character_position(self):
+        translated = cobol2py.translate_expr("FUNCTION TEST-NUMVAL('12X45')")
+        compile(translated, "<test-numval-invalid>", "eval")
+        self.assertEqual(eval(translated, {}), 3)
