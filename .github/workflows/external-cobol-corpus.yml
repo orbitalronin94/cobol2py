@@ -20,11 +20,12 @@ on:
 permissions:
   contents: read
 
-# This 500-program benchmark is intentionally expensive. Keep only the newest
-# run for a PR/ref so rapid fix commits do not consume runners on stale revisions.
+# This 500-program benchmark is intentionally expensive. Let an active run finish;
+# GitHub keeps only the newest pending run for a concurrency group, avoiding repeated
+# cancellation of the benchmark before it can publish a report.
 concurrency:
   group: external-cobol-corpus-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   external-corpus:
