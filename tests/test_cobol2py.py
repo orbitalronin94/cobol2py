@@ -2430,9 +2430,10 @@ class GroupMoveFillRegressionTests(unittest.TestCase):
             "PROGRAM-ID. GROUPTABLEFILL.",
             "DATA DIVISION.",
             "WORKING-STORAGE SECTION.",
-            "01 TEST-RESULTS OCCURS 2 TIMES.",
-            "   02 FEATURE PIC X(4).",
-            "   02 P-OR-F PIC X.",
+            "01 TEST-RESULTS.",
+            "   02 RESULT-ROW OCCURS 2 TIMES.",
+            "      03 FEATURE PIC X(4).",
+            "      03 P-OR-F PIC X.",
             "PROCEDURE DIVISION.",
             "MAIN.",
             "   MOVE SPACE TO TEST-RESULTS.",
@@ -2441,8 +2442,8 @@ class GroupMoveFillRegressionTests(unittest.TestCase):
         generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
         compile(generated, "<group-table-move-space>", "exec")
         self.assertNotIn("test_results = ' '", generated)
-        self.assertIn("test_results[0]['feature'] = '    '", generated)
-        self.assertIn("test_results[1]['feature'] = '    '", generated)
-        self.assertIn("test_results[0]['p_or_f'] = ' '", generated)
-        self.assertIn("test_results[1]['p_or_f'] = ' '", generated)
+        self.assertIn("test_results['result_row'][0]['feature'] = '    '", generated)
+        self.assertIn("test_results['result_row'][1]['feature'] = '    '", generated)
+        self.assertIn("test_results['result_row'][0]['p_or_f'] = ' '", generated)
+        self.assertIn("test_results['result_row'][1]['p_or_f'] = ' '", generated)
 
