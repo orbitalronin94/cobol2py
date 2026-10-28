@@ -6,44 +6,40 @@
 
 La traducción busca **leerse** y, para el subconjunto cubierto por regresiones diferenciales, también ejecutarse. No promete equivalencia completa de COBOL: las construcciones no soportadas quedan documentadas o señaladas explícitamente.
 
-## Roadmap: objetivo final v1.0
+## Roadmap de versiones: de la base histórica a v1.0
 
-El hito 0.8 describe la madurez del flujo de trabajo, no una publicación oficial ni compatibilidad completa con COBOL. El objetivo de producto ahora es **alcanzar al menos un 75 % de equivalencia diferencial exacta en el benchmark externo de 500 programas**, partiendo de una línea base medida del 10,6 %. Esto equivale a **375 de 500 programas** con stdout y código de retorno idénticos a GnuCOBOL. No se declarará v1.0 por traducir más archivos o generar Python sintácticamente válido: el umbral debe verificarse con evidencia reproducible.
+El roadmap de versiones y el objetivo de equivalencia forman **un único plan**. El hito histórico v0.2 no es el final del roadmap; los hitos intermedios describen madurez del producto, mientras que v1.0 depende de una puerta de calidad cuantificada. No se anunciará v1.0 solo por generar Python válido ni por cerrar tareas internas.
 
-### Objetivo de salida para v1.0
+### Objetivo de aceptación para v1.0
 
-- **Línea base externa:** 53/500 coincidencias exactas (10,60 %). El benchmark es una muestra de fuentes independientes que compilan y terminan bajo GnuCOBOL; no representa todos los dialectos ni todos los sistemas COBOL.
-- **Última medición externa completa confirmada:** 136/500 (27,20 %) en la muestra primaria y 155/500 (31,00 %) en el holdout disjunto, en el workflow [40702665283](https://github.com/orbitalronin94/cobol2py/actions/runs/40702665283), commit medido `e993037e`. Frente a la línea base inicial de 53/500 (10,60 %), son +83 y +102 coincidencias exactas. Respecto a la medición inmediatamente anterior (130/500 y 148/500), la mejora es de +6 casos en primaria (+1,20 puntos) y +7 en holdout (+1,40 puntos). Quedan 239 casos para llegar a 375/500 en primaria y 220 en holdout. El umbral del 75 % sigue pendiente en ambos corpus; las correcciones posteriores a ese commit están pendientes de su propio benchmark externo.
-- **Meta mínima:** ≥375/500 (≥75,00 %) en la muestra primaria, con la misma metodología y denominador documentado.
-- **Protección contra sobreajuste:** validar además una muestra disjunta de 500 programas seleccionados con el mismo procedimiento, sin usarla para elegir o ajustar las correcciones; meta ≥75 % también en esa muestra antes de declarar v1.0.
-- **Calidad de traducción:** cada arreglo de una familia semántica debe incluir pruebas unitarias y, cuando sea viable, comparación diferencial contra GnuCOBOL. Los casos no soportados deben diagnosticarse, no convertirse silenciosamente en comentarios.
-- **Integridad de la versión:** CI obligatorio verde, informe de ambos benchmarks publicado, README/roadmap y límites actualizados, y revisión de regresiones del corpus interno. La PR de trabajo no se fusiona automáticamente.
+**≥75 % de equivalencia diferencial exacta en dos muestras externas disjuntas de 500 programas cada una.** Una coincidencia exige que el programa traducido termine y que stdout y código de retorno sean idénticos a GnuCOBOL.
 
-### Plan de ejecución hacia v1.0
+- **Línea base externa inicial:** 53/500 (10,60 %).
+- **Última medición externa completa confirmada:** 136/500 (27,20 %) en primaria y 155/500 (31,00 %) en holdout, commit medido `e993037e`, [workflow externo](https://github.com/orbitalronin94/cobol2py/actions/runs/40702665283). Frente a la medición inmediatamente anterior (130/500 y 148/500), son **+6 casos (+1,20 puntos)** en primaria y **+7 casos (+1,40 puntos)** en holdout.
+- **Distancia a la meta:** faltan 239 coincidencias en primaria y 220 en holdout para llegar a 375/500. Las revisiones posteriores están siendo evaluadas por separado; no se les atribuye mejora antes de que termine su benchmark.
+- **Alcance:** estas cifras miden stdout y código de retorno de programas ejecutables de estas muestras; no prueban equivalencia de archivos, bases de datos, transacciones, interacciones ni todos los dialectos.
 
-1. **Hacer fiable la medición:** asegurar que cada ejecución externa conserva JSON/Markdown y artefactos incluso si el benchmark falla; registrar commit, checksum del dataset, selección, exclusiones y resultados.
-2. **Clasificar los fallos:** separar error del traductor, Python inválido, excepción/timeout en ejecución, diferencias de salida y código de retorno; agrupar por causa raíz y frecuencia.
-3. **Atacar las causas de mayor impacto:** priorizar familias que recuperen más programas con una corrección semántica sólida; añadir regresiones antes de cada cambio.
-4. **Subir por etapas:** medir sobre los mismos 500 casos en cada iteración y publicar las tasas reales; no cambiar el denominador ni contar errores del compilador de referencia como fallos del traductor.
-5. **Validar sin sobreajuste:** congelar los cambios candidatos y ejecutar una muestra externa disjunta; corregir regresiones y repetir la verificación.
-6. **Candidatura v1.0:** exigir ≥75 % en ambas muestras, CI verde, diagnósticos honestos y documentación que describa exactamente qué se ha medido.
+### Hitos del roadmap
 
-El 75 % es una **meta de aceptación pendiente**, no una capacidad actual ni una promesa de compatibilidad universal. Hasta alcanzar la evidencia anterior, no se anunciará que el proyecto está listo para v1.0.
-
-| Área | Estado actual | Evidencia y límite |
+| Hito | Objetivo | Criterio de salida |
 |---|---|---|
-| Traductor y benchmark | Base estable para el subconjunto medido | Corpus versionado de 105 casos con GnuCOBOL; no es una estimación de compatibilidad general |
-| Inventario multiarchivo | Implementado con clasificación estática | Dependencias resueltas, sin resolver, ambiguas y CALL dinámicas; los nombres no prueban enlazado en ejecución |
-| Piloto integrado | Informe de esquema v2 | Traducción, sintaxis, clasificación por código/categoría y enlaces exactos a fixtures candidatas; por defecto no ejecuta el código generado |
-| Agente web | Demo heurística local | Selección de archivos, hallazgos y exportación; el análisis web no sustituye al CLI Python |
-| Evidencia de CI | Integrada | CI valida el contrato del informe y publica el informe del piloto como artefacto para revisión |
-| Revisión de los diagnósticos de samples | Triage automatizado: 35 archivos con limitaciones conocidas; 1 falso positivo corregido | El [baseline de triage](docs/pilot-diagnostics-baseline.md) enumera cada fuente. La revisión humana de los 35 casos sigue pendiente |
-| Semántica de control y almacenamiento (objetivo v0.8.x) | Pendiente prioritario: `ALTER`, `GO TO ... DEPENDING ON` y `REDEFINES` | Caso de regresión LABERINTO-COBOL; exige preservar el flujo dinámico y las vistas de almacenamiento compartido, con comparación diferencial frente a GnuCOBOL |
+| **v0.2 — base histórica** | Traductor mínimo y flujo inicial | Hito antiguo; no representa el estado ni el objetivo actual del proyecto |
+| **v0.8.x — fiabilidad y semántica** | Robustecer el inventario/piloto, el control de flujo, el almacenamiento compartido y la sincronización Python/HTML | Regresiones reproducibles, CI verde y límites explícitos; las construcciones complejas no se declaran soportadas sin prueba diferencial |
+| **v0.9 — cobertura medida** | Corregir las causas de fallo más frecuentes en los corpus interno y externo | Informes comparables por commit, regresiones por causa raíz y aumento real de coincidencias exactas sin cambiar el denominador |
+| **v0.9.x — estabilización** | Evitar regresiones y validar que las mejoras generalizan | CI completa verde, corpus interno sin regresiones y benchmark externo en ambas muestras |
+| **v1.0 — release condicionada** | Entregar un traductor con un umbral de equivalencia publicado y reproducible | ≥375/500 (75 %) tanto en primaria como en holdout disjunto, CI verde, informes publicados, límites documentados y revisión final de release |
 
-El objetivo de cierre de v0.8.x incluye cerrar brechas semánticas de alto impacto antes de ampliar la cobertura: `ALTER` debe cambiar en ejecución el destino del salto asociado, `GO TO ... DEPENDING ON` debe conservar la selección ordinal COBOL (base 1 y comportamiento fuera de rango), y `REDEFINES` debe compartir almacenamiento físico en vez de generar diccionarios independientes. El caso `LABERINTO-COBOL` será una regresión diferencial end-to-end; no se marcará como soportado hasta que coincidan salida y código de retorno con GnuCOBOL y haya pruebas específicas de cada construcción.
+### Plan de trabajo para llegar a v1.0
 
-El roadmap detallado, con los hitos de madurez v0.1–v0.8 y el siguiente ciclo hacia 0.9/1.0, está en [docs/roadmap-two-weeks.md](docs/roadmap-two-weeks.md). La clasificación automática ayuda a priorizar; no declara por sí sola que un hallazgo sea un falso positivo ni que un programa sea seguro para migrar.
+1. **Medir:** guardar SHA, checksum, selección, exclusiones y resultados de cada benchmark; separar fallos de referencia de errores del traductor.
+2. **Clasificar:** agrupar los 364 fallos de la última muestra primaria y los 345 del holdout por causa raíz (traducción, sintaxis, excepción/timeout, salida o código de retorno).
+3. **Priorizar por impacto:** corregir primero las familias que afectan a más programas y pueden arreglarse semánticamente, no añadir casos especiales solo para una fuente.
+4. **Probar cada arreglo:** añadir una regresión mínima y comparación con GnuCOBOL cuando sea viable; mantener `cobol2py.py` y `web/index.html` sincronizados.
+5. **Volver a medir:** ejecutar las mismas muestras tras cada grupo de cambios; publicar solo mejoras confirmadas y anotar regresiones.
+6. **Validar generalización:** congelar el candidato y confirmar ≥75 % en una muestra disjunta que no se use para ajustar las correcciones.
+7. **Autorizar v1.0:** exigir ambas metas, CI completa verde, informes reproducibles y documentación fiel a la evidencia.
 
+El 75 % es una **puerta de aceptación pendiente**, no una capacidad actual ni una promesa de compatibilidad universal.
 ---
 
 ## Por qué existe
