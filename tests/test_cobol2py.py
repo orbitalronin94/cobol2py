@@ -2002,3 +2002,34 @@ class ParenthesizedDisplayListRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_statement("DISPLAY (01, 01) ERASE", set(), {})
         self.assertIsNotNone(translated)
         compile("\\n".join(translated or []), "<parenthesized-display-list>", "exec")
+
+
+class CobolAcceptEofRegressionTests(unittest.TestCase):
+    def test_accept_at_eof_uses_cobol_numeric_and_alphanumeric_defaults(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+        from unittest.mock import patch
+
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. ACCEPTEOF.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-NUM PIC 9(3).",
+            "01 WS-TEXT PIC X(3).",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "ACCEPT WS-NUM.",
+            "ADD 1 TO WS-NUM.",
+            "DISPLAY WS-NUM.",
+            "ACCEPT WS-TEXT.",
+            "DISPLAY WS-TEXT.",
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<accept-eof-output>", "exec"), namespace)
+        output = StringIO()
+        with patch("builtins.input", side_effect=EOFError), redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "001\n   \n", generated)
