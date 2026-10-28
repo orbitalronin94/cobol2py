@@ -1043,7 +1043,7 @@ def translate_expr(
         expr,
         flags=re.IGNORECASE,
     )
-    intrinsic_names = {"NUMVAL", "NUMVAL-C", "LOWER-CASE", "UPPER-CASE", "TRIM", "LENGTH"}
+    intrinsic_names = {"NUMVAL", "NUMVAL-C", "LOWER-CASE", "UPPER-CASE", "TRIM", "LENGTH", "ABS", "ACOS", "ASIN", "ATAN", "COS", "EXP", "LOG", "LOG10", "SIN", "SQRT", "TAN", "MIN", "MAX", "COBOL-MIN", "COBOL-MAX"}
     expr = re.sub(
         r"\b([A-Za-z][A-Za-z0-9-]*)\s*\(([A-Za-z0-9_,\s-]+)\)",
         lambda match: match.group(0) if match.group(1).upper() in intrinsic_names
