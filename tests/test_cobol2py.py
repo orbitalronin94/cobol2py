@@ -203,7 +203,7 @@ class TranslationTests(unittest.TestCase):
         self.assertEqual(cobol2py.translate_literal("000.50"), "0.50")
         self.assertEqual(cobol2py.translate_condition("WS-NUM = 0007"), "ws_num == 7")
         self.assertEqual(cobol2py.translate_expr("WS-NUM + 000.50"), "ws_num + 0.50")
-        source = "\\n".join([
+        source = "\n".join([
             "IDENTIFICATION DIVISION.",
             "PROGRAM-ID. LEADINGZERO.",
             "DATA DIVISION.",
