@@ -7,7 +7,7 @@ Este objetivo reemplaza cualquier interpretación de «roadmap terminado» basad
 ### Línea base, meta y definición
 
 - **Línea base inicial:** 53/500 programas (10,60 %) con stdout y código de retorno exactamente iguales a GnuCOBOL.
-- **Última medición externa confirmada:** 130/500 (26,00 %) en la muestra primaria y 147/500 (29,40 %) en el holdout disjunto, ambos en el workflow [40687084304](https://github.com/orbitalronin94/cobol2py/actions/runs/40687084304), commit `7d98183c`; las dos muestras de 500 están completas. Frente a la línea base inicial de 53/500 (10,60 %), son +77 y +94 coincidencias exactas. Los tests de CI del mismo commit pasaron en [40687084278](https://github.com/orbitalronin94/cobol2py/actions/runs/40687084278). El umbral del 75 % aún no se alcanza.
+- **Última medición externa completa confirmada:** 136/500 (27,20 %) en primaria y 155/500 (31,00 %) en el holdout disjunto, workflow [40702665283](https://github.com/orbitalronin94/cobol2py/actions/runs/40702665283), commit medido `e993037e`. Frente a la línea base inicial de 53/500 (10,60 %), son +83 y +102 coincidencias exactas. Respecto a la medición previa (130/500 y 148/500), la ganancia confirmada es +6 (+1,20 puntos) en primaria y +7 (+1,40 puntos) en holdout. Faltan 239 aciertos en primaria y 220 en holdout para alcanzar 375/500. El commit posterior `1d0400b8` tiene un nuevo benchmark externo en cola; no se le atribuye mejora hasta que termine.
 - **Meta mínima:** 375/500 (75,00 %) en la muestra externa primaria de 500 programas.
 - **Validación anti-sobreajuste:** al menos 75 % en una segunda muestra disjunta de 500 programas, seleccionada con la misma metodología y mantenida separada de la iteración de correcciones.
 - **Qué cuenta como éxito:** el traductor termina correctamente, el Python generado compila y se ejecuta, y coinciden exactamente stdout y código de retorno. Un archivo traducido, una salida sintácticamente válida o un workflow que termina con éxito no equivalen a una coincidencia diferencial.
@@ -36,12 +36,12 @@ No registrar como mejora un resultado cuyo denominador, selección, versión de 
 - [x] Prueba de regresión para el caso anterior y sincronización del traductor embebido en la demo web.
 - [x] CI unitario verde en Python 3.10, 3.11, 3.12 y 3.13 en la ejecución confirmada tras sincronizar la demo.
 - [x] Reparar la escritura del informe del benchmark externo: el contenedor no privilegiado usa UID 65534 y el directorio dedicado de artefactos permite escritura.
-- [x] Obtener los informes externos completos para ambas muestras: 111/500 (22,20 %) en primaria y 118/500 (23,60 %) en holdout, en `a9daee71`; artefactos publicados.
+- [x] Obtener informes externos completos para ambas muestras en `a9daee71`: 111/500 (22,20 %) en primaria y 118/500 (23,60 %) en holdout; esta es una medición histórica, sustituida por el informe más reciente indicado arriba.
 - [x] Clasificar el primer resultado: 153 errores Python de sintaxis genéricos, 93 errores por ceros iniciales en literales enteros, 39 errores sintácticos con sugerencia de coma y 130 diferencias de stdout/código de retorno, además de fallos residuales.
 - [x] Añadir normalización de literales numéricos con ceros iniciales en la traducción Python y una regresión unitaria; sincronizar el código embebido de la demo web.
 - [x] Verificar CI del soporte de condiciones de nivel 88, comportamiento EOF de ACCEPT y traducción de comparaciones compuestas; la revisión `e3284a09` tiene tests y benchmark diferencial verdes.
 - [ ] Confirmar el benchmark externo del candidato `e3284a09`; no atribuir mejora hasta que ambas muestras terminen.
-- [ ] Subir desde 22,20 % (primaria) y 23,60 % (holdout) hasta ≥75 % con evidencia en ambos benchmarks.
+- [ ] Subir desde la medición actual de 27,20 % (primaria) y 31,00 % (holdout) hasta ≥75 % con evidencia en ambos benchmarks.
 - [ ] Validar ≥75 % en la muestra disjunta de 500 casos.
 - [ ] Cumplir todos los criterios de salida de v1.0.
 
