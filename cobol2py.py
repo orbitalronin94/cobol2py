@@ -2004,7 +2004,7 @@ def translate_condition(
     abbreviated = re.compile(
         r"(?P<lhs>[a-z][a-z0-9_]*(?:\[[^\]]+\])*(?:\.ljust\(\d+\))?)"
         r"\s*(?P<op>==|!=|<=|>=|<|>)\s*(?P<first>" + atom_pattern + r")"
-        r"\s+(?P<logic>and|or)\s+(?P<op2>==|!=|<=|>=|<|>)?\s*(?P<second>" + atom_pattern + r")",
+        r"\s+(?P<logic>and|or)\s+(?P<op2>==|!=|<=|>=|<|>)?\s*(?P<second>" + atom_pattern + r")(?!\s*(?:==|!=|<=|>=|<|>))",
         re.IGNORECASE,
     )
     translated = abbreviated.sub(
