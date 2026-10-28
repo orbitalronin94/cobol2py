@@ -3067,7 +3067,7 @@ def translate_statement(
                 targets = split_cobol_items(targets_text)
                 if targets:
                     variable_map = variables or {}
-                    delimiter_parts = split_cobol_items(re.sub(r"^\s+ALL\s+", "", delimiter_text, flags=re.IGNORECASE))
+                    delimiter_parts = split_cobol_items(re.sub(r"^\s*ALL\s+", "", delimiter_text, flags=re.IGNORECASE))
                     delimiter = delimiter_parts[0] if delimiter_parts else delimiter_text
                     if delimiter.upper() in ("SPACE", "SPACES"):
                         delimiter_expr = repr(" ")
