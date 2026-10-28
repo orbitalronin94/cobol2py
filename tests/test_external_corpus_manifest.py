@@ -65,11 +65,11 @@ class ExternalCorpusRuntimeDiagnosticTests(unittest.TestCase):
         spec.loader.exec_module(module)
 
         stderr = (
-            'Traceback (most recent call last):\\n'
-            '  File "/tmp/candidate/translated.py", line 2, in main\\n'
-            "NameError: name 'cobol_is' is not defined\\n"
+            'Traceback (most recent call last):\n'
+            '  File "/tmp/candidate/translated.py", line 2, in main\n'
+            "NameError: name 'cobol_is' is not defined\n"
         )
-        generated = "x = 1\\nprint('private external output')\\n"
+        generated = "x = 1\nprint('private external output')\n"
         context = module.candidate_error_context(stderr, generated)
         self.assertEqual(context["candidate_error_line_number"], 2)
         self.assertEqual(context["candidate_error_line"], "print(<literal>)")
