@@ -2601,11 +2601,49 @@ def translate_statement(
             display_operands = re.sub(
                 r"\s+WITH\s+NO\s+ADVANCING\s*$", "", display_operands, flags=re.IGNORECASE
             ).rstrip()
+        # DISPLAY ... UPON device routes output to a COBOL output device;
+        # the common CONSOLE/SYSOUT/DISPLAY-OUTPUT-DEVICE forms still map to
+        # the translator's standard output stream. Do not emit the device clause
+        # as though UPON and the device name were data items.
+        display_operands = rewrite_outside_literals(
+            display_operands,
+            lambda chunk: re.sub(
+                r"\s+UPON\s+[A-Za-z0-9-]+\s*$", "", chunk, flags=re.IGNORECASE
+            ),
+        )
         args = split_cobol_items(display_operands)
+        # FUNCTION is an introducer, not a DISPLAY operand. Preserve it with
+        # the following intrinsic call so translate_literal can dispatch it
+        # through translate_expr instead of treating the intrinsic as a table.
+        intrinsic_names = (
+            "CURRENT-DATE|NUMVAL(?:-C)?|LOWER-CASE|UPPER-CASE|TRIM|LENGTH|"
+            "ABS|ACOS|ASIN|ATAN|COS|EXP|LOG|LOG10|SIN|SQRT|TAN|MIN|MAX|"
+            "MEAN|MEDIAN|MIDRANGE|RANGE|SUM|VARIANCE|STANDARD-DEVIATION|"
+            "INTEGER|INTEGER-PART|ORD|CHAR|MOD|REM|CONCATENATE|RANDOM|REVERSE|"
+            "FACTORIAL|STORED-CHAR-LENGTH|DATE-OF-INTEGER|INTEGER-OF-DATE|"
+            "DAY-OF-INTEGER|INTEGER-OF-DAY|SECONDS-PAST-MIDNIGHT"
+        )
+        normalized_args: list[str] = []
+        index = 0
+        while index < len(args):
+            if (
+                args[index].strip().upper() == "FUNCTION"
+                and index + 1 < len(args)
+                and re.match(
+                    rf"^(?:{intrinsic_names})\b(?:\s*\(|$)",
+                    args[index + 1].strip(),
+                    re.IGNORECASE,
+                )
+            ):
+                normalized_args.append("FUNCTION " + args[index + 1].strip())
+                index += 2
+                continue
+            normalized_args.append(args[index])
+            index += 1
         # COBOL DISPLAY concatenates operands. Numeric DISPLAY items also
         # retain the zero-filled width specified by their PIC clause.
         items = ", ".join(
-            translate_display_item(a, variables or {}) for a in args
+            translate_display_item(a, variables or {}) for a in normalized_args
         )
         if no_advancing:
             return [f'print("".join([{items}]), end="")']
