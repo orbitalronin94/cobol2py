@@ -399,6 +399,14 @@ class TranslationTests(unittest.TestCase):
         )
         self.assertEqual(cobol2py.translate_condition("TRUE"), "True")
 
+    def test_leading_zero_literals_and_digit_leading_names_are_python_safe(self):
+        self.assertEqual(cobol2py.translate_literal("000120"), "120")
+        self.assertEqual(cobol2py.translate_literal("-00022"), "-22")
+        self.assertEqual(cobol2py.translate_condition("WS-I = 02", {
+            "WS-I": cobol2py.CobolVar(level=1, name="WS-I", pic="9(2)"),
+        }), "ws_i == 2")
+        self.assertEqual(cobol2py.normalize_name("11A"), "cobol_11a")
+
     def test_equality_condition_uses_python_operator(self):
         self.assertEqual(
             cobol2py.translate_condition("WS-NUM = 10"),
