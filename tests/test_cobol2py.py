@@ -1910,3 +1910,18 @@ class FigurativeConstantIdentifierBoundaryTests(unittest.TestCase):
 
     def test_hyphenated_data_names_starting_with_space_are_not_constants(self):
         self.assertEqual(cobol2py.translate_expr("SPACE-C"), "space_c")
+
+
+class MoveCorrespondingRegressionTests(unittest.TestCase):
+    def test_matching_group_fields_are_copied_with_target_width(self):
+        variables = {
+            "SRC": cobol2py.CobolVar(level=1, name="SRC", is_group=True),
+            "SRC-CODE": cobol2py.CobolVar(level=5, name="CODE", pic="X(3)", parent_name="SRC"),
+            "DST": cobol2py.CobolVar(level=1, name="DST", is_group=True),
+            "DST-CODE": cobol2py.CobolVar(level=5, name="CODE", pic="X(5)", parent_name="DST"),
+        }
+        translated = cobol2py.translate_statement("MOVE CORRESPONDING SRC TO DST", set(), variables)
+        self.assertEqual(translated, ["dst['code'] = str(src['code'])[:5].ljust(5)"])
+        namespace = {"src": {"code": "ABC"}, "dst": {"code": "     "}}
+        exec("\\n".join(translated or []), namespace)
+        self.assertEqual(namespace["dst"]["code"], "ABC  ")
