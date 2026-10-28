@@ -1670,11 +1670,44 @@ COBOL_TOKEN_RE = re.compile(
 
 
 def split_cobol_items(s: str) -> list[str]:
-    tokens = []
-    for m in COBOL_TOKEN_RE.finditer(s):
-        tok = m.group(0).strip().strip(",")
-        if tok:
-            tokens.append(tok)
+    """Split DISPLAY operands at top-level whitespace/commas, preserving groups."""
+    tokens: list[str] = []
+    current: list[str] = []
+    depth = 0
+    quote: Optional[str] = None
+    i = 0
+    while i < len(s):
+        char = s[i]
+        if quote is not None:
+            current.append(char)
+            if char == quote:
+                if i + 1 < len(s) and s[i + 1] == quote:
+                    current.append(s[i + 1])
+                    i += 2
+                    continue
+                quote = None
+            i += 1
+            continue
+        if char in ("'", '"'):
+            quote = char
+            current.append(char)
+        elif char == "(":
+            depth += 1
+            current.append(char)
+        elif char == ")":
+            depth = max(0, depth - 1)
+            current.append(char)
+        elif depth == 0 and (char.isspace() or char == ","):
+            token = "".join(current).strip()
+            if token:
+                tokens.append(token)
+            current = []
+        else:
+            current.append(char)
+        i += 1
+    token = "".join(current).strip()
+    if token:
+        tokens.append(token)
     return tokens
 
 
