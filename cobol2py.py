@@ -1687,6 +1687,7 @@ def translate_statement(
     paragraphs: set[str],
     variables: Optional[dict[str, CobolVar]] = None,
     current_paragraph: Optional[str] = None,
+    condition_names: Optional[dict[str, tuple[str, list[tuple[str, Optional[str]]]]]] = None,
 ) -> Optional[list[str]]:
     s = stmt.strip().rstrip(".").strip()
     if not s:
