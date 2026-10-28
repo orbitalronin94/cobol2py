@@ -2246,7 +2246,10 @@ def translate_group_to_elementary_move(
         return None
     root = variables.get(source_match.group(1).upper())
     receiving = variables.get(target_match.group(1).upper())
-    if root is None or not root.is_group or receiving is None or not receiving.pic:
+    if (
+        root is None or not root.is_group or receiving is None or not receiving.pic
+        or not any(char in receiving.pic.upper() for char in ("X", "A"))
+    ):
         return None
     source_expr = normalize_data_reference(source, variables)
 
@@ -2802,6 +2805,9 @@ def translate_statement(
         group_literal_move = translate_group_literal_move(source, target, variable_map)
         if group_literal_move is not None:
             return group_literal_move
+        group_to_elementary = translate_group_to_elementary_move(source, target, variable_map)
+        if group_to_elementary is not None:
+            return [emit_assignment(target, group_to_elementary, variables)]
         value = translate_move_value(source, target, variable_map)
         return [emit_assignment(target, value, variables)]
 
