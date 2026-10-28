@@ -2987,3 +2987,30 @@ class GroupToGroupMoveRegressionTests(unittest.TestCase):
         self.assertIn("target_table[1]['tgt_num']", joined)
         self.assertNotIn("target_table[1] = source_group", joined)
         compile(joined, "<group-to-group-move>", "exec")
+
+
+class GroupToGroupProgramRegressionTests(unittest.TestCase):
+    def test_move_group_to_table_row_uses_storage_copy(self):
+        source = "\\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. GROUPCOPY.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 SOURCE-GROUP.",
+            "   02 SRC-TEXT PIC X(3).",
+            "   02 SRC-NUM PIC 99.",
+            "01 TARGET-TABLE OCCURS 2 TIMES.",
+            "   02 TGT-TEXT PIC X(3).",
+            "   02 TGT-NUM PIC 99.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "   MOVE SOURCE-GROUP TO TARGET-TABLE(2).",
+            "   STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(
+            cobol2py.parse_cobol(source, source_format="free")
+        )
+        self.assertIn("_cobol_group_copy_target_table = (", generated)
+        self.assertIn("target_table[1]['tgt_text']", generated)
+        self.assertIn("target_table[1]['tgt_num']", generated)
+        self.assertNotIn("target_table[1] = source_group", generated)
