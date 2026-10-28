@@ -1349,8 +1349,6 @@ def translate_expr(
             flags=re.IGNORECASE,
         )
 
-    expr = rewrite_outside_literals(expr, replace_figurative_constants)
-
     # ALL literal is a COBOL figurative literal (ALL "A", ALL SPACE, etc.),
     # not a data-name followed by a string. Scan outside existing literals so
     # the quoted operand can be consumed together with its ALL prefix.
@@ -1413,6 +1411,8 @@ def translate_expr(
         return "".join(out)
 
     expr = replace_all_literals(expr)
+
+    expr = rewrite_outside_literals(expr, replace_figurative_constants)
 
     # ORD-MIN / ORD-MAX return the 1-based position of the first minimum /
     # maximum argument. Rewrite before generic COBOL subscripts turn calls
