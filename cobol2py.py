@@ -1668,7 +1668,7 @@ def translate_expr(
     for cobol_name, python_name in (("min", "min"), ("max", "max"), ("cobol_min", "min"), ("cobol_max", "max")):
         translated = re.sub(
             rf"\b(?:function\s+)?{cobol_name}\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
-            lambda match, name=python_name: f"{name}({intrinsic_argument(match)})",
+            lambda match, name=python_name: f"{name}({intrinsic_argument_list(match)})",
             translated,
             flags=re.IGNORECASE,
         )
