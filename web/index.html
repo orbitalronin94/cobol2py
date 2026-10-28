@@ -1044,7 +1044,10 @@ def normalize_name(name: str) -> str:
             return f"[{int(subscript) - 1}]"
         return f"[{normalize_identifier(subscript)} - 1]"
 
-    return re.sub(r"\(([A-Za-z0-9_-]+)\)", normalize_subscript, normalized)
+    normalized = re.sub(r"\(([A-Za-z0-9_-]+)\)", normalize_subscript, normalized)
+    if normalized and normalized[0].isdigit():
+        normalized = "cobol_" + normalized
+    return normalized
 
 def emit_assignment(target: str, value: str, variables: Optional[dict[str, CobolVar]] = None) -> str:
     """Route supported REDEFINES assignments through the shared storage buffer."""
@@ -1139,9 +1142,9 @@ def translate_literal(
     if quoted is not None:
         return json.dumps(quoted, ensure_ascii=False)
     if re.match(r"^[+-]?\d+$", t):
-        return t
+        return str(int(t))
     if re.match(r"^[+-]?\d+\.\d+$", t):
-        return t
+        return str(int(t))
     if t.upper() in ("SPACES", "SPACE"):
         return json.dumps(" ")
     if t.upper() in ("ZEROS", "ZERO", "ZEROES", "ZEROES"):
@@ -1188,6 +1191,8 @@ def translate_expr(
             out.append("True" if tok.upper() == "TRUE" else "False")
         elif re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", tok):
             out.append(normalize_data_reference(tok, variables))
+        elif re.fullmatch(r"\d+(?:\.\d+)?", tok):
+            out.append(translate_literal(tok, variables))
         else:
             out.append(tok)
     return "".join(out).strip()
@@ -1817,7 +1822,7 @@ def translate_java_literal(token: str, variables: dict[str, CobolVar]) -> str:
     if quoted is not None:
         return java_string_literal(quoted)
     if re.match(r"^[+-]?\d+(?:\.\d+)?$", t):
-        return t
+        return str(int(t))
     if t.upper() in ("SPACE", "SPACES"):
         return java_string_literal(" ")
     if t.upper() in ("ZERO", "ZEROS", "ZEROES"):
