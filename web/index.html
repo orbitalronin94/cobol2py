@@ -1825,7 +1825,14 @@ def translate_statement(
     if m:
         target = m.group(1)
         target_expr = normalize_data_reference(target, variables)
-        expression = translate_expr(m.group(2), variables)
+        expression_source = re.split(
+            r"\s+(?:NOT\s+)?ON\s+SIZE\s+ERROR\b",
+            m.group(2),
+            maxsplit=1,
+            flags=re.IGNORECASE,
+        )[0]
+        expression_source = re.sub(r"\s+END-COMPUTE\s*$", "", expression_source, flags=re.IGNORECASE)
+        expression = translate_expr(expression_source, variables)
         return [emit_assignment(target, fit_numeric_expression(expression, target, variables or {}), variables)]
 
     # Patch 4: ADD con múltiples operandos
