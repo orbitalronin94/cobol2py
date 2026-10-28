@@ -1658,3 +1658,28 @@ class ExternalCorpusSyntaxRegressionTests(unittest.TestCase):
         self.assertEqual(translated, "cobol_11a")
         compile(translated + " = 9", "<generated>", "exec")
         self.assertEqual(cobol2py.normalize_name("42-DATANAMES"), "cobol_42_datanames")
+
+
+class CobolIntrinsicFunctionRegressionTests(unittest.TestCase):
+    def test_numval_intrinsic_is_emitted_as_a_numeric_conversion(self):
+        translated = cobol2py.translate_expr("FUNCTION NUMVAL(WS-AMOUNT)")
+        self.assertEqual(translated, "float(ws_amount)")
+        compile(translated, "<numval-intrinsic>", "eval")
+
+    def test_case_and_trim_intrinsics_are_valid_python_calls(self):
+        cases = {
+            "FUNCTION LOWER-CASE(WS-NAME)": "(ws_name).lower()",
+            "FUNCTION UPPER-CASE(WS-NAME)": "(ws_name).upper()",
+            "FUNCTION TRIM(WS-NAME)": "(ws_name).strip()",
+            "FUNCTION LENGTH(WS-NAME)": "len(ws_name)",
+        }
+        for source, expected in cases.items():
+            with self.subTest(source=source):
+                translated = cobol2py.translate_expr(source)
+                self.assertEqual(translated, expected)
+                compile(translated, "<cobol-intrinsic>", "eval")
+
+    def test_current_date_intrinsic_emits_valid_python_expression(self):
+        translated = cobol2py.translate_expr("FUNCTION CURRENT-DATE")
+        self.assertIn("datetime.now().astimezone()", translated)
+        compile(translated, "<current-date-intrinsic>", "eval")
