@@ -1227,7 +1227,7 @@ def translate_expr(
         return match.group(1) if match.group(1) is not None else match.group(2)
 
     translated = re.sub(
-        r"\b(?:function\s+)?numval_c?\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
+        r"\b(?:function\s+)?numval(?:_c)?\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
         lambda match: "float(" + intrinsic_argument(match) + ")",
         translated,
         flags=re.IGNORECASE,
