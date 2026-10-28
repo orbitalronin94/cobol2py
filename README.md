@@ -26,17 +26,17 @@ El hito v0.8.x ya incluye una implementación inicial de `ALTER`, `GO TO ... DEP
 
 ### Estado medido del traductor (benchmark externo)
 
-> **Última medición disponible:** 291/1.000 coincidencias exactas (**29,1 % combinado**). Estos números proceden de la rama de robustez antes de confirmar una nueva ejecución en `main`; son la última referencia disponible, **no una medición recién validada del HEAD actual de `main`**. Actualizaremos esta tabla con los artefactos de Actions en cuanto esté disponible esa ejecución.
+> **Última línea base externa confirmada en `main`:** ejecución [#40721298984](https://github.com/orbitalronin94/cobol2py/actions/runs/40721298984), commit `0627f8b`, sobre X-COBOL v2. Es una medición anterior a las mejoras de `ACCEPT` en EOF, párrafos que solo contienen sentencias no soportadas y normalización de literales; la nueva medición de esas mejoras está pendiente en GitHub Actions.
 
-| Métrica X-COBOL v2 | Último resultado disponible | Objetivo de la fase 0.9 |
+| Métrica X-COBOL v2 | Línea base confirmada | Objetivo de la fase 0.9 |
 |---|---:|---:|
-| Muestra principal | 136/500 (**27,2 %**) | ≥375/500 (**75 %**) |
-| Holdout independiente | 155/500 (**31,0 %**) | ≥375/500 (**75 %**) |
-| Total de ambas muestras | 291/1.000 (**29,1 %**) | ≥750/1.000 (**75 %**), además de superar cada muestra por separado |
+| Muestra principal | 53/500 (**10,6 %**) | ≥375/500 (**75 %**) |
+| Holdout independiente | 48/500 (**9,6 %**) | ≥375/500 (**75 %**) |
+| Total de ambas muestras | 101/1.000 (**10,1 %**) | ≥750/1.000 (**75 %**), además de superar cada muestra por separado |
 
-**Brecha hasta el umbral del 75 %:** 47,8 puntos porcentuales en la muestra principal y 44,0 puntos en holdout, según esa última medición. El objetivo del 75 % es un gate de ingeniería del benchmark, no una afirmación de que se soporte el 75 % de todo COBOL existente.
+**Brecha hasta el umbral del 75 %:** 64,4 puntos porcentuales en la muestra principal y 65,4 puntos en holdout. El objetivo del 75 % es un gate de ingeniería del benchmark, no una afirmación de que se soporte el 75 % de todo COBOL existente.
 
-**Regla para cada mejora incremental:** aceptar una modificación del traductor como mejora demostrada solo si gana al menos **+1 punto porcentual absoluto** en la muestra principal (por ejemplo, de 27,2 % a 28,2 % o más), sin regresiones en el corpus diferencial versionado ni en holdout. Publicaremos siempre numerador/denominador, commit y artefactos; si no hay medición comparable, el porcentaje se marca como pendiente de validar.
+**Regla para cada mejora incremental:** aceptar una modificación del traductor como mejora demostrada solo si gana al menos **+1 punto porcentual absoluto** en la muestra principal, sin regresiones en el corpus diferencial versionado ni en holdout. Publicaremos siempre coincidencias, denominador, commit y artefactos; si no hay medición comparable, la puntuación de esa versión se marca como pendiente.
 
 **Objetivo de v1.0:** una versión útil y auditable para migraciones asistidas de un subconjunto COBOL explícitamente definido; no una promesa de compatibilidad universal ni una herramienta que pueda migrar sistemas de producción sin revisión humana.
 
