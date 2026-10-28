@@ -1954,9 +1954,9 @@ def translate_condition(
     # Recover from duplicated relation operators and dangling Boolean
     # connectors found in real-world fixed/free-format source continuations.
     def repair_condition_syntax(chunk: str) -> str:
-        chunk = re.sub(r"(?<![!<>=])(?:==\\s*){2,}", "== ", chunk)
-        chunk = re.sub(r"(?<![!<>=])(?:!=\\s*){2,}", "!= ", chunk)
-        chunk = re.sub(r"\\s+(?:and|or)\\s*$", "", chunk, flags=re.IGNORECASE)
+        chunk = re.sub(r"(?<![!<>=])(?:==\s*){2,}", "== ", chunk)
+        chunk = re.sub(r"(?<![!<>=])(?:!=\s*){2,}", "!= ", chunk)
+        chunk = re.sub(r"\s+(?:and|or)\s*$", "", chunk, flags=re.IGNORECASE)
         return chunk
 
     translated = rewrite_outside_literals(translated, repair_condition_syntax)
