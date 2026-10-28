@@ -2818,5 +2818,5 @@ class MalformedConditionRecoveryTests(unittest.TestCase):
         translated = cobol2py.translate_condition(
             "FS-SALBA > 806.81 AND FS-SALBA <= 1212.64 AND"
         )
-        self.assertNotRegex(translated, r"\\b(?:and|or)\\s*$")
+        self.assertNotRegex(translated, r"\b(?:and|or)\s*$")
         compile(translated, "<dangling-condition>", "eval")
