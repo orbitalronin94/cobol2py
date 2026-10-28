@@ -2241,3 +2241,10 @@ class CobolDisplayNoAdvancingRegressionTests(unittest.TestCase):
         with redirect_stdout(output):
             namespace["main"]()
         self.assertEqual(output.getvalue(), "AB\n", generated)
+
+
+class ResidualIsRelationRegressionTests(unittest.TestCase):
+    def test_is_relation_word_never_becomes_python_identifier(self):
+        translated = cobol2py.translate_expr("WS-STATUS IS WS-EXPECTED")
+        self.assertEqual(translated, "ws_status == ws_expected")
+        compile(translated, "<residual-is-relation>", "eval")
