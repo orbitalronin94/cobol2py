@@ -1450,7 +1450,7 @@ def translate_expr(
         expr,
         flags=re.IGNORECASE,
     )
-    intrinsic_names = {"NUMVAL", "NUMVAL-C", "LOWER-CASE", "UPPER-CASE", "TRIM", "LENGTH", "ABS", "ACOS", "ASIN", "ATAN", "COS", "EXP", "LOG", "LOG10", "SIN", "SQRT", "TAN", "MIN", "MAX", "MEAN", "MEDIAN", "MIDRANGE", "RANGE", "SUM", "VARIANCE", "STANDARD-DEVIATION", "COBOL-MIN", "COBOL-MAX", "PRESENT-VALUE", "ANNUITY", "TEST-NUMVAL", "INTEGER", "INTEGER-PART", "ORD", "CHAR", "MOD", "REM", "CONCATENATE", "RANDOM", "REVERSE", "FACTORIAL", "STORED-CHAR-LENGTH", "DATE-OF-INTEGER", "INTEGER-OF-DATE", "DAY-OF-INTEGER", "INTEGER-OF-DAY", "SECONDS-PAST-MIDNIGHT"}
+    intrinsic_names = {"NUMVAL", "NUMVAL-C", "LOWER-CASE", "UPPER-CASE", "TRIM", "LENGTH", "ABS", "ACOS", "ASIN", "ATAN", "COS", "EXP", "LOG", "LOG10", "SIN", "SQRT", "TAN", "MIN", "MAX", "MEAN", "MEDIAN", "MIDRANGE", "RANGE", "SUM", "VARIANCE", "STANDARD-DEVIATION", "COBOL-MIN", "COBOL-MAX", "PRESENT-VALUE", "ANNUITY", "TEST-NUMVAL", "INTEGER", "INTEGER-PART", "ORD", "CHAR", "MOD", "REM", "CONCATENATE", "RANDOM", "REVERSE", "FACTORIAL", "STORED-CHAR-LENGTH", "DATE-OF-INTEGER", "INTEGER-OF-DATE", "DAY-OF-INTEGER", "INTEGER-OF-DAY", "SECONDS-PAST-MIDNIGHT", "WHEN-COMPILED"}
     # COBOL reference modification uses 1-based (start:length) positions.
     # Convert the start to a zero-based Python offset and retain the requested
     # character count as the slice end.
@@ -1526,6 +1526,15 @@ def translate_expr(
     translated = re.sub(
         r"\bfunction\s+current_date\b",
         "(lambda _dt: _dt.strftime('%Y%m%d%H%M%S') + f'{_dt.microsecond // 10000:02d}' + _dt.strftime('%z'))(__import__('datetime').datetime.now().astimezone())",
+        translated,
+        flags=re.IGNORECASE,
+    )
+    # WHEN-COMPILED is an alphanumeric intrinsic with a 16-character
+    # compile timestamp. Runtime time is the closest deterministic approximation
+    # available to this standalone translator.
+    translated = re.sub(
+        r"\bfunction\s+when_compiled\b",
+        "(lambda _dt: _dt.strftime('%Y%m%d%H%M%S') + f'{_dt.microsecond // 10000:02d}')(__import__('datetime').datetime.now())",
         translated,
         flags=re.IGNORECASE,
     )
