@@ -1314,17 +1314,17 @@ def translate_statement(
                 factor = 10 ** scale
                 value = (
                     f"(-1 if float(_cobol_accept_value or '0') < 0 else 1) * "
-                    f"((int(abs(float(_cobol_accept_value)) * {factor}) % (10 ** {digits})) / {factor})"
+                    f"((int(abs(float(_cobol_accept_value or '0')) * {factor}) % (10 ** {digits})) / {factor})"
                 )
             elif "S" in pic:
                 value = (
                     f"(-1 if int(_cobol_accept_value or '0') < 0 else 1) * "
-                    f"(abs(int(_cobol_accept_value)) % (10 ** {digits}))"
+                    f"(abs(int(_cobol_accept_value or '0')) % (10 ** {digits}))"
                 )
             else:
-                value = f"int(_cobol_accept_value) % (10 ** {digits})"
+                value = f"int(_cobol_accept_value or '0') % (10 ** {digits})"
             return ["_cobol_accept_value = _cobol_input()", emit_assignment(target, value, variables)]
-        return [f"{target_expr} = input()"]
+        return [f"{target_expr} = _cobol_input()"]
 
     m = re.fullmatch(rf"SET\s+({DATA_REF_PATTERN})\s+TO\s+(.+)", s, re.IGNORECASE)
     if m:
