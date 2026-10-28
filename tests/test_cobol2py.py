@@ -908,11 +908,11 @@ class CopybookTests(unittest.TestCase):
         with TemporaryDirectory() as temp:
             root = Path(temp)
             (root / "FILE-RECORD.cpy").write_text(
-                "01 FILE-COBOL-RECORD-INFORMATION-REC.\\n"
-                "   05 FILE-RECORD-CODE PIC 9(3).\\n",
+                "01 FILE-COBOL-RECORD-INFORMATION-REC.\n"
+                "   05 FILE-RECORD-CODE PIC 9(3).\n",
                 encoding="utf-8",
             )
-            source = "\\n".join([
+            source = "\n".join([
                 "DATA DIVISION.",
                 "WORKING-STORAGE SECTION.",
                 "COPY FILE-RECORD OF COBOL-LIBRARY.",
