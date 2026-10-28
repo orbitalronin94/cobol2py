@@ -2223,7 +2223,7 @@ class StringStatementRegressionTests(unittest.TestCase):
             variables,
         )
         namespace = {"ws_target": " " * 10}
-        exec("\\n".join(translated or []), namespace)
+        exec("\n".join(translated or []), namespace)
         self.assertEqual(namespace["ws_target"], "HELLO     ")
 
     def test_string_delimited_by_space_stops_at_first_space(self):
@@ -2239,7 +2239,7 @@ class StringStatementRegressionTests(unittest.TestCase):
             variables,
         )
         namespace = {"ws_target": " " * 10}
-        exec("\\n".join(translated or []), namespace)
+        exec("\n".join(translated or []), namespace)
         self.assertEqual(namespace["ws_target"], "HELLO     ")
 
 
