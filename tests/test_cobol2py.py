@@ -258,6 +258,34 @@ class TranslationTests(unittest.TestCase):
             namespace["main"]()
         self.assertEqual(output.getvalue(), "013\nABC\n", generated)
 
+    def test_accept_eof_defaults_numeric_to_zero_and_alphanumeric_to_spaces(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+        from unittest.mock import patch
+
+        source = "\\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. ACCEPTEOF.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-NUM PIC 9(3).",
+            "01 WS-TEXT PIC X(3).",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "ACCEPT WS-NUM.",
+            "DISPLAY WS-NUM.",
+            "ACCEPT WS-TEXT.",
+            "DISPLAY WS-TEXT.",
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<accept-eof-output>", "exec"), namespace)
+        output = StringIO()
+        with patch("builtins.input", side_effect=EOFError), redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "000\\n   \\n", generated)
+
     def test_java_accept_applies_numeric_and_alphanumeric_receiving_types(self):
         variables = {
             "WS-NUM": cobol2py.CobolVar(level=1, name="WS-NUM", pic="9(3)"),
