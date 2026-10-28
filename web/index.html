@@ -1519,7 +1519,7 @@ def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = No
         field_keys = re.findall(r"\[['\"]([a-z_][a-z0-9_]*)['\"]\]", left)
         lookup_name = field_keys[-1] if field_keys else base.group(0)
         variable = next(
-            (item for item in variables.values()
+            (item for item in (variables or {}).values()
              if normalize_name(item.name) == lookup_name),
             None,
         )
