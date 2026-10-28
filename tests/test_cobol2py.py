@@ -1849,3 +1849,15 @@ class DigitLeadingHyphenatedNameRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_condition("0-C = 1")
         self.assertEqual(translated, "cobol_0_c == 1")
         compile(translated, "<digit-leading-hyphenated-name>", "eval")
+
+
+class ReferenceModificationSliceSemanticsTests(unittest.TestCase):
+    def test_variable_start_and_length_become_zero_based_python_slice(self):
+        translated = cobol2py.translate_expr("NEW-STRING(SUB-1:1)")
+        self.assertEqual(translated, "new_string[(sub_1 - 1):(sub_1 - 1) + (1)]")
+        compile(translated, "<reference-modification>", "eval")
+
+    def test_numeric_reference_modification_uses_one_based_cobol_positions(self):
+        translated = cobol2py.translate_expr("WS-TEXT(2:3)")
+        self.assertEqual(translated, "ws_text[1:(1) + (3)]")
+        self.assertEqual(eval(translated, {"ws_text": "abcdef"}), "bcd")
