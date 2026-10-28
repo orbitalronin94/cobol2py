@@ -1807,3 +1807,15 @@ class IntrinsicLiteralRoutingRegressionTests(unittest.TestCase):
                 if expected is not None:
                     self.assertEqual(translated, expected)
                 compile(translated, "<intrinsic-literal>", "eval")
+
+
+class NestedIntrinsicArgumentRegressionTests(unittest.TestCase):
+    def test_math_intrinsic_accepts_nested_parenthesized_argument(self):
+        translated = cobol2py.translate_expr("FUNCTION ASIN((3 / 3) - 1)")
+        self.assertIn("__import__('math').asin(", translated)
+        compile(translated, "<nested-math-intrinsic>", "eval")
+
+    def test_present_value_accepts_parenthesized_payment_expressions(self):
+        translated = cobol2py.translate_expr("FUNCTION PRESENT-VALUE(-0.5, (2 + 3), (6 / 3), (9 - 3))")
+        self.assertIn("enumerate(_payments, 1)", translated)
+        compile(translated, "<nested-present-value>", "eval")
