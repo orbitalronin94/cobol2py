@@ -1211,6 +1211,11 @@ def translate_expr(
         else:
             out.append(tok)
     translated = "".join(out).strip()
+    # The expression tokenizer normally renames Python built-ins that could
+    # collide with COBOL data-names. Restore only the generated integer-coercion
+    # call immediately inside a subscript; ordinary COBOL INT identifiers stay
+    # normalized as data references.
+    translated = re.sub(r"(?<=\\[)cobol_int(?=\\()", "int", translated)
 
     # Resolve figurative-constant markers after tokenization so the generated
     # Python literal is not misread as a COBOL quoted literal a second time.
