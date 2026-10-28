@@ -7,7 +7,7 @@ Este objetivo reemplaza cualquier interpretación de «roadmap terminado» basad
 ### Línea base, meta y definición
 
 - **Línea base inicial:** 53/500 programas (10,60 %) con stdout y código de retorno exactamente iguales a GnuCOBOL.
-- **Última medición externa confirmada:** 69/500 (13,80 %) en el commit `259ca1e0`, después de reparar la escritura del informe. Los cambios posteriores para normalizar literales numéricos con ceros iniciales aún deben medirse en una ejecución externa nueva.
+- **Última medición externa confirmada:** 72/500 (14,40 %) en el commit `300f6b7e`, tras la normalización numérica y los cambios de robustez previos. La siguiente revisión incluye diagnósticos más detallados de errores de sintaxis; aún falta medirla.
 - **Meta mínima:** 375/500 (75,00 %) en la muestra externa primaria de 500 programas.
 - **Validación anti-sobreajuste:** al menos 75 % en una segunda muestra disjunta de 500 programas, seleccionada con la misma metodología y mantenida separada de la iteración de correcciones.
 - **Qué cuenta como éxito:** el traductor termina correctamente, el Python generado compila y se ejecuta, y coinciden exactamente stdout y código de retorno. Un archivo traducido, una salida sintácticamente válida o un workflow que termina con éxito no equivalen a una coincidencia diferencial.
@@ -36,11 +36,11 @@ No registrar como mejora un resultado cuyo denominador, selección, versión de 
 - [x] Prueba de regresión para el caso anterior y sincronización del traductor embebido en la demo web.
 - [x] CI unitario verde en Python 3.10, 3.11, 3.12 y 3.13 en la ejecución confirmada tras sincronizar la demo.
 - [x] Reparar la escritura del informe del benchmark externo: el contenedor no privilegiado usa UID 65534 y el directorio dedicado de artefactos permite escritura.
-- [x] Obtener y revisar el informe de 500 casos: 69/500 coincidencias exactas (13,80 %), 431 fallos.
+- [x] Obtener y revisar el informe de 500 casos: 72/500 coincidencias exactas (14,40 %), 428 fallos.
 - [x] Clasificar el primer resultado: 153 errores Python de sintaxis genéricos, 93 errores por ceros iniciales en literales enteros, 39 errores sintácticos con sugerencia de coma y 130 diferencias de stdout/código de retorno, además de fallos residuales.
 - [x] Añadir normalización de literales numéricos con ceros iniciales en la traducción Python y una regresión unitaria; sincronizar el código embebido de la demo web.
 - [ ] Verificar CI y benchmark externo del cambio de normalización; no atribuir mejora hasta que la medición nueva termine.
-- [ ] Subir desde 13,80 % hasta ≥75 % con evidencia en el mismo benchmark.
+- [ ] Subir desde 14,40 % hasta ≥75 % con evidencia en el mismo benchmark.
 - [ ] Validar ≥75 % en la muestra disjunta de 500 casos.
 - [ ] Cumplir todos los criterios de salida de v1.0.
 
