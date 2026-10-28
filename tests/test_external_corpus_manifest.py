@@ -74,3 +74,20 @@ class ExternalCorpusRuntimeDiagnosticTests(unittest.TestCase):
         self.assertEqual(context["candidate_error_line_number"], 2)
         self.assertEqual(context["candidate_error_line"], "print(<literal>)")
         self.assertNotIn("private external output", repr(context))
+
+
+    def test_exception_message_preserves_type_diagnostics_but_masks_data(self):
+        import importlib.util
+
+        runner = ROOT / "benchmarks" / "run_external_corpus.py"
+        spec = importlib.util.spec_from_file_location("external_corpus_runner_messages", runner)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+
+        message = module.sanitize_exception_message(
+            "'str' object does not support item assignment; value='CUSTOM CUSTOMER DATA'"
+        )
+        self.assertIn("'str' object does not support item assignment", message)
+        self.assertNotIn("CUSTOM CUSTOMER DATA", message)
+        self.assertIn("<quoted>", message)
