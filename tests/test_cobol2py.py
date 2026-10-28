@@ -1000,7 +1000,7 @@ class EndToEndTests(unittest.TestCase):
             "       PROGRAM-ID. LOOPTEST.",
             "       PROCEDURE DIVISION.",
             "       MAIN-PARA.",
-            "           PERFORM WORK-PARA 3 TIMES.",
+            "           PERFORM WORK-PARA 03 TIMES.",
             "           STOP RUN.",
             "       WORK-PARA.",
             '           DISPLAY "OK".',
@@ -1430,7 +1430,7 @@ PROCEDURE DIVISION.
             "       PROGRAM-ID. INLINELOOP.",
             "       PROCEDURE DIVISION.",
             "       MAIN.",
-            '           PERFORM 2 TIMES DISPLAY "TICK" END-PERFORM.',
+            '           PERFORM 02 TIMES DISPLAY "TICK" END-PERFORM.',
             "           STOP RUN.",
         ])
         generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
