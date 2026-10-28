@@ -2418,6 +2418,121 @@ def translate_statement(
     if upper in ("CONTINUE", "EXIT"):
         return ["pass"]
 
+    # STRING assembles one or more delimited sending items into a receiving
+    # field. This first implementation covers ordinary DELIMITED BY SIZE,
+    # SPACE, literals, and WITH POINTER; overflow handlers remain unsupported.
+    if upper.startswith("STRING "):
+        statement = re.sub(r"\s+END-STRING\s*$", "", s, flags=re.IGNORECASE)
+
+        def split_keyword_outside_literals(text: str, keyword: str) -> Optional[tuple[str, str]]:
+            quote: Optional[str] = None
+            i = 0
+            while i < len(text):
+                char = text[i]
+                if quote is not None:
+                    if char == quote:
+                        if i + 1 < len(text) and text[i + 1] == quote:
+                            i += 2
+                            continue
+                        quote = None
+                elif char in ("'", '"'):
+                    quote = char
+                elif text[i:i + len(keyword)].upper() == keyword.upper():
+                    before = text[i - 1] if i else " "
+                    after = text[i + len(keyword)] if i + len(keyword) < len(text) else " "
+                    if before.isspace() and after.isspace():
+                        return text[:i].strip(), text[i + len(keyword):].strip()
+                i += 1
+            return None
+
+        into_parts = split_keyword_outside_literals(statement, "INTO")
+        if into_parts:
+            source_text, destination_text = into_parts
+            pointer_match = re.search(
+                rf"\s+WITH\s+POINTER\s+({DATA_REF_PATTERN})\s*$",
+                destination_text,
+                re.IGNORECASE,
+            )
+            pointer_target = pointer_match.group(1) if pointer_match else None
+            if pointer_match:
+                destination_text = destination_text[:pointer_match.start()].strip()
+            destination_match = re.fullmatch(
+                rf"({DATA_REF_PATTERN})", destination_text, re.IGNORECASE
+            )
+            if destination_match:
+                destination = destination_match.group(1)
+                variable_map = variables or {}
+                destination_expr = normalize_data_reference(destination, variable_map)
+                sending_items = split_cobol_items(source_text)
+                sending: list[tuple[str, str]] = []
+                item_index = 0
+                while item_index < len(sending_items):
+                    sending_item = sending_items[item_index]
+                    item_index += 1
+                    delimiter = "SIZE"
+                    if (
+                        item_index + 1 < len(sending_items)
+                        and sending_items[item_index].upper() == "DELIMITED"
+                        and sending_items[item_index + 1].upper() == "BY"
+                    ):
+                        if item_index + 2 >= len(sending_items):
+                            return [f"# STRING no traducido: {s}"]
+                        delimiter = sending_items[item_index + 2]
+                        item_index += 3
+                    sending.append((sending_item, delimiter))
+
+                if sending:
+                    pieces: list[str] = []
+                    for sending_item, delimiter in sending:
+                        piece = f"str({translate_display_item(sending_item, variable_map)})"
+                        if delimiter.upper() not in ("SIZE", "BY-SIZE"):
+                            if delimiter.upper() in ("SPACE", "SPACES"):
+                                delimiter_expr = repr(" ")
+                            elif delimiter.upper() in ("ZERO", "ZEROS", "ZEROES"):
+                                delimiter_expr = repr("0")
+                            else:
+                                delimiter_expr = translate_display_item(delimiter, variable_map)
+                            piece = f"({piece}.split(str({delimiter_expr}), 1)[0])"
+                        pieces.append(piece)
+
+                    value_name = "_cobol_string_value"
+                    start_name = "_cobol_string_start"
+                    original_name = "_cobol_string_original"
+                    output = [f"{value_name} = ''.join([{', '.join(pieces)}])"]
+                    if pointer_target:
+                        pointer_expr = normalize_data_reference(pointer_target, variable_map)
+                        output.append(f"{start_name} = max(0, int({pointer_expr}) - 1)")
+                    else:
+                        pointer_expr = None
+                        output.append(f"{start_name} = 0")
+                    output.extend([
+                        f"{original_name} = str({destination_expr})",
+                        f"{destination_expr} = ({original_name}[:{start_name}] + {value_name} + "
+                        f"{original_name}[{start_name} + len({value_name}):])",
+                    ])
+                    base_match = re.match(r"[A-Za-z0-9-]+", destination)
+                    destination_variable = (
+                        variable_map.get(base_match.group(0).upper()) if base_match else None
+                    )
+                    if destination_variable and destination_variable.pic and any(
+                        char in destination_variable.pic.upper() for char in ("X", "A")
+                    ):
+                        width = pic_character_count(destination_variable.pic)
+                        if width:
+                            output.append(
+                                f"{destination_expr} = str({destination_expr})[:{width}].ljust({width})"
+                            )
+                    if pointer_target and pointer_expr:
+                        output.append(
+                            emit_assignment(
+                                pointer_target,
+                                f"int({pointer_expr}) + len({value_name})",
+                                variable_map,
+                            )
+                        )
+                    return output
+        return [f"# STRING no traducido: {s}"]
+
     m = re.match(r"DISPLAY\s+(.+)", s, re.IGNORECASE)
     if m:
         display_operands = m.group(1).strip()
