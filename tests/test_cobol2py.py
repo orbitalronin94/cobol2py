@@ -2934,3 +2934,25 @@ class GroupLiteralMoveRegressionTests(unittest.TestCase):
         self.assertIn("test_results['par_name']['pardot_x'] = _cobol_group_move_par_name[19:20].ljust(1)", joined)
         self.assertIn("test_results['par_name']['dotvalue'] = int((_cobol_group_move_par_name[20:22]).strip() or '0')", joined)
         self.assertNotIn("par_name = 'CALL-TEST-1'", joined)
+
+
+class GroupToElementaryMoveRegressionTests(unittest.TestCase):
+    def test_group_move_flattens_elementary_fields_in_storage_order(self):
+        variables = {
+            "TEST-RESULTS": cobol2py.CobolVar(level=1, name="TEST-RESULTS", is_group=True),
+            "FEATURE": cobol2py.CobolVar(
+                level=2, name="FEATURE", pic="X(20)", parent_name="TEST-RESULTS"
+            ),
+            "P-OR-F": cobol2py.CobolVar(
+                level=2, name="P-OR-F", pic="X(5)", parent_name="TEST-RESULTS"
+            ),
+            "PRINT-REC": cobol2py.CobolVar(level=1, name="PRINT-REC", pic="X(30)"),
+        }
+        expression = cobol2py.translate_group_to_elementary_move(
+            "TEST-RESULTS", "PRINT-REC", variables
+        )
+        self.assertIsNotNone(expression)
+        self.assertIn("test_results['feature']", expression)
+        self.assertIn("test_results['p_or_f']", expression)
+        self.assertIn("[:30].ljust(30)", expression)
+        compile(expression, "<group-to-elementary-move>", "eval")
