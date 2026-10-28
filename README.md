@@ -419,12 +419,13 @@ Este roadmap distingue lo ya implementado de lo que sigue pendiente. Los número
 - [ ] Mejorar trazabilidad entre diagnóstico, línea fuente, código generado y prueba que respalda la compatibilidad.
 - [ ] No presentar sintaxis válida ni análisis estático como prueba de equivalencia semántica.
 
-**v0.6.0 — Cerrar brechas semánticas prioritarias** · **Pendiente**
-- [ ] Implementar y probar el comportamiento dinámico de `ALTER`.
-- [ ] Corregir `GO TO ... DEPENDING ON` para respetar la selección ordinal COBOL (base 1) y el comportamiento fuera de rango.
-- [ ] Modelar `REDEFINES` como almacenamiento compartido, no como campos independientes.
-- [ ] Convertir el caso LABERINTO-COBOL en regresión diferencial end-to-end: salida y código de retorno deben coincidir con GnuCOBOL.
-- [ ] Añadir una regresión específica por construcción antes de declarar soporte.
+**v0.6.0 — Cerrar brechas semánticas prioritarias** · **Implementación inicial completada; ampliar cobertura**
+- [x] Implementar el cambio dinámico de destino de `ALTER` en el subconjunto probado.
+- [x] Implementar `GO TO ... DEPENDING ON` con selección ordinal COBOL (base 1) y sin transferencia fuera de rango.
+- [x] Modelar `REDEFINES` simples mediante almacenamiento compartido y offsets para los layouts compatibles.
+- [x] Añadir las regresiones diferenciales `samples/control_flow_redefines.cbl` y `samples/laberinto_cobol.cbl`; ambas coinciden con GnuCOBOL en stdout/código de retorno en el corpus interno.
+- [ ] Ampliar la cobertura a overlays con signo, escala implícita, packed decimal, arrays y layouts complejos; mantener diagnósticos explícitos mientras no estén validados.
+- [ ] Verificar las mismas familias semánticas en programas del corpus externo y corregir discrepancias observadas.
 
 **v0.7.0 — Cobertura diferencial y errores accionables** · **En curso**
 - [x] Mantener el corpus diferencial versionado y ejecutar las referencias contra GnuCOBOL.
