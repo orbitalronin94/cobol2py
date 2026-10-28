@@ -1146,6 +1146,18 @@ def normalize_data_reference(
         re.IGNORECASE,
     )
     if not match:
+        # Some legacy statement paths pass a whole relation to the data-reference
+        # normalizer. Do not normalize the COBOL relation word IS as the Python
+        # keyword "is" (which becomes cobol_is); hand such expressions to the
+        # condition translator instead. Keep data-description clauses untouched.
+        has_relation_is = bool(
+            re.search(r"(?<![A-Za-z0-9-])IS(?![A-Za-z0-9-])", text, re.IGNORECASE)
+        )
+        is_data_clause = bool(
+            re.match(r"^\\s*(?:PIC(?:TURE)?|VALUE)\\b", text, re.IGNORECASE)
+        )
+        if has_relation_is and not is_data_clause:
+            return translate_condition(text, variables)
         return normalize_name(text)
     field_name, subscript_text, qualifier = match.groups()
     subscripts = [part.strip() for part in re.split(r"[,;]", subscript_text)] if subscript_text else []
