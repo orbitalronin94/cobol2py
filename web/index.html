@@ -1287,7 +1287,7 @@ def normalize_data_reference(
         # arithmetic (e.g. TABLE(I J + 1 K + 1)). Split only before an identifier
         # when the preceding token is not an arithmetic operator.
         candidate_subscripts = re.split(
-            r"(?<![+\-*/])\s+(?=[A-Za-z][A-Za-z0-9_-]*(?:\s|$))",
+            r"(?<![+\-*/])\s+(?=[A-Za-z0-9][A-Za-z0-9_-]*(?:\s|$))",
             subscript_text.strip(),
         )
         if len(candidate_subscripts) > 1:
