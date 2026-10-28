@@ -2794,3 +2794,28 @@ class SearchAllNextSentenceRegressionTests(unittest.TestCase):
         compile(generated, "<search-all-next-sentence>", "exec")
         self.assertIn("== ws_target", generated)
         self.assertNotIn("next sentence", generated.lower())
+
+
+class DisplayOperandRegressionTests(unittest.TestCase):
+    def test_display_upon_device_clause_is_not_emitted_as_data(self):
+        translated = cobol2py.translate_statement(
+            'DISPLAY "HELLO" UPON DISPLAY-OUTPUT-DEVICE', set(), {}
+        )
+        self.assertEqual(translated, ['print("".join([str("HELLO")]))'])
+        compile(translated[0], "<display-upon>", "exec")
+
+    def test_display_function_intrinsic_keeps_function_introducer(self):
+        translated = cobol2py.translate_statement(
+            "DISPLAY FUNCTION TRIM(WS-TEXT)", set(), {}
+        )
+        self.assertEqual(len(translated), 1)
+        self.assertNotIn("str(function)", translated[0].lower())
+        self.assertIn(".strip()", translated[0])
+        compile(translated[0], "<display-function>", "exec")
+
+    def test_display_upon_inside_literal_is_preserved(self):
+        translated = cobol2py.translate_statement(
+            'DISPLAY "HELLO UPON SYSOUT"', set(), {}
+        )
+        self.assertIn("HELLO UPON SYSOUT", translated[0])
+        compile(translated[0], "<display-upon-literal>", "exec")
