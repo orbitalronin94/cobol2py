@@ -1750,3 +1750,10 @@ class CurrentDateAndNextSentenceRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_condition("A = 'A' NEXT SENTENCE")
         self.assertEqual(translated, 'a == "A"')
         compile(translated, "<next-sentence-condition>", "eval")
+
+
+class ParenthesizedNumericLiteralRegressionTests(unittest.TestCase):
+    def test_parenthesized_leading_zero_number_is_normalized(self):
+        translated = cobol2py.translate_literal("(01)")
+        self.assertEqual(translated, "(1)")
+        compile(translated, "<parenthesized-number>", "eval")
