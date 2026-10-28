@@ -2894,6 +2894,9 @@ def translate_statement(
         group_literal_move = translate_group_literal_move(source, target, variable_map)
         if group_literal_move is not None:
             return group_literal_move
+        group_to_group = translate_group_to_group_move(source, target, variable_map)
+        if group_to_group is not None:
+            return group_to_group
         group_to_elementary = translate_group_to_elementary_move(source, target, variable_map)
         if group_to_elementary is not None:
             return [emit_assignment(target, group_to_elementary, variables)]
