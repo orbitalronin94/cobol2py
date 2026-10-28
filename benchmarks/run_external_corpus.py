@@ -38,9 +38,9 @@ def run_process(command: list[str], cwd: Path, timeout: int) -> dict[str, Any]:
 
 def candidate_error_context(stderr: str, generated_source: str) -> dict[str, Any]:
     """Return a sanitized generated-code location without exposing string contents."""
-    frames = re.findall(r'File ["\']([^"\']*translated\.py)["\'], line (\d+)', stderr)
+    frames = re.findall(r'translated\.py["\']?, line (\d+)', stderr)
     if not frames:
-        return {}
+    line_number = int(frames[-1])
     line_number = int(frames[-1][1])
     generated_lines = generated_source.splitlines()
     context: dict[str, Any] = {"candidate_error_line_number": line_number}
