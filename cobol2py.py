@@ -2602,7 +2602,7 @@ def translate_statement(
 
     m = re.match(r"PERFORM\s+([A-Za-z0-9\-]+)\s+(\d+)\s+TIMES", s, re.IGNORECASE)
     if m and m.group(1).upper() in paragraphs:
-        return [f"for _ in range({m.group(2)}):", f"{normalize_name(m.group(1))}()"]
+        return [f"for _ in range({int(m.group(2))}):", f"{normalize_name(m.group(1))}()"]
 
     m = re.match(r"PERFORM\s+([A-Za-z0-9\-]+)\s+UNTIL\s+(.+)", s, re.IGNORECASE)
     if m and m.group(1).upper() in paragraphs:
@@ -2672,7 +2672,7 @@ def translate_nodes(
 
         elif node.kind == "perform_times_inline":
             match = re.match(r"^PERFORM\s+(\d+)\s+TIMES$", node.text, re.IGNORECASE)
-            count = match.group(1) if match else "0"
+            count = str(int(match.group(1))) if match else "0"
             out.append("    " * indent + f"for _ in range({count}):")
             body = translate_nodes(node.body, paragraphs, indent + 1, variables, condition_names=condition_names)
             if not body or all(not line.strip() or line.strip().startswith("#") for line in body):
