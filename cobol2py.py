@@ -1064,7 +1064,7 @@ def translate_expr(
         else normalize_data_reference(match.group(0), variables),
         expr,
     )
-    token_pattern = r"""("(?:[^"]|"")*"|'(?:[^']|'')*'|\d+[A-Za-z][A-Za-z0-9-]*|[A-Za-z][A-Za-z0-9-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&\[\]-]|\s+|.)"""
+    token_pattern = r"""("(?:[^"]|"")*"|'(?:[^']|'')*'|\d+[A-Za-z0-9-]*[A-Za-z][A-Za-z0-9-]*|[A-Za-z][A-Za-z0-9-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&\[\]-]|\s+|.)"""
     tokens = re.findall(token_pattern, expr)
     out = []
     for tok in tokens:
@@ -1076,7 +1076,7 @@ def translate_expr(
             out.append("True" if tok.upper() == "TRUE" else "False")
         elif tok.upper() in intrinsic_names:
             out.append(tok.lower().replace("-", "_"))
-        elif re.fullmatch(r"(?:[A-Za-z][A-Za-z0-9-]*|\d+[A-Za-z][A-Za-z0-9-]*)", tok):
+        elif re.fullmatch(r"(?:[A-Za-z][A-Za-z0-9-]*|\d+[A-Za-z0-9-]*[A-Za-z][A-Za-z0-9-]*)", tok):
             out.append(normalize_data_reference(tok, variables))
         elif re.fullmatch(r"\d+(?:\.\d+)?", tok):
             out.append(normalize_cobol_number(tok))
