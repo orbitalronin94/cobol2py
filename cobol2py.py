@@ -315,7 +315,7 @@ RE_STORAGE_SECTION = re.compile(r"(?:WORKING-STORAGE|LOCAL-STORAGE|LINKAGE)\s+SE
 RE_VAR = re.compile(r"^\s*(\d{1,2})\s+([A-Za-z0-9\-]+)\s*(.*?)(?:\.\s*)?$", re.IGNORECASE)
 RE_PIC = re.compile(r"PIC(?:TURE)?\s+(?:IS\s+)?([A-Za-z0-9\(\)VSPX]+)", re.IGNORECASE)
 RE_VALUE = re.compile(
-    r"""VALUE\s+(?!IS\s*$)(?:IS\s+)?((?:ALL\s+)?(?:"(?:[^"]|"")*"|'(?:[^']|'')*'|[+-]?\d+(?:\.\d+)?|[A-Za-z][A-Za-z0-9-]*))""",
+    r"""VALUE\s+(?!IS\s*\.?\s*$)(?:IS\s+)?((?:ALL\s+)?(?:"(?:[^"]|"")*"|'(?:[^']|'')*'|[+-]?\d+(?:\.\d+)?|[A-Za-z][A-Za-z0-9-]*))""",
     re.IGNORECASE,
 )
 # Patch 2: OCCURS dinámico
@@ -2251,6 +2251,16 @@ def split_cobol_items(s: str) -> list[str]:
     i = 0
     while i < len(tokens):
         token = tokens[i]
+        # FUNCTION is a COBOL introducer, not a separate DISPLAY operand.
+        # Keep it attached to the following intrinsic call after top-level
+        # splitting (e.g. DISPLAY FUNCTION UPPER-CASE(WS-NAME)).
+        if (
+            token.upper() == "FUNCTION"
+            and i + 1 < len(tokens)
+            and re.match(r"^[A-Za-z][A-Za-z0-9-]*\\s*(?:\\(|\\[)", tokens[i + 1])
+        ):
+            token = f"{token} {tokens[i + 1]}"
+            i += 1
         while i + 2 < len(tokens) and tokens[i + 1].upper() in ("OF", "IN"):
             token = f"{token} {tokens[i + 1]} {tokens[i + 2]}"
             i += 2
