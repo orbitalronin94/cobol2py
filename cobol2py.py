@@ -2712,7 +2712,7 @@ def emit_corresponding_arithmetic(
         ):
             continue
         expression = f"{target_expr} {operator} {source_expr}"
-        expression = fit_numeric_expression(expression, target_var.name, variable_map)
+        expression = fit_numeric_expression(expression, target_var.name, {target_var.name.upper(): target_var})
         assignments.append(f"{target_expr} = {expression}")
     return assignments
 
