@@ -2820,3 +2820,24 @@ class MalformedConditionRecoveryTests(unittest.TestCase):
         )
         self.assertNotRegex(translated, r"\b(?:and|or)\s*$")
         compile(translated, "<dangling-condition>", "eval")
+
+
+class AddCorrespondingRegressionTests(unittest.TestCase):
+    def test_add_corresponding_sums_matching_numeric_group_fields(self):
+        variables = {
+            "SOURCE": cobol2py.CobolVar(level=1, name="SOURCE", is_group=True),
+            "SOURCE-AMOUNT": cobol2py.CobolVar(
+                level=5, name="AMOUNT", pic="9(3)", parent_name="SOURCE"
+            ),
+            "TARGET": cobol2py.CobolVar(level=1, name="TARGET", is_group=True),
+            "TARGET-AMOUNT": cobol2py.CobolVar(
+                level=5, name="AMOUNT", pic="9(3)", parent_name="TARGET"
+            ),
+        }
+        translated = cobol2py.translate_statement(
+            "ADD CORRESPONDING SOURCE TO TARGET", set(), variables
+        )
+        self.assertEqual(len(translated), 1)
+        self.assertIn("target['amount']", translated[0])
+        self.assertIn("source['amount']", translated[0])
+        compile(translated[0], "<add-corresponding>", "exec")
