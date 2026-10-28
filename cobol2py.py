@@ -1005,7 +1005,7 @@ def parse_cobol(
     # declaration in DATA DIVISION. Emit defaults only when the program
     # references one and no explicit data-name shadows it.
     declared_names = {variable.name.upper() for variable in prog.variables}
-    source_text = "\\n".join(text for _, text in lines)
+    source_text = "\n".join(text for _, text in lines)
     special_registers = {
         "DEBUG-LINE": "X(6)",
         "LINE-COUNTER": "9(9)",
@@ -1017,7 +1017,7 @@ def parse_cobol(
     for register_name, picture in special_registers.items():
         if (
             register_name not in declared_names
-            and re.search(rf"\\b{re.escape(register_name)}\\b", source_text, re.IGNORECASE)
+            and re.search(rf"\b{re.escape(register_name)}\b", source_text, re.IGNORECASE)
         ):
             prog.variables.append(CobolVar(level=77, name=register_name, pic=picture))
             declared_names.add(register_name)
