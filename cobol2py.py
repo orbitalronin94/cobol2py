@@ -16,7 +16,6 @@ from __future__ import annotations
 import argparse
 import ast
 import json
-import os
 import keyword
 import re
 import sys
