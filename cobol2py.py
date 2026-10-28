@@ -1537,7 +1537,7 @@ def translate_condition(
     c = rewrite_outside_literals(cond.strip(), rewrite)
     translated = translate_expr(c, variables)
     for token, expression in class_condition_replacements.items():
-        translated = translated.replace(repr(token), expression)
+        translated = translated.replace(json.dumps(token), expression)
 
     # COBOL pads the shorter operand with spaces for alphanumeric comparisons.
     # Match a translated data-name (including a table element) against a literal.
