@@ -2760,7 +2760,7 @@ class QualifiedParentSubscriptRegressionTests(unittest.TestCase):
     def test_qualified_parent_subscript_expression_compiles(self):
         translated = cobol2py.translate_expr("PARAM OF TABLE(INDEX)")
         compile(translated, "<qualified-parent-subscript>", "eval")
-        self.assertEqual(translated, "table[int(index_1) - 1]['param']")
+        self.assertEqual(translated, "table[int(index) - 1]['param']")
 
 
 class SearchAllNextSentenceRegressionTests(unittest.TestCase):
