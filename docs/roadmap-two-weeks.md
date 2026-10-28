@@ -7,7 +7,7 @@ Este objetivo reemplaza cualquier interpretación de «roadmap terminado» basad
 ### Línea base, meta y definición
 
 - **Línea base inicial:** 53/500 programas (10,60 %) con stdout y código de retorno exactamente iguales a GnuCOBOL.
-- **Última medición externa confirmada:** 109/500 (21,80 %) en la muestra primaria y 114/500 (22,80 %) en el holdout disjunto, ambos en `699dd7b0` (workflow [40666810511](https://github.com/orbitalronin94/cobol2py/actions/runs/40666810511)); ambas muestras completas. Frente a la medición anterior de 91/500 y 88/500, son +18 y +26 coincidencias exactas, respectivamente. Los umbrales de 375/500 siguen sin alcanzarse. El CI de tests y el benchmark diferencial están verdes para esa revisión ([tests](https://github.com/orbitalronin94/cobol2py/actions/runs/40666810459), [diferencial](https://github.com/orbitalronin94/cobol2py/actions/runs/40666810518)). El candidato posterior corrige el orden de las comparaciones compuestas `GREATER OR EQUAL`; su benchmark aún no se cuenta hasta que finalice.
+- **Última medición externa confirmada:** 111/500 (22,20 %) en la muestra primaria y 118/500 (23,60 %) en el holdout disjunto, ambos en `a9daee71` (workflow [40673235189](https://github.com/orbitalronin94/cobol2py/actions/runs/40673235189)); ambas muestras completas. Frente a la medición anterior de 109/500 y 116/500, son +2 coincidencias exactas en cada muestra. La línea base inicial fue 53/500 (10,60 %). Los umbrales de 375/500 siguen sin alcanzarse. El CI de tests y el benchmark diferencial del candidato actual están verdes ([tests](https://github.com/orbitalronin94/cobol2py/actions/runs/40674374504), [diferencial](https://github.com/orbitalronin94/cobol2py/actions/runs/40674374328)). El candidato posterior añade correcciones para relaciones residuales `IS` y comparaciones negadas; su benchmark externo sigue en curso y no se cuenta hasta publicar ambos informes.
 - **Meta mínima:** 375/500 (75,00 %) en la muestra externa primaria de 500 programas.
 - **Validación anti-sobreajuste:** al menos 75 % en una segunda muestra disjunta de 500 programas, seleccionada con la misma metodología y mantenida separada de la iteración de correcciones.
 - **Qué cuenta como éxito:** el traductor termina correctamente, el Python generado compila y se ejecuta, y coinciden exactamente stdout y código de retorno. Un archivo traducido, una salida sintácticamente válida o un workflow que termina con éxito no equivalen a una coincidencia diferencial.
@@ -36,12 +36,12 @@ No registrar como mejora un resultado cuyo denominador, selección, versión de 
 - [x] Prueba de regresión para el caso anterior y sincronización del traductor embebido en la demo web.
 - [x] CI unitario verde en Python 3.10, 3.11, 3.12 y 3.13 en la ejecución confirmada tras sincronizar la demo.
 - [x] Reparar la escritura del informe del benchmark externo: el contenedor no privilegiado usa UID 65534 y el directorio dedicado de artefactos permite escritura.
-- [x] Obtener los informes externos completos para ambas muestras: 109/500 (21,80 %) en primaria y 114/500 (22,80 %) en holdout, en `699dd7b0`; artefactos publicados.
+- [x] Obtener los informes externos completos para ambas muestras: 111/500 (22,20 %) en primaria y 118/500 (23,60 %) en holdout, en `a9daee71`; artefactos publicados.
 - [x] Clasificar el primer resultado: 153 errores Python de sintaxis genéricos, 93 errores por ceros iniciales en literales enteros, 39 errores sintácticos con sugerencia de coma y 130 diferencias de stdout/código de retorno, además de fallos residuales.
 - [x] Añadir normalización de literales numéricos con ceros iniciales en la traducción Python y una regresión unitaria; sincronizar el código embebido de la demo web.
 - [x] Verificar CI del soporte de condiciones de nivel 88, comportamiento EOF de ACCEPT y traducción de comparaciones compuestas; la revisión `e3284a09` tiene tests y benchmark diferencial verdes.
 - [ ] Confirmar el benchmark externo del candidato `e3284a09`; no atribuir mejora hasta que ambas muestras terminen.
-- [ ] Subir desde 21,80 % (primaria) y 22,80 % (holdout) hasta ≥75 % con evidencia en ambos benchmarks.
+- [ ] Subir desde 22,20 % (primaria) y 23,60 % (holdout) hasta ≥75 % con evidencia en ambos benchmarks.
 - [ ] Validar ≥75 % en la muestra disjunta de 500 casos.
 - [ ] Cumplir todos los criterios de salida de v1.0.
 
