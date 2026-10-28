@@ -2237,7 +2237,7 @@ def translate_group_to_elementary_move(
 ) -> Optional[str]:
     """Flatten a COBOL group into its contiguous DISPLAY representation."""
     source_match = re.fullmatch(
-        r"([A-Za-z0-9-]+)(?:\\s+(?:OF|IN)\\s+[A-Za-z0-9-]+)?(?:\\s*\\([^)]*\\))?",
+        r"([A-Za-z0-9-]+)(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?(?:\s*\([^)]*\))?",
         source.strip(),
         re.IGNORECASE,
     )
