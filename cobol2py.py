@@ -1430,6 +1430,16 @@ def translate_statement(
         expression = f"{target_expr} / ({translate_literal(m.group(1), variables)})"
         return [emit_assignment(target, fit_numeric_expression(expression, target, variables or {}), variables)]
 
+    # PERFORM A THRU B executes the contiguous paragraph range in source order.
+    # A GO TO within that range changes the active paragraph; a transfer outside
+    # the range escapes to the enclosing program dispatcher.
+    m = re.fullmatch(r"PERFORM\s+([A-Za-z0-9-]+)\s+(?:THRU|THROUGH)\s+([A-Za-z0-9-]+)", s, re.IGNORECASE)
+    if m:
+        first, last = (part.upper() for part in m.groups())
+        if first in paragraphs and last in paragraphs:
+            return [f"_cobol_perform_thru({first!r}, {last!r})"]
+        return [f"# PERFORM THRU no traducido: {s}"]
+
     m = re.match(r"PERFORM\s+([A-Za-z0-9\-]+)\s+(\d+)\s+TIMES", s, re.IGNORECASE)
     if m and m.group(1).upper() in paragraphs:
         return [f"for _ in range({m.group(2)}):", f"{normalize_name(m.group(1))}()"]
@@ -2371,6 +2381,36 @@ def emit_python(prog: Program) -> str:
     lines.append("                raise ValueError(f'Unknown COBOL GO TO target: {transfer.target}')")
     lines.append("            index = order.index(transfer.target)")
     lines.append("            continue")
+    lines.append("        index += 1")
+    lines.append("")
+    lines.append("def _cobol_perform_thru(first, last):")
+    lines.append("    global _cobol_stopped")
+    lines.append("    order = " + repr(dispatch_order))
+    lines.append("    if first not in order or last not in order:")
+    lines.append("        raise ValueError(f'Unknown COBOL PERFORM THRU range: {first} THRU {last}')")
+    lines.append("    index = order.index(first)")
+    lines.append("    final_index = order.index(last)")
+    lines.append("    if final_index < index:")
+    lines.append("        raise ValueError(f'Invalid COBOL PERFORM THRU range: {first} THRU {last}')")
+    lines.append("    while index <= final_index:")
+    lines.append("        paragraph = order[index]")
+    lines.append("        try:")
+    lines.append("            function = _cobol_paragraph_functions.get(paragraph)")
+    lines.append("            if function is not None:")
+    lines.append("                function()")
+    lines.append("            if _cobol_stopped:")
+    lines.append("                return")
+    lines.append("        except _CobolStopRun:")
+    lines.append("            _cobol_stopped = True")
+    lines.append("            return")
+    lines.append("        except _CobolGoTo as transfer:")
+    lines.append("            if transfer.target not in order:")
+    lines.append("                raise ValueError(f'Unknown COBOL GO TO target: {transfer.target}')")
+    lines.append("            target_index = order.index(transfer.target)")
+    lines.append("            if index <= target_index <= final_index:")
+    lines.append("                index = target_index")
+    lines.append("                continue")
+    lines.append("            raise")
     lines.append("        index += 1")
     lines.append("")
     lines.append('if __name__ == "__main__":')
