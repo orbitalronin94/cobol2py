@@ -1051,11 +1051,26 @@ def translate_expr(
         flags=re.IGNORECASE,
     )
     intrinsic_names = {"NUMVAL", "NUMVAL-C", "LOWER-CASE", "UPPER-CASE", "TRIM", "LENGTH", "ABS", "ACOS", "ASIN", "ATAN", "COS", "EXP", "LOG", "LOG10", "SIN", "SQRT", "TAN", "MIN", "MAX", "COBOL-MIN", "COBOL-MAX", "PRESENT-VALUE", "INTEGER", "INTEGER-PART", "ORD", "CHAR"}
-    # COBOL reference modification uses (start:length), which must become
-    # a Python slice rather than a call or table subscript.
+    # COBOL reference modification uses 1-based (start:length) positions.
+    # Convert the start to a zero-based Python offset and retain the requested
+    # character count as the slice end.
+    def translate_reference_modification(match: re.Match[str]) -> str:
+        base, start, length = match.groups()
+        base_expr = normalize_data_reference(base, variables)
+        start = start.strip()
+        if start.isdigit():
+            start_index = str(int(start) - 1)
+        else:
+            start_index = f"({normalize_data_reference(start, variables)} - 1)"
+        if not length or not length.strip():
+            return f"{base_expr}[{start_index}:]"
+        length = length.strip()
+        length_expr = str(int(length)) if length.isdigit() else normalize_data_reference(length, variables)
+        return f"{base_expr}[{start_index}:({start_index}) + ({length_expr})]"
+
     expr = re.sub(
-        r"\b[A-Za-z][A-Za-z0-9-]*\s*\([^()]*:[^()]*\)",
-        lambda match: normalize_data_reference(match.group(0), variables),
+        r"\b([A-Za-z][A-Za-z0-9-]*)\s*\(\s*([^():]+)\s*:\s*([^()]*)\)",
+        translate_reference_modification,
         expr,
     )
     expr = re.sub(
