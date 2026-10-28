@@ -418,6 +418,8 @@ class TranslationTests(unittest.TestCase):
         variables = {"WS-I": cobol2py.CobolVar(level=1, name="WS-I", pic="9(2)")}
         self.assertEqual(cobol2py.translate_condition("WS-I EQUAL 02", variables), "ws_i == 2")
         self.assertEqual(cobol2py.translate_condition("WS-I NOT EQUAL 02", variables), "ws_i != 2")
+        self.assertEqual(cobol2py.translate_condition("WS-I GREATER 01", variables), "ws_i > 1")
+        self.assertEqual(cobol2py.translate_condition("WS-I LESS 03", variables), "ws_i < 3")
 
     def test_equality_condition_uses_python_operator(self):
         self.assertEqual(
