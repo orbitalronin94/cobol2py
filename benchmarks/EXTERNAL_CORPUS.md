@@ -37,6 +37,18 @@ This is a defense-in-depth sandbox, not a claim that arbitrary code execution is
 
 The report separately records how many files were discovered, screened, rejected by reference compilation, excluded because the reference timed out, and actually compared. If fewer than 500 executable standalone sources can be selected, the run fails as incomplete rather than presenting a smaller sample as 500.
 
+## Latest verified result (2026-10-28)
+
+The most recent completed primary/holdout pair is from commit `b92b9bda`:
+- Primary: **136/500 (27.20%)**, [workflow run 40721092731](https://github.com/orbitalronin94/cobol2py/actions/runs/40721092731).
+- Disjoint holdout: **155/500 (31.00%)**, same workflow run.
+- Both samples completed at 500/500; neither reached the 75% gate.
+- Against the initial 53/500 baseline, this is +83 exact matches (+16.60 percentage points) on primary and +102 (+20.40 points) on holdout.
+- A nearby earlier holdout run reached 156/500 (31.20%) at [run 40721024643](https://github.com/orbitalronin94/cobol2py/actions/runs/40721024643), so the latest holdout result is one match lower. The primary remained at 136/500 in the inspected recent artifacts.
+- Recent artifacts do **not** substantiate a 34.40% result for these same two deterministic 500-program samples. Treat any score from a different corpus, denominator, or selection method as a separate metric.
+
+The successful status of the benchmark workflow means the sample ran to completion; it does not mean the translator passed the 75% equivalence gate.
+
 ## Interpretation limits
 
 - This is a deterministic sample from X-COBOL, not a representative random sample of all COBOL installations or dialects.
