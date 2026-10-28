@@ -2991,7 +2991,7 @@ class GroupToGroupMoveRegressionTests(unittest.TestCase):
 
 class GroupToGroupProgramRegressionTests(unittest.TestCase):
     def test_move_group_to_table_row_uses_storage_copy(self):
-        source = "\\n".join([
+        source = "\n".join([
             "IDENTIFICATION DIVISION.",
             "PROGRAM-ID. GROUPCOPY.",
             "DATA DIVISION.",
