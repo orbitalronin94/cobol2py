@@ -2939,7 +2939,7 @@ class NestedQualifiedDataReferenceRegressionTests(unittest.TestCase):
             "GROUP": cobol2py.CobolVar(level=5, name="GROUP", is_group=True, parent_name="RECORD"),
             "FIELD": cobol2py.CobolVar(level=10, name="FIELD", pic="X", parent_name="GROUP"),
         }
-        expected = "record['group']['field']"
+        expected = "cobol_record['group']['field']"
         self.assertEqual(
             cobol2py.normalize_data_reference("FIELD OF GROUP OF RECORD", variables),
             expected,
