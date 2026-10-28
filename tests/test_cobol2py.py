@@ -2120,6 +2120,32 @@ class FigurativeConstantIdentifierBoundaryTests(unittest.TestCase):
 
 
 class MoveCorrespondingRegressionTests(unittest.TestCase):
+    def test_add_corresponding_updates_matching_numeric_group_fields(self):
+        variables = {
+            "SRC": cobol2py.CobolVar(level=1, name="SRC", is_group=True),
+            "SRC-AMT": cobol2py.CobolVar(level=5, name="AMT", pic="9(3)", parent_name="SRC"),
+            "DST": cobol2py.CobolVar(level=1, name="DST", is_group=True),
+            "DST-AMT": cobol2py.CobolVar(level=5, name="AMT", pic="9(3)", parent_name="DST"),
+        }
+        translated = cobol2py.translate_statement("ADD CORRESPONDING SRC TO DST", set(), variables)
+        self.assertEqual(translated, ["dst['amt'] = int(dst['amt'] + src['amt']) % (10 ** 3)"])
+        namespace = {"src": {"amt": 5}, "dst": {"amt": 10}}
+        exec("\\n".join(translated or []), namespace)
+        self.assertEqual(namespace["dst"]["amt"], 15)
+
+    def test_subtract_corresponding_updates_matching_numeric_group_fields(self):
+        variables = {
+            "SRC": cobol2py.CobolVar(level=1, name="SRC", is_group=True),
+            "SRC-AMT": cobol2py.CobolVar(level=5, name="AMT", pic="9(3)", parent_name="SRC"),
+            "DST": cobol2py.CobolVar(level=1, name="DST", is_group=True),
+            "DST-AMT": cobol2py.CobolVar(level=5, name="AMT", pic="9(3)", parent_name="DST"),
+        }
+        translated = cobol2py.translate_statement("SUBTRACT CORRESPONDING SRC FROM DST", set(), variables)
+        self.assertEqual(translated, ["dst['amt'] = int(dst['amt'] - src['amt']) % (10 ** 3)"])
+        namespace = {"src": {"amt": 5}, "dst": {"amt": 10}}
+        exec("\\n".join(translated or []), namespace)
+        self.assertEqual(namespace["dst"]["amt"], 5)
+
     def test_matching_group_fields_are_copied_with_target_width(self):
         variables = {
             "SRC": cobol2py.CobolVar(level=1, name="SRC", is_group=True),
