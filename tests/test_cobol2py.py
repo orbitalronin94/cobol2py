@@ -2542,3 +2542,39 @@ class FillerStorageRegressionTests(unittest.TestCase):
         for item in filler_items:
             self.assertIn(repr(cobol2py.normalize_name(item.name)), generated)
         compile(generated, "<filler-storage>", "exec")
+
+
+class AlternateStorageSectionRegressionTests(unittest.TestCase):
+    def test_local_storage_only_program_emits_its_variables(self):
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. LOCALONLY.",
+            "DATA DIVISION.",
+            "LOCAL-STORAGE SECTION.",
+            "01 LS-COUNT PIC 9 VALUE 7.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "DISPLAY LS-COUNT.",
+            "STOP RUN.",
+        ])
+        program = cobol2py.parse_cobol(source, source_format="free")
+        self.assertIn("LS-COUNT", {item.name for item in program.variables})
+        generated = cobol2py.emit_python(program)
+        self.assertIn("ls_count: int = 7", generated)
+        compile(generated, "<local-storage-only>", "exec")
+
+    def test_linkage_only_program_parses_linkage_variables(self):
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. LINKONLY.",
+            "DATA DIVISION.",
+            "LINKAGE SECTION.",
+            "01 LK-COUNT PIC 9.",
+            "PROCEDURE DIVISION USING LK-COUNT.",
+            "MAIN.",
+            "DISPLAY LK-COUNT.",
+            "GOBACK.",
+        ])
+        program = cobol2py.parse_cobol(source, source_format="free")
+        self.assertIn("LK-COUNT", {item.name for item in program.variables})
+        compile(cobol2py.emit_python(program), "<linkage-only>", "exec")
