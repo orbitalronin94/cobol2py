@@ -2539,7 +2539,7 @@ def translate_statement(
         ]
 
     m = re.match(
-        rf"SUBTRACT\\s+(?:CORRESPONDING|CORR)\\s+({DATA_REF_PATTERN})\\s+FROM\\s+({DATA_REF_PATTERN})$",
+        rf"SUBTRACT\s+(?:CORRESPONDING|CORR)\s+({DATA_REF_PATTERN})\s+FROM\s+({DATA_REF_PATTERN})$",
         s,
         re.IGNORECASE,
     )
