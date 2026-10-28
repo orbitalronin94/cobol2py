@@ -884,7 +884,7 @@ class ImplicitSpecialRegisterTests(unittest.TestCase):
         self.assertIn("DEBUG-LINE", names)
         self.assertIn("RETURN-CODE", names)
         generated = cobol2py.emit_python(program)
-        self.assertIn('debug_line: str = "      "', generated)
+        self.assertIn("debug_line: str = '      '", generated)
         self.assertIn("return_code: int = 0", generated)
         compile(generated, "<implicit-special-registers>", "exec")
 
