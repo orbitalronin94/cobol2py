@@ -1113,7 +1113,7 @@ def translate_expr(
     # Rewrite qualified data-names first; unqualified child names are resolved
     # through the parsed hierarchy when they are unambiguous in the model.
     expr = re.sub(
-        r"\b[A-Za-z][A-Za-z0-9-]*(?:\s*\([A-Za-z0-9_,\s-]+\))?\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*",
+        r"\b[A-Za-z][A-Za-z0-9-]*(?:\s*\([A-Za-z0-9_,;\s-]+\))?\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*",
         lambda match: normalize_data_reference(match.group(0), variables),
         expr,
         flags=re.IGNORECASE,
@@ -1142,7 +1142,7 @@ def translate_expr(
         expr,
     )
     expr = re.sub(
-        r"\b([A-Za-z][A-Za-z0-9-]*)\s*\(([A-Za-z0-9_,\s-]+)\)",
+        r"\b([A-Za-z][A-Za-z0-9-]*)\s*\(([A-Za-z0-9_,;\s-]+)\)",
         lambda match: match.group(0) if match.group(1).upper() in intrinsic_names
         else normalize_data_reference(match.group(0), variables),
         expr,
@@ -1725,7 +1725,7 @@ def split_cobol_items(s: str) -> list[str]:
     return expanded
 
 
-DATA_REF_PATTERN = r"[A-Za-z0-9-]+(?:\s*\([A-Za-z0-9_,\s-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?"
+DATA_REF_PATTERN = r"[A-Za-z0-9-]+(?:\s*\([A-Za-z0-9_,;\s-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?"
 
 
 def translate_statement(
