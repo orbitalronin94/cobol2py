@@ -872,39 +872,47 @@ def normalize_data_reference(
     """Map a COBOL data-name (including OF/IN qualification) into nested dicts."""
     text = name.strip()
     match = re.fullmatch(
-        r"([A-Za-z0-9-]+)(?:\s*\(([A-Za-z0-9_-]+)\))?(?:\s+(?:OF|IN)\s+([A-Za-z0-9-]+))?",
+        r"([A-Za-z0-9-]+)(?:\s*\(([^()]*)\))?(?:\s+(?:OF|IN)\s+([A-Za-z0-9-]+))?",
         text,
         re.IGNORECASE,
     )
     if not match:
         return normalize_name(text)
-    field_name, subscript, qualifier = match.groups()
+    field_name, subscript_text, qualifier = match.groups()
+    subscripts = [part.strip() for part in subscript_text.split(",")] if subscript_text else []
     variable_map = variables or {}
     overlay_fields, _overlay_buffers = build_overlay_layout(variable_map)
-    if not subscript and field_name.upper() in overlay_fields:
+    if not subscripts and field_name.upper() in overlay_fields:
         return f"_cobol_get({field_name.upper()!r})"
+
+    def index_expression(subscript: str) -> str:
+        if subscript.isdigit():
+            return str(int(subscript) - 1)
+        return f"{normalize_name(subscript)} - 1"
+
     variable = variable_map.get(field_name.upper())
     if qualifier:
         parent_expr = normalize_data_reference(qualifier, variable_map)
         parent_variable = variable_map.get(qualifier.upper())
-        if parent_variable is not None and parent_variable.is_array and parent_variable.is_group and subscript:
-            index_expr = str(int(subscript) - 1) if subscript.isdigit() else f"{normalize_name(subscript)} - 1"
-            return f"{parent_expr}[{index_expr}][{normalize_name(field_name)!r}]"
+        if parent_variable is not None and parent_variable.is_array and parent_variable.is_group and subscripts:
+            expr = f"{parent_expr}[{index_expression(subscripts[0])}][{normalize_name(field_name)!r}]"
+            for subscript in subscripts[1:]:
+                expr += f"[{index_expression(subscript)}]"
+            return expr
         expr = f"{parent_expr}[{normalize_name(field_name)!r}]"
     elif variable is not None and variable.parent_name:
         parent_expr = normalize_data_reference(variable.parent_name, variable_map)
         parent_variable = variable_map.get(variable.parent_name.upper())
-        if parent_variable is not None and parent_variable.is_array and parent_variable.is_group and subscript:
-            index_expr = str(int(subscript) - 1) if subscript.isdigit() else f"{normalize_name(subscript)} - 1"
-            return f"{parent_expr}[{index_expr}][{normalize_name(field_name)!r}]"
+        if parent_variable is not None and parent_variable.is_array and parent_variable.is_group and subscripts:
+            expr = f"{parent_expr}[{index_expression(subscripts[0])}][{normalize_name(field_name)!r}]"
+            for subscript in subscripts[1:]:
+                expr += f"[{index_expression(subscript)}]"
+            return expr
         expr = f"{parent_expr}[{normalize_name(field_name)!r}]"
     else:
         expr = normalize_name(field_name)
-    if subscript:
-        if subscript.isdigit():
-            expr += f"[{int(subscript) - 1}]"
-        else:
-            expr += f"[{normalize_name(subscript)} - 1]"
+    for subscript in subscripts:
+        expr += f"[{index_expression(subscript)}]"
     return expr
 
 
