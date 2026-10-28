@@ -2326,7 +2326,7 @@ class FullProgramIsKeywordRegressionTests(unittest.TestCase):
             "           END-IF.",
             "           STOP RUN.",
         ])
-        generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="fixed"))
         self.assertNotIn("cobol_is", generated)
         namespace = {"__name__": "not_main"}
         exec(compile(generated, "<is-keyword-output>", "exec"), namespace)
