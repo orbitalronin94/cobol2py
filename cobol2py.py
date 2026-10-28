@@ -2268,7 +2268,13 @@ def translate_group_move(source: str, target: str, variables: dict[str, CobolVar
                 source_parts.append(f"str({expression}).zfill({item_width})[-{item_width}:]")
         source_bytes = " + ".join(source_parts)
     else:
-        source_bytes = f"str({translate_expr(source, variables)})"
+        all_literal = decode_cobol_all_literal(source.strip())
+        if all_literal is not None:
+            # MOVE ALL literal TO group repeats the byte across the group's
+            # contiguous storage, rather than treating ALL as a data-name.
+            source_bytes = repr((all_literal * target_width)[:target_width])
+        else:
+            source_bytes = f"str({translate_expr(source, variables)})"
 
     statements = [f"_cobol_group_move_value = ({source_bytes})[:{target_width}].ljust({target_width})"]
     offset = 0
