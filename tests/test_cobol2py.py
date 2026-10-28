@@ -1721,12 +1721,12 @@ class NegatedComparisonAndFigurativeConstantTests(unittest.TestCase):
 
     def test_figurative_constants_survive_expression_tokenization(self):
         for source, expected in [
-            ("LOW-VALUES", "\\x00"),
-            ("HIGH-VALUES", "\\xff"),
+            ("LOW-VALUES", "\x00"),
+            ("HIGH-VALUES", "\xff"),
             ("SPACES", " "),
-            ("ZEROS", "0"),
+            ("ZEROS", 0),
         ]:
             with self.subTest(source=source):
                 translated = cobol2py.translate_expr(source)
-                self.assertEqual(ast.literal_eval(translated) if source != "ZEROS" else ast.literal_eval(translated), expected)
+                self.assertEqual(ast.literal_eval(translated), expected)
                 compile(translated, "<figurative-constant>", "eval")
