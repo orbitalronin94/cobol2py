@@ -1,5 +1,46 @@
 # Roadmap de modernización de dos semanas
 
+## Objetivo de producto: v1.0 con ≥75 % de equivalencia diferencial
+
+Este objetivo reemplaza cualquier interpretación de «roadmap terminado» basada únicamente en cerrar tareas internas. La versión 1.0 no se considera lista hasta que el benchmark externo alcance y sostenga el umbral indicado.
+
+### Línea base, meta y definición
+
+- **Línea base medida:** 53/500 programas (10,60 %) con stdout y código de retorno exactamente iguales a la ejecución de referencia GnuCOBOL.
+- **Meta mínima:** 375/500 (75,00 %) en la muestra externa primaria de 500 programas.
+- **Validación anti-sobreajuste:** al menos 75 % en una segunda muestra disjunta de 500 programas, seleccionada con la misma metodología y mantenida separada de la iteración de correcciones.
+- **Qué cuenta como éxito:** el traductor termina correctamente, el Python generado compila y se ejecuta, y coinciden exactamente stdout y código de retorno. Un archivo traducido, una salida sintácticamente válida o un workflow que termina con éxito no equivalen a una coincidencia diferencial.
+- **Denominador:** solo fuentes únicas que compilan y terminan bajo GnuCOBOL entran en la muestra probada. Los fallos de compilación de referencia y los timeouts de referencia se informan por separado.
+- **Alcance:** la cifra mide estas muestras ejecutables y estas dimensiones observables; no demuestra equivalencia de I/O externo, archivos, bases de datos, transacciones, interacciones ni todos los dialectos COBOL.
+
+### Fases obligatorias hacia v1.0
+
+| Fase | Trabajo | Criterio de salida |
+|---|---|---|
+| 0. Medición fiable | Corregir la publicación de informes, comprobar el checksum del dataset, conservar JSON/Markdown y enlazar el commit medido | El benchmark termina con un informe recuperable incluso si la tasa es baja; errores de infraestructura quedan diferenciados de resultados funcionales |
+| 1. Diagnóstico de fallos | Clasificar cada caso por error de traducción, sintaxis Python, excepción/timeout, stdout diferente o código de retorno diferente; agrupar por causa raíz | Informe reproducible con conteos, ejemplos por identificador/hash y familias priorizadas |
+| 2. Correcciones de alto impacto | Arreglar primero las familias frecuentes y reutilizables; incorporar una prueba mínima por defecto corregido | Tests de regresión y comparación GnuCOBOL para cada corrección semántica relevante |
+| 3. Iteración cuantificada | Ejecutar los mismos 500 casos tras cada grupo de cambios y mantener un registro de evolución | Mejora confirmada sin cambiar el denominador, ocultar fallos ni contar exclusiones como éxitos |
+| 4. Validación disjunta | Congelar el candidato y probar una muestra distinta de 500 programas; no usar sus resultados para ajustar el candidato evaluado | ≥75 % en la muestra primaria y en la muestra disjunta; si no, volver a la fase 1 y repetir |
+| 5. Candidato v1.0 | Ejecutar CI completo, revisar regresiones internas, actualizar compatibilidad y publicar los dos informes | Todos los jobs obligatorios verdes, ambos umbrales alcanzados, limitaciones visibles y revisión final de release |
+
+### Registro de métricas
+
+No registrar como mejora un resultado cuyo denominador, selección, versión de GnuCOBOL o criterio de coincidencia haya cambiado sin anotarlo. Para cada ejecución se conservarán el SHA del commit, checksum del corpus, número de fuentes descubiertas y únicas, descartes de compilación/ejecución de referencia, identificadores de los casos probados, coincidencias exactas y fallos por categoría. La tasa debe calcularse como `exact_matches / tested`.
+
+### Estado actual del objetivo
+
+- [x] Línea base inicial de 500 casos: 53/500 (10,60 %).
+- [x] Corrección del traductor para evitar un bloque `try` Python vacío cuando el párrafo de entrada solo contiene comentarios.
+- [x] Prueba de regresión para el caso anterior y sincronización del traductor embebido en la demo web.
+- [x] CI unitario verde en Python 3.10, 3.11, 3.12 y 3.13 en la ejecución confirmada tras sincronizar la demo.
+- [ ] Reparar y validar la escritura del informe del benchmark externo: el contenedor no privilegiado usa UID 65534 y el directorio montado inicialmente no permitía escribir.
+- [ ] Obtener y revisar el informe completo de los 500 casos después de arreglar la publicación.
+- [ ] Subir desde 10,60 % hasta ≥75 % con evidencia en el mismo benchmark.
+- [ ] Validar ≥75 % en la muestra disjunta de 500 casos.
+- [ ] Cumplir todos los criterios de salida de v1.0.
+
+
 ## Continuidad del roadmap: fase posterior al piloto
 
 El calendario de diez días describe la primera iteración y ya se han entregado sus principales artefactos. No debe interpretarse como el límite del proyecto. Esta sección amplía el plan con el trabajo que sigue; los elementos pendientes no se consideran completados hasta aportar pruebas y evidencia de CI.
