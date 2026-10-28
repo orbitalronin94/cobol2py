@@ -999,8 +999,8 @@ def translate_expr(
             if token.startswith("HIGH-VALUE"):
                 return repr("\xff")
             if token.startswith("SPACE"):
-                return repr(" ")
-            return "0"
+                return "ZZCOBOLFIGSPACEZZ"
+            return "ZZCOBOLFIGZEROZZ"
 
         return re.sub(
             r"\b(?:LOW-VALUES?|HIGH-VALUES?|SPACES?|ZERO(?:S|ES)?)\b",
@@ -1043,6 +1043,13 @@ def translate_expr(
         else:
             out.append(tok)
     translated = "".join(out).strip()
+
+    # Resolve figurative-constant markers after tokenization so the generated
+    # Python literal is not misread as a COBOL quoted literal a second time.
+    translated = translated.replace("zzcobolfiglowvaluezz", repr("\\x00"))
+    translated = translated.replace("zzcobolfighighvaluezz", repr("\\xff"))
+    translated = translated.replace("zzcobolfigspacezz", repr(" "))
+    translated = translated.replace("zzcobolfigzerozz", "0")
 
     # COBOL intrinsic functions are tokenized above as ordinary names and
     # subscripts (e.g. FUNCTION NUMVAL(X) -> function numval[x]). Rewrite them
