@@ -2884,3 +2884,31 @@ class WhitespaceSeparatedSubscriptRegressionTests(unittest.TestCase):
             "table[int(index1) - 1][index2 + 1 - 1][index3 + 1 - 1]",
         )
         compile(translated, "<cobol-table-subscripts>", "eval")
+
+
+class GroupLiteralMoveRegressionTests(unittest.TestCase):
+    def test_literal_move_distributes_bytes_without_replacing_nested_group(self):
+        variables = {
+            "PAR-NAME": cobol2py.CobolVar(
+                level=2, name="PAR-NAME", is_group=True, parent_name="TEST-RESULTS"
+            ),
+            "FILLER-100": cobol2py.CobolVar(
+                level=3, name="FILLER-100", pic="X(19)", parent_name="PAR-NAME"
+            ),
+            "PARDOT-X": cobol2py.CobolVar(
+                level=3, name="PARDOT-X", pic="X", parent_name="PAR-NAME"
+            ),
+            "DOTVALUE": cobol2py.CobolVar(
+                level=3, name="DOTVALUE", pic="99", parent_name="PAR-NAME"
+            ),
+        }
+        translated = cobol2py.translate_group_literal_move(
+            '"CALL-TEST-1"', "PAR-NAME", variables
+        )
+        self.assertIsNotNone(translated)
+        joined = "\\n".join(translated or [])
+        self.assertIn("_cobol_group_move_par_name = str('CALL-TEST-1').ljust(22)", joined)
+        self.assertIn("par_name['filler_100'] = _cobol_group_move_par_name[0:19].ljust(19)", joined)
+        self.assertIn("par_name['pardot_x'] = _cobol_group_move_par_name[19:20].ljust(1)", joined)
+        self.assertIn("par_name['dotvalue'] = int((_cobol_group_move_par_name[20:22]).strip() or '0')", joined)
+        self.assertNotIn("par_name = 'CALL-TEST-1'", joined)
