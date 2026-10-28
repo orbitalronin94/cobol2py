@@ -2616,6 +2616,11 @@ def translate_nodes(
             key_name = key_match.group(1).upper() if key_match else (table.ascending_key if table else None)
             index_name = key_match.group(2).upper() if key_match else (table.indexed_by if table else None)
             search_value = key_match.group(3).strip() if key_match else None
+            if search_value is not None:
+                # NEXT SENTENCE is a branch action, not part of the SEARCH key value.
+                search_value = re.sub(
+                    r"\s+NEXT\s+SENTENCE\s*$", "", search_value, flags=re.IGNORECASE
+                )
             if table is None or not table.is_array or not table.is_group or not table.ascending_key or not key_match or key_name != table.ascending_key or not index_name:
                 out.append("    " * indent + f"# SEARCH ALL no traducido: {node.text} (requiere tabla OCCURS con ASCENDING KEY y WHEN soportado)")
             else:
