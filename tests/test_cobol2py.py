@@ -1637,3 +1637,24 @@ class EmptyTryRegressionTests(unittest.TestCase):
         compile(generated, "<comment-only-entrypoint>", "exec")
         self.assertIn("        pass", generated)
 
+
+
+class ExternalCorpusSyntaxRegressionTests(unittest.TestCase):
+    def test_greater_shorthand_condition_generates_python_comparison(self):
+        self.assertEqual(cobol2py.translate_condition("RECORD-COUNT GREATER 50"), "record_count > 50")
+        self.assertEqual(cobol2py.translate_condition("RECORD-COUNT GREATER THAN 50"), "record_count > 50")
+        self.assertEqual(cobol2py.translate_condition("RECORD-COUNT GREATER OR EQUAL 50"), "record_count >= 50")
+        self.assertEqual(cobol2py.translate_condition("RECORD-COUNT LESS OR EQUAL 50"), "record_count <= 50")
+
+    def test_not_equal_phrase_is_not_split_into_python_not_and_equality(self):
+        self.assertEqual(cobol2py.translate_condition("WS-STAT NOT EQUAL 10"), "ws_stat != 10")
+        self.assertEqual(cobol2py.translate_condition("WS-STAT NOT EQUAL TO 10"), "ws_stat != 10")
+
+    def test_digit_leading_cobol_data_names_become_valid_python_identifiers(self):
+        variables = {
+            "11A": cobol2py.CobolVar(level=77, name="11A", pic="9(4)", value="9")
+        }
+        translated = cobol2py.translate_expr("11A", variables)
+        self.assertEqual(translated, "cobol_11a")
+        compile(translated + " = 9", "<generated>", "exec")
+        self.assertEqual(cobol2py.normalize_name("42-DATANAMES"), "cobol_42_datanames")
