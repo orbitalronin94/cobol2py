@@ -2487,7 +2487,7 @@ def translate_statement(
         return [emit_assignment(target, translate_literal(source, variables), variables)]
 
     m = re.match(
-        rf"ADD\\s+(?:CORRESPONDING|CORR)\\s+({DATA_REF_PATTERN})\\s+TO\\s+({DATA_REF_PATTERN})$",
+        rf"ADD\s+(?:CORRESPONDING|CORR)\s+({DATA_REF_PATTERN})\s+TO\s+({DATA_REF_PATTERN})$",
         s,
         re.IGNORECASE,
     )
