@@ -1194,6 +1194,12 @@ def translate_literal(
     all_literal = decode_cobol_all_literal(t)
     if all_literal is not None:
         return repr(all_literal)
+    hex_literal = re.fullmatch(r"""[Xx](?:'([0-9A-Fa-f]+)'|"([0-9A-Fa-f]+)")""", t)
+    if hex_literal:
+        digits = hex_literal.group(1) or hex_literal.group(2)
+        if len(digits) % 2:
+            digits = "0" + digits
+        return json.dumps(bytes.fromhex(digits).decode("latin-1"), ensure_ascii=False)
     quoted = decode_cobol_quoted_literal(t)
     if quoted is not None:
         return json.dumps(quoted, ensure_ascii=False)
