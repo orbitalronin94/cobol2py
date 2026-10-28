@@ -6,6 +6,16 @@ La compatibilidad se debe expresar por construcción y por caso de prueba, no co
 
 El benchmark actual considera que un caso coincide cuando el `stdout` y el código de retorno del Python generado son iguales a los del ejecutable COBOL compilado por GnuCOBOL. El comando termina con código distinto de cero si el candidato tiene discrepancias o una referencia no compila; `--report-only` se reserva para ejecuciones exploratorias que no deban bloquear CI. El manifiesto contiene 105 programas en la revisión actual; una prueba de integridad en CI verifica que los IDs y las rutas sean únicos, que todas las fuentes existan y que cada caso documente sus características. El corpus amplía la variedad de casos, pero sigue siendo curado y sesgado hacia construcciones concretas. No mide todos los dialectos, cláusulas, estados de error ni combinaciones de sentencias.
 
+## Medición externa más reciente
+
+La ejecución externa completa confirmada [#40757950854](https://github.com/orbitalronin94/cobol2py/actions/runs/40757950854), medida sobre el commit `eba3b3aacd420c19f6fd4f24d32ad64883d5ebac`, obtuvo:
+
+- Muestra primaria: **162/500 (32,40 %)**.
+- Holdout disjunto: **184/500 (36,80 %)**.
+- Combinado: **346/1.000 (34,60 %)**.
+
+La ejecución completa anterior [#40753902144](https://github.com/orbitalronin94/cobol2py/actions/runs/40753902144) había obtenido 344/1.000 (34,40 %), por lo que la mejora confirmada es de dos coincidencias (+0,20 puntos porcentuales). El commit medido es anterior a la cabeza actual de desarrollo; esta puntuación no debe atribuirse a commits posteriores hasta que termine un nuevo benchmark en ambas muestras. El porcentaje mide coincidencia exacta de stdout y código de retorno en este dataset, no compatibilidad completa del lenguaje COBOL.
+
 ## Áreas cubiertas por el corpus actual (105 casos)
 
 Consulta la lista autoritativa en [`benchmarks/cases.json`](../benchmarks/cases.json). A nivel general, incluye:
