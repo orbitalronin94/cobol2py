@@ -1276,7 +1276,6 @@ def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = No
     def rewrite(chunk: str) -> str:
         c = re.sub(r"\bAND\b", "and", chunk, flags=re.IGNORECASE)
         c = re.sub(r"\bOR\b", "or", c, flags=re.IGNORECASE)
-        c = re.sub(r"\bNOT\b", "not", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\s+NOT\s+EQUAL\s+TO\b", "!=", c, flags=re.IGNORECASE)
         c = re.sub(r"\bNOT\s+EQUAL\s+TO\b", "!=", c, flags=re.IGNORECASE)
         c = re.sub(r"\bNOT\s+EQUAL\b", "!=", c, flags=re.IGNORECASE)
@@ -1285,10 +1284,13 @@ def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = No
         c = re.sub(r"\bEQUAL\b", "==", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\s+GREATER\s+THAN\b", ">", c, flags=re.IGNORECASE)
         c = re.sub(r"\bGREATER\s+THAN\b", ">", c, flags=re.IGNORECASE)
+        c = re.sub(r"\bGREATER\b", ">", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\s+LESS\s+THAN\b", "<", c, flags=re.IGNORECASE)
         c = re.sub(r"\bLESS\s+THAN\b", "<", c, flags=re.IGNORECASE)
+        c = re.sub(r"\bLESS\b", "<", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\b", "==", c, flags=re.IGNORECASE)
         c = re.sub(r"(?<![!<>=])=(?!=)", "==", c)
+        c = re.sub(r"\bNOT\b", "not", c, flags=re.IGNORECASE)
         return c.replace("<>", "!=")
 
     c = rewrite_outside_literals(cond.strip(), rewrite)
