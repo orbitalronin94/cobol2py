@@ -209,9 +209,28 @@ def main() -> int:
         diagnostic_counts[message] = diagnostic_counts.get(message, 0) + 1
     for message, count in sorted(diagnostic_counts.items(), key=lambda pair: (-pair[1], pair[0]))[:12]:
         lines.append(f"- **{count}** — {message}")
+
+    # Repeated offending lines often reveal one shared translator bug even when
+    # Python's syntax-error message differs by line/column. These short excerpts
+    # are already included per case in the JSON artifact; aggregate them here to
+    # make the next repair batch easier to prioritize.
+    generated_line_counts: dict[str, int] = {}
+    for reason in syntax_errors:
+        if "; generated line:" not in reason:
+            continue
+        generated_line = reason.split("; generated line:", 1)[1].strip()
+        generated_line_counts[generated_line] = generated_line_counts.get(generated_line, 0) + 1
+    lines.extend(["", "### Most frequent generated Python lines", ""])
+    for generated_line, count in sorted(
+        generated_line_counts.items(), key=lambda pair: (-pair[1], pair[0])
+    )[:15]:
+        safe_line = generated_line.replace("|", "\\|").replace("\n", " ")
+        lines.append(f"- **{count}** — `{safe_line}`")
+
     lines.extend(["", "See the JSON artifact for source hashes, return codes, exact match flags, and short generated-line diagnostics.", ""])
     (args.output / "external-corpus-report.md").write_text("\n".join(lines), encoding="utf-8")
-    print("\n".join(lines[:18]))
+    summary_start = lines.index("## Failure summary")
+    print("\n".join(lines[:18] + [""] + lines[summary_start:]))
     if not report["sample_complete"]:
         print(f"Could only find {report['tested']} runnable standalone sources; required {args.target}.")
         return 2
