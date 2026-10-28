@@ -956,17 +956,35 @@ def parse_cobol(
 
     if idx_data >= 0:
         end_data = idx_proc if idx_proc > 0 else len(lines)
-        storage_start = None
-        for i in range(idx_data, end_data):
-            if RE_STORAGE_SECTION.search(lines[i][1]):
-                storage_start = i + 1
-                break
-        if storage_start is not None:
-            # Some small programs declare storage only in LOCAL-STORAGE or
-            # LINKAGE. Start at the first supported storage section and parse
-            # all subsequent declarations through PROCEDURE DIVISION.
-            prog.variables = parse_variables(lines[storage_start:end_data])
-            prog.condition_names = parse_condition_names(lines[storage_start:end_data])
+        # File records (FD/SD) are data items too: programs commonly MOVE,
+        # compare, or reference these records even when file I/O is only
+        # partially supported. Parse each supported DATA DIVISION section
+        # independently so the hierarchy from FILE SECTION cannot leak into
+        # WORKING-STORAGE or LINKAGE.
+        section_header = re.compile(r"^\s*([A-Za-z0-9-]+)\s+SECTION\b", re.IGNORECASE)
+        supported_sections = {"FILE", "WORKING-STORAGE", "LOCAL-STORAGE", "LINKAGE"}
+        current_section: Optional[str] = None
+        section_lines: list[tuple[int, str]] = []
+        parsed_variables: list[CobolVar] = []
+        parsed_conditions: dict[str, tuple[str, list[tuple[str, Optional[str]]]]] = {}
+
+        def finish_data_section() -> None:
+            if current_section not in supported_sections or not section_lines:
+                return
+            parsed_variables.extend(parse_variables(section_lines))
+            parsed_conditions.update(parse_condition_names(section_lines))
+
+        for line_number, text in lines[idx_data + 1:end_data]:
+            header = section_header.match(text)
+            if header:
+                finish_data_section()
+                current_section = header.group(1).upper()
+                section_lines = []
+            elif current_section in supported_sections:
+                section_lines.append((line_number, text))
+        finish_data_section()
+        prog.variables = parsed_variables
+        prog.condition_names = parsed_conditions
 
     if idx_proc >= 0:
         proc_lines = lines[idx_proc + 1:]
