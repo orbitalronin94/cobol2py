@@ -3206,7 +3206,7 @@ class DayOrdinalIntrinsicRegressionTests(unittest.TestCase):
         )
 
 
-class OrdinalIntrinsicRegressionTests(unittest.TestCase):class OrdinalIntrinsicRegressionTests(unittest.TestCase):
+class OrdinalIntrinsicRegressionTests(unittest.TestCase):
     def test_ord_min_returns_one_based_position_of_first_minimum(self):
         translated = cobol2py.translate_expr("FUNCTION ORD-MIN(4, 2, 1, 7, 2, 0)")
         self.assertEqual(eval(translated), 6)
