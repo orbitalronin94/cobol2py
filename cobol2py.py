@@ -1924,13 +1924,12 @@ def translate_statement(
         return ["raise _CobolStopRun"]
 
     # INITIALIZE resets elementary storage by category, not to its VALUE clause.
-    # The initial implementation deliberately handles elementary items and
-    # non-array groups; complex group tables remain an explicit unsupported case.
     initialize_prefix = re.match(r"INITIALIZE\s+", s, re.IGNORECASE)
     if initialize_prefix:
         target = s[initialize_prefix.end():].strip()
         variable_map = variables or {}
-        root = variable_map.get(target.split()[0].split("(")[0].upper())
+        root_name = target.split()[0].split("(")[0].upper()
+        root = variable_map.get(root_name)
         if root is None:
             return [f"# INITIALIZE no traducido: {s}"]
 
@@ -1944,38 +1943,46 @@ def translate_statement(
                 return "0"
             return "{}"
 
-        if root.is_array and root.is_group:
-            return [f"# INITIALIZE de tabla de grupo no traducido: {s}"]
-
+        target_expr = normalize_data_reference(target, variable_map)
+        has_explicit_subscript = bool(re.search(r"\(\s*[^)]*\)", target))
         assignments: list[str] = []
         if not root.is_group:
             value = initial_storage_value(root)
-            if root.is_array:
+            if root.is_array and not has_explicit_subscript:
                 value = f"[{value}] * {root.occurs}" if root.occurs else "[]"
-            assignments.append(f"{normalize_data_reference(target, variable_map)} = {value}")
+            assignments.append(f"{target_expr} = {value}")
         else:
-            def initialize_group(group: CobolVar) -> None:
+            def initialize_group(group: CobolVar, group_expr: str, ancestors: set[str]) -> None:
+                if group.name.upper() in ancestors:
+                    return
+                next_ancestors = ancestors | {group.name.upper()}
                 children = [
                     child for child in variable_map.values()
                     if child.parent_name and child.parent_name.upper() == group.name.upper()
                 ]
                 for child in children:
-                    if child.is_group and not child.is_array:
-                        initialize_group(child)
-                    elif child.is_array and child.is_group:
-                        continue
-                    else:
-                        qualifier = child.parent_name
-                        child_ref = f"{child.name} OF {qualifier}" if qualifier else child.name
-                        value = initial_storage_value(child)
+                    child_expr = f"{group_expr}[{normalize_name(child.name)!r}]"
+                    if child.is_group:
                         if child.is_array:
-                            value = f"[{value}] * {child.occurs}" if child.occurs else "[]"
-                        assignments.append(
-                            f"{normalize_data_reference(child_ref, variable_map)} = {value}"
-                        )
-            initialize_group(root)
-        return assignments or [f"# INITIALIZE sin campos traducibles: {s}"]
+                            for index in range(child.occurs or 0):
+                                initialize_group(child, f"{child_expr}[{index}]", next_ancestors)
+                        else:
+                            initialize_group(child, child_expr, next_ancestors)
+                        continue
+                    value = initial_storage_value(child)
+                    if child.is_array:
+                        value = f"[{value}] * {child.occurs}" if child.occurs else "[]"
+                    assignments.append(f"{child_expr} = {value}")
 
+            if root.is_array:
+                if has_explicit_subscript:
+                    initialize_group(root, target_expr, set())
+                else:
+                    for index in range(root.occurs or 0):
+                        initialize_group(root, f"{target_expr}[{index}]", set())
+            else:
+                initialize_group(root, target_expr, set())
+        return assignments or [f"# INITIALIZE sin campos traducibles: {s}"]
     # ALTER changes the destination of a later GO TO to the altered paragraph.
     m = re.fullmatch(r"ALTER\s+([A-Za-z0-9-]+)\s+TO\s+PROCEED\s+TO\s+([A-Za-z0-9-]+)", s, re.IGNORECASE)
     if m:
