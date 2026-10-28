@@ -166,6 +166,14 @@ def main() -> int:
                         result["reference_returncode"] = reference["returncode"]
                         result["stdout_match"] = candidate["stdout"] == reference["stdout"]
                         result["returncode_match"] = candidate["returncode"] == reference["returncode"]
+                        # Store only the exception class, never traceback/source lines,
+                        # so runtime mismatches can be grouped without republishing code.
+                        stderr_lines = [line.strip() for line in candidate["stderr"].splitlines() if line.strip()]
+                        if stderr_lines:
+                            tail = stderr_lines[-1]
+                            exception_type = tail.split(":", 1)[0].split()[-1]
+                            if exception_type and exception_type[0].isupper() and exception_type.replace("_", "").isalnum():
+                                result["candidate_exception_type"] = exception_type
                         if candidate["launched"] and not candidate["timeout"] and result["stdout_match"] and result["returncode_match"]:
                             result.update({"status": "passed", "reason": None})
                         else:
@@ -206,11 +214,19 @@ def main() -> int:
     failure_reasons = [item.get("reason") or "" for item in report["results"] if item["status"] != "passed"]
     syntax_errors = [reason for reason in failure_reasons if reason.startswith("generated Python syntax error")]
     runtime_mismatches = sum(reason == "stdout or return code differs from GnuCOBOL" for reason in failure_reasons)
+    exception_counts: dict[str, int] = {}
+    for item in report["results"]:
+        exception_type = item.get("candidate_exception_type")
+        if exception_type:
+            exception_counts[exception_type] = exception_counts.get(exception_type, 0) + 1
     lines.extend(["", "## Failure summary", "",
         f"- Generated Python syntax errors: **{len(syntax_errors)}**",
         f"- Runtime/output mismatches: **{runtime_mismatches}**",
         f"- Other translator errors/timeouts: **{len(failure_reasons) - len(syntax_errors) - runtime_mismatches}**",
-        "", "### Most frequent syntax diagnostics", ""])
+        "", "### Most frequent runtime exception classes", ""])
+    for exception_type, count in sorted(exception_counts.items(), key=lambda pair: (-pair[1], pair[0]))[:12]:
+        lines.append(f"- **{count}** — {exception_type}")
+    lines.extend(["", "### Most frequent syntax diagnostics", ""])
     diagnostic_counts: dict[str, int] = {}
     for reason in syntax_errors:
         message = reason.split("; generated line:", 1)[0]
