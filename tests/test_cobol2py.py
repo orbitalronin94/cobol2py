@@ -3195,6 +3195,19 @@ class DayOrdinalIntrinsicRegressionTests(unittest.TestCase):
         )
 
 
+class NestedIntrinsicFallbackRegressionTests(unittest.TestCase):
+    def test_nested_factorial_and_reverse_intrinsics(self):
+        self.assertEqual(eval(cobol2py.translate_expr("FUNCTION FACTORIAL(FUNCTION ABS(-3))")), 6)
+        self.assertEqual(
+            eval(cobol2py.translate_expr('FUNCTION REVERSE(FUNCTION UPPER-CASE("abc"))')),
+            "CBA",
+        )
+
+    def test_numval_c_accepts_grouping_and_currency_symbols(self):
+        expression = cobol2py.translate_expr('FUNCTION NUMVAL-C("$1,234.50")')
+        self.assertAlmostEqual(eval(expression), 1234.5)
+
+
 class OrdinalIntrinsicRegressionTests(unittest.TestCase):
     def test_ord_min_returns_one_based_position_of_first_minimum(self):
         translated = cobol2py.translate_expr("FUNCTION ORD-MIN(4, 2, 1, 7, 2, 0)")
