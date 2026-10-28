@@ -8,14 +8,15 @@ El benchmark actual considera que un caso coincide cuando el `stdout` y el códi
 
 ## Medición externa más reciente
 
-La ejecución externa completa confirmada [#40760502862](https://github.com/orbitalronin94/cobol2py/actions/runs/40760502862), medida sobre el commit `0f8817709d3baaaecc7b15c022e6ea7ab96f2542`, obtuvo:
+La última ejecución externa completa [#40761767797](https://github.com/orbitalronin94/cobol2py/actions/runs/40761767797), medida sobre el commit `e62d8873c48157a2abed7e468894e380e310307f`, terminó correctamente y obtuvo:
 
-- Muestra primaria: **173/500 (34,60 %)**.
-- Holdout disjunto: **196/500 (39,20 %)**.
-- Combinado: **369/1.000 (36,90 %)**.
+- Muestra primaria: **169/500 (33,80 %)**.
+- Holdout disjunto: **195/500 (39,00 %)**.
+- Combinado: **364/1.000 (36,40 %)**.
 
-Frente a la ejecución completa anterior [#40757950854](https://github.com/orbitalronin94/cobol2py/actions/runs/40757950854), la mejora es de 23 coincidencias (+2,30 puntos porcentuales): 11 más en primaria y 12 más en holdout. Frente al 34,40 % de [#40753902144](https://github.com/orbitalronin94/cobol2py/actions/runs/40753902144), la mejora es de 25 coincidencias (+2,50 puntos). El commit medido es anterior a la cabeza actual de desarrollo. La ejecución [#40761767797](https://github.com/orbitalronin94/cobol2py/actions/runs/40761767797) sigue en curso sobre el commit `e62d8873c48157a2abed7e468894e380e310307f`, que tampoco es la cabeza actual; no atribuir el 36,90 % a commits posteriores hasta completar ambas muestras para el SHA correspondiente. El porcentaje mide coincidencia exacta de stdout y código de retorno en este dataset, no compatibilidad completa del lenguaje COBOL.
+Frente al 34,40 % de [#40753902144](https://github.com/orbitalronin94/cobol2py/actions/runs/40753902144), suma **20 coincidencias (+2,00 puntos porcentuales)**. Sin embargo, el máximo confirmado sigue siendo [#40760502862](https://github.com/orbitalronin94/cobol2py/actions/runs/40760502862), con **369/1.000 (36,90 %)**: la última medición queda 5 coincidencias (−0,50 puntos) por debajo; la primaria baja de 173 a 169 y el holdout de 196 a 195. Frente a la referencia histórica de 291/1.000 (29,10 %), el último resultado suma 73 coincidencias (+7,30 puntos).
 
+La rama de trabajo ha avanzado desde el SHA medido y todavía necesita una ejecución externa completa propia; no se debe atribuirle el 36,40 % hasta medir su commit actual. Para alcanzar 375/500 (75 %) en ambas muestras, según la última medición faltan 206 coincidencias en primaria y 180 en holdout. Esta métrica compara únicamente stdout y código de retorno en el dataset indicado: no demuestra compatibilidad completa con todos los dialectos ni efectos externos de COBOL.
 ## Áreas cubiertas por el corpus actual (105 casos)
 
 Consulta la lista autoritativa en [`benchmarks/cases.json`](../benchmarks/cases.json). A nivel general, incluye:
