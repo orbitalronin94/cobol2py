@@ -1889,3 +1889,15 @@ class DisplayOperandSplittingRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_statement("DISPLAY (01) (01) ERASE", set(), {})
         self.assertIsNotNone(translated)
         compile("\\n".join(translated or []), "<display-operands>", "exec")
+
+
+class ComputeSizeErrorClauseRegressionTests(unittest.TestCase):
+    def test_size_error_phrase_is_not_translated_as_expression_tokens(self):
+        translated = cobol2py.translate_statement(
+            "COMPUTE WS-TOTAL = WS-LEFT + WS-RIGHT ON SIZE ERROR",
+            set(),
+            {},
+        )
+        self.assertIsNotNone(translated)
+        self.assertEqual(translated, ["ws_total = ws_left + ws_right"])
+        compile("\\n".join(translated or []), "<compute-size-error>", "exec")
