@@ -870,7 +870,7 @@ class JavaBackendTests(unittest.TestCase):
 
 class ImplicitSpecialRegisterTests(unittest.TestCase):
     def test_referenced_debug_line_and_return_code_get_defaults(self):
-        source = "\\n".join([
+        source = "\n".join([
             "IDENTIFICATION DIVISION.",
             "PROGRAM-ID. SPECIALREG.",
             "DATA DIVISION.",
