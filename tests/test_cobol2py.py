@@ -534,6 +534,35 @@ class TranslationTests(unittest.TestCase):
 
 
 class DynamicControlFlowTests(unittest.TestCase):
+    def test_perform_thru_executes_inclusive_paragraph_range_then_returns(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. PERFORMTHRUTEST.
+DATA DIVISION.
+PROCEDURE DIVISION.
+MAIN.
+    PERFORM PARA-A THRU PARA-B.
+    DISPLAY "DONE".
+    STOP RUN.
+PARA-A.
+    DISPLAY "A".
+PARA-B.
+    DISPLAY "B".
+PARA-C.
+    DISPLAY "C".
+"""
+        generated = cobol2py.emit_python(
+            cobol2py.parse_cobol(source, source_format="free")
+        )
+        compile(generated, "<perform-thru>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        from contextlib import redirect_stdout
+        from io import StringIO
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["_cobol_dispatch"]("MAIN")
+        self.assertEqual(output.getvalue(), "A\nB\nDONE\n")
+
     def test_alter_redirects_goto_and_dispatcher_unwinds_current_paragraph(self):
         source = """IDENTIFICATION DIVISION.
 PROGRAM-ID. ALTERTEST.
