@@ -1950,3 +1950,25 @@ class SpaceSeparatedSubscriptRegressionTests(unittest.TestCase):
             cobol2py.normalize_data_reference("TABLE(IDX + 1)"),
             "table[idx + 1 - 1]",
         )
+
+
+class NestedAndMiscIntrinsicRegressionTests(unittest.TestCase):
+    def test_nested_function_intrinsics_do_not_leave_function_keyword(self):
+        translated = cobol2py.translate_expr("FUNCTION ASIN(FUNCTION ASIN(PI - 3))")
+        self.assertNotIn("function asin", translated.lower())
+        compile(translated, "<nested-intrinsic>", "eval")
+
+    def test_mod_intrinsic_becomes_python_remainder(self):
+        translated = cobol2py.translate_expr("FUNCTION MOD(5, 3)")
+        self.assertEqual(translated, "(5 % (3))")
+        self.assertEqual(eval(translated), 2)
+
+    def test_concatenate_intrinsic_becomes_string_join(self):
+        translated = cobol2py.translate_expr('FUNCTION CONCATENATE(WS-A, ",")')
+        self.assertEqual(translated, "''.join(str(_item) for _item in [ws_a, \","])")
+        compile(translated, "<concatenate-intrinsic>", "eval")
+
+    def test_random_intrinsic_without_arguments_is_valid_python(self):
+        translated = cobol2py.translate_expr("FUNCTION RANDOM")
+        self.assertEqual(translated, "__import__('random').random()")
+        compile(translated, "<random-intrinsic>", "eval")
