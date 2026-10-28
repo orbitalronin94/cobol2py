@@ -3021,7 +3021,7 @@ def translate_statement(
         display_operands = m.group(1).strip()
         # UPON selects the output device; it is not another DISPLAY operand.
         display_operands = re.sub(
-            r"\\s+UPON\\s+[A-Za-z0-9-]+\\s*$",
+            r"\s+UPON\s+[A-Za-z0-9-]+\s*$",
             "",
             display_operands,
             flags=re.IGNORECASE,
