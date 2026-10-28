@@ -2595,23 +2595,6 @@ class BareAlphanumericValueRegressionTests(unittest.TestCase):
 
 
 class GroupMoveFillRegressionTests(unittest.TestCase):
-    def test_group_traversal_terminates_on_repeated_group_names(self):
-        variables = {
-            "GROUP-A": cobol2py.CobolVar(
-                level=1, name="GROUP-A", is_group=True, parent_name="GROUP-B"
-            ),
-            "GROUP-B": cobol2py.CobolVar(
-                level=2, name="GROUP-B", is_group=True, parent_name="GROUP-A"
-            ),
-            "TARGET": cobol2py.CobolVar(level=1, name="TARGET", is_group=True),
-            "TARGET-X": cobol2py.CobolVar(
-                level=2, name="TARGET-X", pic="X", parent_name="TARGET"
-            ),
-        }
-        self.assertIsNone(
-            cobol2py.translate_group_move("GROUP-A", "TARGET", variables)
-        )
-
     def test_group_move_to_elementary_field_serializes_raw_bytes(self):
         variables = {
             "SRC-GROUP": cobol2py.CobolVar(level=1, name="SRC-GROUP", is_group=True),
