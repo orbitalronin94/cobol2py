@@ -933,7 +933,7 @@ def normalize_data_reference(
     if not match:
         return normalize_name(text)
     field_name, subscript_text, qualifier = match.groups()
-    subscripts = [part.strip() for part in subscript_text.split(",")] if subscript_text else []
+    subscripts = [part.strip() for part in re.split(r"[,;]", subscript_text)] if subscript_text else []
     if subscript_text and len(subscripts) == 1 and re.fullmatch(
         r"\s*[A-Za-z0-9_-]+(?:\s+[A-Za-z0-9_-]+)+\s*",
         subscript_text,
