@@ -1093,10 +1093,12 @@ def translate_expr(
         else normalize_data_reference(match.group(0), variables),
         expr,
     )
-    token_pattern = r"""("(?:[^"]|"")*"|'(?:[^']|'')*'|\d+[A-Za-z0-9-]*[A-Za-z][A-Za-z0-9-]*|[A-Za-z][A-Za-z0-9-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&\[\]-]|\s+|.)"""
+    token_pattern = r"""([Xx](?:'[0-9A-Fa-f]+'|"[0-9A-Fa-f]+")|"(?:[^"]|"")*"|'(?:[^']|'')*'|\d+[A-Za-z0-9-]*[A-Za-z][A-Za-z0-9-]*|[A-Za-z][A-Za-z0-9-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&\[\]-]|\s+|.)"""
     tokens = re.findall(token_pattern, expr)
     out = []
     for tok in tokens:
+        if re.fullmatch(r"""[Xx](?:'[0-9A-Fa-f]+'|"[0-9A-Fa-f]+")""", tok):
+            out.append(translate_literal(tok, variables))
         if tok.startswith(('"', "'")):
             out.append(translate_literal(tok, variables))
         elif tok.lower() in ("and", "or", "not"):
