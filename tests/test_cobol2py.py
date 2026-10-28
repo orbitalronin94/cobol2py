@@ -868,6 +868,27 @@ class JavaBackendTests(unittest.TestCase):
         self.assertIn("System.exit(0);", generated)
 
 
+class ImplicitSpecialRegisterTests(unittest.TestCase):
+    def test_referenced_debug_line_and_return_code_get_defaults(self):
+        source = "\\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. SPECIALREG.",
+            "DATA DIVISION.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "DISPLAY DEBUG-LINE RETURN-CODE.",
+            "STOP RUN.",
+        ])
+        program = cobol2py.parse_cobol(source, source_format="free")
+        names = {variable.name.upper() for variable in program.variables}
+        self.assertIn("DEBUG-LINE", names)
+        self.assertIn("RETURN-CODE", names)
+        generated = cobol2py.emit_python(program)
+        self.assertIn('debug_line: str = "      "', generated)
+        self.assertIn("return_code: int = 0", generated)
+        compile(generated, "<implicit-special-registers>", "exec")
+
+
 class CopybookTests(unittest.TestCase):
     def test_resolves_copybook_from_explicit_search_path(self):
         from pathlib import Path
