@@ -52,3 +52,25 @@ class ExternalCorpusManifestTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ExternalCorpusRuntimeDiagnosticTests(unittest.TestCase):
+    def test_generated_error_context_masks_string_literals(self):
+        import importlib.util
+
+        runner = ROOT / "benchmarks" / "run_external_corpus.py"
+        spec = importlib.util.spec_from_file_location("external_corpus_runner", runner)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+
+        stderr = (
+            'Traceback (most recent call last):\\n'
+            '  File "/tmp/candidate/translated.py", line 2, in main\\n'
+            "NameError: name 'cobol_is' is not defined\\n"
+        )
+        generated = "x = 1\\nprint('private external output')\\n"
+        context = module.candidate_error_context(stderr, generated)
+        self.assertEqual(context["candidate_error_line_number"], 2)
+        self.assertEqual(context["candidate_error_line"], "print(<literal>)")
+        self.assertNotIn("private external output", repr(context))
