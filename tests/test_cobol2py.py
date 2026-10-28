@@ -2872,3 +2872,15 @@ class SubtractCorrespondingRegressionTests(unittest.TestCase):
         self.assertIn("target['amount']", translated[0])
         self.assertIn(" - source['amount']", translated[0])
         compile(translated[0], "<subtract-corresponding>", "exec")
+
+
+class WhitespaceSeparatedSubscriptRegressionTests(unittest.TestCase):
+    def test_arithmetic_offsets_do_not_merge_adjacent_table_subscripts(self):
+        translated = cobol2py.normalize_data_reference(
+            "TABLE(INDEX1 INDEX2 + 1 INDEX3 + 1)"
+        )
+        self.assertEqual(
+            translated,
+            "table[int(index1) - 1][index2 + 1 - 1][index3 + 1 - 1]",
+        )
+        compile(translated, "<cobol-table-subscripts>", "eval")
