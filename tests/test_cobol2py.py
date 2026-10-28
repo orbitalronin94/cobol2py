@@ -2806,3 +2806,17 @@ class OrdinalIntrinsicRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_expr("FUNCTION ORD-MAX(4, 2, 7, 7, 2)")
         self.assertEqual(eval(translated), 3)
         compile(translated, "<ord-max>", "eval")
+
+
+class MalformedConditionRecoveryTests(unittest.TestCase):
+    def test_duplicate_equality_operator_is_collapsed(self):
+        translated = cobol2py.translate_condition("SENSOR-RESISTANCE == == 0")
+        self.assertEqual(translated, "sensor_resistance == 0")
+        compile(translated, "<duplicate-equality>", "eval")
+
+    def test_trailing_boolean_connector_does_not_emit_invalid_python(self):
+        translated = cobol2py.translate_condition(
+            "FS-SALBA > 806.81 AND FS-SALBA <= 1212.64 AND"
+        )
+        self.assertNotRegex(translated, r"\\b(?:and|or)\\s*$")
+        compile(translated, "<dangling-condition>", "eval")
