@@ -1497,7 +1497,7 @@ def translate_expr(
         return f"(lambda *_values: _values.index({reducer}(_values)) + 1)({translated_arguments})"
 
     expr = re.sub(
-        r"\\b(?:FUNCTION\\s+)?ORD-(MIN|MAX)\\s*\\(((?:[^()]|\\([^()]*\\))*)\\)",
+        r"\b(?:FUNCTION\s+)?ORD-(MIN|MAX)\s*\(((?:[^()]|\([^()]*\))*)\)",
         translate_ordinal_intrinsic,
         expr,
         flags=re.IGNORECASE,
