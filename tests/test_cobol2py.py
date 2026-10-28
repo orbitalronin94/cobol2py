@@ -2001,6 +2001,12 @@ class NestedAndMiscIntrinsicRegressionTests(unittest.TestCase):
         self.assertEqual(translated, "(5 % (3))")
         self.assertEqual(eval(translated), 2)
 
+    def test_rem_intrinsic_truncates_quotient_toward_zero(self):
+        positive = cobol2py.translate_expr("FUNCTION REM(7, 3)")
+        negative = cobol2py.translate_expr("FUNCTION REM(-7, 3)")
+        self.assertEqual(eval(positive), 1)
+        self.assertEqual(eval(negative), -1)
+
     def test_concatenate_intrinsic_becomes_string_join(self):
         translated = cobol2py.translate_expr('FUNCTION CONCATENATE(WS-A, ",")')
         self.assertEqual(translated, """''.join(str(_item) for _item in [ws_a, ","])""")
