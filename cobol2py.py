@@ -308,7 +308,7 @@ def _simple_storage_width(variable: CobolVar, variables: dict[str, CobolVar]) ->
     if variable.is_array:
         return None
     if variable.is_group:
-        children = [item for item in variables.values()
+        children = [item for item in (variables or {}).values()
                     if item.parent_name and item.parent_name.upper() == variable.name.upper()]
         widths = [_simple_storage_width(child, variables) for child in children]
         return sum(widths) if widths and all(width is not None for width in widths) else None
@@ -1061,12 +1061,12 @@ def translate_expr(
         if start.isdigit():
             start_index = str(int(start) - 1)
         else:
-            start_index = f"({normalize_data_reference(start, variables)} - 1)"
+            start_index = f"{normalize_data_reference(start, variables)} - 1"
         if not length or not length.strip():
             return f"{base_expr}[{start_index}:]"
         length = length.strip()
         length_expr = str(int(length)) if length.isdigit() else normalize_data_reference(length, variables)
-        return f"{base_expr}[{start_index}:{start_index} + ({length_expr})]"
+        return f"{base_expr}[{start_index}:({start_index}) + ({length_expr})]"
 
     expr = re.sub(
         r"\b([A-Za-z][A-Za-z0-9-]*)\s*\(\s*([^():]+)\s*:\s*([^()]*)\)",
