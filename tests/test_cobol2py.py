@@ -3084,7 +3084,7 @@ class StringMultipleSendingOperandsRegressionTests(unittest.TestCase):
             "TARGET": cobol2py.CobolVar(level=1, name="TARGET", pic="X(10)"),
         }
         translated = cobol2py.translate_paragraph(
-            [cobol2py.Node(kind="statement", value='STRING CONTROL-UP " - up" DELIMITED BY SIZE INTO TARGET')],
+            [cobol2py.Node(kind="stmt", text='STRING CONTROL-UP " - up" DELIMITED BY SIZE INTO TARGET', line=1)],
             set(), variables,
         )
         generated = "\\n".join(translated)
