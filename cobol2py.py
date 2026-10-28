@@ -1017,38 +1017,38 @@ def translate_expr(
     # after identifier normalization so Python built-ins aren't renamed as
     # COBOL data-names.
     translated = re.sub(
-        r"\\bfunction\\s+current_date\\b",
+        r"\bfunction\s+current_date\b",
         "(lambda _dt: _dt.strftime('%Y%m%d%H%M%S') + f'{_dt.microsecond // 10000:02d}' + _dt.strftime('%z'))(__import__('datetime').datetime.now().astimezone())",
         translated,
         flags=re.IGNORECASE,
     )
     translated = re.sub(
-        r"\\bfunction\\s+numval_c?\\s*\\[([^\\]]*)\\]",
-        r"float(\\1)",
+        r"\bfunction\s+numval_c?\s*\[([^\]]*)\]",
+        r"float(\1)",
         translated,
         flags=re.IGNORECASE,
     )
     translated = re.sub(
-        r"\\b(?:function\\s+)?lower_case\\s*\\[([^\\]]*)\\]",
-        r"(\\1).lower()",
+        r"\b(?:function\s+)?lower_case\s*\[([^\]]*)\]",
+        r"(\1).lower()",
         translated,
         flags=re.IGNORECASE,
     )
     translated = re.sub(
-        r"\\b(?:function\\s+)?upper_case\\s*\\[([^\\]]*)\\]",
-        r"(\\1).upper()",
+        r"\b(?:function\s+)?upper_case\s*\[([^\]]*)\]",
+        r"(\1).upper()",
         translated,
         flags=re.IGNORECASE,
     )
     translated = re.sub(
-        r"\\b(?:function\\s+)?trim\\s*\\[([^\\]]*)\\]",
-        r"(\\1).strip()",
+        r"\b(?:function\s+)?trim\s*\[([^\]]*)\]",
+        r"(\1).strip()",
         translated,
         flags=re.IGNORECASE,
     )
     translated = re.sub(
-        r"\\b(?:function\\s+)?length\\s*\\[([^\\]]*)\\]",
-        r"len(\\1)",
+        r"\b(?:function\s+)?length\s*\[([^\]]*)\]",
+        r"len(\1)",
         translated,
         flags=re.IGNORECASE,
     )
