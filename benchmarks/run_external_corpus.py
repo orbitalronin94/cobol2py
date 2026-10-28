@@ -53,6 +53,22 @@ def candidate_error_context(stderr: str, generated_source: str) -> dict[str, Any
     return context
 
 
+def sanitize_exception_message(message: str) -> str:
+    """Keep actionable runtime diagnostics while masking arbitrary quoted data."""
+    safe_type_names = {
+        "str", "int", "float", "bool", "bytes", "list", "dict", "tuple",
+        "set", "frozenset", "NoneType", "complex", "range", "slice",
+    }
+
+    def mask_quoted(match: re.Match[str]) -> str:
+        value = match.group(2)
+        if value in safe_type_names:
+            return match.group(0)
+        return "<quoted>"
+
+    return re.sub(r"""(['"])(.*?)\\1""", mask_quoted, message)[:240]
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -202,6 +218,8 @@ def main() -> int:
                             exception_type = tail.split(":", 1)[0].split()[-1]
                             if exception_type and exception_type[0].isupper() and exception_type.replace("_", "").isalnum():
                                 result["candidate_exception_type"] = exception_type
+                                if ":" in tail:
+                                    result["candidate_exception_message"] = sanitize_exception_message(tail.split(":", 1)[1].strip())
                             if exception_type == "NameError":
                                 # Import locally as a defensive guard in isolated benchmark runners.
                                 import re as _re
