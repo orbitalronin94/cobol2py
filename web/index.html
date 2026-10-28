@@ -1484,6 +1484,25 @@ def translate_expr(
 
     expr = rewrite_outside_literals(expr, replace_figurative_constants)
 
+    # ORD-MIN / ORD-MAX return the 1-based position of the first minimum /
+    # maximum argument. Rewrite before generic COBOL subscripts turn calls
+    # into chained brackets and lose argument separators.
+    def translate_ordinal_intrinsic(match: re.Match[str]) -> str:
+        operation, raw_arguments = match.groups()
+        arguments = split_cobol_items(raw_arguments)
+        if len(arguments) < 2:
+            return match.group(0)
+        translated_arguments = ", ".join(translate_expr(item, variables) for item in arguments)
+        reducer = "min" if operation.upper() == "MIN" else "max"
+        return f"(lambda *_values: _values.index({reducer}(_values)) + 1)({translated_arguments})"
+
+    expr = re.sub(
+        r"\\b(?:FUNCTION\\s+)?ORD-(MIN|MAX)\\s*\\(((?:[^()]|\\([^()]*\\))*)\\)",
+        translate_ordinal_intrinsic,
+        expr,
+        flags=re.IGNORECASE,
+    )
+
     # Rewrite qualified data-names first; protect the generated Python expression
     # from being tokenized again as COBOL (which can corrupt generated int(...) calls).
     qualified_reference_replacements: dict[str, str] = {}
