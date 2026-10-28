@@ -995,9 +995,9 @@ def translate_expr(
         def replacement(match: re.Match[str]) -> str:
             token = match.group(0).upper()
             if token.startswith("LOW-VALUE"):
-                return repr("\x00")
+                return "ZZCOBOLFIGLOWVALUEZZ"
             if token.startswith("HIGH-VALUE"):
-                return repr("\xff")
+                return "ZZCOBOLFIGHIGHVALUEZZ"
             if token.startswith("SPACE"):
                 return "ZZCOBOLFIGSPACEZZ"
             return "ZZCOBOLFIGZEROZZ"
