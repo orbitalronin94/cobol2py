@@ -984,6 +984,10 @@ def normalize_data_reference(
     def index_expression(subscript: str) -> str:
         if subscript.isdigit():
             return str(int(subscript) - 1)
+        if re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*", subscript):
+            # COBOL subscripts are numeric even when the translator inferred
+            # their storage as text; coerce before using Python list indexing.
+            return f"int({normalize_name(subscript)}) - 1"
         return f"{normalize_name(subscript)} - 1"
 
     variable = variable_map.get(field_name.upper())
