@@ -1916,11 +1916,17 @@ def translate_group_fill_move(source: str, target: str, variables: dict[str, Cob
     if target_match is None:
         return None
     root = variables.get(target_match.group(1).upper())
-    if root is None or not root.is_group or root.is_array:
+    if root is None or not root.is_group:
         return None
 
     assignments: list[str] = []
     target_expr = normalize_data_reference(target, variables)
+    # A subscripted group reference names one occurrence. An unsubscripted
+    # OCCURS group names the whole table, so fill each row without replacing
+    # the list-of-dictionaries storage with a scalar string.
+    has_explicit_subscript = bool(re.search(r"\(\s*[^)]*\)", target.strip()))
+    if root.is_array and not has_explicit_subscript and not root.occurs:
+        return None
 
     def field_width(variable: CobolVar) -> int:
         if variable.pic:
@@ -1945,16 +1951,20 @@ def translate_group_fill_move(source: str, target: str, variables: dict[str, Cob
             if child.is_group and not child.is_array:
                 visit(child, child_expr, next_ancestors)
                 continue
-            # OCCURS groups need per-row field paths; avoid replacing their
-            # structured representation with a scalar.
             if child.is_group and child.is_array:
+                for index in range(child.occurs or 0):
+                    visit(child, f"{child_expr}[{index}]", next_ancestors)
                 continue
             value = repr(fill_char * field_width(child))
             if child.is_array:
                 value = f"[{value}] * {child.occurs}" if child.occurs else "[]"
             assignments.append(f"{child_expr} = {value}")
 
-    visit(root, target_expr, set())
+    if root.is_array and not has_explicit_subscript:
+        for index in range(root.occurs or 0):
+            visit(root, f"{target_expr}[{index}]", set())
+    else:
+        visit(root, target_expr, set())
     return assignments or None
 
 
