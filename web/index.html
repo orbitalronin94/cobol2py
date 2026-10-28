@@ -1252,6 +1252,19 @@ def normalize_data_reference(
 ) -> str:
     """Map a COBOL data-name (including OF/IN qualification) into nested dicts."""
     text = name.strip()
+    # A COBOL qualified reference can name several enclosing records, e.g.
+    # FIELD OF GROUP OF RECORD. The nearest qualifier determines the field
+    # path when names are unique in the simplified symbol table; discard only
+    # the redundant outer qualifiers before applying the normal resolver.
+    qualified_chain = re.fullmatch(
+        r"([A-Za-z0-9-]+(?:\s*\([^()]*\))?)\s+(?:OF|IN)\s+"
+        r"([A-Za-z0-9-]+(?:\s*\([^()]*\))?)"
+        r"(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+(?:\s*\([^()]*\))?)+",
+        text,
+        re.IGNORECASE,
+    )
+    if qualified_chain:
+        text = f"{qualified_chain.group(1)} OF {qualified_chain.group(2)}"
     seen = set() if _seen is None else _seen
     reference_key = text.upper()
     if reference_key in seen:
