@@ -123,7 +123,7 @@ class TranslationTests(unittest.TestCase):
             condition_names={"C": ("WS-D33", [('" "', None)])},
         )
         self.assertNotIn(" OF ", translated.upper())
-        self.assertTrue(eval(translated, {"cobol_ws_d33": " "}))
+        self.assertTrue(eval(translated, {"ws_d33": " "}))
 
     def test_unqualified_level_88_condition_still_expands(self):
         variable = cobol2py.CobolVar(level=77, name="WS-D33", pic="X(4)")
@@ -132,7 +132,7 @@ class TranslationTests(unittest.TestCase):
             variables={"WS-D33": variable},
             condition_names={"C": ("WS-D33", [('" "', None)])},
         )
-        self.assertTrue(eval(translated, {"cobol_ws_d33": " "}))
+        self.assertTrue(eval(translated, {"ws_d33": " "}))
 
     def test_simple_value_clause_initializes_variable(self):
         self.assertEqual(
