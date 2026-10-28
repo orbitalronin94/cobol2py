@@ -2090,3 +2090,21 @@ class CompoundComparisonRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_condition("IRC-PARAMS LESS OR EQUAL TO 1")
         self.assertEqual(translated, "irc_params <= 1")
         compile(translated, "<less-or-equal>", "eval")
+
+
+class CobolDateIntrinsicRegressionTests(unittest.TestCase):
+    def test_date_of_integer_converts_day_one_to_16010101(self):
+        translated = cobol2py.translate_expr("FUNCTION DATE-OF-INTEGER(1)")
+        compile(translated, "<date-of-integer>", "eval")
+        self.assertEqual(eval(translated), 16010101)
+
+    def test_integer_of_date_converts_16010101_to_day_one(self):
+        translated = cobol2py.translate_expr("FUNCTION INTEGER-OF-DATE(16010101)")
+        compile(translated, "<integer-of-date>", "eval")
+        self.assertEqual(eval(translated), 1)
+
+    def test_seconds_past_midnight_emits_valid_python(self):
+        translated = cobol2py.translate_expr("FUNCTION SECONDS-PAST-MIDNIGHT")
+        compile(translated, "<seconds-past-midnight>", "eval")
+        self.assertGreaterEqual(eval(translated), 0)
+        self.assertLess(eval(translated), 86400)
