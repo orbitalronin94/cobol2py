@@ -1024,6 +1024,17 @@ def resolve_copybooks(
                 output.append(line)
                 continue
             name, suffix = match.groups()
+            # Library-qualified COPY (OF/IN library-name) still resolves by the
+            # copybook name through the configured search roots. GnuCOBOL's -I
+            # paths commonly contain these files even when the library label is
+            # only a logical name in the source.
+            suffix = re.sub(
+                r"\s+(?:OF|IN)\s+[A-Za-z0-9_.-]+(?=\s+(?:REPLACING\b|$)|$)",
+                "",
+                suffix,
+                flags=re.IGNORECASE,
+            )
+            suffix = re.sub(r"^\s*SUPPRESS\b\s*", "", suffix, flags=re.IGNORECASE)
             replacements: list[tuple[str, str]] = []
             if suffix.strip():
                 clause = re.match(r"^\s*REPLACING\s+(.+?)\s*$", suffix, re.IGNORECASE)
