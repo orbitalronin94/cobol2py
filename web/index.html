@@ -463,7 +463,7 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
         elif declarations and continuation.match(source_line):
             prior_number, prior_text = declarations[-1]
             declarations[-1] = (prior_number, prior_text.rstrip() + " " + source_line.strip())
-    for _, text in declarations:
+    for declaration_line, text in declarations:
         m = RE_VAR.match(text)
         if not m:
             continue
@@ -479,6 +479,11 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
             while hierarchy and hierarchy[-1].level >= level:
                 hierarchy.pop()
         name = m.group(2).upper()
+        # FILLER items have storage but are not referenceable COBOL data-names.
+        # Give each one a stable synthetic name so repeated FILLER fields do not
+        # collide in Python dictionaries or overwrite one another in name maps.
+        if name == "FILLER":
+            name = f"FILLER-{declaration_line}"
         rest = m.group(3)
         pic_m = RE_PIC.search(rest)
         val_m = RE_VALUE.search(rest)
