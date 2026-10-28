@@ -2237,11 +2237,11 @@ def translate_group_to_group_move(
 ) -> Optional[list[str]]:
     """Copy COBOL group storage by byte position while preserving target structure."""
     source_match = re.fullmatch(
-        r"([A-Za-z0-9-]+)(?:\\s+(?:OF|IN)\\s+[A-Za-z0-9-]+)?(?:\\s*\\([^)]*\\))?",
+        r"([A-Za-z0-9-]+)(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?(?:\s*\([^)]*\))?",
         source.strip(), re.IGNORECASE,
     )
     target_match = re.fullmatch(
-        r"([A-Za-z0-9-]+)(?:\\s*\\([^)]*\\))?(?:\\s+(?:OF|IN)\\s+[A-Za-z0-9-]+)?",
+        r"([A-Za-z0-9-]+)(?:\s*\([^)]*\))?(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?",
         target.strip(), re.IGNORECASE,
     )
     if source_match is None or target_match is None:
@@ -2250,7 +2250,7 @@ def translate_group_to_group_move(
     target_root = variables.get(target_match.group(1).upper())
     if source_root is None or target_root is None or not source_root.is_group or not target_root.is_group:
         return None
-    target_has_subscript = bool(re.search(r"\\([^)]*\\)", target.strip()))
+    target_has_subscript = bool(re.search(r"\([^)]*\)", target.strip()))
     if target_root.is_array and not target_has_subscript:
         return None
 
