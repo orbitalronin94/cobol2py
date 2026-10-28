@@ -2887,6 +2887,28 @@ class WhitespaceSeparatedSubscriptRegressionTests(unittest.TestCase):
 
 
 class GroupLiteralMoveRegressionTests(unittest.TestCase):
+    def test_program_move_to_nested_group_preserves_group_storage(self):
+        source = "\\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. GROUPLITERAL.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 TEST-RESULTS.",
+            "   02 PAR-NAME.",
+            "      03 FILLER PIC X(19).",
+            "      03 PARDOT-X PIC X.",
+            "      03 DOTVALUE PIC 99.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            '   MOVE "CALL-TEST-1" TO PAR-NAME.',
+            "   STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(
+            cobol2py.parse_cobol(source, source_format="free")
+        )
+        self.assertIn("_cobol_group_move_par_name = str('CALL-TEST-1').ljust(22)", generated)
+        self.assertNotIn("par_name = 'CALL-TEST-1'", generated)
+
     def test_literal_move_distributes_bytes_without_replacing_nested_group(self):
         variables = {
             "PAR-NAME": cobol2py.CobolVar(
