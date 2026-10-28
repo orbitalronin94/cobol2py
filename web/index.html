@@ -3119,14 +3119,39 @@ def translate_statement(
     # INITIALIZE resets elementary storage by category, not to its VALUE clause.
     initialize_prefix = re.match(r"INITIALIZE\s+", s, re.IGNORECASE)
     if initialize_prefix:
-        target = s[initialize_prefix.end():].strip()
+        target_and_clauses = s[initialize_prefix.end():].strip()
+        target_and_clauses = re.sub(r"\s+END-INITIALIZE\s*$", "", target_and_clauses, flags=re.IGNORECASE)
+        replacing_match = re.search(r"\s+REPLACING\b(.*)$", target_and_clauses, re.IGNORECASE)
+        target = target_and_clauses[:replacing_match.start()].strip() if replacing_match else target_and_clauses
         variable_map = variables or {}
         root_name = target.split()[0].split("(")[0].upper()
         root = variable_map.get(root_name)
         if root is None:
             return [f"# INITIALIZE no traducido: {s}"]
 
+        replacing_values: dict[str, str] = {}
+        if replacing_match:
+            replacement_pattern = re.compile(
+                r"""\b(ALPHABETIC|ALPHANUMERIC|NUMERIC|ALPHANUMERIC-EDITED|NUMERIC-EDITED)\s+DATA\s+BY\s+((?:"(?:[^"]|"")*"|'(?:[^']|'')*'|[+-]?\d+(?:\.\d+)?|[A-Za-z][A-Za-z0-9-]*))""",
+                re.IGNORECASE,
+            )
+            for replacement in replacement_pattern.finditer(replacing_match.group(1)):
+                replacing_values[replacement.group(1).upper()] = replacement.group(2)
+
         def initial_storage_value(variable: CobolVar) -> str:
+            pic = (variable.pic or "").upper()
+            category = "NUMERIC" if "9" in pic else (
+                "ALPHABETIC" if "A" in pic and "X" not in pic else "ALPHANUMERIC"
+            )
+            replacement = replacing_values.get(category)
+            if replacement is None and category == "ALPHABETIC":
+                replacement = replacing_values.get("ALPHANUMERIC")
+            if replacement is not None:
+                value = translate_literal(replacement, variable_map)
+                if any(char in pic for char in ("X", "A")):
+                    width = pic_character_count(pic)
+                    return f"str({value})[:{width}].ljust({width})" if width else f"str({value})"
+                return value
             if variable.pic and any(char in variable.pic.upper() for char in ("X", "A")):
                 width = pic_character_count(variable.pic)
                 return repr(" " * width) if width else repr("")
