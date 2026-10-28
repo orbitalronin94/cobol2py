@@ -1165,7 +1165,7 @@ def translate_expr(
         expr,
         flags=re.IGNORECASE,
     )
-    intrinsic_names = {"NUMVAL", "NUMVAL-C", "LOWER-CASE", "UPPER-CASE", "TRIM", "LENGTH", "ABS", "ACOS", "ASIN", "ATAN", "COS", "EXP", "LOG", "LOG10", "SIN", "SQRT", "TAN", "MIN", "MAX", "COBOL-MIN", "COBOL-MAX", "PRESENT-VALUE", "ANNUITY", "INTEGER", "INTEGER-PART", "ORD", "CHAR", "MOD", "CONCATENATE", "RANDOM", "DATE-OF-INTEGER", "INTEGER-OF-DATE", "DAY-OF-INTEGER", "INTEGER-OF-DAY", "SECONDS-PAST-MIDNIGHT"}
+    intrinsic_names = {"NUMVAL", "NUMVAL-C", "LOWER-CASE", "UPPER-CASE", "TRIM", "LENGTH", "ABS", "ACOS", "ASIN", "ATAN", "COS", "EXP", "LOG", "LOG10", "SIN", "SQRT", "TAN", "MIN", "MAX", "COBOL-MIN", "COBOL-MAX", "PRESENT-VALUE", "ANNUITY", "TEST-NUMVAL", "INTEGER", "INTEGER-PART", "ORD", "CHAR", "MOD", "CONCATENATE", "RANDOM", "DATE-OF-INTEGER", "INTEGER-OF-DATE", "DAY-OF-INTEGER", "INTEGER-OF-DAY", "SECONDS-PAST-MIDNIGHT"}
     # COBOL reference modification uses 1-based (start:length) positions.
     # Convert the start to a zero-based Python offset and retain the requested
     # character count as the slice end.
@@ -1277,7 +1277,7 @@ def translate_expr(
     intrinsic_call_names = (
         r"NUMVAL(?:_C)?|LOWER_CASE|UPPER_CASE|TRIM|LENGTH|ABS|ACOS|ASIN|ATAN|"
         r"COS|EXP|LOG|LOG10|SIN|SQRT|TAN|MIN|MAX|COBOL_MIN|COBOL_MAX|"
-        r"PRESENT_VALUE|ANNUITY|INTEGER_PART|INTEGER|ORD|CHAR|MOD|CONCATENATE|RANDOM|"
+        r"PRESENT_VALUE|ANNUITY|TEST_NUMVAL|INTEGER_PART|INTEGER|ORD|CHAR|MOD|CONCATENATE|RANDOM|"
         r"DATE_OF_INTEGER|INTEGER_OF_DATE|DAY_OF_INTEGER|INTEGER_OF_DAY|SECONDS_PAST_MIDNIGHT"
     )
     translated = re.sub(
@@ -1350,6 +1350,17 @@ def translate_expr(
         flags=re.IGNORECASE,
     )
 
+    translated = re.sub(
+        r"\b(?:function\s+)?test_numval\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
+        lambda match: (
+            "(lambda _s: (0 if __import__('re').fullmatch(r'\\s*[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)\\s*', str(_s)) "
+            "else next((i + 1 for i, _c in enumerate(str(_s)) if _c not in '0123456789+-.' "
+            "or (_c in '+-' and i > 0) or (_c == '.' and '.' in str(_s)[:i]), 1)))("
+            + intrinsic_argument(match) + ")"
+        ),
+        translated,
+        flags=re.IGNORECASE,
+    )
     translated = re.sub(
         r"\b(?:function\s+)?numval(?:_c)?\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
         lambda match: "float(" + intrinsic_argument(match) + ")",
