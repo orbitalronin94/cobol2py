@@ -8,13 +8,13 @@ El benchmark actual considera que un caso coincide cuando el `stdout` y el códi
 
 ## Medición externa más reciente
 
-La ejecución externa completa confirmada [#40757950854](https://github.com/orbitalronin94/cobol2py/actions/runs/40757950854), medida sobre el commit `eba3b3aacd420c19f6fd4f24d32ad64883d5ebac`, obtuvo:
+La ejecución externa completa confirmada [#40760502862](https://github.com/orbitalronin94/cobol2py/actions/runs/40760502862), medida sobre el commit `0f8817709d3baaaecc7b15c022e6ea7ab96f2542`, obtuvo:
 
-- Muestra primaria: **162/500 (32,40 %)**.
-- Holdout disjunto: **184/500 (36,80 %)**.
-- Combinado: **346/1.000 (34,60 %)**.
+- Muestra primaria: **173/500 (34,60 %)**.
+- Holdout disjunto: **196/500 (39,20 %)**.
+- Combinado: **369/1.000 (36,90 %)**.
 
-La ejecución completa anterior [#40753902144](https://github.com/orbitalronin94/cobol2py/actions/runs/40753902144) había obtenido 344/1.000 (34,40 %), por lo que la mejora confirmada es de dos coincidencias (+0,20 puntos porcentuales). El commit medido es anterior a la cabeza actual de desarrollo; esta puntuación no debe atribuirse a commits posteriores hasta que termine un nuevo benchmark en ambas muestras. El porcentaje mide coincidencia exacta de stdout y código de retorno en este dataset, no compatibilidad completa del lenguaje COBOL.
+Frente a la ejecución completa anterior [#40757950854](https://github.com/orbitalronin94/cobol2py/actions/runs/40757950854), la mejora es de 23 coincidencias (+2,30 puntos porcentuales): 11 más en primaria y 12 más en holdout. Frente al 34,40 % de [#40753902144](https://github.com/orbitalronin94/cobol2py/actions/runs/40753902144), la mejora es de 25 coincidencias (+2,50 puntos). El commit medido es anterior a la cabeza actual de desarrollo. La ejecución [#40761767797](https://github.com/orbitalronin94/cobol2py/actions/runs/40761767797) sigue en curso sobre el commit `e62d8873c48157a2abed7e468894e380e310307f`, que tampoco es la cabeza actual; no atribuir el 36,90 % a commits posteriores hasta completar ambas muestras para el SHA correspondiente. El porcentaje mide coincidencia exacta de stdout y código de retorno en este dataset, no compatibilidad completa del lenguaje COBOL.
 
 ## Áreas cubiertas por el corpus actual (105 casos)
 
