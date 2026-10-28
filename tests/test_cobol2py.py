@@ -2732,3 +2732,32 @@ class QualifiedParentSubscriptRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_expr("PARAM OF TABLE(INDEX)")
         compile(translated, "<qualified-parent-subscript>", "eval")
         self.assertEqual(translated, "table[int(index_1) - 1]['param']")
+
+
+class SearchAllNextSentenceRegressionTests(unittest.TestCase):
+    def test_next_sentence_is_not_part_of_search_key_expression(self):
+        variables = {
+            "WS-TABLE": cobol2py.CobolVar(
+                level=1, name="WS-TABLE", is_group=True, is_array=True, occurs=3,
+                ascending_key="WS-KEY", indexed_by="WS-IDX",
+            ),
+            "WS-KEY": cobol2py.CobolVar(
+                level=5, name="WS-KEY", pic="X", parent_name="WS-TABLE"
+            ),
+        }
+        node = cobol2py.Node(
+            kind="search_all",
+            text="SEARCH ALL WS-TABLE",
+            line=10,
+            body=[
+                cobol2py.Node(
+                    kind="when",
+                    text="WS-KEY(WS-IDX) = WS-TARGET NEXT SENTENCE",
+                    line=11,
+                )
+            ],
+        )
+        generated = "\n".join(cobol2py.translate_nodes([node], set(), 0, variables))
+        compile(generated, "<search-all-next-sentence>", "exec")
+        self.assertIn("== ws_target", generated)
+        self.assertNotIn("next sentence", generated.lower())
