@@ -2346,3 +2346,11 @@ class ResidualIsDataReferenceFallbackRegressionTests(unittest.TestCase):
         translated = cobol2py.normalize_data_reference("ERROR-COUNTER IS EQUAL TO ZERO")
         self.assertEqual(translated, "error_counter == 0")
         compile(translated, "<data-reference-is-equal>", "eval")
+
+
+class TruncatedValueIsClauseRegressionTests(unittest.TestCase):
+    def test_value_is_at_end_of_truncated_declaration_is_not_a_literal(self):
+        variables = cobol2py.parse_variables([(1, "01 WS-CHAR PIC X VALUE IS")])
+        self.assertEqual(len(variables), 1)
+        self.assertIsNone(variables[0].value)
+        self.assertEqual(variables[0].py_default(), repr(" "))
