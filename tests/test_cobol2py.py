@@ -2520,7 +2520,7 @@ class InitializeOccursGroupRegressionTests(unittest.TestCase):
 
 class FillerStorageRegressionTests(unittest.TestCase):
     def test_repeated_filler_items_get_distinct_storage_keys(self):
-        source = "\\n".join([
+        source = "\n".join([
             "IDENTIFICATION DIVISION.",
             "PROGRAM-ID. FILLERTEST.",
             "DATA DIVISION.",
