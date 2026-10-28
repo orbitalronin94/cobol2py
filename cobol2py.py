@@ -1686,6 +1686,35 @@ def translate_condition(
     # protected before the general IS/NOT rewrites below.
     class_condition_replacements: dict[str, str] = {}
 
+    def rewrite_sign_conditions(chunk: str) -> str:
+        pattern = (
+            r"\b([A-Za-z0-9-]+(?:\s*\([^()]*\))?"
+            r"(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?)"
+            r"\s+(?:IS\s+)?(NOT\s+)?(POSITIVE|NEGATIVE|ZERO)\b"
+        )
+
+        def replacement(match: re.Match[str]) -> str:
+            operand = translate_expr(match.group(1), variables)
+            positive_operator = {
+                "POSITIVE": ">",
+                "NEGATIVE": "<",
+                "ZERO": "==",
+            }[match.group(3).upper()]
+            negative_operator = {
+                "POSITIVE": "<=",
+                "NEGATIVE": ">=",
+                "ZERO": "!=",
+            }[match.group(3).upper()]
+            operator = negative_operator if match.group(2) else positive_operator
+            expression = f"({operand} {operator} 0)"
+            token = f"__COBOL_SIGN_CONDITION_{len(class_condition_replacements)}__"
+            class_condition_replacements[token] = expression
+            return repr(token)
+
+        return re.sub(pattern, replacement, chunk, flags=re.IGNORECASE)
+
+    cond = rewrite_outside_literals(cond, rewrite_sign_conditions)
+
     def rewrite_class_conditions(chunk: str) -> str:
         pattern = (
             r"\b([A-Za-z0-9-]+(?:\s*\([^()]*\))?"
