@@ -2209,6 +2209,40 @@ class MoveCorrespondingRegressionTests(unittest.TestCase):
         self.assertEqual(namespace["dst"]["code"], "ABC  ")
 
 
+class StringStatementRegressionTests(unittest.TestCase):
+    def test_string_delimited_by_size_pads_receiving_field(self):
+        variables = {
+            item.name: item
+            for item in cobol2py.parse_variables([
+                (1, "01 WS-TARGET PIC X(10)."),
+            ])
+        }
+        translated = cobol2py.translate_statement(
+            'STRING "HELLO" DELIMITED BY SIZE INTO WS-TARGET END-STRING',
+            set(),
+            variables,
+        )
+        namespace = {"ws_target": " " * 10}
+        exec("\\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_target"], "HELLO     ")
+
+    def test_string_delimited_by_space_stops_at_first_space(self):
+        variables = {
+            item.name: item
+            for item in cobol2py.parse_variables([
+                (1, "01 WS-TARGET PIC X(10)."),
+            ])
+        }
+        translated = cobol2py.translate_statement(
+            'STRING "HELLO WORLD" DELIMITED BY SPACE INTO WS-TARGET',
+            set(),
+            variables,
+        )
+        namespace = {"ws_target": " " * 10}
+        exec("\\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_target"], "HELLO     ")
+
+
 class QualifiedDisplayOperandRegressionTests(unittest.TestCase):
     def test_display_upon_device_is_not_emitted_as_an_operand(self):
         translated = cobol2py.translate_statement('DISPLAY "HELLO" UPON CONSOLE', set(), {})
