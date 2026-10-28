@@ -1236,11 +1236,18 @@ def translate_expr(
 
     expr = rewrite_outside_literals(expr, replace_figurative_constants)
 
-    # Rewrite qualified data-names first; unqualified child names are resolved
-    # through the parsed hierarchy when they are unambiguous in the model.
+    # Rewrite qualified data-names first; protect the generated Python expression
+    # from being tokenized again as COBOL (which can corrupt generated int(...) calls).
+    qualified_reference_replacements: dict[str, str] = {}
+
+    def protect_qualified_reference(match: re.Match[str]) -> str:
+        token = f"ZZCOBOLQUALIFIEDREFERENCE{len(qualified_reference_replacements)}ZZ"
+        qualified_reference_replacements[token.lower()] = normalize_data_reference(match.group(0), variables)
+        return token
+
     expr = re.sub(
         r"\b[A-Za-z][A-Za-z0-9-]*(?:\s*\((?:[^()]|\([^()]*\))*\))?\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*(?:\s*\((?:[^()]|\([^()]*\))*\))?",
-        lambda match: normalize_data_reference(match.group(0), variables),
+        protect_qualified_reference,
         expr,
         flags=re.IGNORECASE,
     )
@@ -1631,6 +1638,11 @@ def translate_expr(
         chained_reference_modification,
         translated,
     )
+    # Restore protected qualified references only after all COBOL tokens and
+    # intrinsic names have been normalized.
+    for token, replacement in qualified_reference_replacements.items():
+        translated = translated.replace(token, replacement)
+
     # Guard against malformed compound comparisons emitted by dialect variants.
     translated = translated.replace(">==", ">=").replace("<==", "<=")
     return translated
