@@ -166,14 +166,29 @@ def main() -> int:
                         result["reference_returncode"] = reference["returncode"]
                         result["stdout_match"] = candidate["stdout"] == reference["stdout"]
                         result["returncode_match"] = candidate["returncode"] == reference["returncode"]
-                        # Store only the exception class, never traceback/source lines,
-                        # so runtime mismatches can be grouped without republishing code.
+                        # Record bounded diagnostics, not program output, so the
+                        # report can classify mismatches without republishing corpus data.
+                        candidate_stdout = candidate["stdout"]
+                        reference_stdout = reference["stdout"]
+                        result["candidate_stdout_length"] = len(candidate_stdout)
+                        result["reference_stdout_length"] = len(reference_stdout)
+                        if candidate_stdout != reference_stdout:
+                            first_difference = next(
+                                (index for index, (left, right) in enumerate(zip(candidate_stdout, reference_stdout))
+                                 if left != right),
+                                min(len(candidate_stdout), len(reference_stdout)),
+                            )
+                            result["stdout_first_difference"] = first_difference
                         stderr_lines = [line.strip() for line in candidate["stderr"].splitlines() if line.strip()]
                         if stderr_lines:
                             tail = stderr_lines[-1]
                             exception_type = tail.split(":", 1)[0].split()[-1]
                             if exception_type and exception_type[0].isupper() and exception_type.replace("_", "").isalnum():
                                 result["candidate_exception_type"] = exception_type
+                            if exception_type == "NameError":
+                                missing = re.search(r"name ['\"]([^'\"]+)['\"] is not defined", tail)
+                                if missing:
+                                    result["candidate_missing_name"] = missing.group(1)[:100]
                         if candidate["launched"] and not candidate["timeout"] and result["stdout_match"] and result["returncode_match"]:
                             result.update({"status": "passed", "reason": None})
                         else:
