@@ -1097,14 +1097,14 @@ def translate_expr(
     }
     for cobol_name, python_name in math_intrinsics.items():
         translated = re.sub(
-            rf"\\b(?:function\\s+)?{cobol_name}\\s*(?:\\[([^\\]]*)\\]|\\(([^()]*)\\))",
+            rf"\b(?:function\s+)?{cobol_name}\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
             lambda match, name=python_name: f"__import__('math').{name}({intrinsic_argument(match)})",
             translated,
             flags=re.IGNORECASE,
         )
     for cobol_name, python_name in (("min", "min"), ("max", "max"), ("cobol_min", "min"), ("cobol_max", "max")):
         translated = re.sub(
-            rf"\\b(?:function\\s+)?{cobol_name}\\s*(?:\\[([^\\]]*)\\]|\\(([^()]*)\\))",
+            rf"\b(?:function\s+)?{cobol_name}\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
             lambda match, name=python_name: f"{name}({intrinsic_argument(match)})",
             translated,
             flags=re.IGNORECASE,
