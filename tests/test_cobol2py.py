@@ -2595,6 +2595,18 @@ class BareAlphanumericValueRegressionTests(unittest.TestCase):
 
 
 class GroupMoveFillRegressionTests(unittest.TestCase):
+    def test_group_move_to_elementary_field_serializes_raw_bytes(self):
+        variables = {
+            "SRC-GROUP": cobol2py.CobolVar(level=1, name="SRC-GROUP", is_group=True),
+            "SRC-A": cobol2py.CobolVar(level=2, name="SRC-A", pic="X(2)", parent_name="SRC-GROUP"),
+            "SRC-B": cobol2py.CobolVar(level=2, name="SRC-B", pic="X(2)", parent_name="SRC-GROUP"),
+            "TARGET-PIC": cobol2py.CobolVar(level=1, name="TARGET-PIC", pic="X(4)"),
+        }
+        expression = cobol2py.translate_move_value("SRC-GROUP", "TARGET-PIC", variables)
+        self.assertEqual(eval(expression, {
+            "src_group": {"src_a": "AB", "src_b": "CD"}
+        }), "ABCD")
+
     def test_group_to_group_move_copies_bytes_across_different_field_layouts(self):
         variables = {
             "SRC-GROUP": cobol2py.CobolVar(level=1, name="SRC-GROUP", is_group=True),
