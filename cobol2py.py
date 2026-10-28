@@ -2232,6 +2232,75 @@ def translate_group_literal_move(source: str, target: str, variables: dict[str, 
     return [f"{temp_name} = str({translate_literal(raw, variables)}).ljust({offset})", *assignments]
 
 
+def translate_group_to_elementary_move(
+    source: str, target: str, variables: dict[str, CobolVar]
+) -> Optional[str]:
+    """Flatten a COBOL group into its contiguous DISPLAY representation."""
+    source_match = re.fullmatch(
+        r"([A-Za-z0-9-]+)(?:\\s+(?:OF|IN)\\s+[A-Za-z0-9-]+)?(?:\\s*\\([^)]*\\))?",
+        source.strip(),
+        re.IGNORECASE,
+    )
+    target_match = re.match(r"([A-Za-z0-9-]+)", target.strip())
+    if source_match is None or target_match is None:
+        return None
+    root = variables.get(source_match.group(1).upper())
+    receiving = variables.get(target_match.group(1).upper())
+    if root is None or not root.is_group or receiving is None or not receiving.pic:
+        return None
+    source_expr = normalize_data_reference(source, variables)
+
+    def width_of(variable: CobolVar) -> int:
+        return pic_character_count(variable.pic or "") or pic_digit_count(variable.pic or "") or 1
+
+    def leaves(group: CobolVar, group_expr: str, ancestors: set[str]):
+        if group.name.upper() in ancestors:
+            return
+        next_ancestors = ancestors | {group.name.upper()}
+        children = [
+            child for child in variables.values()
+            if (child.parent_name or "").upper() == group.name.upper()
+            and not child.redefines
+        ]
+        for child in children:
+            child_expr = f"{group_expr}[{normalize_name(child.name)!r}]"
+            if child.is_group:
+                if child.is_array:
+                    for index in range(child.occurs or 0):
+                        yield from leaves(child, f"{child_expr}[{index}]", next_ancestors)
+                else:
+                    yield from leaves(child, child_expr, next_ancestors)
+            elif child.is_array:
+                for index in range(child.occurs or 0):
+                    yield (f"{child_expr}[{index}]", child)
+            else:
+                yield (child_expr, child)
+
+    pieces: list[str] = []
+    for field_expr, field in leaves(root, source_expr, set()):
+        width = width_of(field)
+        pic = (field.pic or "").upper()
+        if "X" in pic or "A" in pic:
+            pieces.append(f"str({field_expr})[:{width}].ljust({width})")
+        elif "9" in pic and "V" in pic:
+            scale = pic_digit_count(pic.split("V", 1)[1])
+            factor = 10 ** scale
+            pieces.append(
+                f"str(int(abs(float({field_expr})) * {factor})).zfill({width})[-{width}:]"
+            )
+        elif "9" in pic:
+            pieces.append(f"str(abs(int({field_expr}))).zfill({width})[-{width}:]")
+        else:
+            pieces.append(f"str({field_expr})[:{width}].ljust({width})")
+    if not pieces:
+        return None
+    expression = " + ".join(pieces)
+    target_width = pic_character_count(receiving.pic or "")
+    if target_width:
+        return f"str({expression})[:{target_width}].ljust({target_width})"
+    return expression
+
+
 def translate_move_value(source: str, target: str, variables: dict[str, CobolVar]) -> str:
     """Translate MOVE with basic receiving-field size semantics.
 
