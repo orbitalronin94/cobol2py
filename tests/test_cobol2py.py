@@ -1,4 +1,5 @@
 """Regression tests for cobol2py. Run with: python -m unittest discover -s tests -v."""
+import ast
 import unittest
 
 import cobol2py
@@ -1703,3 +1704,29 @@ class MultidimensionalTableReferenceRegressionTests(unittest.TestCase):
             cobol2py.normalize_data_reference("ENTRY-2(03, 05)"),
             "entry_2[2][4]",
         )
+
+
+class NegatedComparisonAndFigurativeConstantTests(unittest.TestCase):
+    def test_not_before_comparison_operator_inverts_operator(self):
+        cases = {
+            "DECL-EXEC-SW NOT = SPACE": "decl_exec_sw != \" \"",
+            "WS-NUM NOT < 10": "ws_num >= 10",
+            "WS-NUM NOT > 10": "ws_num <= 10",
+        }
+        for source, expected in cases.items():
+            with self.subTest(source=source):
+                translated = cobol2py.translate_condition(source)
+                self.assertEqual(translated, expected)
+                compile(translated, "<not-comparison>", "eval")
+
+    def test_figurative_constants_survive_expression_tokenization(self):
+        for source, expected in [
+            ("LOW-VALUES", "\\x00"),
+            ("HIGH-VALUES", "\\xff"),
+            ("SPACES", " "),
+            ("ZEROS", "0"),
+        ]:
+            with self.subTest(source=source):
+                translated = cobol2py.translate_expr(source)
+                self.assertEqual(ast.literal_eval(translated) if source != "ZEROS" else ast.literal_eval(translated), expected)
+                compile(translated, "<figurative-constant>", "eval")
