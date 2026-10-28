@@ -1165,7 +1165,7 @@ def translate_expr(
         expr,
         flags=re.IGNORECASE,
     )
-    intrinsic_names = {"NUMVAL", "NUMVAL-C", "LOWER-CASE", "UPPER-CASE", "TRIM", "LENGTH", "ABS", "ACOS", "ASIN", "ATAN", "COS", "EXP", "LOG", "LOG10", "SIN", "SQRT", "TAN", "MIN", "MAX", "COBOL-MIN", "COBOL-MAX", "PRESENT-VALUE", "INTEGER", "INTEGER-PART", "ORD", "CHAR", "MOD", "CONCATENATE", "RANDOM", "DATE-OF-INTEGER", "INTEGER-OF-DATE", "DAY-OF-INTEGER", "INTEGER-OF-DAY", "SECONDS-PAST-MIDNIGHT"}
+    intrinsic_names = {"NUMVAL", "NUMVAL-C", "LOWER-CASE", "UPPER-CASE", "TRIM", "LENGTH", "ABS", "ACOS", "ASIN", "ATAN", "COS", "EXP", "LOG", "LOG10", "SIN", "SQRT", "TAN", "MIN", "MAX", "COBOL-MIN", "COBOL-MAX", "PRESENT-VALUE", "ANNUITY", "INTEGER", "INTEGER-PART", "ORD", "CHAR", "MOD", "CONCATENATE", "RANDOM", "DATE-OF-INTEGER", "INTEGER-OF-DATE", "DAY-OF-INTEGER", "INTEGER-OF-DAY", "SECONDS-PAST-MIDNIGHT"}
     # COBOL reference modification uses 1-based (start:length) positions.
     # Convert the start to a zero-based Python offset and retain the requested
     # character count as the slice end.
@@ -1277,7 +1277,7 @@ def translate_expr(
     intrinsic_call_names = (
         r"NUMVAL(?:_C)?|LOWER_CASE|UPPER_CASE|TRIM|LENGTH|ABS|ACOS|ASIN|ATAN|"
         r"COS|EXP|LOG|LOG10|SIN|SQRT|TAN|MIN|MAX|COBOL_MIN|COBOL_MAX|"
-        r"PRESENT_VALUE|INTEGER_PART|INTEGER|ORD|CHAR|MOD|CONCATENATE|RANDOM|"
+        r"PRESENT_VALUE|ANNUITY|INTEGER_PART|INTEGER|ORD|CHAR|MOD|CONCATENATE|RANDOM|"
         r"DATE_OF_INTEGER|INTEGER_OF_DATE|DAY_OF_INTEGER|INTEGER_OF_DAY|SECONDS_PAST_MIDNIGHT"
     )
     translated = re.sub(
@@ -1309,6 +1309,16 @@ def translate_expr(
             translated,
             flags=re.IGNORECASE,
         )
+    translated = re.sub(
+        r"\b(?:function\s+)?annuity\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
+        lambda match: (
+            "(lambda _rate, _periods: (1.0 / float(_periods) if float(_rate) == 0 "
+            "else float(_rate) / (1.0 - (1.0 + float(_rate)) ** (-float(_periods)))))("
+            + intrinsic_argument(match) + ")"
+        ),
+        translated,
+        flags=re.IGNORECASE,
+    )
     translated = re.sub(
         r"\b(?:function\s+)?present_value\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
         lambda match: "(lambda _rate, *_payments: sum((_payment / ((1 + _rate) ** _period)) for _period, _payment in enumerate(_payments, 1)))(" + intrinsic_argument(match) + ")",
