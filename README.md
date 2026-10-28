@@ -6,9 +6,28 @@
 
 La traducción busca **leerse** y, para el subconjunto cubierto por regresiones diferenciales, también ejecutarse. No promete equivalencia completa de COBOL: las construcciones no soportadas quedan documentadas o señaladas explícitamente.
 
-## Roadmap: hito de madurez 0.8
+## Roadmap: objetivo final v1.0
 
-El plan inicial de diez días se ha ampliado hasta un hito de ingeniería 0.8: traductor con corpus diferencial acotado, agente multiarchivo, piloto de traducción con comprobación sintáctica, demo web y reportes con clasificación de diagnósticos. **0.8 describe la madurez del flujo de trabajo, no una publicación oficial ni compatibilidad completa con COBOL.** La versión del motor continúa siendo la que declara el encabezado de cobol2py.py.
+El hito 0.8 describe la madurez del flujo de trabajo, no una publicación oficial ni compatibilidad completa con COBOL. El objetivo de producto ahora es **alcanzar al menos un 75 % de equivalencia diferencial exacta en el benchmark externo de 500 programas**, partiendo de una línea base medida del 10,6 %. Esto equivale a **375 de 500 programas** con stdout y código de retorno idénticos a GnuCOBOL. No se declarará v1.0 por traducir más archivos o generar Python sintácticamente válido: el umbral debe verificarse con evidencia reproducible.
+
+### Objetivo de salida para v1.0
+
+- **Línea base externa:** 53/500 coincidencias exactas (10,60 %). El benchmark es una muestra de fuentes independientes que compilan y terminan bajo GnuCOBOL; no representa todos los dialectos ni todos los sistemas COBOL.
+- **Meta mínima:** ≥375/500 (≥75,00 %) en la muestra primaria, con la misma metodología y denominador documentado.
+- **Protección contra sobreajuste:** validar además una muestra disjunta de 500 programas seleccionados con el mismo procedimiento, sin usarla para elegir o ajustar las correcciones; meta ≥75 % también en esa muestra antes de declarar v1.0.
+- **Calidad de traducción:** cada arreglo de una familia semántica debe incluir pruebas unitarias y, cuando sea viable, comparación diferencial contra GnuCOBOL. Los casos no soportados deben diagnosticarse, no convertirse silenciosamente en comentarios.
+- **Integridad de la versión:** CI obligatorio verde, informe de ambos benchmarks publicado, README/roadmap y límites actualizados, y revisión de regresiones del corpus interno. La PR de trabajo no se fusiona automáticamente.
+
+### Plan de ejecución hacia v1.0
+
+1. **Hacer fiable la medición:** asegurar que cada ejecución externa conserva JSON/Markdown y artefactos incluso si el benchmark falla; registrar commit, checksum del dataset, selección, exclusiones y resultados.
+2. **Clasificar los fallos:** separar error del traductor, Python inválido, excepción/timeout en ejecución, diferencias de salida y código de retorno; agrupar por causa raíz y frecuencia.
+3. **Atacar las causas de mayor impacto:** priorizar familias que recuperen más programas con una corrección semántica sólida; añadir regresiones antes de cada cambio.
+4. **Subir por etapas:** medir sobre los mismos 500 casos en cada iteración y publicar las tasas reales; no cambiar el denominador ni contar errores del compilador de referencia como fallos del traductor.
+5. **Validar sin sobreajuste:** congelar los cambios candidatos y ejecutar una muestra externa disjunta; corregir regresiones y repetir la verificación.
+6. **Candidatura v1.0:** exigir ≥75 % en ambas muestras, CI verde, diagnósticos honestos y documentación que describa exactamente qué se ha medido.
+
+El 75 % es una **meta de aceptación pendiente**, no una capacidad actual ni una promesa de compatibilidad universal. Hasta alcanzar la evidencia anterior, no se anunciará que el proyecto está listo para v1.0.
 
 | Área | Estado actual | Evidencia y límite |
 |---|---|---|
@@ -42,7 +61,7 @@ El proyecto ha evolucionado desde un traductor de COBOL a Python hacia un reposi
 - **Agente (`cobol2py_agent.py`)**: inspecciona un repositorio con múltiples programas y artefactos relacionados, y genera un inventario y un plan de migración en Markdown/JSON. No modifica los fuentes.
 - **Piloto integrado (`tools/modernize_pilot.py`)**: conecta inventario y traducción del subconjunto a Python, comprueba sintaxis y crea un informe por archivo. Por defecto no ejecuta el código generado; el flag explícito `--differential` ejecuta únicamente fixtures de ruta exacta y compara stdout/código de retorno con GnuCOBOL.
 - **Evidencia medida**: el piloto traduce 108/108 fuentes de `samples` sin errores de sintaxis ni de traducción. En el modo diferencial opt-in, 105/105 fixtures versionadas coinciden con GnuCOBOL en stdout y código de retorno. Esto no demuestra equivalencia para entradas no medidas ni efectos externos.
-- **Corpus externo amplio (nuevo, ejecución manual)**: el workflow [`external-cobol-corpus`](.github/workflows/external-cobol-corpus.yml) toma una muestra determinista de 500 fuentes del dataset público [X-COBOL v2](https://zenodo.org/records/14269462), las compara con GnuCOBOL en un contenedor sin red y publica solo hashes y resultados. El benchmark está preparado, pero su porcentaje no se publicará hasta completar la primera ejecución; véase [metodología y límites](benchmarks/EXTERNAL_CORPUS.md).
+- **Corpus externo amplio (nuevo, ejecución manual)**: el workflow [`external-cobol-corpus`](.github/workflows/external-cobol-corpus.yml) toma una muestra determinista de 500 fuentes del dataset público [X-COBOL v2](https://zenodo.org/records/14269462), las compara con GnuCOBOL en un contenedor sin red y publica solo hashes y resultados. La línea base externa inicial es 53/500 coincidencias exactas (10,60 %). Una ejecución posterior falló al escribir el informe por permisos del directorio de artefactos; se está corrigiendo la infraestructura y esa ejecución no aporta una nueva tasa. Véase [metodología y límites](benchmarks/EXTERNAL_CORPUS.md).
 
 ### Usar solo el traductor
 
