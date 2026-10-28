@@ -88,6 +88,31 @@ class PreprocessTests(unittest.TestCase):
             [(1, "DISPLAY 'OK'.")],
         )
 
+    def test_fixed_format_hyphen_continuations_join_numeric_literal(self):
+        source = "\n".join([
+            "000100 IDENTIFICATION DIVISION.",
+            "000200 PROGRAM-ID. CONTNUM.",
+            "000300 DATA DIVISION.",
+            "000400 WORKING-STORAGE SECTION.",
+            "000500 01 WS-N PIC 9(5).",
+            "000600 PROCEDURE DIVISION.",
+            "000700 MAIN.",
+            "000800     MOVE 4",
+            "000900-        5",
+            "001000-        6",
+            "001100-        7",
+            "001200-        8 TO WS-N.",
+            "001300     DISPLAY WS-N.",
+            "001400     STOP RUN.",
+        ])
+        lines = cobol2py.preprocess(source, source_format="fixed")
+        self.assertIn((8, "MOVE 45678 TO WS-N."), lines)
+        generated = cobol2py.emit_python(
+            cobol2py.parse_cobol(source, source_format="fixed")
+        )
+        self.assertIn("45678", generated)
+        compile(generated, "<continued-numeric>", "exec")
+
 
 class TranslationTests(unittest.TestCase):
     def test_simple_value_clause_initializes_variable(self):
