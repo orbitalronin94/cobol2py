@@ -2017,7 +2017,12 @@ def translate_expr(
     )
     translated = re.sub(
         r"\b(?:function\s+)?numval(?:_c)?\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
-        lambda match: "float(" + intrinsic_argument(match) + ")",
+        lambda match: (
+            "(lambda _s: float(str(_s).replace(',', '').replace('$', '').replace('£', '').replace('€', '').replace('¥', '').strip()))("
+            + intrinsic_argument(match) + ")"
+            if re.search(r"NUMVAL-C", match.group(0), re.IGNORECASE)
+            else "float(" + intrinsic_argument(match) + ")"
+        ),
         translated,
         flags=re.IGNORECASE,
     )
@@ -2118,11 +2123,8 @@ def translate_expr(
             "abs", "acos", "asin", "atan", "cos", "exp", "log", "log10",
             "sin", "sqrt", "tan", "lower_case", "upper_case", "trim", "length",
             "mod", "rem", "integer", "integer_part", "present_value",
-            "numval", "numval_c", "reverse", "factorial", "ord", "char",
-            "stored_char_length", "date_of_integer", "integer_of_date",
-            "day_of_integer", "integer_of_day", "seconds_past_midnight",
-            "concatenate", "random", "annuity", "mean", "median", "midrange",
-            "range", "sum", "variance", "standard_deviation",
+            "numval", "numval_c", "reverse", "factorial", "day_of_integer",
+            "integer_of_day",
         }
         math_names = {
             "abs": "fabs", "acos": "acos", "asin": "asin", "atan": "atan",
@@ -2224,6 +2226,9 @@ def translate_expr(
                         elif key == "numval_c":
                             replacement = (
                                 "(lambda _s: float(str(_s).replace(',', '').replace('$', '')"
+                                ".replace('£', '').replace('€', ''                        elif key == "numval_c":
+                            replacement = (
+                                "(lambda _s: float(str(_s).replace(',', '').replace('$', '')"
                                 ".replace('£', '').replace('€', '').replace('¥', '').strip()))("
                                 + args + ")"
                             )
@@ -2233,12 +2238,6 @@ def translate_expr(
                             replacement = "str(" + args + ")[::-1]"
                         elif key == "factorial":
                             replacement = "__import__('math').factorial(int(" + args + "))"
-                        elif key == "ord":
-                            replacement = "(ord(str(" + args + ")[0]) + 1)"
-                        elif key == "char":
-                            replacement = "chr(int(" + args + ") - 1)"
-                        elif key == "stored_char_length":
-                            replacement = "len(str(" + args + ").rstrip())"
                         elif key == "day_of_integer":
                             replacement = (
                                 "(lambda _n: (lambda _d: _d.year * 1000 + _d.timetuple().tm_yday)"
@@ -2252,57 +2251,7 @@ def translate_expr(
                                 "__import__('datetime').timedelta(days=int(str(int(_n)).zfill(7)[4:]) - 1)))("
                                 + args + ")"
                             )
-                        elif key == "date_of_integer":
-                            replacement = (
-                                "int((__import__('datetime').date(1601, 1, 1) + "
-                                "__import__('datetime').timedelta(days=int(" + args + ") - 1)).strftime('%Y%m%d'))"
-                            )
-                        elif key == "integer_of_date":
-                            replacement = (
-                                "(lambda _d: (_d - __import__('datetime').date(1600, 12, 31)).days)"
-                                "(__import__('datetime').date(int(str(int(" + args + ")).zfill(8)[:4]), "
-                                "int(str(int(" + args + ")).zfill(8)[4:6]), "
-                                "int(str(int(" + args + ")).zfill(8)[6:8])))"
-                            )
-                        elif key == "seconds_past_midnight":
-                            replacement = (
-                                "((lambda _dt: _dt.hour * 3600 + _dt.minute * 60 + _dt.second)"
-                                "(__import__('datetime').datetime.now()))"
-                            )
-                        elif key == "concatenate":
-                            replacement = "''.join(str(_item) for _item in [" + ", ".join(parts) + "])"
-                        elif key == "random":
-                            replacement = (
-                                "__import__('random').random()" if not parts else
-                                "(lambda _seed: (__import__('random').seed(int(_seed)), "
-                                "__import__('random').random())[1])(" + args + ")"
-                            )
-                        elif key == "annuity" and len(parts) == 2:
-                            replacement = (
-                                "(lambda _rate, _periods: (1.0 / float(_periods) if float(_rate) == 0 "
-                                "else float(_rate) / (1.0 - (1.0 + float(_rate)) ** (-float(_periods)))))("
-                                + ", ".join(parts) + ")"
-                            )
-                        elif key == "mean":
-                            replacement = "__import__('statistics').mean([" + ", ".join(parts) + "])"
-                        elif key == "median":
-                            replacement = "__import__('statistics').median([" + ", ".join(parts) + "])"
-                        elif key == "midrange":
-                            replacement = "(lambda *_v: (max(_v) + min(_v)) / 2)(" + ", ".join(parts) + ")"
-                        elif key == "range":
-                            replacement = "(lambda *_v: max(_v) - min(_v))(" + ", ".join(parts) + ")"
-                        elif key == "sum":
-                            replacement = "sum([" + ", ".join(parts) + "])"
-                        elif key == "variance":
-                            replacement = "__import__('statistics').pvariance([" + ", ".join(parts) + "])"
-                        elif key == "standard_deviation":
-                            replacement = "__import__('statistics').pstdev([" + ", ".join(parts) + "])"
-                        else:
-                            replacement = name + opener + args + (")" if opener == "(" else "]")
-                        out.append(replacement)
-                        i = end_call + 1
-                        continue
-                out.append(name)
+             out.append(name)
                 i = end_name
                 continue
             out.append(char)
