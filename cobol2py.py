@@ -1339,10 +1339,10 @@ def translate_expr(
     # cobol_all "A".
     def replace_all_literals(chunk: str) -> str:
         pattern = (
-            r""" \bALL\s+(?:"(?:[^"]|"")*"|'(?:[^']|'')*'|"""
-            r"""QUOTE|QUOTES|SPACE|SPACES|ZERO|ZEROS|ZEROES|"""
-            r"""LOW-VALUE|LOW-VALUES|HIGH-VALUE|HIGH-VALUES)\b?"""
-        ).lstrip()
+            r"""\bALL\s+(?:"(?:[^"]|"")*"|'(?:[^']|'')*'|"""
+            r"""(?:QUOTE|QUOTES|SPACE|SPACES|ZERO|ZEROS|ZEROES|"""
+            r"""LOW-VALUE|LOW-VALUES|HIGH-VALUE|HIGH-VALUES)\b)"""
+        )
         def replacement(match: re.Match[str]) -> str:
             value = decode_cobol_all_literal(match.group(0))
             return repr(value) if value is not None else match.group(0)
