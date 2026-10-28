@@ -2,7 +2,7 @@ name: differential-benchmark
 
 on:
   push:
-    branches: [main]
+    branches: [main, work/toward-50-all-literals]
   pull_request:
   workflow_dispatch:
 
