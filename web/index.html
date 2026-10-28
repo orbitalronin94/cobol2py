@@ -2379,8 +2379,12 @@ def translate_group_move(source: str, target: str, variables: dict[str, CobolVar
     def descendants(root: CobolVar) -> list[CobolVar]:
         found: list[CobolVar] = []
         pending = [root.name.upper()]
+        visited: set[str] = set()
         while pending:
             parent = pending.pop()
+            if parent in visited:
+                continue
+            visited.add(parent)
             children = [
                 item for item in variables.values()
                 if (item.parent_name or "").upper() == parent
@@ -2479,8 +2483,12 @@ def translate_group_bytes(source: str, variables: dict[str, CobolVar]) -> Option
     def descendants(group: CobolVar) -> list[CobolVar]:
         result: list[CobolVar] = []
         pending = [group.name.upper()]
+        visited: set[str] = set()
         while pending:
             parent = pending.pop()
+            if parent in visited:
+                continue
+            visited.add(parent)
             children = [
                 item for item in variables.values()
                 if (item.parent_name or "").upper() == parent
