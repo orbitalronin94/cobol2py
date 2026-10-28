@@ -1116,14 +1116,33 @@ def normalize_data_reference(
 
 
 def decode_cobol_all_literal(token: str) -> Optional[str]:
-    """Decode ALL followed by a COBOL quoted literal, including doubled quotes."""
+    """Decode ALL followed by a COBOL literal or figurative constant."""
+    text = token.strip()
     match = re.fullmatch(
         r"""ALL\s+("(?:[^"]|"")*"|'(?:[^']|'')*')""",
-        token.strip(),
+        text,
         re.IGNORECASE,
     )
-    return decode_cobol_quoted_literal(match.group(1)) if match else None
+    if match:
+        return decode_cobol_quoted_literal(match.group(1))
 
+    figurative = re.fullmatch(
+        r"ALL\s+(QUOTE|QUOTES|SPACE|SPACES|ZERO|ZEROS|ZEROES|LOW-VALUE|LOW-VALUES|HIGH-VALUE|HIGH-VALUES)",
+        text,
+        re.IGNORECASE,
+    )
+    if not figurative:
+        return None
+    value = figurative.group(1).upper()
+    if value in ("QUOTE", "QUOTES"):
+        return '"'
+    if value in ("SPACE", "SPACES"):
+        return " "
+    if value in ("LOW-VALUE", "LOW-VALUES"):
+        return chr(0)
+    if value in ("HIGH-VALUE", "HIGH-VALUES"):
+        return chr(255)
+    return "0"
 
 def decode_cobol_quoted_literal(token: str) -> Optional[str]:
     """Decode a complete COBOL quoted literal, including doubled quote escapes."""
