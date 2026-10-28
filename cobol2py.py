@@ -1509,7 +1509,19 @@ def split_cobol_items(s: str) -> list[str]:
     token = "".join(current).strip()
     if token:
         tokens.append(token)
-    return tokens
+
+    # Qualification is part of a COBOL data reference, not a separate DISPLAY
+    # operand. Rejoin tokens such as FIELD OF GROUP after top-level splitting.
+    combined: list[str] = []
+    i = 0
+    while i < len(tokens):
+        token = tokens[i]
+        while i + 2 < len(tokens) and tokens[i + 1].upper() in ("OF", "IN"):
+            token = f"{token} {tokens[i + 1]} {tokens[i + 2]}"
+            i += 2
+        combined.append(token)
+        i += 1
+    return combined
 
 
 DATA_REF_PATTERN = r"[A-Za-z0-9-]+(?:\s*\([A-Za-z0-9_,\s-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?"
