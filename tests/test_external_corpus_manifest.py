@@ -91,3 +91,22 @@ class ExternalCorpusRuntimeDiagnosticTests(unittest.TestCase):
         self.assertIn("'str' object does not support item assignment", message)
         self.assertNotIn("CUSTOM CUSTOMER DATA", message)
         self.assertIn("<quoted>", message)
+
+    def test_run_process_caps_untrusted_output_without_unbounded_capture(self):
+        import importlib.util
+
+        runner = ROOT / "benchmarks" / "run_external_corpus.py"
+        spec = importlib.util.spec_from_file_location("external_corpus_runner_output_cap", runner)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+
+        result = module.run_process(
+            [sys.executable, "-c", "import sys; sys.stdout.write('x' * 9000000)"],
+            cwd=ROOT,
+            timeout=5,
+        )
+        self.assertTrue(result["launched"])
+        self.assertTrue(result["timeout"])
+        self.assertTrue(result["output_limit"])
+        self.assertEqual(len(result["stdout"].encode("utf-8")), module.MAX_CAPTURE_BYTES)
