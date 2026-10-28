@@ -116,23 +116,23 @@ class PreprocessTests(unittest.TestCase):
 
 class TranslationTests(unittest.TestCase):
     def test_qualified_level_88_condition_consumes_parent_qualifier(self):
-        variable = cobol2py.CobolVar(level=77, name="IF-D33", pic="X(4)")
+        variable = cobol2py.CobolVar(level=77, name="WS-D33", pic="X(4)")
         translated = cobol2py.translate_condition(
-            "C OF IF-D33",
-            variables={"IF-D33": variable},
-            condition_names={"C": ("IF-D33", [('" "', None)])},
+            "C OF WS-D33",
+            variables={"WS-D33": variable},
+            condition_names={"C": ("WS-D33", [('" "', None)])},
         )
         self.assertNotIn(" OF ", translated.upper())
-        self.assertTrue(eval(translated, {"cobol_if_d33": " "}))
+        self.assertTrue(eval(translated, {"cobol_ws_d33": " "}))
 
     def test_unqualified_level_88_condition_still_expands(self):
-        variable = cobol2py.CobolVar(level=77, name="IF-D33", pic="X(4)")
+        variable = cobol2py.CobolVar(level=77, name="WS-D33", pic="X(4)")
         translated = cobol2py.translate_condition(
             "C",
-            variables={"IF-D33": variable},
-            condition_names={"C": ("IF-D33", [('" "', None)])},
+            variables={"WS-D33": variable},
+            condition_names={"C": ("WS-D33", [('" "', None)])},
         )
-        self.assertTrue(eval(translated, {"cobol_if_d33": " "}))
+        self.assertTrue(eval(translated, {"cobol_ws_d33": " "}))
 
     def test_simple_value_clause_initializes_variable(self):
         self.assertEqual(
