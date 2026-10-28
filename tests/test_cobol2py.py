@@ -2743,7 +2743,7 @@ class InitializeStatementRegressionTests(unittest.TestCase):
             translated,
             ['ws_rec[\'ws_alpha\'] = str("ABCDEF")[:6].ljust(6)', "ws_rec['ws_count'] = 0"],
         )
-        compile("\\n".join(translated or []), "<initialize-replacing>", "exec")
+        compile("\n".join(translated or []), "<initialize-replacing>", "exec")
 
     def test_initialize_simple_group_resets_alphanumeric_and_numeric_children(self):
         variables = {
