@@ -3240,6 +3240,63 @@ def translate_statement(
     if upper in ("CONTINUE", "EXIT"):
         return ["pass"]
 
+    # Basic UNSTRING support for a single delimiter and multiple receiving fields.
+    if upper.startswith("UNSTRING "):
+        unstring_text = re.sub(r"\s+END-UNSTRING\s*$", "", s, flags=re.IGNORECASE).strip()
+        delimiter_match = re.search(r"\s+DELIMITED\s+BY\s+", unstring_text, re.IGNORECASE)
+        if delimiter_match:
+            into_match = re.search(
+                r"\s+INTO\s+",
+                unstring_text[delimiter_match.end():],
+                re.IGNORECASE,
+            )
+            if into_match:
+                into_start = delimiter_match.end() + into_match.start()
+                source = unstring_text[len("UNSTRING "):delimiter_match.start()].strip()
+                delimiter_text = unstring_text[delimiter_match.end():into_start].strip()
+                targets_and_options = unstring_text[into_start + into_match.end() - into_match.start():].strip()
+                tally_match = re.search(rf"\bTALLYING\s+IN\s+({DATA_REF_PATTERN})", targets_and_options, re.IGNORECASE)
+                pointer_match = re.search(rf"\bWITH\s+POINTER\s+({DATA_REF_PATTERN})", targets_and_options, re.IGNORECASE)
+                targets_text = re.split(
+                    r"\s+(?:TALLYING\s+IN|WITH\s+POINTER|ON\s+OVERFLOW|NOT\s+ON\s+OVERFLOW)\b",
+                    targets_and_options,
+                    maxsplit=1,
+                    flags=re.IGNORECASE,
+                )[0].strip()
+                targets = split_cobol_items(targets_text)
+                if targets:
+                    variable_map = variables or {}
+                    delimiter_parts = split_cobol_items(re.sub(r"^\s*ALL\s+", "", delimiter_text, flags=re.IGNORECASE))
+                    delimiter = delimiter_parts[0] if delimiter_parts else delimiter_text
+                    if delimiter.upper() in ("SPACE", "SPACES"):
+                        delimiter_expr = repr(" ")
+                    elif delimiter.upper() in ("ZERO", "ZEROS"):
+                        delimiter_expr = repr("\x00")
+                    else:
+                        delimiter_expr = translate_literal(delimiter, variable_map)
+                    source_expr = translate_literal(source, variable_map)
+                    lines = [
+                        f"_cobol_unstring_parts = (str({source_expr}).split(str({delimiter_expr})) "
+                        f"if str({delimiter_expr}) else [str({source_expr})])"
+                    ]
+                    for index, target in enumerate(targets):
+                        target_base = re.match(r"[A-Za-z0-9-]+", target)
+                        target_var = variable_map.get(target_base.group(0).upper()) if target_base else None
+                        value = f"(_cobol_unstring_parts[{index}] if len(_cobol_unstring_parts) > {index} else '')"
+                        if target_var is not None and target_var.pic:
+                            pic = target_var.pic.upper()
+                            if any(char in pic for char in ("X", "A")):
+                                width = pic_character_count(pic)
+                                value = f"str({value})[:{width}].ljust({width})"
+                            elif "9" in pic:
+                                value = f"(int(float({value})) if str({value}).strip() else 0)"
+                        lines.append(emit_assignment(target, value, variable_map))
+                    if tally_match:
+                        tally = normalize_data_reference(tally_match.group(1), variable_map)
+                        lines.append(f"{tally} = min(len(_cobol_unstring_parts), {len(targets)})")
+                    return lines
+        return [f"# UNSTRING no traducido: {s}"]
+
     # Basic STRING ... DELIMITED BY ... INTO support. Each sending item is
     # copied up to its delimiter (or in full for DELIMITED BY SIZE).
     if upper.startswith("STRING "):
