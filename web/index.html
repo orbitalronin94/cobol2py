@@ -2234,7 +2234,36 @@ def split_cobol_items(s: str) -> list[str]:
     return expanded
 
 
-DATA_REF_PATTERN = r"[A-Za-z0-9-]+(?:\s*\([A-Za-z0-9_,;\s-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?"
+DATA_REF_PATTERN = r"[A-Za-z0-9-]+(?:\s*\([A-Za-z0-9_,;:+*/\s-]+\)){0,2}(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?"
+
+
+def emit_reference_modification_move(
+    source: str,
+    target: str,
+    variables: dict[str, CobolVar],
+) -> Optional[str]:
+    """Translate MOVE into a COBOL reference-modification target.
+
+    COBOL strings are immutable in Python, so replace the receiving field with
+    a prefix + padded replacement + suffix instead of assigning to a string
+    character/slice. This also works for a table element such as FIELD(1)(2:3).
+    """
+    match = re.fullmatch(r"(.+?)\s*\(\s*([^():]+)\s*:\s*([^()]*)\)", target.strip())
+    if not match:
+        return None
+    base, start, length = (part.strip() for part in match.groups())
+    base_expr = normalize_data_reference(base, variables)
+    start_expr = f"(int({translate_expr(start, variables)}) - 1)"
+    if length:
+        length_expr = f"int({translate_expr(length, variables)})"
+    else:
+        length_expr = f"(len(str({base_expr})) - {start_expr})"
+    value_expr = translate_move_value(source, base, variables)
+    return (
+        f"{base_expr} = str({base_expr})[:{start_expr}] + "
+        f"str({value_expr})[:{length_expr}].ljust({length_expr}) + "
+        f"str({base_expr})[({start_expr}) + ({length_expr}):]"
+    )
 
 
 def translate_statement(
@@ -2466,6 +2495,9 @@ def translate_statement(
     if m:
         source, target = m.groups()
         variable_map = variables or {}
+        reference_modification = emit_reference_modification_move(source, target, variable_map)
+        if reference_modification is not None:
+            return [reference_modification]
         group_fill = translate_group_fill_move(source, target, variable_map)
         if group_fill is not None:
             return group_fill
