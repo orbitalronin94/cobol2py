@@ -36,6 +36,23 @@ def run_process(command: list[str], cwd: Path, timeout: int) -> dict[str, Any]:
         return {"launched": True, "returncode": process.returncode, "stdout": stdout or "",
                 "stderr": stderr or "", "timeout": True}
 
+def candidate_error_context(stderr: str, generated_source: str) -> dict[str, Any]:
+    """Return a sanitized generated-code location without exposing string contents."""
+    frames = re.findall(r'File ["\']([^"\']*translated\.py)["\'], line (\d+)', stderr)
+    if not frames:
+        return {}
+    line_number = int(frames[-1][1])
+    generated_lines = generated_source.splitlines()
+    context: dict[str, Any] = {"candidate_error_line_number": line_number}
+    if 1 <= line_number <= len(generated_lines):
+        line = generated_lines[line_number - 1].strip()
+        # Runtime diagnostics may be published as artifacts; mask all literals
+        # so source-derived display text from the external corpus is not exposed.
+        line = re.sub(r"'(?:[^'\\]|\\.)*'|\"(?:[^\"\\]|\\.)*\"", "<literal>", line)
+        context["candidate_error_line"] = line[:160].replace("|", "\\|")
+    return context
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -180,6 +197,7 @@ def main() -> int:
                             )
                         stderr_lines = [line.strip() for line in candidate["stderr"].splitlines() if line.strip()]
                         if stderr_lines:
+                            result.update(candidate_error_context(candidate["stderr"], translated["stdout"]))
                             tail = stderr_lines[-1]
                             exception_type = tail.split(":", 1)[0].split()[-1]
                             if exception_type and exception_type[0].isupper() and exception_type.replace("_", "").isalnum():
