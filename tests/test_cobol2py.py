@@ -1958,6 +1958,10 @@ class AbbreviatedCombinedConditionRegressionTests(unittest.TestCase):
         self.assertTrue(eval(translated, {"ws_num": 2}))
         self.assertFalse(eval(translated, {"ws_num": 3}))
 
+    def test_two_complete_conditions_are_not_treated_as_abbreviated(self):
+        translated = cobol2py.translate_condition("WS-A > 1 AND WS-B > 2")
+        self.assertEqual(translated, "ws_a > 1 and ws_b > 2")
+
 
 class DigitLeadingHyphenatedNameRegressionTests(unittest.TestCase):
     def test_digit_leading_hyphenated_identifier_is_not_split_as_arithmetic(self):
