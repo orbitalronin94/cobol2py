@@ -1046,6 +1046,41 @@ def normalize_data_reference(
             return expr
         expr = f"{parent_expr}[{normalize_name(field_name)!r}]"
     elif variable is not None and variable.parent_name:
+        # A subscript on an elementary item also subscripts any enclosing
+        # OCCURS group in its data hierarchy (COBOL 1-based table semantics).
+        # Apply those indices to the actual table node, not to the final string
+        # or numeric leaf; otherwise generated code indexes a list by field name.
+        if subscript_text and ":" not in subscript_text:
+            ancestry: list[CobolVar] = [variable]
+            parent_name = variable.parent_name
+            while parent_name:
+                parent = variable_map.get(parent_name.upper())
+                if parent is None:
+                    break
+                ancestry.append(parent)
+                parent_name = parent.parent_name
+            root_to_leaf = list(reversed(ancestry))
+            array_positions = [i for i, item in enumerate(root_to_leaf) if item.is_array]
+            has_array_ancestor = any(
+                item.is_array for item in ancestry[1:]
+            )
+            if has_array_ancestor and array_positions:
+                root_array_pos = array_positions[0]
+                root_array = root_to_leaf[root_array_pos]
+                expr = normalize_data_reference(root_array.name, variable_map)
+                subscript_index = 0
+                if subscripts:
+                    expr += f"[{index_expression(subscripts[subscript_index])}]"
+                    subscript_index += 1
+                for child in root_to_leaf[root_array_pos + 1:]:
+                    expr += f"[{normalize_name(child.name)!r}]"
+                    if child.is_array and subscript_index < len(subscripts):
+                        expr += f"[{index_expression(subscripts[subscript_index])}]"
+                        subscript_index += 1
+                while subscript_index < len(subscripts):
+                    expr += f"[{index_expression(subscripts[subscript_index])}]"
+                    subscript_index += 1
+                return expr
         parent_expr = normalize_data_reference(variable.parent_name, variable_map)
         parent_variable = variable_map.get(variable.parent_name.upper())
         if parent_variable is not None and parent_variable.is_array and parent_variable.is_group and subscripts:
