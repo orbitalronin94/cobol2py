@@ -2085,6 +2085,9 @@ def translate_group_fill_move(source: str, target: str, variables: dict[str, Cob
         "LOW-VALUES": "\x00",
         "HIGH-VALUE": "\xff",
         "HIGH-VALUES": "\xff",
+        "ZERO": "0",
+        "ZEROS": "0",
+        "ZEROES": "0",
     }
     fill_char = figuratives.get(source.strip().upper())
     if fill_char is None:
