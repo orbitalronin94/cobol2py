@@ -1965,7 +1965,7 @@ class NestedAndMiscIntrinsicRegressionTests(unittest.TestCase):
 
     def test_concatenate_intrinsic_becomes_string_join(self):
         translated = cobol2py.translate_expr('FUNCTION CONCATENATE(WS-A, ",")')
-        self.assertEqual(translated, "''.join(str(_item) for _item in [ws_a, \","])")
+        self.assertEqual(translated, """''.join(str(_item) for _item in [ws_a, ","])""")
         compile(translated, "<concatenate-intrinsic>", "eval")
 
     def test_random_intrinsic_without_arguments_is_valid_python(self):
