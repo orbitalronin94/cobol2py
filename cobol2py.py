@@ -344,9 +344,9 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
             declarations.append((line_number, source_line))
         elif (
             declarations
-            and re.search(r"\\bVALUE(?:\\s+IS)?\\s*$", declarations[-1][1], re.IGNORECASE)
+            and re.search(r"\bVALUE(?:\s+IS)?\s*$", declarations[-1][1], re.IGNORECASE)
             and re.match(
-                r"""^\\s*(?:"(?:[^"]|"")*"|'(?:[^']|'')*'|[+-]?\\d+(?:\\.\\d+)?|[A-Za-z][A-Za-z0-9-]*)\\s*\\.?\\s*$""",
+                r"""^\s*(?:"(?:[^"]|"")*"|'(?:[^']|'')*'|[+-]?\d+(?:\.\d+)?|[A-Za-z][A-Za-z0-9-]*)\s*\.?\s*$""",
                 source_line,
             )
         ):
