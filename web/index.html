@@ -2483,7 +2483,8 @@ def emit_python(prog: Program) -> str:
         body = translate_paragraph(
             nodes, para_names, variables_by_name, current_paragraph=para_name
         )
-        body = body if body else ["    pass"]
+        if not body or all(not line.strip() or line.strip().startswith("#") for line in body):
+            body = body + ["    pass"]
         # Preserve the historical direct-call behavior of the entry function.
         # The dispatcher observes the flag to stop fall-through after STOP RUN.
         if para_name == entrypoint:
