@@ -2210,6 +2210,26 @@ class MoveCorrespondingRegressionTests(unittest.TestCase):
 
 
 class StringStatementRegressionTests(unittest.TestCase):
+    def test_unstring_splits_delimited_text_into_receiving_fields(self):
+        variables = {
+            item.name: item
+            for item in cobol2py.parse_variables([
+                (1, "01 WS-A PIC X(5)."),
+                (2, "01 WS-B PIC X(5)."),
+                (3, "01 WS-C PIC X(5)."),
+            ])
+        }
+        translated = cobol2py.translate_statement(
+            'UNSTRING "ALPHA,BETA,GAMMA" DELIMITED BY "," INTO WS-A WS-B WS-C END-UNSTRING',
+            set(),
+            variables,
+        )
+        namespace = {"ws_a": " " * 5, "ws_b": " " * 5, "ws_c": " " * 5}
+        exec("\\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_a"], "ALPHA")
+        self.assertEqual(namespace["ws_b"], "BETA ")
+        self.assertEqual(namespace["ws_c"], "GAMMA")
+
     def test_string_delimited_by_size_pads_receiving_field(self):
         variables = {
             item.name: item
