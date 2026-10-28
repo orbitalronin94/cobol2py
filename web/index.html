@@ -1612,8 +1612,6 @@ def translate_condition(
         c = re.sub(r"\bNOT\s+EQUAL\s+TO\b", "!=", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\s+NOT\s+EQUAL\b", "!=", c, flags=re.IGNORECASE)
         c = re.sub(r"\bNOT\s+EQUAL\b", "!=", c, flags=re.IGNORECASE)
-        c = re.sub(r"\bIS\s+EQUAL\s+TO\b", "==", c, flags=re.IGNORECASE)
-        c = re.sub(r"\bEQUAL\s+TO\b", "==", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\s+GREATER\s+THAN\s+OR\s+EQUAL(?:\s+TO)?\b", ">=", c, flags=re.IGNORECASE)
         c = re.sub(r"\bGREATER\s+(?:THAN\s+)?OR\s+EQUAL(?:\s+TO)?\b", ">=", c, flags=re.IGNORECASE)
         c = re.sub(r"\bGREATER\s+(?:THAN\s+)?OR\s*=", ">=", c, flags=re.IGNORECASE)
@@ -1624,6 +1622,10 @@ def translate_condition(
         c = re.sub(r"\bGREATER\s+(?:THAN\s+)?", "> ", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\s+LESS\s+THAN\b", "<", c, flags=re.IGNORECASE)
         c = re.sub(r"\bLESS\s+(?:THAN\s+)?", "< ", c, flags=re.IGNORECASE)
+        # Handle equality phrases only after compound >= / <= phrases; otherwise
+        # "GREATER OR EQUAL" is split into "GREATER OR ==" before it can match.
+        c = re.sub(r"\bIS\s+EQUAL\s+TO\b", "==", c, flags=re.IGNORECASE)
+        c = re.sub(r"\bEQUAL\s+TO\b", "==", c, flags=re.IGNORECASE)
         c = re.sub(r"\bEQUAL\b", "==", c, flags=re.IGNORECASE)
         c = re.sub(r"\bNOT\b", "not", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\b", "==", c, flags=re.IGNORECASE)
