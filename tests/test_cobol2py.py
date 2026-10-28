@@ -2001,6 +2001,17 @@ class ReferenceModificationSliceSemanticsTests(unittest.TestCase):
         self.assertEqual(translated, "ws_table[ws_index + 1 - 1]")
         compile(translated, "<arithmetic-table-subscript>", "eval")
 
+    def test_space_separated_multidimensional_subscripts_keep_arithmetic(self):
+        variables = {
+            "WS-TABLE": cobol2py.CobolVar(level=1, name="WS-TABLE", pic="9(2)", is_array=True, occurs=5),
+            "WS-I": cobol2py.CobolVar(level=1, name="WS-I", pic="9(2)"),
+            "WS-J": cobol2py.CobolVar(level=1, name="WS-J", pic="9(2)"),
+            "WS-K": cobol2py.CobolVar(level=1, name="WS-K", pic="9(2)"),
+        }
+        translated = cobol2py.translate_expr("WS-TABLE(WS-I WS-J + 1 WS-K + 1)", variables)
+        self.assertEqual(translated, "ws_table[int(ws_i) - 1][ws_j + 1 - 1][ws_k + 1 - 1]")
+        compile(translated, "<space-separated-multidimensional-subscript>", "eval")
+
     def test_variable_start_and_length_become_zero_based_python_slice(self):
         translated = cobol2py.translate_expr("NEW-STRING(SUB-1:1)")
         self.assertEqual(translated, "cobol_new_string[sub_1 - 1:(sub_1 - 1) + (1)]")
