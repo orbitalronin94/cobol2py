@@ -1372,6 +1372,11 @@ def translate_expr(
             out.append(translate_literal(tok, variables))
         elif tok.lower() in ("and", "or", "not"):
             out.append(tok.lower())
+        elif tok.lower() == "is":
+            # IS is a COBOL relation word; if a caller reaches expression
+            # translation before condition normalization, preserve its equality
+            # meaning instead of emitting the Python identifier cobol_is.
+            out.append("==")
         elif tok.upper() in ("TRUE", "FALSE"):
             out.append("True" if tok.upper() == "TRUE" else "False")
         elif tok.upper() in intrinsic_names:
