@@ -2487,6 +2487,58 @@ def translate_statement(
         return [emit_assignment(target, translate_literal(source, variables), variables)]
 
     m = re.match(
+        rf"ADD\\s+(?:CORRESPONDING|CORR)\\s+({DATA_REF_PATTERN})\\s+TO\\s+({DATA_REF_PATTERN})$",
+        s,
+        re.IGNORECASE,
+    )
+    if m:
+        source_group, target_group = m.groups()
+        source_root = re.match(r"[A-Za-z0-9-]+", source_group).group(0)
+        target_root = re.match(r"[A-Za-z0-9-]+", target_group).group(0)
+        variable_map = variables or {}
+
+        def numeric_leaf_paths(
+            group_name: str, group_expr: str, ancestors: set[str]
+        ) -> dict[str, list[tuple[str, CobolVar]]]:
+            paths: dict[str, list[tuple[str, CobolVar]]] = {}
+            if group_name.upper() in ancestors:
+                return paths
+            next_ancestors = ancestors | {group_name.upper()}
+            for item in variable_map.values():
+                if (item.parent_name or "").upper() != group_name.upper():
+                    continue
+                child_expr = f"{group_expr}[{normalize_name(item.name)!r}]"
+                if item.is_group:
+                    nested = numeric_leaf_paths(item.name, child_expr, next_ancestors)
+                    for leaf_name, matches in nested.items():
+                        paths.setdefault(leaf_name, []).extend(matches)
+                elif item.pic and "9" in item.pic.upper() and not any(
+                    char in item.pic.upper() for char in ("X", "A")
+                ):
+                    paths.setdefault(item.name.upper(), []).append((child_expr, item))
+            return paths
+
+        source_paths = numeric_leaf_paths(
+            source_root, normalize_data_reference(source_root, variable_map), set()
+        )
+        target_paths = numeric_leaf_paths(
+            target_root, normalize_data_reference(target_root, variable_map), set()
+        )
+        assignments: list[str] = []
+        for leaf_name in sorted(source_paths.keys() & target_paths.keys()):
+            if len(source_paths[leaf_name]) != 1 or len(target_paths[leaf_name]) != 1:
+                continue
+            source_expr, _source_var = source_paths[leaf_name][0]
+            target_expr, target_var = target_paths[leaf_name][0]
+            expression = fit_numeric_expression(
+                f"{target_expr} + {source_expr}", target_var.name, variable_map
+            )
+            assignments.append(f"{target_expr} = {expression}")
+        return assignments or [
+            f"# ADD CORRESPONDING sin campos numéricos comunes: {source_root} TO {target_root}"
+        ]
+
+    m = re.match(
         rf"MOVE\s+(?:CORRESPONDING|CORR)\s+({DATA_REF_PATTERN})\s+TO\s+({DATA_REF_PATTERN})$",
         s,
         re.IGNORECASE,
