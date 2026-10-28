@@ -1419,7 +1419,8 @@ def translate_expr(
     intrinsic_call_names = (
         r"NUMVAL(?:_C)?|LOWER_CASE|UPPER_CASE|TRIM|LENGTH|ABS|ACOS|ASIN|ATAN|"
         r"COS|EXP|LOG|LOG10|SIN|SQRT|TAN|MIN|MAX|COBOL_MIN|COBOL_MAX|"
-        r"PRESENT_VALUE|INTEGER_PART|INTEGER|ORD|CHAR|MOD|CONCATENATE|RANDOM"
+        r"PRESENT_VALUE|INTEGER_PART|INTEGER|ORD|CHAR|MOD|CONCATENATE|RANDOM|"
+        r"DATE_OF_INTEGER|INTEGER_OF_DATE|DAY_OF_INTEGER|INTEGER_OF_DAY|SECONDS_PAST_MIDNIGHT"
     )
     translated = re.sub(
         rf"\bfunction\s+(?=(?:{intrinsic_call_names})\s*(?:\[|\())",
@@ -1508,6 +1509,25 @@ def translate_expr(
     translated = re.sub(
         r"\b(?:function\s+)?length\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
         lambda match: "len(" + intrinsic_argument(match) + ")",
+        translated,
+        flags=re.IGNORECASE,
+    )
+    # Date/ordinal intrinsics use COBOL's day-1 origin of 1601-01-01.
+    translated = re.sub(
+        r"\b(?:function\s+)?date_of_integer\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
+        lambda match: "int((__import__('datetime').date(1601, 1, 1) + __import__('datetime').timedelta(days=int(" + intrinsic_argument(match) + ") - 1)).strftime('%Y%m%d'))",
+        translated,
+        flags=re.IGNORECASE,
+    )
+    translated = re.sub(
+        r"\b(?:function\s+)?integer_of_date\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
+        lambda match: "(lambda _d: (_d - __import__('datetime').date(1600, 12, 31)).days)(__import__('datetime').date(int(str(int(" + intrinsic_argument(match) + ")).zfill(8)[:4]), int(str(int(" + intrinsic_argument(match) + ")).zfill(8)[4:6]), int(str(int(" + intrinsic_argument(match) + ")).zfill(8)[6:8])))",
+        translated,
+        flags=re.IGNORECASE,
+    )
+    translated = re.sub(
+        r"\b(?:function\s+)?seconds_past_midnight\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))?",
+        "((lambda _dt: _dt.hour * 3600 + _dt.minute * 60 + _dt.second)(__import__('datetime').datetime.now()))",
         translated,
         flags=re.IGNORECASE,
     )
