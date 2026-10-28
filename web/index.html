@@ -1046,7 +1046,9 @@ def normalize_name(name: str) -> str:
 
     normalized = re.sub(r"\(([A-Za-z0-9_-]+)\)", normalize_subscript, normalized)
     if normalized and normalized[0].isdigit():
-        normalized = "cobol_" + normalized
+        name_part, separator, suffix = normalized.partition("[")
+        name_part = name_part.replace("-", "_")
+        normalized = "cobol_" + name_part + (separator + suffix if separator else "")
     return normalized
 
 def emit_assignment(target: str, value: str, variables: Optional[dict[str, CobolVar]] = None) -> str:
