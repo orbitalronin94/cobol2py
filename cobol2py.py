@@ -1034,7 +1034,7 @@ def translate_expr(
             return "ZZCOBOLFIGZEROZZ"
 
         return re.sub(
-            r"\b(?:LOW-VALUES?|HIGH-VALUES?|SPACES?|ZERO(?:S|ES)?)\b",
+            r"\b(?:LOW-VALUES?|HIGH-VALUES?|SPACES?|ZERO(?:S|ES)?)\b(?!-[A-Za-z0-9])",
             replacement,
             chunk,
             flags=re.IGNORECASE,
