@@ -5,7 +5,7 @@ The source archive is an external input and is never copied into the repository.
 Run only in Dockerfile.external, with networking disabled and the checkout read-only.
 """
 from __future__ import annotations
-import argparse, hashlib, json, os, shutil, signal, subprocess, tempfile, zipfile
+import argparse, hashlib, json, os, re, shutil, signal, subprocess, tempfile, zipfile
 from pathlib import Path, PurePosixPath
 from typing import Any
 
