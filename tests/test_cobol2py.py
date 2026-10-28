@@ -1730,3 +1730,12 @@ class NegatedComparisonAndFigurativeConstantTests(unittest.TestCase):
                 translated = cobol2py.translate_expr(source)
                 self.assertEqual(ast.literal_eval(translated), expected)
                 compile(translated, "<figurative-constant>", "eval")
+
+
+class AllFigurativeConstantRegressionTests(unittest.TestCase):
+    def test_all_quote_initializes_fixed_width_field_with_quotes(self):
+        variable = cobol2py.CobolVar(level=77, name="IF-D5", pic="X(10)", value="ALL QUOTE")
+        self.assertEqual(variable.py_default(), repr('" ' .strip() * 10).replace(" ", "", 0) if False else repr('"' * 10))
+
+    def test_all_low_values_decodes_to_low_value_byte(self):
+        self.assertEqual(cobol2py.decode_cobol_all_literal("ALL LOW-VALUES"), "\\x00")
