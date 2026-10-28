@@ -126,6 +126,21 @@ class PreprocessTests(unittest.TestCase):
 
 
 class TranslationTests(unittest.TestCase):
+    def test_sign_conditions_handle_positive_negative_and_not(self):
+        variable = cobol2py.CobolVar(level=77, name="WS-N", pic="S9(4)")
+        variables = {"WS-N": variable}
+        not_negative = cobol2py.translate_condition("WS-N IS NOT NEGATIVE", variables)
+        positive = cobol2py.translate_condition("WS-N IS POSITIVE", variables)
+        negative = cobol2py.translate_condition("WS-N IS NEGATIVE", variables)
+        zero = cobol2py.translate_condition("WS-N IS ZERO", variables)
+        self.assertTrue(eval(not_negative, {"ws_n": 0}))
+        self.assertTrue(eval(not_negative, {"ws_n": 3}))
+        self.assertFalse(eval(not_negative, {"ws_n": -1}))
+        self.assertTrue(eval(positive, {"ws_n": 3}))
+        self.assertFalse(eval(positive, {"ws_n": 0}))
+        self.assertTrue(eval(negative, {"ws_n": -1}))
+        self.assertTrue(eval(zero, {"ws_n": 0}))
+
     def test_qualified_level_88_condition_consumes_parent_qualifier(self):
         variable = cobol2py.CobolVar(level=77, name="WS-D33", pic="X(4)")
         translated = cobol2py.translate_condition(
