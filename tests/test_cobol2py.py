@@ -1975,7 +1975,7 @@ class ReferenceModificationSliceSemanticsTests(unittest.TestCase):
             "WS-INDEX": cobol2py.CobolVar(level=1, name="WS-INDEX", pic="9(2)"),
         }
         translated = cobol2py.translate_expr("WS-TABLE(WS-INDEX + 1)", variables)
-        self.assertEqual(translated, "ws_table[(ws_index + 1) - 1]")
+        self.assertEqual(translated, "ws_table[ws_index + 1 - 1]")
         compile(translated, "<arithmetic-table-subscript>", "eval")
 
     def test_variable_start_and_length_become_zero_based_python_slice(self):
