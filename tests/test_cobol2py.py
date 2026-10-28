@@ -2462,3 +2462,27 @@ class GroupMoveFillRegressionTests(unittest.TestCase):
             "test_results['result_row'][1]['feature'] = '    '",
             "test_results['result_row'][1]['p_or_f'] = ' '",
         ])
+
+
+class ElementaryOccursMoveRegressionTests(unittest.TestCase):
+    def test_move_space_to_whole_alphanumeric_table_fills_each_occurrence(self):
+        variables = {
+            "WS-RESULTS": cobol2py.CobolVar(
+                level=1, name="WS-RESULTS", pic="X", is_array=True, occurs=3
+            )
+        }
+        translated = cobol2py.translate_move_value("SPACE", "WS-RESULTS", variables)
+        self.assertEqual(translated, "[' '] * 3")
+        compile(translated, "<move-space-table>", "eval")
+        self.assertEqual(eval(translated), [" ", " ", " "])
+
+    def test_move_space_to_one_table_occurrence_stays_scalar(self):
+        variables = {
+            "WS-RESULTS": cobol2py.CobolVar(
+                level=1, name="WS-RESULTS", pic="X", is_array=True, occurs=3
+            )
+        }
+        self.assertEqual(
+            cobol2py.translate_move_value("SPACE", "WS-RESULTS(2)", variables),
+            "' '",
+        )
