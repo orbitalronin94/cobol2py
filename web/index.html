@@ -1192,7 +1192,7 @@ def normalize_data_reference(
     """Map a COBOL data-name (including OF/IN qualification) into nested dicts."""
     text = name.strip()
     match = re.fullmatch(
-        r"([A-Za-z0-9-]+)(?:\s*\(((?:[^()]|\((?:[^()]*)\))*)\))?(?:\s+(?:OF|IN)\s+([A-Za-z0-9-]+))?",
+        r"([A-Za-z0-9-]+)(?:\s*\(((?:[^()]|\((?:[^()]*)\))*)\))?(?:\s+(?:OF|IN)\s+([A-Za-z0-9-]+)(?:\s*\(((?:[^()]|\((?:[^()]*)\))*)\))?)?",
         text,
         re.IGNORECASE,
     )
@@ -1210,7 +1210,7 @@ def normalize_data_reference(
         if has_relation_is and not is_data_clause:
             return translate_condition(text, variables)
         return normalize_name(text)
-    field_name, subscript_text, qualifier = match.groups()
+    field_name, subscript_text, qualifier, qualifier_subscript = match.groups()
     subscripts = [part.strip() for part in re.split(r"[,;]", subscript_text)] if subscript_text else []
     if subscript_text and len(subscripts) == 1 and re.fullmatch(
         r"\s*[A-Za-z0-9_-]+(?:\s+[A-Za-z0-9_-]+)+\s*",
@@ -1236,8 +1236,16 @@ def normalize_data_reference(
 
     variable = variable_map.get(field_name.upper())
     if qualifier:
-        parent_expr = normalize_data_reference(qualifier, variable_map)
+        parent_reference = qualifier + (f"({qualifier_subscript})" if qualifier_subscript else "")
+        parent_expr = normalize_data_reference(parent_reference, variable_map)
         parent_variable = variable_map.get(qualifier.upper())
+        if qualifier_subscript:
+            # A table subscript may qualify the parent item (CHILD OF TABLE(1)).
+            # Resolve that parent row before selecting the child field.
+            expr = f"{parent_expr}[{normalize_name(field_name)!r}]"
+            for subscript in subscripts:
+                expr += f"[{index_expression(subscript)}]"
+            return expr
         if parent_variable is not None and parent_variable.is_array and parent_variable.is_group and subscripts:
             expr = f"{parent_expr}[{index_expression(subscripts[0])}][{normalize_name(field_name)!r}]"
             for subscript in subscripts[1:]:
@@ -1430,7 +1438,7 @@ def translate_expr(
     # Rewrite qualified data-names first; unqualified child names are resolved
     # through the parsed hierarchy when they are unambiguous in the model.
     expr = re.sub(
-        r"\b[A-Za-z][A-Za-z0-9-]*(?:\s*\([A-Za-z0-9_,;\s-]+\))?\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*",
+        r"\b[A-Za-z][A-Za-z0-9-]*(?:\s*\((?:[^()]|\([^()]*\))*\))?\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*(?:\s*\((?:[^()]|\([^()]*\))*\))?",
         lambda match: normalize_data_reference(match.group(0), variables),
         expr,
         flags=re.IGNORECASE,
