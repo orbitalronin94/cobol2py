@@ -2174,6 +2174,24 @@ def translate_nodes(
                             f"{temp_name} >= {translate_literal(low, variables)} "
                             f"and {temp_name} <= {translate_literal(high, variables)}"
                         )
+                    elif re.match(r"^(?:IS\b|NOT\b|EQUAL\b|GREATER\b|LESS\b|[<>=])", choice, re.IGNORECASE):
+                        # EVALUATE subject WHEN supports relational selection
+                        # objects such as WHEN IS GREATER THAN 5. Translate the
+                        # full relation, using a COBOL-safe placeholder for the
+                        # already-evaluated subject, then substitute its Python temp.
+                        placeholder = f"COBOL-EVALUATE-{node.line}"
+                        condition = translate_condition(
+                            f"{placeholder} {choice}", variables, condition_names
+                        )
+                        placeholder_name = normalize_name(placeholder)
+                        condition = rewrite_outside_literals(
+                            condition,
+                            lambda chunk: re.sub(
+                                rf"\b{re.escape(placeholder_name)}\b",
+                                temp_name,
+                                chunk,
+                            ),
+                        )
                     else:
                         condition = f"{temp_name} == {translate_literal(choice, variables)}"
                     prefix = ("if " if emitted == 0 else "elif ") + condition + ":"
