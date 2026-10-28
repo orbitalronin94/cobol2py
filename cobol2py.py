@@ -915,7 +915,27 @@ def decode_cobol_all_literal(token: str) -> Optional[str]:
         token.strip(),
         re.IGNORECASE,
     )
-    return decode_cobol_quoted_literal(match.group(1)) if match else None
+    if match:
+        return decode_cobol_quoted_literal(match.group(1))
+    figurative = re.fullmatch(
+        r"ALL\s+(SPACES?|ZERO(?:S|ES)?|QUOTES?|HIGH-VALUES?|LOW-VALUES?)",
+        token.strip(),
+        re.IGNORECASE,
+    )
+    if not figurative:
+        return None
+    value = figurative.group(1).upper()
+    if value.startswith("SPACE"):
+        return " "
+    if value.startswith("ZERO"):
+        return "0"
+    if value.startswith("QUOTE"):
+        return '"'
+    if value.startswith("HIGH-"):
+        return "\xff"
+    if value.startswith("LOW-"):
+        return "\x00"
+    return None
 
 
 def decode_cobol_quoted_literal(token: str) -> Optional[str]:
@@ -1060,8 +1080,10 @@ def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = No
         c = re.sub(r"\bNOT\b", "not", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\s+NOT\s+EQUAL\s+TO\b", "!=", c, flags=re.IGNORECASE)
         c = re.sub(r"\bNOT\s+EQUAL\s+TO\b", "!=", c, flags=re.IGNORECASE)
+        c = re.sub(r"\bNOT\s+EQUAL\b", "!=", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\s+EQUAL\s+TO\b", "==", c, flags=re.IGNORECASE)
         c = re.sub(r"\bEQUAL\s+TO\b", "==", c, flags=re.IGNORECASE)
+        c = re.sub(r"\bEQUAL\b", "==", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\s+GREATER\s+THAN\b", ">", c, flags=re.IGNORECASE)
         c = re.sub(r"\bGREATER\s+THAN\b", ">", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\s+LESS\s+THAN\b", "<", c, flags=re.IGNORECASE)
