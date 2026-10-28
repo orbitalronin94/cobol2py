@@ -6,6 +6,14 @@ import cobol2py
 
 
 class PreprocessTests(unittest.TestCase):
+    def test_value_literal_on_following_line_is_attached_to_data_item(self):
+        variables = cobol2py.parse_variables([
+            (1, "05 FILLER PIC X(4) VALUE"),
+            (2, '"ABCD".'),
+        ])
+        self.assertEqual(len(variables), 1)
+        self.assertEqual(variables[0].value, '"ABCD"')
+
     def test_decimal_point_is_comma_normalizes_numeric_literals_only(self):
         source = "\n".join([
             "SPECIAL-NAMES. DECIMAL-POINT IS COMMA.",
