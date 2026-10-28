@@ -1127,6 +1127,31 @@ def translate_expr(
     def intrinsic_argument(match: re.Match[str]) -> str:
         return match.group(1) if match.group(1) is not None else match.group(2)
 
+    # Small standard intrinsics whose syntax differs from Python.
+    translated = re.sub(
+        r"\bfunction\s+random\s*(?:\(([^()]*)\))?",
+        lambda match: (
+            "__import__('random').random()"
+            if match.group(1) is None
+            else "(lambda _seed: (__import__('random').seed(int(_seed)), __import__('random').random())[1])("
+                 + match.group(1) + ")"
+        ),
+        translated,
+        flags=re.IGNORECASE,
+    )
+    translated = re.sub(
+        r"\b(?:function\s+)?mod\s*\(([^(),]+),\s*([^()]*)\)",
+        r"(\1 % (\2))",
+        translated,
+        flags=re.IGNORECASE,
+    )
+    translated = re.sub(
+        r"\b(?:function\s+)?concatenate\s*\(((?:[^()]|\((?:[^()]*)\))*)\)",
+        lambda match: "''.join(str(_item) for _item in [" + intrinsic_argument(match) + "])",
+        translated,
+        flags=re.IGNORECASE,
+    )
+
     # FUNCTION is a COBOL introducer, not a Python identifier. Remove it
     # before rewriting nested intrinsic calls so an outer function match
     # cannot hide an inner "FUNCTION ASIN(...)" or similar call.
