@@ -1308,6 +1308,10 @@ def translate_literal(
         return "False"
     if re.fullmatch(r"FUNCTION\s+CURRENT-DATE", t, re.IGNORECASE):
         return "(lambda _dt: _dt.strftime('%Y%m%d%H%M%S') + f'{_dt.microsecond // 10000:02d}' + _dt.strftime('%z'))(__import__('datetime').datetime.now().astimezone())"
+    if re.fullmatch(r"FUNCTION\s+WHEN-COMPILED", t, re.IGNORECASE):
+        # DISPLAY operands go through translate_literal directly, not always
+        # translate_expr, so handle this alphanumeric intrinsic here too.
+        return "(lambda _dt: _dt.strftime('%Y%m%d%H%M%S') + f'{_dt.microsecond // 10000:02d}')(__import__('datetime').datetime.now())"
     if re.match(r"FUNCTION\s+[A-Z][A-Z0-9-]*\s*(?:\(|\[)", t, re.IGNORECASE) or re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*\s*\([^()]*:[^()]*\)", t):
         return translate_expr(t, variables)
     if t.upper() in ("QUOTE", "QUOTES"):
