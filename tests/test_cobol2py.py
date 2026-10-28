@@ -1600,3 +1600,16 @@ class MultiTableDiabolicoTests(unittest.TestCase):
         self.assertEqual(namespace["ws_control"]["ws_found_idx"], 4)
         self.assertEqual(namespace["ws_idx"], 4)
         self.assertEqual(namespace["ws_control"]["ws_result_num"], 700)
+
+class EmptyTryRegressionTests(unittest.TestCase):
+    def test_comment_only_entrypoint_emits_valid_try_body(self):
+        program = cobol2py.Program(
+            paragraphs={"__MAIN__": [
+                cobol2py.Node(kind="stmt", text="UNSUPPORTED VERB", line=1)
+            ]},
+            paragraph_order=["__MAIN__"],
+        )
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<comment-only-entrypoint>", "exec")
+        self.assertIn("        pass", generated)
+
