@@ -2486,3 +2486,33 @@ class ElementaryOccursMoveRegressionTests(unittest.TestCase):
             cobol2py.translate_move_value("SPACE", "WS-RESULTS(2)", variables),
             "' '",
         )
+
+
+class InitializeOccursGroupRegressionTests(unittest.TestCase):
+    def setUp(self):
+        self.variables = {
+            item.name: item
+            for item in cobol2py.parse_variables([
+                (1, "01 WS-ROWS OCCURS 2 TIMES."),
+                (2, "05 WS-CODE PIC X(3) VALUE 'ABC'."),
+                (2, "05 WS-COUNT PIC 9(2) VALUE 12."),
+            ])
+        }
+
+    def test_initialize_occurs_group_resets_every_row_and_child(self):
+        translated = cobol2py.translate_statement("INITIALIZE WS-ROWS", set(), self.variables)
+        self.assertEqual(translated, [
+            "ws_rows[0]['ws_code'] = '   '",
+            "ws_rows[0]['ws_count'] = 0",
+            "ws_rows[1]['ws_code'] = '   '",
+            "ws_rows[1]['ws_count'] = 0",
+        ])
+        compile("\\n".join(translated), "<initialize-occurs-group>", "exec")
+
+    def test_initialize_one_occurs_group_resets_only_selected_row(self):
+        translated = cobol2py.translate_statement("INITIALIZE WS-ROWS(2)", set(), self.variables)
+        self.assertEqual(translated, [
+            "ws_rows[1]['ws_code'] = '   '",
+            "ws_rows[1]['ws_count'] = 0",
+        ])
+        compile("\\n".join(translated), "<initialize-one-occurs-group>", "exec")
