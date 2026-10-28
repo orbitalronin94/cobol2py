@@ -2078,3 +2078,35 @@ class CobolLevel88ConditionRegressionTests(unittest.TestCase):
         self.assertIn("ws_num >= 1", translated)
         self.assertIn("ws_num <= 5", translated)
         compile(translated, "<level-88-range>", "eval")
+
+
+class CobolSetLevel88RegressionTests(unittest.TestCase):
+    def test_set_condition_name_true_assigns_a_permitted_value(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. SETCOND88.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-STATUS PIC X VALUE 'N'.",
+            "   88 WS-OK VALUE 'Y'.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "SET WS-OK TO TRUE.",
+            "IF WS-OK",
+            "    DISPLAY 'OK'",
+            "ELSE",
+            "    DISPLAY 'NO'",
+            "END-IF.",
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<set-level-88>", "exec")
+        namespace = {"__name__": "not_main"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "OK\n", generated)
