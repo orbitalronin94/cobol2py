@@ -1757,3 +1757,18 @@ class ParenthesizedNumericLiteralRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_literal("(01)")
         self.assertEqual(translated, "(1)")
         compile(translated, "<parenthesized-number>", "eval")
+
+
+class CobolNumericIntrinsicRegressionTests(unittest.TestCase):
+    def test_common_math_intrinsics_emit_valid_python(self):
+        cases = {
+            "FUNCTION ASIN(1.0)": "__import__('math').asin(1.0)",
+            "FUNCTION SQRT(9)": "__import__('math').sqrt(9)",
+            "FUNCTION COS(0)": "__import__('math').cos(0)",
+            "FUNCTION ABS(-3)": "__import__('math').fabs(-3)",
+        }
+        for source, expected in cases.items():
+            with self.subTest(source=source):
+                translated = cobol2py.translate_expr(source)
+                self.assertEqual(translated, expected)
+                compile(translated, "<numeric-intrinsic>", "eval")
