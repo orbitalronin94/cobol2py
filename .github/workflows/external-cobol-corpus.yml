@@ -63,7 +63,7 @@ jobs:
           mkdir -p "$OUTPUT_DIR/$SAMPLE_NAME"
           # The benchmark container runs as UID 65534 and must be able to
           # write only into this dedicated artifact directory.
-          chmod 0777 "$OUTPUT_DIR"
+          chmod 0777 "$OUTPUT_DIR" "$OUTPUT_DIR/$SAMPLE_NAME"
           docker run --name "$CONTAINER_NAME" \
             --network none \
             --cap-drop=ALL \
