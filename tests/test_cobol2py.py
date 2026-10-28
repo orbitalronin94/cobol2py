@@ -1925,3 +1925,11 @@ class MoveCorrespondingRegressionTests(unittest.TestCase):
         namespace = {"src": {"code": "ABC"}, "dst": {"code": "     "}}
         exec("\\n".join(translated or []), namespace)
         self.assertEqual(namespace["dst"]["code"], "ABC  ")
+
+
+class QualifiedDisplayOperandRegressionTests(unittest.TestCase):
+    def test_of_qualified_reference_remains_one_display_operand(self):
+        self.assertEqual(
+            cobol2py.split_cobol_items("WS-NAME OF WS-CUSTOMER ERASE"),
+            ["WS-NAME OF WS-CUSTOMER", "ERASE"],
+        )
