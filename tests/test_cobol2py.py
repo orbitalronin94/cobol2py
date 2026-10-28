@@ -2791,6 +2791,31 @@ class FillerStorageRegressionTests(unittest.TestCase):
 
 
 class AlternateStorageSectionRegressionTests(unittest.TestCase):
+    def test_file_section_record_is_parsed_alongside_working_storage(self):
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. FILEDATA.",
+            "DATA DIVISION.",
+            "FILE SECTION.",
+            "FD INPUT-FILE.",
+            "01 DUMMY-RECORD PIC X(120).",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-COUNT PIC 9 VALUE 7.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "DISPLAY DUMMY-RECORD.",
+            "DISPLAY WS-COUNT.",
+            "STOP RUN.",
+        ])
+        program = cobol2py.parse_cobol(source, source_format="free")
+        variables = {item.name: item for item in program.variables}
+        self.assertIn("DUMMY-RECORD", variables)
+        self.assertIn("WS-COUNT", variables)
+        generated = cobol2py.emit_python(program)
+        self.assertIn("dummy_record", generated)
+        self.assertIn("ws_count: int = 7", generated)
+        compile(generated, "<file-section-record>", "exec")
+
     def test_local_storage_only_program_emits_its_variables(self):
         source = "\n".join([
             "IDENTIFICATION DIVISION.",
