@@ -1831,3 +1831,14 @@ class ReferenceModificationRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_expr("WS-TEXT(WS-START:1)")
         self.assertEqual(translated, "ws_text[ws_start - 1:(ws_start - 1) + (1)]")
         compile(translated, "<variable-reference-modification>", "eval")
+
+
+class AbbreviatedCombinedConditionRegressionTests(unittest.TestCase):
+    def test_or_literal_repeats_previous_condition_subject(self):
+        variables = {
+            "WS-OPCAO": cobol2py.CobolVar(level=1, name="WS-OPCAO", pic="X(1)")
+        }
+        translated = cobol2py.translate_condition("WS-OPCAO = 'S' OR 'N'", variables)
+        self.assertIn("or ws_opcao.ljust(1) ==", translated)
+        self.assertNotIn("or ==", translated)
+        compile(translated, "<abbreviated-condition>", "eval")
