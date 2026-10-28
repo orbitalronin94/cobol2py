@@ -414,14 +414,14 @@ class TranslationTests(unittest.TestCase):
         )
 
     def test_unsupported_only_paragraphs_generate_valid_python(self):
-        source = "\\n".join([
+        source = "\n".join([
             "IDENTIFICATION DIVISION.",
             "PROGRAM-ID. UNSUPPORTEDONLY.",
             "PROCEDURE DIVISION.",
             "MAIN.",
-            "CALL \\\"UNKNOWN\\\".",
+            "CALL \"UNKNOWN\".",
             "NEXT-PARA.",
-            "CALL \\\"UNKNOWN\\\".",
+            "CALL \"UNKNOWN\".",
         ])
         generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
         compile(generated, "<unsupported-only>", "exec")
