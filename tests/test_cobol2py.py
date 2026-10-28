@@ -195,6 +195,30 @@ class TranslationTests(unittest.TestCase):
         self.assertEqual(cobol2py.translate_java_literal("SPACE", {}), '" "')
         self.assertEqual(cobol2py.translate_java_literal("SPACES", {}), '" "')
 
+    def test_zero_padded_numeric_literals_emit_valid_python(self):
+        self.assertEqual(cobol2py.translate_literal("0007"), "7")
+        self.assertEqual(cobol2py.translate_literal("+0007"), "+7")
+        self.assertEqual(cobol2py.translate_literal("-0007"), "-7")
+        self.assertEqual(cobol2py.translate_literal("000.50"), "0.50")
+        self.assertEqual(cobol2py.translate_expr("WS-NUM = 0007"), "ws_num == 7")
+        self.assertEqual(cobol2py.translate_expr("WS-NUM + 000.50"), "ws_num + 0.50")
+        source = "\\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. LEADINGZERO.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-NUM PIC 9(4).",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "MOVE 0007 TO WS-NUM.",
+            "IF WS-NUM = 0007",
+            'DISPLAY "OK"',
+            "END-IF.",
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<leading-zero-literal>", "exec")
+
     def test_value_space_zero_and_low_value_figuratives(self):
         self.assertEqual(cobol2py.translate_literal("ZEROES"), "0")
         self.assertEqual(cobol2py.translate_literal("LOW-VALUES"), repr("\x00"))
