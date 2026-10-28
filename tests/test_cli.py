@@ -70,6 +70,11 @@ class CliTests(unittest.TestCase):
         ])
         result = self.run_cli(source, "--diagnostics-json", "--strict")
         self.assertEqual(result.returncode, 2)
+        self.assertTrue(
+            result.stderr,
+            f"expected JSON on stderr; returncode={result.returncode}, "
+            f"stdout={result.stdout!r}, stderr={result.stderr!r}",
+        )
         diagnostics = json.loads(result.stderr)
         self.assertTrue(diagnostics)
         self.assertIn("OCCURS_DEPENDING_ON_UNSUPPORTED", {item["code"] for item in diagnostics})
