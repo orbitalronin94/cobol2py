@@ -1533,21 +1533,67 @@ def translate_expr(
     expr = rewrite_outside_literals(expr, replace_figurative_constants)
 
     # ALL literal is a COBOL figurative literal (ALL "A", ALL SPACE, etc.),
-    # not a data-name followed by a string. Resolve it before tokenization so
-    # expressions and group moves cannot emit invalid Python such as
-    # cobol_all "A".
+    # not a data-name followed by a string. Scan outside existing literals so
+    # the quoted operand can be consumed together with its ALL prefix.
     def replace_all_literals(chunk: str) -> str:
-        pattern = (
-            r"""\bALL\s+(?:"(?:[^"]|"")*"|'(?:[^']|'')*'|"""
-            r"""(?:QUOTE|QUOTES|SPACE|SPACES|ZERO|ZEROS|ZEROES|"""
-            r"""LOW-VALUE|LOW-VALUES|HIGH-VALUE|HIGH-VALUES)\b)"""
+        out: list[str] = []
+        i = 0
+        prefix = re.compile(r"\bALL\s+", re.IGNORECASE)
+        keyword = re.compile(
+            r"(?:QUOTE|QUOTES|SPACE|SPACES|ZERO|ZEROS|ZEROES|"
+            r"LOW-VALUE|LOW-VALUES|HIGH-VALUE|HIGH-VALUES)\b",
+            re.IGNORECASE,
         )
-        def replacement(match: re.Match[str]) -> str:
-            value = decode_cobol_all_literal(match.group(0))
-            return repr(value) if value is not None else match.group(0)
-        return re.sub(pattern, replacement, chunk, flags=re.IGNORECASE)
+        while i < len(chunk):
+            char = chunk[i]
+            if char in ("'", '"'):
+                quote = char
+                start_literal = i
+                i += 1
+                while i < len(chunk):
+                    if chunk[i] == quote:
+                        if i + 1 < len(chunk) and chunk[i + 1] == quote:
+                            i += 2
+                            continue
+                        i += 1
+                        break
+                    i += 1
+                out.append(chunk[start_literal:i])
+                continue
+            match = prefix.match(chunk, i)
+            if match:
+                operand_start = match.end()
+                if operand_start < len(chunk) and chunk[operand_start] in ("'", '"'):
+                    quote = chunk[operand_start]
+                    j = operand_start + 1
+                    while j < len(chunk):
+                        if chunk[j] == quote:
+                            if j + 1 < len(chunk) and chunk[j + 1] == quote:
+                                j += 2
+                                continue
+                            j += 1
+                            break
+                        j += 1
+                    token = chunk[i:j]
+                    value = decode_cobol_all_literal(token)
+                    if value is not None:
+                        out.append(repr(value))
+                        i = j
+                        continue
+                else:
+                    operand = keyword.match(chunk, operand_start)
+                    if operand:
+                        token = chunk[i:operand.end() + operand_start]
+                        value = decode_cobol_all_literal(token)
+                        if value is not None:
+                            out.append(repr(value))
+                            i = operand_start + operand.end()
+                            continue
+            out.append(char)
+            i += 1
+        return "".join(out)
 
-    expr = rewrite_outside_literals(expr, replace_all_literals)
+    expr = replace_all_literals(expr)
 
     # ORD-MIN / ORD-MAX return the 1-based position of the first minimum /
     # maximum argument. Rewrite before generic COBOL subscripts turn calls
