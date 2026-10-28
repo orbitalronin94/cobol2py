@@ -2393,3 +2393,34 @@ class BareAlphanumericValueRegressionTests(unittest.TestCase):
         generated = variable.py_default()
         compile(generated, "<cobol-value-default>", "eval")
         self.assertEqual(eval(generated), "COBOL-IS".ljust(99))
+
+
+class GroupMoveFillRegressionTests(unittest.TestCase):
+    def test_move_space_to_group_preserves_group_and_child_fields(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. GROUPFILL.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 TEST-RESULTS.",
+            "   02 FEATURE PIC X(20).",
+            "   02 P-OR-F PIC X(5).",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "   MOVE SPACE TO TEST-RESULTS.",
+            '   MOVE "PASS" TO FEATURE OF TEST-RESULTS.',
+            "   DISPLAY FEATURE OF TEST-RESULTS.",
+            "   STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        self.assertNotIn("test_results = ' '", generated)
+        self.assertIn("test_results['feature'] = '                    '", generated)
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<group-move-space>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "PASS                \n")
