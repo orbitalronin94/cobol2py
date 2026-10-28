@@ -24,6 +24,20 @@ El hito v0.8.x ya incluye una implementación inicial de `ALTER`, `GO TO ... DEP
 
 ## Roadmap hacia v1.0
 
+### Estado medido del traductor (benchmark externo)
+
+> **Última medición disponible:** 291/1.000 coincidencias exactas (**29,1 % combinado**). Estos números proceden de la rama de robustez antes de confirmar una nueva ejecución en `main`; son la última referencia disponible, **no una medición recién validada del HEAD actual de `main`**. Actualizaremos esta tabla con los artefactos de Actions en cuanto esté disponible esa ejecución.
+
+| Métrica X-COBOL v2 | Último resultado disponible | Objetivo de la fase 0.9 |
+|---|---:|---:|
+| Muestra principal | 136/500 (**27,2 %**) | ≥375/500 (**75 %**) |
+| Holdout independiente | 155/500 (**31,0 %**) | ≥375/500 (**75 %**) |
+| Total de ambas muestras | 291/1.000 (**29,1 %**) | ≥750/1.000 (**75 %**), además de superar cada muestra por separado |
+
+**Brecha hasta el umbral del 75 %:** 47,8 puntos porcentuales en la muestra principal y 44,0 puntos en holdout, según esa última medición. El objetivo del 75 % es un gate de ingeniería del benchmark, no una afirmación de que se soporte el 75 % de todo COBOL existente.
+
+**Regla para cada mejora incremental:** aceptar una modificación del traductor como mejora demostrada solo si gana al menos **+1 punto porcentual absoluto** en la muestra principal (por ejemplo, de 27,2 % a 28,2 % o más), sin regresiones en el corpus diferencial versionado ni en holdout. Publicaremos siempre numerador/denominador, commit y artefactos; si no hay medición comparable, el porcentaje se marca como pendiente de validar.
+
 **Objetivo de v1.0:** una versión útil y auditable para migraciones asistidas de un subconjunto COBOL explícitamente definido; no una promesa de compatibilidad universal ni una herramienta que pueda migrar sistemas de producción sin revisión humana.
 
 ### Fase 0.9 — Fiabilidad medible (en curso)
