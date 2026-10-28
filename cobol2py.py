@@ -1834,6 +1834,159 @@ def translate_expr(
         flags=re.IGNORECASE,
     )
 
+    # Regex-based intrinsic rewriting above intentionally handles common simple
+    # forms. Finish calls with deeper nested parentheses using a balanced scan;
+    # e.g. FUNCTION TAN(PI + ((2 * PI) / 180)) must not remain a Python name.
+    def split_intrinsic_arguments(arguments: str) -> list[str]:
+        parts: list[str] = []
+        quote: Optional[str] = None
+        paren_depth = bracket_depth = 0
+        start = 0
+        i = 0
+        while i < len(arguments):
+            char = arguments[i]
+            if quote is not None:
+                if char == quote:
+                    if i + 1 < len(arguments) and arguments[i + 1] == quote:
+                        i += 2
+                        continue
+                    quote = None
+            elif char in ("'", '"'):
+                quote = char
+            elif char == "(":
+                paren_depth += 1
+            elif char == ")":
+                paren_depth = max(0, paren_depth - 1)
+            elif char == "[":
+                bracket_depth += 1
+            elif char == "]":
+                bracket_depth = max(0, bracket_depth - 1)
+            elif char == "," and paren_depth == 0 and bracket_depth == 0:
+                parts.append(arguments[start:i].strip())
+                start = i + 1
+            i += 1
+        tail = arguments[start:].strip()
+        if tail or parts:
+            parts.append(tail)
+        return [part for part in parts if part]
+
+    def rewrite_remaining_intrinsics(text: str) -> str:
+        intrinsic_names = {
+            "abs", "acos", "asin", "atan", "cos", "exp", "log", "log10",
+            "sin", "sqrt", "tan", "lower_case", "upper_case", "trim", "length",
+            "mod", "rem", "integer", "integer_part", "present_value",
+        }
+        math_names = {
+            "abs": "fabs", "acos": "acos", "asin": "asin", "atan": "atan",
+            "cos": "cos", "exp": "exp", "log": "log", "log10": "log10",
+            "sin": "sin", "sqrt": "sqrt", "tan": "tan",
+        }
+
+        def find_close(source: str, opening: int, opener: str) -> int:
+            closer = ")" if opener == "(" else "]"
+            depth = 0
+            quote: Optional[str] = None
+            i = opening
+            while i < len(source):
+                char = source[i]
+                if quote is not None:
+                    if char == quote:
+                        if i + 1 < len(source) and source[i + 1] == quote:
+                            i += 2
+                            continue
+                        quote = None
+                elif char in ("'", '"'):
+                    quote = char
+                elif char == opener:
+                    depth += 1
+                elif char == closer:
+                    depth -= 1
+                    if depth == 0:
+                        return i
+                i += 1
+            return -1
+
+        out: list[str] = []
+        i = 0
+        while i < len(text):
+            char = text[i]
+            if char in ("'", '"'):
+                quote = char
+                start = i
+                i += 1
+                while i < len(text):
+                    if text[i] == quote:
+                        if i + 1 < len(text) and text[i + 1] == quote:
+                            i += 2
+                            continue
+                        i += 1
+                        break
+                    i += 1
+                out.append(text[start:i])
+                continue
+            if char.isalpha() or char == "_":
+                match = re.match(r"[A-Za-z_][A-Za-z0-9_]*", text[i:])
+                assert match is not None
+                name = match.group(0)
+                end_name = i + len(name)
+                cursor = end_name
+                while cursor < len(text) and text[cursor].isspace():
+                    cursor += 1
+                if (
+                    name.lower() in intrinsic_names
+                    and (i == 0 or text[i - 1] != ".")
+                    and cursor < len(text)
+                    and text[cursor] in "( [".replace(" ", "")
+                ):
+                    opener = text[cursor]
+                    end_call = find_close(text, cursor, opener)
+                    if end_call >= 0:
+                        raw_args = text[cursor + 1:end_call]
+                        args = rewrite_remaining_intrinsics(raw_args)
+                        parts = split_intrinsic_arguments(args)
+                        key = name.lower()
+                        if key in math_names:
+                            replacement = f"__import__('math').{math_names[key]}({args})"
+                        elif key == "upper_case":
+                            replacement = f"({args}).upper()"
+                        elif key == "lower_case":
+                            replacement = f"({args}).lower()"
+                        elif key == "trim":
+                            replacement = f"({args}).strip()"
+                        elif key == "length":
+                            replacement = f"len({args})"
+                        elif key in ("mod", "rem") and len(parts) == 2:
+                            if key == "mod":
+                                replacement = f"({parts[0]} % ({parts[1]}))"
+                            else:
+                                replacement = (
+                                    f"(lambda _a, _b: _a - int(_a / _b) * _b)"
+                                    f"({parts[0]}, {parts[1]})"
+                                )
+                        elif key == "integer":
+                            replacement = f"int(__import__('math').floor(float({args})))"
+                        elif key == "integer_part":
+                            replacement = f"int(float({args}))"
+                        elif key == "present_value" and len(parts) >= 2:
+                            replacement = (
+                                "(lambda _rate, *_payments: sum((_payment / "
+                                "((1 + _rate) ** _period)) for _period, _payment "
+                                "in enumerate(_payments, 1)))(" + ", ".join(parts) + ")"
+                            )
+                        else:
+                            replacement = name + opener + args + (")" if opener == "(" else "]")
+                        out.append(replacement)
+                        i = end_call + 1
+                        continue
+                out.append(name)
+                i = end_name
+                continue
+            out.append(char)
+            i += 1
+        return "".join(out)
+
+    translated = rewrite_remaining_intrinsics(translated)
+
     # A reference modification may follow an already-translated table/group
     # reference, e.g. WS-TEXT(WS-I)(WS-J:1). The earlier source-level matcher
     # only sees a bare COBOL name, so finish the chained slice here.
