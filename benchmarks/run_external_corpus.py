@@ -194,7 +194,7 @@ def main() -> int:
                             diagnostic += f"; generated line: {excerpt}"
                         result.update({"status": "failed", "reason": diagnostic})
                     else:
-                        candidate = run_process(["python3", "-I", str(generated)], candidate_work, args.translator_timeout)
+                        candidate = run_process(["python3", "-I", str(generated)], candidate_work, args.run_timeout)
                         result["candidate_returncode"] = candidate["returncode"]
                         result["reference_returncode"] = reference["returncode"]
                         result["stdout_match"] = candidate["stdout"] == reference["stdout"]
