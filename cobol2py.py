@@ -1060,6 +1060,8 @@ def translate_expr(
             out.append(tok.lower())
         elif tok.upper() in ("TRUE", "FALSE"):
             out.append("True" if tok.upper() == "TRUE" else "False")
+        elif tok.upper() in intrinsic_names:
+            out.append(tok.lower().replace("-", "_"))
         elif re.fullmatch(r"(?:[A-Za-z][A-Za-z0-9-]*|\d+[A-Za-z][A-Za-z0-9-]*)", tok):
             out.append(normalize_data_reference(tok, variables))
         elif re.fullmatch(r"\d+(?:\.\d+)?", tok):
