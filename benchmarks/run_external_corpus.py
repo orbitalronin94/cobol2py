@@ -167,8 +167,10 @@ def main() -> int:
                 report["tested"] += 1
                 if result["status"] == "passed": report["passed"] += 1
                 else: report["failed"] += 1
-    report["target_reached"] = report["tested"] == args.target
+    report["sample_complete"] = report["tested"] == args.target
     report["pass_rate_percent"] = round(100 * report["passed"] / report["tested"], 2) if report["tested"] else 0.0
+    report["equivalence_threshold_percent"] = 75.0
+    report["equivalence_gate_reached"] = report["sample_complete"] and report["pass_rate_percent"] >= report["equivalence_threshold_percent"]
     report["source_code_republished"] = False
     report["notes"] = [
         "Only source files that compile and terminate under GnuCOBOL are included in the tested denominator.",
@@ -186,7 +188,8 @@ def main() -> int:
         f"- Reference runtime exclusions: **{report['reference_runtime_exclusions']}**",
         f"- Differentially tested: **{report['tested']}/{report['target']}**",
         f"- Exact matches: **{report['passed']}/{report['tested']} ({report['pass_rate_percent']:.2f}%)**",
-        f"- Translator mismatches/errors: **{report['failed']}**", f"- Target reached: **{report['target_reached']}**", "",
+        f"- Translator mismatches/errors: **{report['failed']}**", f"- Sample complete: **{report['sample_complete']}**",
+        f"- 75% exact-equivalence gate reached: **{report['equivalence_gate_reached']}**", "",
         "## Per-program results", "", "| Case | Archive path | Status | Detail |", "|---|---|---|---|"]
     for item in report["results"]:
         detail = (item.get("reason") or "Exact stdout and return-code match").replace("|", "\\|").replace("\n", " ")
@@ -209,7 +212,7 @@ def main() -> int:
     lines.extend(["", "See the JSON artifact for source hashes, return codes, exact match flags, and short generated-line diagnostics.", ""])
     (args.output / "external-corpus-report.md").write_text("\n".join(lines), encoding="utf-8")
     print("\n".join(lines[:18]))
-    if not report["target_reached"]:
+    if not report["sample_complete"]:
         print(f"Could only find {report['tested']} runnable standalone sources; required {args.target}.")
         return 2
     # This is a baseline measurement, not a regression gate: a non-100% score
