@@ -79,11 +79,13 @@ def main() -> int:
     parser.add_argument("--translator", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--target", type=int, default=500)
+    parser.add_argument("--skip", type=int, default=0, help="Skip this many eligible programs before testing the sample")
     parser.add_argument("--compile-timeout", type=int, default=8)
     parser.add_argument("--run-timeout", type=int, default=3)
     parser.add_argument("--translator-timeout", type=int, default=20)
     args = parser.parse_args()
     if args.target < 1: parser.error("--target must be positive")
+    if args.skip < 0: parser.error("--skip must be non-negative")
     translator = args.translator.resolve()
     if not translator.is_file(): parser.error(f"translator not found: {translator}")
     args.output.mkdir(parents=True, exist_ok=True)
@@ -91,9 +93,9 @@ def main() -> int:
         "schema_version": 1, "dataset": "X-COBOL: A Dataset of Open-Source COBOL repositories, v2",
         "dataset_url": "https://zenodo.org/records/14269462", "archive_md5_expected": ARCHIVE_MD5,
         "archive_md5_verified": False,
-        "selection": "Deterministic SHA-256 ordering of unique source contents; retain sources that compile and whose GnuCOBOL reference process terminates within timeout.",
+        "selection": "Deterministic SHA-256 ordering of unique source contents; skip the first --skip sources that compile and terminate under GnuCOBOL, then test the next --target eligible sources.",
         "pass_definition": "Exact stdout and process return-code match against a compiled GnuCOBOL executable.",
-        "target": args.target, "source_files_discovered": 0, "unique_source_contents": 0,
+        "target": args.target, "skip": args.skip, "eligible_skipped": 0, "source_files_discovered": 0, "unique_source_contents": 0,
         "screened": 0, "reference_compile_failures": 0, "reference_runtime_exclusions": 0,
         "tested": 0, "passed": 0, "failed": 0, "results": []}
     with tempfile.TemporaryDirectory(prefix="x-cobol-benchmark-") as temp:
@@ -107,6 +109,7 @@ def main() -> int:
         report["unique_source_contents"] = len(unique)
         ordered = sorted(unique.items(), key=lambda pair: hashlib.sha256(
             (pair[1].relative_to(extracted_root).as_posix() + "\0" + pair[0]).encode("utf-8")).hexdigest())
+        eligible_seen = 0
         for content_hash, source in ordered:
             if report["tested"] >= args.target: break
             report["screened"] += 1
@@ -134,6 +137,11 @@ def main() -> int:
                     report["reference_runtime_exclusions"] += 1
                     result["reason"] = "reference execution timed out or could not launch"
                     continue
+                if eligible_seen < args.skip:
+                    eligible_seen += 1
+                    report["eligible_skipped"] = eligible_seen
+                    continue
+                eligible_seen += 1
                 translated = run_process(["python3", "-I", str(translator), str(source), "--format", "auto"],
                                          candidate_work, args.translator_timeout)
                 if not translated["launched"] or translated["timeout"] or translated["returncode"] != 0:
