@@ -1946,6 +1946,18 @@ class AbbreviatedCombinedConditionRegressionTests(unittest.TestCase):
         self.assertNotIn("or ==", translated)
         compile(translated, "<abbreviated-condition>", "eval")
 
+    def test_numeric_range_repeats_subject_and_relation(self):
+        translated = cobol2py.translate_condition("WS-NUM > 10 AND < 21")
+        self.assertEqual(translated, "ws_num > 10 and ws_num < 21")
+        self.assertTrue(eval(translated, {"ws_num": 15}))
+        self.assertFalse(eval(translated, {"ws_num": 25}))
+
+    def test_numeric_or_value_repeats_subject_and_equality(self):
+        translated = cobol2py.translate_condition("WS-NUM = 1 OR 2")
+        self.assertEqual(translated, "ws_num == 1 or ws_num == 2")
+        self.assertTrue(eval(translated, {"ws_num": 2}))
+        self.assertFalse(eval(translated, {"ws_num": 3}))
+
 
 class DigitLeadingHyphenatedNameRegressionTests(unittest.TestCase):
     def test_digit_leading_hyphenated_identifier_is_not_split_as_arithmetic(self):
