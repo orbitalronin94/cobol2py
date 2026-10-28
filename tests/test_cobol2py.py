@@ -2587,6 +2587,24 @@ class BareAlphanumericValueRegressionTests(unittest.TestCase):
 
 
 class GroupMoveFillRegressionTests(unittest.TestCase):
+    def test_group_to_group_move_copies_bytes_across_different_field_layouts(self):
+        variables = {
+            "SRC-GROUP": cobol2py.CobolVar(level=1, name="SRC-GROUP", is_group=True),
+            "SRC-A": cobol2py.CobolVar(level=2, name="SRC-A", pic="X(2)", parent_name="SRC-GROUP"),
+            "SRC-B": cobol2py.CobolVar(level=2, name="SRC-B", pic="X(2)", parent_name="SRC-GROUP"),
+            "TARGET-GROUP": cobol2py.CobolVar(level=1, name="TARGET-GROUP", is_group=True),
+            "TARGET-A": cobol2py.CobolVar(level=2, name="TARGET-A", pic="X", parent_name="TARGET-GROUP"),
+            "TARGET-B": cobol2py.CobolVar(level=2, name="TARGET-B", pic="X(3)", parent_name="TARGET-GROUP"),
+        }
+        statements = cobol2py.translate_group_move("SRC-GROUP", "TARGET-GROUP", variables)
+        self.assertIsNotNone(statements)
+        namespace = {
+            "src_group": {"src_a": "AB", "src_b": "CD"},
+            "target_group": {"target_a": " ", "target_b": "   "},
+        }
+        exec("\\n".join(statements), namespace)
+        self.assertEqual(namespace["target_group"], {"target_a": "A", "target_b": "BCD"})
+
     def test_move_space_to_group_preserves_group_and_child_fields(self):
         from contextlib import redirect_stdout
         from io import StringIO
