@@ -415,13 +415,24 @@ class TranslationTests(unittest.TestCase):
             "\n".join(cobol2py.translate_java_statement("ACCEPT WS-TEXT", set(), variables)),
         )
 
-    def test_display_of_implied_decimal_pic_preserves_decimal_point(self):
+    def test_display_of_unsigned_implied_decimal_pic_omits_decimal_point(self):
         variables = {
             "WS-RATE": cobol2py.CobolVar(level=1, name="WS-RATE", pic="9(3)V99")
         }
-        self.assertEqual(
-            cobol2py.translate_display_item("WS-RATE", variables),
-            "format(float(ws_rate), '06.2f')",
+        expression = cobol2py.translate_display_item("WS-RATE", variables)
+        self.assertEqual(eval(expression, {"ws_rate": 12.34}), "01234")
+        self.assertEqual(eval(expression, {"ws_rate": 123.45}), "12345")
+
+    def test_implied_decimal_move_uses_decimal_scaling_before_truncation(self):
+        variables = {
+            "WS-RATE": cobol2py.CobolVar(level=1, name="WS-RATE", pic="9(3)V99")
+        }
+        expression = cobol2py.translate_move_value("1234.567", "WS-RATE", variables)
+        self.assertAlmostEqual(eval(expression), 234.56, places=2)
+        self.assertAlmostEqual(
+            eval(cobol2py.translate_move_value("12.34", "WS-RATE", variables)),
+            12.34,
+            places=2,
         )
 
     def test_move_truncates_signed_and_implied_decimal_receiving_fields(self):
@@ -3157,6 +3168,30 @@ class SearchAllNextSentenceRegressionTests(unittest.TestCase):
         compile(generated, "<search-all-next-sentence>", "exec")
         self.assertIn("== ws_target", generated)
         self.assertNotIn("next sentence", generated.lower())
+
+
+class PerformTestAfterRegressionTests(unittest.TestCase):
+    def test_perform_with_test_after_executes_at_least_once(self):
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. TESTAFTER.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-I PIC 9 VALUE 0.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "PERFORM WORK-PARA WITH TEST AFTER UNTIL WS-I >= 3",
+            "STOP RUN.",
+            "WORK-PARA.",
+            "ADD 1 TO WS-I.",
+        ])
+        generated = cobol2py.emit_python(
+            cobol2py.parse_cobol(source, source_format="free")
+        )
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<perform-test-after>", "exec"), namespace)
+        namespace["main"]()
+        self.assertEqual(namespace["ws_i"], 3, generated)
 
 
 class OrdinalIntrinsicRegressionTests(unittest.TestCase):

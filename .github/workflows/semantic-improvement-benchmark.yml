@@ -1,0 +1,118 @@
+name: semantic-improvement-benchmark
+
+on:
+  push:
+    branches: [work/semantic-fixes-benchmark]
+  pull_request:
+    paths:
+      - "cobol2py.py"
+      - "web/index.html"
+      - "tests/**"
+      - "benchmarks/run_external_corpus.py"
+      - "benchmarks/Dockerfile.external"
+      - ".github/workflows/semantic-improvement-benchmark.yml"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Runnable COBOL programs per sample (500 compares with the previous full run)"
+        required: true
+        default: "500"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run regression suite
+        run: python -m unittest discover -s tests -v
+
+  external-corpus:
+    needs: unit-tests
+    strategy:
+      fail-fast: false
+      matrix:
+        sample:
+          - { name: primary, skip: 0, previous_passed: 169 }
+          - { name: holdout, skip: 500, previous_passed: 195 }
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download pinned X-COBOL v2 archive
+        run: |
+          curl --fail --location --retry 3 --retry-delay 2 \
+            "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" \
+            --output /tmp/COBOL_Files.zip
+      - name: Build isolated benchmark image
+        run: docker build -f benchmarks/Dockerfile.external -t cobol2py-external-benchmark .
+      - name: Run differential benchmark
+        env:
+          TARGET: ${{ inputs.target || '500' }}
+          SAMPLE_NAME: ${{ matrix.sample.name }}
+          SKIP: ${{ matrix.sample.skip }}
+          OUTPUT_DIR: ${{ runner.temp }}/semantic-benchmark
+          CONTAINER_NAME: cobol2py-semantic-${{ github.run_id }}-${{ matrix.sample.name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUTPUT_DIR/$SAMPLE_NAME"
+          chmod 0777 "$OUTPUT_DIR" "$OUTPUT_DIR/$SAMPLE_NAME"
+          docker run --name "$CONTAINER_NAME" \
+            --network none --cap-drop=ALL --security-opt=no-new-privileges \
+            --pids-limit=128 --memory=4g --cpus=2 --read-only \
+            --tmpfs /tmp:rw,exec,nosuid,nodev,size=3g \
+            --mount "type=bind,source=$GITHUB_WORKSPACE,target=/workspace,readonly" \
+            --mount "type=bind,source=/tmp/COBOL_Files.zip,target=/input.zip,readonly" \
+            --mount "type=bind,source=$OUTPUT_DIR,target=/output" \
+            --workdir /workspace cobol2py-external-benchmark \
+            benchmarks/run_external_corpus.py --archive /input.zip \
+            --translator /workspace/cobol2py.py --output "/output/$SAMPLE_NAME" \
+            --target "$TARGET" --skip "$SKIP"
+          docker rm "$CONTAINER_NAME" >/dev/null
+      - name: Compare with last full benchmark
+        if: always()
+        env:
+          TARGET: ${{ inputs.target || '500' }}
+          SAMPLE_NAME: ${{ matrix.sample.name }}
+          PREVIOUS_PASSED: ${{ matrix.sample.previous_passed }}
+          REPORT_DIR: ${{ runner.temp }}/semantic-benchmark
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          name = os.environ["SAMPLE_NAME"]
+          target = int(os.environ["TARGET"])
+          path = Path(os.environ["REPORT_DIR"]) / name / "external-corpus-report.json"
+          summary = Path(os.environ["GITHUB_STEP_SUMMARY"])
+          if not path.exists():
+              summary.write_text(f"## {name}: report missing\n", encoding="utf-8")
+              raise SystemExit(0)
+          report = json.loads(path.read_text(encoding="utf-8"))
+          lines = [
+              f"## {name} sample",
+              f"- Result: **{report['passed']}/{report['tested']} ({report['pass_rate_percent']:.2f}%)**",
+              f"- Failed cases: **{report['failed']}**",
+              f"- Reference compile exclusions: **{report['reference_compile_failures']}**",
+              f"- Reference runtime exclusions: **{report['reference_runtime_exclusions']}**",
+          ]
+          if target == 500:
+              previous = int(os.environ["PREVIOUS_PASSED"])
+              delta = report["passed"] - previous
+              lines.append(f"- Change vs last full run: **{delta:+d} exact matches ({delta / 5:+.2f} percentage points)**")
+          summary.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
+      - name: Upload detailed report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semantic-benchmark-${{ matrix.sample.name }}-${{ github.run_number }}
+          path: ${{ runner.temp }}/semantic-benchmark/${{ matrix.sample.name }}/
+          if-no-files-found: warn
+          retention-days: 90
