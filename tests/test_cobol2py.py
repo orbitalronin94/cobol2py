@@ -3079,20 +3079,24 @@ class AnnuityIntrinsicRegressionTests(unittest.TestCase):
 
 class StringMultipleSendingOperandsRegressionTests(unittest.TestCase):
     def test_string_shared_delimiter_splits_multiple_sending_operands(self):
-        variables = {
-            "CONTROL-UP": cobol2py.CobolVar(level=1, name="CONTROL-UP", pic="X", value='"UP"'),
-            "TARGET": cobol2py.CobolVar(level=1, name="TARGET", pic="X(10)"),
-        }
-        translated = cobol2py.translate_paragraph(
-            [cobol2py.Node(kind="stmt", text='STRING CONTROL-UP " - up" DELIMITED BY SIZE INTO TARGET', line=1)],
-            set(), variables,
-        )
-        generated = "\\n".join(translated)
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. STRTEST.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            '01 CONTROL-UP PIC X VALUE "UP".',
+            "01 TARGET PIC X(10).",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            'STRING CONTROL-UP " - up" DELIMITED BY SIZE INTO TARGET.',
+            "DISPLAY TARGET.",
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
         self.assertNotIn('control_up " - up"', generated)
-        compile(generated, "<string-shared-delimiter>", "exec")
         self.assertIn("str(control_up)", generated)
         self.assertIn("str(' - up')", generated)
-
+        compile(generated, "<string-shared-delimiter>", "exec")
 
 class TestNumvalIntrinsicRegressionTests(unittest.TestCase):
     def test_test_numval_returns_zero_for_numeric_text(self):
