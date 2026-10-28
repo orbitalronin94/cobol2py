@@ -1980,6 +1980,11 @@ class HexadecimalLiteralRegressionTests(unittest.TestCase):
         self.assertEqual(eval(translated), "\r")
         compile(translated, "<hex-literal>", "eval")
 
+    def test_hexadecimal_literal_survives_expression_tokenization(self):
+        translated = cobol2py.translate_expr('X"0D"')
+        self.assertEqual(eval(translated), "\r")
+        compile(translated, "<hex-expression>", "eval")
+
     def test_hexadecimal_literal_with_single_quotes(self):
         translated = cobol2py.translate_literal("X'4142'")
         self.assertEqual(eval(translated), "AB")
