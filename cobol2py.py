@@ -1127,6 +1127,21 @@ def translate_expr(
     def intrinsic_argument(match: re.Match[str]) -> str:
         return match.group(1) if match.group(1) is not None else match.group(2)
 
+    # FUNCTION is a COBOL introducer, not a Python identifier. Remove it
+    # before rewriting nested intrinsic calls so an outer function match
+    # cannot hide an inner "FUNCTION ASIN(...)" or similar call.
+    intrinsic_call_names = (
+        r"NUMVAL(?:_C)?|LOWER_CASE|UPPER_CASE|TRIM|LENGTH|ABS|ACOS|ASIN|ATAN|"
+        r"COS|EXP|LOG|LOG10|SIN|SQRT|TAN|MIN|MAX|COBOL_MIN|COBOL_MAX|"
+        r"PRESENT_VALUE|INTEGER_PART|INTEGER|ORD|CHAR|MOD|CONCATENATE|RANDOM"
+    )
+    translated = re.sub(
+        rf"\\bfunction\\s+(?=(?:{intrinsic_call_names})\\s*(?:\\[|\\())",
+        "",
+        translated,
+        flags=re.IGNORECASE,
+    )
+
     # Map common numeric COBOL intrinsics to Python's math module. Using
     # __import__ keeps generated programs self-contained without new imports.
     math_intrinsics = {
