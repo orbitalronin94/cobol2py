@@ -2618,6 +2618,18 @@ class GroupMoveFillRegressionTests(unittest.TestCase):
             "src_group": {"src_a": "AB", "src_b": "CD"}
         }), "ABCD")
 
+    def test_move_all_literal_to_group_repeats_across_raw_bytes(self):
+        variables = {
+            "TARGET-GROUP": cobol2py.CobolVar(level=1, name="TARGET-GROUP", is_group=True),
+            "TARGET-A": cobol2py.CobolVar(level=2, name="TARGET-A", pic="X", parent_name="TARGET-GROUP"),
+            "TARGET-B": cobol2py.CobolVar(level=2, name="TARGET-B", pic="X(3)", parent_name="TARGET-GROUP"),
+        }
+        statements = cobol2py.translate_group_move("ALL \"A\"", "TARGET-GROUP", variables)
+        self.assertIsNotNone(statements)
+        namespace = {"target_group": {"target_a": " ", "target_b": "   "}}
+        exec("\\n".join(statements), namespace)
+        self.assertEqual(namespace["target_group"], {"target_a": "A", "target_b": "AAA"})
+
     def test_group_to_group_move_copies_bytes_across_different_field_layouts(self):
         variables = {
             "SRC-GROUP": cobol2py.CobolVar(level=1, name="SRC-GROUP", is_group=True),
