@@ -61,7 +61,7 @@ El proyecto ha evolucionado desde un traductor de COBOL a Python hacia un reposi
 - **Agente (`cobol2py_agent.py`)**: inspecciona un repositorio con múltiples programas y artefactos relacionados, y genera un inventario y un plan de migración en Markdown/JSON. No modifica los fuentes.
 - **Piloto integrado (`tools/modernize_pilot.py`)**: conecta inventario y traducción del subconjunto a Python, comprueba sintaxis y crea un informe por archivo. Por defecto no ejecuta el código generado; el flag explícito `--differential` ejecuta únicamente fixtures de ruta exacta y compara stdout/código de retorno con GnuCOBOL.
 - **Evidencia medida**: el piloto traduce 108/108 fuentes de `samples` sin errores de sintaxis ni de traducción. En el modo diferencial opt-in, 105/105 fixtures versionadas coinciden con GnuCOBOL en stdout y código de retorno. Esto no demuestra equivalencia para entradas no medidas ni efectos externos.
-- **Corpus externo amplio (nuevo, ejecución manual)**: el workflow [`external-cobol-corpus`](.github/workflows/external-cobol-corpus.yml) toma una muestra determinista de 500 fuentes del dataset público [X-COBOL v2](https://zenodo.org/records/14269462), las compara con GnuCOBOL en un contenedor sin red y publica solo hashes y resultados. La línea base externa inicial es 53/500 coincidencias exactas (10,60 %). Una ejecución posterior falló al escribir el informe por permisos del directorio de artefactos; se está corrigiendo la infraestructura y esa ejecución no aporta una nueva tasa. Véase [metodología y límites](benchmarks/EXTERNAL_CORPUS.md).
+- **Corpus externo amplio (nuevo, ejecución manual)**: el workflow [`external-cobol-corpus`](.github/workflows/external-cobol-corpus.yml) toma una muestra determinista de 500 fuentes del dataset público [X-COBOL v2](https://zenodo.org/records/14269462), las compara con GnuCOBOL en un contenedor sin red y publica solo hashes y resultados. La línea base externa inicial fue 53/500 coincidencias exactas (10,60 %). La primera ejecución completa tras corregir los permisos de artefactos midió **69/500 (13,80 %)** en el commit `259ca1e0`; es la última medición confirmada para esa revisión, no para los cambios de traducción posteriores que siguen en CI. La subida es de 3,2 puntos porcentuales frente a la línea base, pero aún queda muy lejos de la meta del 75 %. Véase [metodología y límites](benchmarks/EXTERNAL_CORPUS.md).
 
 ### Usar solo el traductor
 
@@ -458,7 +458,8 @@ Este roadmap distingue lo ya implementado de lo que sigue pendiente. Los número
 
 | Indicador | Línea base | Criterio para v1.0 |
 |---|---:|---:|
-| Equivalencia exacta en muestra primaria | 53/500 (10,60 %) | ≥375/500 (≥75 %) |
+| Línea base inicial de la muestra primaria | 53/500 (10,60 %) | Referencia histórica |
+| Última medición externa confirmada (`259ca1e0`) | 69/500 (13,80 %) | ≥375/500 (≥75 %) en la revisión candidata |
 | Equivalencia exacta en muestra disjunta | Pendiente de medir | ≥375/500 (≥75 %) |
 | Definición de coincidencia | stdout y código de retorno idénticos a GnuCOBOL | Sin cambios en la métrica |
 | Informes reproducibles | En validación de infraestructura | Disponibles para ambas muestras |
