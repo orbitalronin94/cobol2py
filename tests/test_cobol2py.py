@@ -2709,3 +2709,26 @@ class TestNumvalIntrinsicRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_expr("FUNCTION TEST-NUMVAL('12X45')")
         compile(translated, "<test-numval-invalid>", "eval")
         self.assertEqual(eval(translated, {}), 3)
+
+
+class QualifiedParentSubscriptRegressionTests(unittest.TestCase):
+    def test_qualified_child_uses_subscript_on_parent_table(self):
+        variables = {
+            "TABLE": cobol2py.CobolVar(
+                level=1, name="TABLE", is_group=True, is_array=True, occurs=2
+            ),
+            "PARAM": cobol2py.CobolVar(
+                level=5, name="PARAM", pic="X", parent_name="TABLE"
+            ),
+        }
+        expected = "table[1]['param']"
+        self.assertEqual(
+            cobol2py.normalize_data_reference("PARAM OF TABLE(2)", variables),
+            expected,
+        )
+        self.assertEqual(cobol2py.translate_expr("PARAM OF TABLE(2)", variables), expected)
+
+    def test_qualified_parent_subscript_expression_compiles(self):
+        translated = cobol2py.translate_expr("PARAM OF TABLE(INDEX-1)")
+        compile(translated, "<qualified-parent-subscript>", "eval")
+        self.assertIn("table[int(index) - 1 - 1]['param']", translated)
