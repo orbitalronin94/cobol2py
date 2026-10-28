@@ -413,6 +413,7 @@ class TranslationTests(unittest.TestCase):
             "WS-I": cobol2py.CobolVar(level=1, name="WS-I", pic="9(2)"),
         }), "ws_i == 2")
         self.assertEqual(cobol2py.normalize_name("11A"), "cobol_11a")
+        self.assertEqual(cobol2py.normalize_name("42-DATANAMES"), "cobol_42_datanames")
 
     def test_abbreviated_equal_operators_are_translated(self):
         variables = {"WS-I": cobol2py.CobolVar(level=1, name="WS-I", pic="9(2)")}
