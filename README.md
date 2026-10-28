@@ -12,7 +12,7 @@ El plan inicial de diez días se ha ampliado hasta un hito de ingeniería 0.8: t
 
 | Área | Estado actual | Evidencia y límite |
 |---|---|---|
-| Traductor y benchmark | Base estable para el subconjunto medido | Corpus versionado de 102 casos con GnuCOBOL; no es una estimación de compatibilidad general |
+| Traductor y benchmark | Base estable para el subconjunto medido | Corpus versionado de 104 casos con GnuCOBOL; no es una estimación de compatibilidad general |
 | Inventario multiarchivo | Implementado con clasificación estática | Dependencias resueltas, sin resolver, ambiguas y CALL dinámicas; los nombres no prueban enlazado en ejecución |
 | Piloto integrado | Informe de esquema v2 | Traducción, sintaxis, clasificación por código/categoría y enlaces exactos a fixtures candidatas; por defecto no ejecuta el código generado |
 | Agente web | Demo heurística local | Selección de archivos, hallazgos y exportación; el análisis web no sustituye al CLI Python |
@@ -20,7 +20,7 @@ El plan inicial de diez días se ha ampliado hasta un hito de ingeniería 0.8: t
 | Revisión de los diagnósticos de samples | Triage automatizado: 35 archivos con limitaciones conocidas; 1 falso positivo corregido | El [baseline de triage](docs/pilot-diagnostics-baseline.md) enumera cada fuente. La revisión humana de los 35 casos sigue pendiente |
 | Semántica de control y almacenamiento (v0.8.x) | Implementación inicial para `ALTER`, `GO TO ... DEPENDING ON` y `REDEFINES` simples | `samples/control_flow_redefines.cbl` y `samples/laberinto_cobol.cbl`; 104/104 casos diferenciales según el roadmap técnico. Overlays con signo, decimales empaquetados, arrays y layouts complejos siguen fuera de cobertura |
 
-El objetivo de cierre de v0.8.x incluye cerrar brechas semánticas de alto impacto antes de ampliar la cobertura: `ALTER` debe cambiar en ejecución el destino del salto asociado, `GO TO ... DEPENDING ON` debe conservar la selección ordinal COBOL (base 1 y comportamiento fuera de rango), y `REDEFINES` debe compartir almacenamiento físico en vez de generar diccionarios independientes. El caso `LABERINTO-COBOL` será una regresión diferencial end-to-end; no se marcará como soportado hasta que coincidan salida y código de retorno con GnuCOBOL y haya pruebas específicas de cada construcción.
+El hito v0.8.x ya incluye una implementación inicial de `ALTER`, `GO TO ... DEPENDING ON` y `REDEFINES` simples, respaldada por las fixtures `samples/control_flow_redefines.cbl` y `samples/laberinto_cobol.cbl`. La cobertura no se generaliza a todas las variantes de estas construcciones: overlays con signo, escala implícita, packed decimal, arrays y layouts complejos siguen fuera de la validación cerrada y deben producir diagnósticos explícitos.
 
 ## Roadmap hacia v1.0
 
@@ -76,7 +76,7 @@ El proyecto ha evolucionado desde un traductor de COBOL a Python hacia un reposi
 - **Traductor (`cobol2py.py`)**: recibe un programa COBOL y emite Python o Java. Puede descargarse y utilizarse por sí solo; no necesita `cobol2py_agent.py`.
 - **Agente (`cobol2py_agent.py`)**: inspecciona un repositorio con múltiples programas y artefactos relacionados, y genera un inventario y un plan de migración en Markdown/JSON. No modifica los fuentes.
 - **Piloto integrado (`tools/modernize_pilot.py`)**: conecta inventario y traducción del subconjunto a Python, comprueba sintaxis y crea un informe por archivo. Por defecto no ejecuta el código generado; el flag explícito `--differential` ejecuta únicamente fixtures de ruta exacta y compara stdout/código de retorno con GnuCOBOL.
-- **Evidencia medida**: el piloto traduce 108/108 fuentes de `samples` sin errores de sintaxis ni de traducción. En el modo diferencial opt-in, 102/102 fixtures versionadas coinciden con GnuCOBOL en stdout y código de retorno. Esto no demuestra equivalencia para entradas no medidas ni efectos externos.
+- **Evidencia medida**: el piloto traduce 108/108 fuentes de `samples` sin errores de sintaxis ni de traducción. En el modo diferencial opt-in, 104/104 fixtures versionadas coinciden con GnuCOBOL en stdout y código de retorno. Esto no demuestra equivalencia para entradas no medidas ni efectos externos.
 
 ### Usar solo el traductor
 
