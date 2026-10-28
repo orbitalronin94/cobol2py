@@ -1184,6 +1184,9 @@ def translate_literal(
     quoted = decode_cobol_quoted_literal(t)
     if quoted is not None:
         return json.dumps(quoted, ensure_ascii=False)
+    parenthesized_number = re.fullmatch(r"\(\s*([+-]?\d+(?:\.\d+)?)\s*\)", t)
+    if parenthesized_number:
+        return f"({normalize_cobol_number(parenthesized_number.group(1))})"
     if re.fullmatch(r"[+-]?\d+(?:\.\d+)?", t):
         return normalize_cobol_number(t)
     if t.upper() in ("SPACES", "SPACE"):
