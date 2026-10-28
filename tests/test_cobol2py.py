@@ -413,6 +413,21 @@ class TranslationTests(unittest.TestCase):
             "ws_item[ws_index - 1]",
         )
 
+    def test_unsupported_only_paragraphs_generate_valid_python(self):
+        source = "\\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. UNSUPPORTEDONLY.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "CALL \\\"UNKNOWN\\\".",
+            "NEXT-PARA.",
+            "CALL \\\"UNKNOWN\\\".",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<unsupported-only>", "exec")
+        self.assertIn("# COBOL no traducido:", generated)
+        self.assertIn("        pass", generated)
+
     def test_unsupported_statement_is_explicit(self):
         output = cobol2py.translate_statement('CALL "SUBPGM"', set())
         self.assertEqual(output, ['# COBOL no traducido: CALL "SUBPGM"'])
