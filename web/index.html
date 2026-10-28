@@ -1257,7 +1257,7 @@ def translate_expr(
         expr,
         flags=re.IGNORECASE,
     )
-    intrinsic_names = {"NUMVAL", "NUMVAL-C", "LOWER-CASE", "UPPER-CASE", "TRIM", "LENGTH", "ABS", "ACOS", "ASIN", "ATAN", "COS", "EXP", "LOG", "LOG10", "SIN", "SQRT", "TAN", "MIN", "MAX", "COBOL-MIN", "COBOL-MAX", "PRESENT-VALUE", "INTEGER", "INTEGER-PART", "ORD", "CHAR"}
+    intrinsic_names = {"NUMVAL", "NUMVAL-C", "LOWER-CASE", "UPPER-CASE", "TRIM", "LENGTH", "ABS", "ACOS", "ASIN", "ATAN", "COS", "EXP", "LOG", "LOG10", "SIN", "SQRT", "TAN", "MIN", "MAX", "COBOL-MIN", "COBOL-MAX", "PRESENT-VALUE", "INTEGER", "INTEGER-PART", "ORD", "CHAR", "MOD", "CONCATENATE", "RANDOM"}
     # COBOL reference modification uses 1-based (start:length) positions.
     # Convert the start to a zero-based Python offset and retain the requested
     # character count as the slice end.
