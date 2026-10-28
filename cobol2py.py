@@ -1082,7 +1082,7 @@ def normalize_data_reference(
             # COBOL subscripts are numeric even when the translator inferred
             # their storage as text; coerce before using Python list indexing.
             return f"int({normalize_name(subscript)}) - 1"
-        if re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*\\s*[+*/-]\\s*[A-Za-z0-9_-]+(?:\\s*[+*/-]\\s*[A-Za-z0-9_-]+)*", subscript):
+        if re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*\s*[+*/-]\s*[A-Za-z0-9_-]+(?:\s*[+*/-]\s*[A-Za-z0-9_-]+)*", subscript):
             return f"({translate_expr(subscript, variable_map)}) - 1"
         return f"{normalize_name(subscript)} - 1"
 
