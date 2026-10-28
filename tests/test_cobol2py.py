@@ -1772,3 +1772,23 @@ class CobolNumericIntrinsicRegressionTests(unittest.TestCase):
                 translated = cobol2py.translate_expr(source)
                 self.assertEqual(translated, expected)
                 compile(translated, "<numeric-intrinsic>", "eval")
+
+
+class CobolOrdinalAndFinanceIntrinsicRegressionTests(unittest.TestCase):
+    def test_ordinal_and_integer_intrinsics_emit_valid_python(self):
+        cases = {
+            'FUNCTION ORD("A")': '(ord("A") + 1)',
+            "FUNCTION CHAR(66)": "chr(int(66) - 1)",
+            "FUNCTION INTEGER(123.456)": "__import__('math').floor(123.456)",
+            "FUNCTION INTEGER-PART(-123.456)": "int(-123.456)",
+        }
+        for source, expected in cases.items():
+            with self.subTest(source=source):
+                translated = cobol2py.translate_expr(source)
+                self.assertEqual(translated, expected)
+                compile(translated, "<ordinal-intrinsic>", "eval")
+
+    def test_present_value_intrinsic_handles_multiple_payments(self):
+        translated = cobol2py.translate_expr("FUNCTION PRESENT-VALUE(0, 23, 12, 9)")
+        self.assertIn("enumerate(_payments, 1)", translated)
+        compile(translated, "<present-value-intrinsic>", "eval")
