@@ -2575,19 +2575,9 @@ def translate_display_item(token: str, variables: dict[str, CobolVar]) -> str:
             digits = pic_digit_count(pic)
             scale = pic_digit_count(pic.split("V", 1)[1]) if "V" in pic else 0
             name = normalize_data_reference(token, variables)
-            if scale and "S" not in pic:
-                # V is an implied decimal point: DISPLAY emits stored digit
-                # positions without inserting a visible decimal separator.
-                # Decimal(str(...)) avoids binary-float drift after scaling.
-                factor = 10 ** scale
-                magnitude = (
-                    f"int(abs(__import__('decimal').Decimal(str({name}))) * {factor})"
-                    f" % (10 ** {digits})"
-                )
-                return f"str({magnitude}).zfill({digits})"
             if scale:
-                # Keep legacy signed formatting until sign-overpunch semantics
-                # are modeled explicitly; do not silently change sign policy.
+                # V is an implied decimal point in COBOL storage; DISPLAY emits
+                # the digit positions, not a visible decimal separator.
                 return f"format(float({name}), '0{digits + 1}.{scale}f')"
             return f"str(int(float({name}))).zfill({digits})"
     return f"str({translate_literal(token, variables)})"
@@ -2615,12 +2605,7 @@ def fit_numeric_expression(expression: str, target: str, variables: dict[str, Co
     if "V" in pic:
         scale = pic_digit_count(pic.split("V", 1)[1])
         factor = 10 ** scale
-        # Decimal(str(...)) avoids truncating a valid decimal when binary
-        # floating-point scaling lands just below an integer.
-        magnitude = (
-            f"(int(abs(__import__('decimal').Decimal(str({expression}))) * {factor}) "
-            f"% (10 ** {digits}))"
-        )
+        magnitude = f"(int(abs(float({expression})) * {factor}) % (10 ** {digits}))"
         if "S" in pic:
             return f"(-1 if float({expression}) < 0 else 1) * ({magnitude} / {factor})"
         return f"({magnitude} / {factor})"
@@ -2938,10 +2923,7 @@ def translate_move_value(source: str, target: str, variables: dict[str, CobolVar
                 scale = pic_digit_count(pic.split("V", 1)[1])
                 if digits:
                     factor = 10 ** scale
-                    magnitude = (
-                        f"int(abs(__import__('decimal').Decimal(str({value}))) * {factor}) "
-                        f"% (10 ** {digits})"
-                    )
+                    magnitude = f"int(abs(float({value})) * {factor}) % (10 ** {digits})"
                     sign = f"(-1 if float({value}) < 0 else 1)"
                     return fit_array(f"{sign} * ({magnitude} / {factor})")
             elif digits:
