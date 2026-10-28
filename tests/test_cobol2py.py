@@ -1873,3 +1873,19 @@ class AbbreviatedRelationOperatorRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_condition("WS-NUM LESS OR = WS-NUM2")
         self.assertEqual(translated, "ws_num <= ws_num2")
         compile(translated, "<less-or-equal>", "eval")
+
+
+class DisplayOperandSplittingRegressionTests(unittest.TestCase):
+    def test_parenthesized_numeric_operands_remain_separate(self):
+        self.assertEqual(cobol2py.split_cobol_items("(01) (01) ERASE"), ["(01)", "(01)", "ERASE"])
+
+    def test_quoted_spaces_and_nested_commas_are_preserved(self):
+        self.assertEqual(
+            cobol2py.split_cobol_items('"HELLO WORLD" WS-TEXT(1, 2), ERASE'),
+            ['"HELLO WORLD"', "WS-TEXT(1, 2)", "ERASE"],
+        )
+
+    def test_parenthesized_numeric_display_generates_valid_python(self):
+        translated = cobol2py.translate_statement("DISPLAY (01) (01) ERASE", set(), {})
+        self.assertIsNotNone(translated)
+        compile("\\n".join(translated or []), "<display-operands>", "exec")
