@@ -1295,7 +1295,9 @@ def translate_expr(
             return match.group(0)
         translated_arguments = ", ".join(translate_expr(item, variables) for item in arguments)
         reducer = "min" if operation.upper() == "MIN" else "max"
-        return f"(lambda *_values: _values.index({reducer}(_values)) + 1)({translated_arguments})"
+        # The expression tokenizer treats ordinary names as COBOL data names.
+        # Hide the Python keyword until tokenization finishes, then restore it.
+        return f"(ZZCOBOLGENERATEDLAMBDAZZ *_values: _values.index({reducer}(_values)) + 1)({translated_arguments})"
 
     expr = re.sub(
         r"\b(?:FUNCTION\s+)?ORD-(MIN|MAX)\s*\(((?:[^()]|\([^()]*\))*)\)",
@@ -1374,6 +1376,7 @@ def translate_expr(
         else:
             out.append(tok)
     translated = "".join(out).strip()
+    translated = translated.replace("cobol_zzcobolgeneratedlambdazz", "lambda")
     # The expression tokenizer normally renames Python built-ins that could
     # collide with COBOL data-names. Restore only the generated integer-coercion
     # call immediately inside a subscript; ordinary COBOL INT identifiers stay
