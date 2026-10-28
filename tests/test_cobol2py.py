@@ -2334,3 +2334,15 @@ class FullProgramIsKeywordRegressionTests(unittest.TestCase):
         with redirect_stdout(output):
             namespace["main"]()
         self.assertEqual(output.getvalue(), "PASS\nDELETE\n", generated)
+
+
+class ResidualIsDataReferenceFallbackRegressionTests(unittest.TestCase):
+    def test_relation_is_in_data_reference_fallback_becomes_comparison(self):
+        translated = cobol2py.normalize_data_reference("WS-STATUS IS WS-EXPECTED")
+        self.assertEqual(translated, "ws_status == ws_expected")
+        compile(translated, "<data-reference-is-relation>", "eval")
+
+    def test_is_equal_to_in_data_reference_fallback_becomes_comparison(self):
+        translated = cobol2py.normalize_data_reference("ERROR-COUNTER IS EQUAL TO ZERO")
+        self.assertEqual(translated, "error_counter == 0")
+        compile(translated, "<data-reference-is-equal>", "eval")
