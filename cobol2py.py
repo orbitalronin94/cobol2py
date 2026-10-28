@@ -973,9 +973,9 @@ def translate_literal(
     if t.upper() in ("ZEROS", "ZERO", "ZEROES", "ZEROES"):
         return "0"
     if t.upper() in ("LOW-VALUE", "LOW-VALUES"):
-        return repr("\x00")
+        return "ZZCOBOLFIGLOWVALUEZZ"
     if t.upper() in ("HIGH-VALUE", "HIGH-VALUES"):
-        return repr("\xff")
+        return "ZZCOBOLFIGHIGHVALUEZZ"
     if t.upper() == "TRUE":
         return "True"
     if t.upper() == "FALSE":
@@ -1046,8 +1046,8 @@ def translate_expr(
 
     # Resolve figurative-constant markers after tokenization so the generated
     # Python literal is not misread as a COBOL quoted literal a second time.
-    translated = translated.replace("zzcobolfiglowvaluezz", repr("\\x00"))
-    translated = translated.replace("zzcobolfighighvaluezz", repr("\\xff"))
+    translated = translated.replace("zzcobolfiglowvaluezz", repr(chr(0)))
+    translated = translated.replace("zzcobolfighighvaluezz", repr(chr(255)))
     translated = translated.replace("zzcobolfigspacezz", repr(" "))
     translated = translated.replace("zzcobolfigzerozz", "0")
 
