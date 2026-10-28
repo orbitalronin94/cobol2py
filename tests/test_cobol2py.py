@@ -88,6 +88,17 @@ class PreprocessTests(unittest.TestCase):
             [(1, "DISPLAY 'OK'.")],
         )
 
+    def test_when_clause_splits_inline_action_from_condition(self):
+        units = cobol2py.split_paragraph_into_units([
+            (1, "EVALUATE 1"),
+            (2, 'WHEN 1 DISPLAY "ONE"'),
+            (3, "END-EVALUATE"),
+        ])
+        self.assertEqual(
+            units,
+            [(1, "EVALUATE 1"), (2, "WHEN 1"), (2, 'DISPLAY "ONE"'), (3, "END-EVALUATE")],
+        )
+
     def test_fixed_format_hyphen_continuations_join_numeric_literal(self):
         source = "\n".join([
             "000100 IDENTIFICATION DIVISION.",
