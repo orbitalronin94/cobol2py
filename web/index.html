@@ -2285,7 +2285,6 @@ def translate_condition(
         # duplicate equality without touching valid chained comparisons.
         c = re.sub(r"(?<![!<>=])==\s*==", "==", c)
 
-
         # COBOL permits NOT immediately before a comparison operator (NOT =,
         # NOT <, NOT >). Python does not permit infix "not", so invert the
         # operator instead of emitting invalid expressions such as "x not == y".
