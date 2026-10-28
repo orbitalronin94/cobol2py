@@ -1788,6 +1788,16 @@ def translate_move_value(source: str, target: str, variables: dict[str, CobolVar
     value = translate_literal(source, variables)
     target_base = re.match(r"([A-Za-z0-9-]+)", target)
     variable = variables.get(target_base.group(1).upper()) if target_base else None
+    whole_array = bool(
+        variable is not None and variable.is_array and not variable.is_group
+        and variable.occurs and "(" not in target
+    )
+
+    def fit_array(expression: str) -> str:
+        if whole_array and variable is not None and variable.occurs:
+            return f"[{expression}] * {variable.occurs}"
+        return expression
+
     if variable is not None and variable.pic:
         pic = variable.pic.upper()
         if "X" in pic or "A" in pic:
@@ -1795,14 +1805,14 @@ def translate_move_value(source: str, target: str, variables: dict[str, CobolVar
             if width:
                 all_literal = decode_cobol_all_literal(source.strip())
                 if all_literal is not None:
-                    return repr((all_literal * width)[:width])
+                    return fit_array(repr((all_literal * width)[:width]))
                 if source.strip().upper() in ("SPACE", "SPACES"):
-                    return repr(" " * width)
+                    return fit_array(repr(" " * width))
                 if source.strip().upper() in ("LOW-VALUE", "LOW-VALUES"):
-                    return repr("\x00" * width)
+                    return fit_array(repr("\x00" * width))
                 if source.strip().upper() in ("HIGH-VALUE", "HIGH-VALUES"):
-                    return repr("\xff" * width)
-                return f"str({value})[:{width}].ljust({width})"
+                    return fit_array(repr("\xff" * width))
+                return fit_array(f"str({value})[:{width}].ljust({width})")
         # Numeric MOVE keeps the low-order receiving digits. For implied
         # decimal pictures, scale first, truncate excess fractional digits,
         # then retain the receiving picture's total digit capacity.
@@ -1814,12 +1824,12 @@ def translate_move_value(source: str, target: str, variables: dict[str, CobolVar
                     factor = 10 ** scale
                     magnitude = f"int(abs(float({value})) * {factor}) % (10 ** {digits})"
                     sign = f"(-1 if float({value}) < 0 else 1)"
-                    return f"{sign} * ({magnitude} / {factor})"
+                    return fit_array(f"{sign} * ({magnitude} / {factor})")
             elif digits:
                 if "S" in pic:
-                    return f"(-1 if int({value}) < 0 else 1) * (abs(int({value})) % (10 ** {digits}))"
-                return f"int({value}) % (10 ** {digits})"
-    return value
+                    return fit_array(f"(-1 if int({value}) < 0 else 1) * (abs(int({value})) % (10 ** {digits}))")
+                return fit_array(f"int({value}) % (10 ** {digits})")
+    return fit_array(value)
 
 
 COBOL_TOKEN_RE = re.compile(
