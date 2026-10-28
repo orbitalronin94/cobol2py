@@ -1507,6 +1507,10 @@ def translate_literal(
         return "False"
     if re.fullmatch(r"FUNCTION\s+CURRENT-DATE", t, re.IGNORECASE):
         return "(lambda _dt: _dt.strftime('%Y%m%d%H%M%S') + f'{_dt.microsecond // 10000:02d}' + _dt.strftime('%z'))(__import__('datetime').datetime.now().astimezone())"
+    if re.fullmatch(r"FUNCTION\s+WHEN-COMPILED", t, re.IGNORECASE):
+        # DISPLAY operands go through translate_literal directly, not always
+        # translate_expr, so handle this alphanumeric intrinsic here too.
+        return "(lambda _dt: _dt.strftime('%Y%m%d%H%M%S') + f'{_dt.microsecond // 10000:02d}')(__import__('datetime').datetime.now())"
     if re.match(r"FUNCTION\s+[A-Z][A-Z0-9-]*\s*(?:\(|\[)", t, re.IGNORECASE) or re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*\s*\([^()]*:[^()]*\)", t):
         return translate_expr(t, variables)
     if t.upper() in ("QUOTE", "QUOTES"):
@@ -2275,6 +2279,11 @@ def translate_condition(
         # marker immediately before GREATER/LESS OR EQUAL. The compound
         # relation is the operator; retaining both creates invalid "== >=".
         c = re.sub(r"(?<![!<>=])==\s*(>=|<=)", r"\1", c)
+        # A few COBOL dialects combine IS and a symbolic relation, producing
+        # duplicate comparison tokens after the phrase and symbol rewrites
+        # (for example, "FIELD IS = 0" -> "field == == 0"). Collapse the
+        # duplicate equality without touching valid chained comparisons.
+        c = re.sub(r"(?<![!<>=])==\s*==", "==", c)
         # A few COBOL dialects combine IS and a symbolic relation, producing
         # duplicate comparison tokens after the phrase and symbol rewrites
         # (for example, "FIELD IS = 0" -> "field == == 0"). Collapse the
