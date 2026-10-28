@@ -1860,6 +1860,18 @@ def translate_expr(
         flags=re.IGNORECASE,
     )
     translated = re.sub(
+        r"\b(?:function\s+)?day_of_integer\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
+        lambda match: "(lambda _n: (lambda _d: _d.year * 1000 + _d.timetuple().tm_yday)(__import__('datetime').date(1601, 1, 1) + __import__('datetime').timedelta(days=int(_n) - 1)))(" + intrinsic_argument(match) + ")",
+        translated,
+        flags=re.IGNORECASE,
+    )
+    translated = re.sub(
+        r"\b(?:function\s+)?integer_of_day\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
+        lambda match: "(lambda _n: (lambda _d: (_d - __import__('datetime').date(1600, 12, 31)).days)(__import__('datetime').date(int(str(int(_n)).zfill(7)[:4]), 1, 1) + __import__('datetime').timedelta(days=int(str(int(_n)).zfill(7)[4:]) - 1)))(" + intrinsic_argument(match) + ")",
+        translated,
+        flags=re.IGNORECASE,
+    )
+    translated = re.sub(
         r"\b(?:function\s+)?seconds_past_midnight\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))?",
         "((lambda _dt: _dt.hour * 3600 + _dt.minute * 60 + _dt.second)(__import__('datetime').datetime.now()))",
         translated,
