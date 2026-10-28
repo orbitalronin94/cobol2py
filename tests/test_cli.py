@@ -57,7 +57,7 @@ class CliTests(unittest.TestCase):
         self.assertEqual(result.stdout, "")
 
     def test_move_into_reference_modification_replaces_field_and_table_element(self):
-        source = "\\n".join([
+        source = "\n".join([
             "       IDENTIFICATION DIVISION.",
             "       PROGRAM-ID. REFMOD.",
             "       DATA DIVISION.",
@@ -85,7 +85,7 @@ class CliTests(unittest.TestCase):
                 check=False,
             )
         self.assertEqual(executed.returncode, 0, executed.stderr)
-        self.assertEqual(executed.stdout, "AXYDE\\n 12  \\n")
+        self.assertEqual(executed.stdout, "AXYDE\n 12  \n")
 
     def test_diagnostics_json_is_valid_json_on_stderr(self):
         source = "\n".join([
