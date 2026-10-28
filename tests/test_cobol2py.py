@@ -2507,7 +2507,7 @@ class InitializeOccursGroupRegressionTests(unittest.TestCase):
             "ws_rows[1]['ws_code'] = '   '",
             "ws_rows[1]['ws_count'] = 0",
         ])
-        compile("\\n".join(translated), "<initialize-occurs-group>", "exec")
+        compile("\n".join(translated), "<initialize-occurs-group>", "exec")
 
     def test_initialize_one_occurs_group_resets_only_selected_row(self):
         translated = cobol2py.translate_statement("INITIALIZE WS-ROWS(2)", set(), self.variables)
@@ -2515,4 +2515,4 @@ class InitializeOccursGroupRegressionTests(unittest.TestCase):
             "ws_rows[1]['ws_code'] = '   '",
             "ws_rows[1]['ws_count'] = 0",
         ])
-        compile("\\n".join(translated), "<initialize-one-occurs-group>", "exec")
+        compile("\n".join(translated), "<initialize-one-occurs-group>", "exec")
