@@ -2193,6 +2193,12 @@ class NestedAndMiscIntrinsicRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_expr("FUNCTION MEAN(1 2 6)")
         self.assertEqual(eval(translated), 3)
 
+    def test_min_max_intrinsics_accept_space_separated_arguments(self):
+        minimum = cobol2py.translate_expr("FUNCTION MIN(4 0 5 3 7)")
+        maximum = cobol2py.translate_expr("FUNCTION MAX(4 0 5 3 7)")
+        self.assertEqual(eval(minimum), 0)
+        self.assertEqual(eval(maximum), 7)
+
     def test_statistical_intrinsics_match_expected_values(self):
         cases = {
             "FUNCTION MEAN(1, 2, 6)": 3,
