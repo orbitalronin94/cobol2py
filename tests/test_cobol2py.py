@@ -2186,3 +2186,33 @@ class CobolClassConditionRegressionTests(unittest.TestCase):
         compile(translated, "<alphanumeric-class-condition>", "eval")
         self.assertTrue(eval(translated, {"ws_value": "A 12"}))
         self.assertFalse(eval(translated, {"ws_value": "A-12"}))
+
+
+class CobolScopeTerminatorRegressionTests(unittest.TestCase):
+    def test_end_multiply_and_end_add_do_not_get_absorbed_as_operands(self):
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. ENDOPS.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-A PIC 9 VALUE 3.",
+            "01 WS-B PIC 9 VALUE 2.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "MULTIPLY WS-A BY WS-B",
+            "END-MULTIPLY",
+            "ADD WS-A TO WS-B",
+            "END-ADD",
+            "DISPLAY WS-B",
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<scope-terminators>", "exec")
+        namespace = {"__name__": "not_main"}
+        exec(generated, namespace)
+        from contextlib import redirect_stdout
+        from io import StringIO
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "9\n", generated)

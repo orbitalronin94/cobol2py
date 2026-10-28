@@ -416,10 +416,20 @@ def overlay_storage_initial_value(variable: CobolVar, width: int) -> str:
 STATEMENT_VERBS = frozenset({
     "MOVE", "DISPLAY", "ACCEPT", "COMPUTE", "ADD", "SUBTRACT", "MULTIPLY",
     "DIVIDE", "PERFORM", "IF", "ELSE", "END-IF", "END-PERFORM",
-    "END-EVALUATE", "EVALUATE", "STOP", "GOBACK", "EXIT",
+    "END-EVALUATE", "END-ADD", "END-SUBTRACT", "END-MULTIPLY", "END-DIVIDE",
+    "END-STRING", "END-UNSTRING", "END-READ", "END-WRITE", "END-REWRITE",
+    "END-DELETE", "END-START", "END-ACCEPT", "END-DISPLAY", "END-COMPUTE",
+    "END-CALL", "END-RETURN", "END-RECEIVE", "END-SEND", "END-JSON", "END-XML", "EVALUATE", "STOP", "GOBACK", "EXIT",
     "CALL", "OPEN", "CLOSE", "READ", "WRITE", "REWRITE", "DELETE",
     "START", "STRING", "UNSTRING", "INSPECT", "SET", "INITIALIZE",
     "CONTINUE", "RETURN", "SEARCH", "SORT", "MERGE", "GO", "ALTER",
+})
+
+SCOPE_END_NOOPS = frozenset({
+    "END-ADD", "END-SUBTRACT", "END-MULTIPLY", "END-DIVIDE", "END-STRING",
+    "END-UNSTRING", "END-READ", "END-WRITE", "END-REWRITE", "END-DELETE",
+    "END-START", "END-ACCEPT", "END-DISPLAY", "END-COMPUTE", "END-CALL",
+    "END-RETURN", "END-RECEIVE", "END-SEND", "END-JSON", "END-XML",
 })
 
 
@@ -481,9 +491,9 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
 
         # Scope terminators must be standalone parser units. Otherwise a
         # preceding DISPLAY without a period can absorb END-IF as an operand.
-        if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH") or upper.startswith("AT END") or upper.startswith("SEARCH ALL "):
+        if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH") or upper in SCOPE_END_NOOPS or upper.startswith("AT END") or upper.startswith("SEARCH ALL "):
             flush()
-            units.append((num, upper if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH") else text.strip()))
+            units.append((num, upper if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH") or upper in SCOPE_END_NOOPS else text.strip()))
             continue
 
         if not buffer:
@@ -493,6 +503,7 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
         ends_unit = (
             text.endswith(".")
             or upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH")
+            or upper in SCOPE_END_NOOPS
             or upper.startswith("SEARCH ALL ")
             or upper.startswith("AT END")
             or upper.endswith("THEN")
@@ -562,6 +573,11 @@ def build_tree(units: list[tuple[int, str]]) -> list[Node]:
                     text=f"{upper} without matching open block",
                     line=line,
                 ))
+            continue
+
+        if upper in SCOPE_END_NOOPS:
+            # Explicit scope terminators for verbs whose block bodies are
+            # translated as ordinary statements, not nested Python blocks.
             continue
 
         m = RE_IF_OPEN.match(normalized)
