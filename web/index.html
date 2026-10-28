@@ -1577,6 +1577,9 @@ def translate_expr(
             out.append("==")
         elif tok.upper() in ("TRUE", "FALSE"):
             out.append("True" if tok.upper() == "TRUE" else "False")
+        elif re.fullmatch(r"ZZCOBOLORDINAL\d+ZZ", tok, re.IGNORECASE):
+            # Keep protected intrinsic placeholders intact until restoration below.
+            out.append(tok.lower())
         elif tok.upper() in intrinsic_names:
             out.append(tok.lower().replace("-", "_"))
         elif re.fullmatch(r"(?:[A-Za-z][A-Za-z0-9-]*|\d+[A-Za-z0-9-]*[A-Za-z][A-Za-z0-9-]*)", tok):
