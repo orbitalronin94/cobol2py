@@ -1718,6 +1718,12 @@ def translate_condition(
         c = re.sub(r"\bNOT\s+EQUAL\s+TO\b", "!=", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\s+NOT\s+EQUAL\b", "!=", c, flags=re.IGNORECASE)
         c = re.sub(r"\bNOT\s+EQUAL\b", "!=", c, flags=re.IGNORECASE)
+        # Negated COBOL relational phrases must be reduced as a whole before
+        # the generic GREATER/LESS and NOT rewrites below.
+        c = re.sub(r"\b(?:IS\s+)?NOT\s+GREATER\s+(?:THAN\s+)?OR\s+EQUAL(?:\s+TO)?\b", "<", c, flags=re.IGNORECASE)
+        c = re.sub(r"\b(?:IS\s+)?NOT\s+LESS\s+(?:THAN\s+)?OR\s+EQUAL(?:\s+TO)?\b", ">", c, flags=re.IGNORECASE)
+        c = re.sub(r"\b(?:IS\s+)?NOT\s+GREATER(?:\s+THAN)?\b", "<=", c, flags=re.IGNORECASE)
+        c = re.sub(r"\b(?:IS\s+)?NOT\s+LESS(?:\s+THAN)?\b", ">=", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\s+GREATER\s+THAN\s+OR\s+EQUAL(?:\s+TO)?\b", ">=", c, flags=re.IGNORECASE)
         c = re.sub(r"\bGREATER\s+(?:THAN\s+)?OR\s+EQUAL(?:\s+TO)?\b", ">=", c, flags=re.IGNORECASE)
         c = re.sub(r"\bGREATER\s+(?:THAN\s+)?OR\s*=", ">=", c, flags=re.IGNORECASE)
