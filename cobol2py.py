@@ -1317,6 +1317,61 @@ def translate_expr(
     def intrinsic_argument(match: re.Match[str]) -> str:
         return match.group(1) if match.group(1) is not None else match.group(2)
 
+    def intrinsic_argument_list(match: re.Match[str]) -> str:
+        """Normalize COBOL intrinsic argument lists that omit separating commas."""
+        arguments = intrinsic_argument(match).strip()
+        quote: Optional[str] = None
+        depth = 0
+        parts: list[str] = []
+        start = 0
+        i = 0
+        has_comma = False
+        while i < len(arguments):
+            char = arguments[i]
+            if quote is not None:
+                if char == quote:
+                    if i + 1 < len(arguments) and arguments[i + 1] == quote:
+                        i += 2
+                        continue
+                    quote = None
+            elif char in ("'", '"'):
+                quote = char
+            elif char == "(":
+                depth += 1
+            elif char == ")":
+                depth = max(0, depth - 1)
+            elif char == "," and depth == 0:
+                has_comma = True
+            elif char.isspace() and depth == 0:
+                end = i
+                next_index = i
+                while next_index < len(arguments) and arguments[next_index].isspace():
+                    next_index += 1
+                if next_index < len(arguments) and end > start:
+                    previous = arguments[end - 1]
+                    following = arguments[next_index]
+                    left_word = arguments[start:end].split()[-1].upper()
+                    right_match = re.match(r"[A-Za-z][A-Za-z0-9_-]*", arguments[next_index:])
+                    right_word = right_match.group(0).upper() if right_match else ""
+                    operator_chars = "+-*/=<>,"
+                    if (
+                        previous not in operator_chars + "([{"
+                        and following not in operator_chars + ")]}"
+                        and left_word not in {"OF", "IN"}
+                        and right_word not in {"OF", "IN"}
+                        and (previous.isalnum() or previous in "_)]'\"")
+                        and (following.isalnum() or following in "_(['\"")
+                    ):
+                        parts.append(arguments[start:end].strip())
+                        start = next_index
+                        i = next_index
+                        continue
+            i += 1
+        if has_comma:
+            return arguments
+        parts.append(arguments[start:].strip())
+        return ", ".join(part for part in parts if part)
+
     # Small standard intrinsics whose syntax differs from Python.
     translated = re.sub(
         r"\bfunction\s+random\s*(?:\(([^()]*)\))?",
@@ -1431,43 +1486,43 @@ def translate_expr(
     )
     translated = re.sub(
         r"\b(?:function\s+)?mean\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
-        lambda match: "__import__('statistics').mean([" + intrinsic_argument(match) + "])",
+        lambda match: "__import__('statistics').mean([" + intrinsic_argument_list(match) + "])",
         translated,
         flags=re.IGNORECASE,
     )
     translated = re.sub(
         r"\b(?:function\s+)?median\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
-        lambda match: "__import__('statistics').median([" + intrinsic_argument(match) + "])",
+        lambda match: "__import__('statistics').median([" + intrinsic_argument_list(match) + "])",
         translated,
         flags=re.IGNORECASE,
     )
     translated = re.sub(
         r"\b(?:function\s+)?midrange\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
-        lambda match: "(lambda *_values: (max(_values) + min(_values)) / 2)(" + intrinsic_argument(match) + ")",
+        lambda match: "(lambda *_values: (max(_values) + min(_values)) / 2)(" + intrinsic_argument_list(match) + ")",
         translated,
         flags=re.IGNORECASE,
     )
     translated = re.sub(
         r"\b(?:function\s+)?range\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
-        lambda match: "(lambda *_values: max(_values) - min(_values))(" + intrinsic_argument(match) + ")",
+        lambda match: "(lambda *_values: max(_values) - min(_values))(" + intrinsic_argument_list(match) + ")",
         translated,
         flags=re.IGNORECASE,
     )
     translated = re.sub(
         r"\b(?:function\s+)?sum\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
-        lambda match: "sum([" + intrinsic_argument(match) + "])",
+        lambda match: "sum([" + intrinsic_argument_list(match) + "])",
         translated,
         flags=re.IGNORECASE,
     )
     translated = re.sub(
         r"\b(?:function\s+)?variance\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
-        lambda match: "__import__('statistics').pvariance([" + intrinsic_argument(match) + "])",
+        lambda match: "__import__('statistics').pvariance([" + intrinsic_argument_list(match) + "])",
         translated,
         flags=re.IGNORECASE,
     )
     translated = re.sub(
         r"\b(?:function\s+)?standard_deviation\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
-        lambda match: "__import__('statistics').pstdev([" + intrinsic_argument(match) + "])",
+        lambda match: "__import__('statistics').pstdev([" + intrinsic_argument_list(match) + "])",
         translated,
         flags=re.IGNORECASE,
     )
