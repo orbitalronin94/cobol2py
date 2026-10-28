@@ -1986,6 +1986,18 @@ class NestedAndMiscIntrinsicRegressionTests(unittest.TestCase):
         self.assertEqual(translated, "__import__('random').random()")
         compile(translated, "<random-intrinsic>", "eval")
 
+    def test_reverse_intrinsic_reverses_the_argument(self):
+        translated = cobol2py.translate_expr('FUNCTION REVERSE("abc")')
+        self.assertEqual(eval(translated), "cba")
+
+    def test_factorial_intrinsic_returns_exact_integer(self):
+        translated = cobol2py.translate_expr("FUNCTION FACTORIAL(5)")
+        self.assertEqual(eval(translated), 120)
+
+    def test_stored_char_length_ignores_trailing_spaces(self):
+        translated = cobol2py.translate_expr('FUNCTION STORED-CHAR-LENGTH("abc   ")')
+        self.assertEqual(eval(translated), 3)
+
 
 class HexadecimalLiteralRegressionTests(unittest.TestCase):
     def test_hexadecimal_literal_with_double_quotes(self):
