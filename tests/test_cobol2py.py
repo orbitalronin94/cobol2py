@@ -2578,3 +2578,15 @@ class AlternateStorageSectionRegressionTests(unittest.TestCase):
         program = cobol2py.parse_cobol(source, source_format="free")
         self.assertIn("LK-COUNT", {item.name for item in program.variables})
         compile(cobol2py.emit_python(program), "<linkage-only>", "exec")
+
+
+class AnnuityIntrinsicRegressionTests(unittest.TestCase):
+    def test_annuity_intrinsic_generates_valid_formula(self):
+        translated = cobol2py.translate_expr("FUNCTION ANNUITY(0.05, 10)")
+        compile(translated, "<annuity-intrinsic>", "eval")
+        self.assertAlmostEqual(eval(translated, {}), 0.05 / (1.0 - (1.05 ** -10)))
+
+    def test_annuity_intrinsic_handles_zero_rate(self):
+        translated = cobol2py.translate_expr("FUNCTION ANNUITY(0, 10)")
+        compile(translated, "<annuity-zero-rate>", "eval")
+        self.assertAlmostEqual(eval(translated, {}), 0.1)
