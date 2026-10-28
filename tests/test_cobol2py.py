@@ -1842,3 +1842,10 @@ class AbbreviatedCombinedConditionRegressionTests(unittest.TestCase):
         self.assertIn("or ws_opcao.ljust(1) ==", translated)
         self.assertNotIn("or ==", translated)
         compile(translated, "<abbreviated-condition>", "eval")
+
+
+class DigitLeadingHyphenatedNameRegressionTests(unittest.TestCase):
+    def test_digit_leading_hyphenated_identifier_is_not_split_as_arithmetic(self):
+        translated = cobol2py.translate_condition("0-C = 1")
+        self.assertEqual(translated, "cobol_0_c == 1")
+        compile(translated, "<digit-leading-hyphenated-name>", "eval")
