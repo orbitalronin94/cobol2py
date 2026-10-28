@@ -2794,3 +2794,15 @@ class SearchAllNextSentenceRegressionTests(unittest.TestCase):
         compile(generated, "<search-all-next-sentence>", "exec")
         self.assertIn("== ws_target", generated)
         self.assertNotIn("next sentence", generated.lower())
+
+
+class OrdinalIntrinsicRegressionTests(unittest.TestCase):
+    def test_ord_min_returns_one_based_position_of_first_minimum(self):
+        translated = cobol2py.translate_expr("FUNCTION ORD-MIN(4, 2, 1, 7, 2, 0)")
+        self.assertEqual(eval(translated), 6)
+        compile(translated, "<ord-min>", "eval")
+
+    def test_ord_max_returns_one_based_position_of_first_maximum(self):
+        translated = cobol2py.translate_expr("FUNCTION ORD-MAX(4, 2, 7, 7, 2)")
+        self.assertEqual(eval(translated), 3)
+        compile(translated, "<ord-max>", "eval")
