@@ -1484,8 +1484,6 @@ def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = No
 
     c = rewrite_outside_literals(cond.strip(), rewrite)
     translated = translate_expr(c, variables)
-    if not variables:
-        return translated
 
     # COBOL pads the shorter operand with spaces for alphanumeric comparisons.
     # Match a translated data-name (including a table element) against a literal.
