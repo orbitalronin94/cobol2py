@@ -2210,6 +2210,10 @@ class MoveCorrespondingRegressionTests(unittest.TestCase):
 
 
 class QualifiedDisplayOperandRegressionTests(unittest.TestCase):
+    def test_display_upon_device_is_not_emitted_as_an_operand(self):
+        translated = cobol2py.translate_statement('DISPLAY "HELLO" UPON CONSOLE', set(), {})
+        self.assertEqual(translated, ['print("".join([str("HELLO")]))'])
+
     def test_of_qualified_reference_remains_one_display_operand(self):
         self.assertEqual(
             cobol2py.split_cobol_items("WS-NAME OF WS-CUSTOMER ERASE"),
