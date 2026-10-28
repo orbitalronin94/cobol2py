@@ -1058,9 +1058,9 @@ def normalize_data_reference(
     # path when names are unique in the simplified symbol table; discard only
     # the redundant outer qualifiers before applying the normal resolver.
     qualified_chain = re.fullmatch(
-        r"([A-Za-z0-9-]+(?:\\s*\\([^()]*\\))?)\\s+(?:OF|IN)\\s+"
-        r"([A-Za-z0-9-]+(?:\\s*\\([^()]*\\))?)"
-        r"(?:\\s+(?:OF|IN)\\s+[A-Za-z0-9-]+(?:\\s*\\([^()]*\\))?)+",
+        r"([A-Za-z0-9-]+(?:\s*\([^()]*\))?)\s+(?:OF|IN)\s+"
+        r"([A-Za-z0-9-]+(?:\s*\([^()]*\))?)"
+        r"(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+(?:\s*\([^()]*\))?)+",
         text,
         re.IGNORECASE,
     )
