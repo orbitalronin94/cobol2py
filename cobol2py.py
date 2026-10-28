@@ -81,6 +81,51 @@ def preprocess(source: str, source_format: str = "auto") -> list[tuple[int, str]
         and not code_beyond_fixed_area
         and any(looks_fixed(line) for line in lines[:20])
     )
+
+    # DECIMAL-POINT IS COMMA changes the decimal separator for numeric
+    # literals. Normalize only commas between digits outside quoted strings;
+    # preserve commas in DISPLAY text and other literals.
+    def source_code_line(raw: str) -> str:
+        if fixed_format and looks_fixed(raw):
+            if raw[6] in ("*", "/", "D", "d"):
+                return ""
+            return raw[7:72]
+        return raw
+
+    decimal_comma = any(
+        re.search(
+            r"\bDECIMAL-POINT\s+IS\s+COMMA\b",
+            strip_inline_comment(source_code_line(raw)),
+            re.IGNORECASE,
+        )
+        for raw in lines
+    )
+
+    def normalize_decimal_commas(text: str) -> str:
+        chars = list(text)
+        quote: Optional[str] = None
+        i = 0
+        while i < len(chars):
+            char = chars[i]
+            if quote is not None:
+                if char == quote:
+                    if i + 1 < len(chars) and chars[i + 1] == quote:
+                        i += 2
+                        continue
+                    quote = None
+            elif char in ("'", '"'):
+                quote = char
+            elif (
+                char == ","
+                and i > 0
+                and i + 1 < len(chars)
+                and chars[i - 1].isdigit()
+                and chars[i + 1].isdigit()
+            ):
+                chars[i] = "."
+            i += 1
+        return "".join(chars)
+
     out: list[tuple[int, str]] = []
 
     def open_quote_at_end(text: str) -> Optional[str]:
@@ -102,6 +147,8 @@ def preprocess(source: str, source_format: str = "auto") -> list[tuple[int, str]
     for i, raw in enumerate(lines, 1):
         if not fixed_format:
             line = strip_inline_comment(raw)
+            if decimal_comma:
+                line = normalize_decimal_commas(line)
             if line.strip():
                 out.append((i, line))
             continue
@@ -111,6 +158,8 @@ def preprocess(source: str, source_format: str = "auto") -> list[tuple[int, str]
             continue
         code = line[7:72].rstrip()
         code = strip_inline_comment(code)
+        if decimal_comma:
+            code = normalize_decimal_commas(code)
         if not code.strip():
             continue
         if indicator == "-" and out:
