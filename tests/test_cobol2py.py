@@ -1871,6 +1871,11 @@ class AllFigurativeConstantRegressionTests(unittest.TestCase):
 
 
 class CurrentDateAndNextSentenceRegressionTests(unittest.TestCase):
+    def test_when_compiled_intrinsic_emits_valid_sixteen_character_timestamp(self):
+        translated = cobol2py.translate_expr("FUNCTION WHEN-COMPILED")
+        compile(translated, "<when-compiled>", "eval")
+        self.assertEqual(len(eval(translated)), 16)
+
     def test_current_date_value_clause_emits_valid_python_expression(self):
         translated = cobol2py.translate_literal("FUNCTION CURRENT-DATE")
         compile(translated, "<current-date-value>", "eval")
