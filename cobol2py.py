@@ -989,9 +989,11 @@ def translate_expr(
         expr,
         flags=re.IGNORECASE,
     )
+    intrinsic_names = {"NUMVAL", "NUMVAL-C", "LOWER-CASE", "UPPER-CASE", "TRIM", "LENGTH"}
     expr = re.sub(
         r"\b([A-Za-z][A-Za-z0-9-]*)\s*\(([A-Za-z0-9_-]+)\)",
-        lambda match: normalize_data_reference(match.group(0), variables),
+        lambda match: match.group(0) if match.group(1).upper() in intrinsic_names
+        else normalize_data_reference(match.group(0), variables),
         expr,
     )
     token_pattern = r"""("(?:[^"]|"")*"|'(?:[^']|'')*'|\d+[A-Za-z][A-Za-z0-9-]*|[A-Za-z][A-Za-z0-9-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&\[\]-]|\s+|.)"""
@@ -1022,33 +1024,36 @@ def translate_expr(
         translated,
         flags=re.IGNORECASE,
     )
+    def intrinsic_argument(match: re.Match[str]) -> str:
+        return match.group(1) if match.group(1) is not None else match.group(2)
+
     translated = re.sub(
-        r"\bfunction\s+numval_c?\s*\[([^\]]*)\]",
-        r"float(\1)",
+        r"\b(?:function\s+)?numval_c?\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
+        lambda match: "float(" + intrinsic_argument(match) + ")",
         translated,
         flags=re.IGNORECASE,
     )
     translated = re.sub(
-        r"\b(?:function\s+)?lower_case\s*\[([^\]]*)\]",
-        r"(\1).lower()",
+        r"\b(?:function\s+)?lower_case\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
+        lambda match: "(" + intrinsic_argument(match) + ").lower()",
         translated,
         flags=re.IGNORECASE,
     )
     translated = re.sub(
-        r"\b(?:function\s+)?upper_case\s*\[([^\]]*)\]",
-        r"(\1).upper()",
+        r"\b(?:function\s+)?upper_case\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
+        lambda match: "(" + intrinsic_argument(match) + ").upper()",
         translated,
         flags=re.IGNORECASE,
     )
     translated = re.sub(
-        r"\b(?:function\s+)?trim\s*\[([^\]]*)\]",
-        r"(\1).strip()",
+        r"\b(?:function\s+)?trim\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
+        lambda match: "(" + intrinsic_argument(match) + ").strip()",
         translated,
         flags=re.IGNORECASE,
     )
     translated = re.sub(
-        r"\b(?:function\s+)?length\s*\[([^\]]*)\]",
-        r"len(\1)",
+        r"\b(?:function\s+)?length\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
+        lambda match: "len(" + intrinsic_argument(match) + ")",
         translated,
         flags=re.IGNORECASE,
     )
