@@ -281,6 +281,23 @@ def preprocess(source: str, source_format: str = "auto") -> list[tuple[int, str]
         and any(looks_fixed(line) for line in lines[:20])
     )
     out: list[tuple[int, str]] = []
+
+    def open_quote_at_end(text: str) -> Optional[str]:
+        quote: Optional[str] = None
+        i = 0
+        while i < len(text):
+            char = text[i]
+            if quote is not None:
+                if char == quote:
+                    if i + 1 < len(text) and text[i + 1] == quote:
+                        i += 2
+                        continue
+                    quote = None
+            elif char in ("'", '"'):
+                quote = char
+            i += 1
+        return quote
+
     for i, raw in enumerate(lines, 1):
         if not fixed_format:
             line = strip_inline_comment(raw)
@@ -293,7 +310,21 @@ def preprocess(source: str, source_format: str = "auto") -> list[tuple[int, str]
             continue
         code = line[7:72].rstrip()
         code = strip_inline_comment(code)
-        if code.strip():
+        if not code.strip():
+            continue
+        if indicator == "-" and out:
+            # In fixed format, a hyphen in column 7 continues the preceding
+            # token or literal. Concatenate source text rather than treating
+            # each continuation record as a new COBOL statement. A continued
+            # nonnumeric literal repeats its opening quote in column 8; that
+            # marker is syntax, not part of the literal's value.
+            continuation = code.lstrip()
+            previous_line, previous_code = out[-1]
+            quote = open_quote_at_end(previous_code)
+            if quote and continuation.startswith(quote):
+                continuation = continuation[1:]
+            out[-1] = (previous_line, previous_code + continuation)
+        else:
             out.append((i, code))
     return out
 
