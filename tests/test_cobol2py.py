@@ -1989,3 +1989,11 @@ class HexadecimalLiteralRegressionTests(unittest.TestCase):
         self.assertEqual(items, ['X"0D"', "ERASE"])
         translated = cobol2py.translate_statement('DISPLAY X"0D" ERASE', set(), {})
         compile("\\n".join(translated or []), "<hex-display>", "exec")
+
+
+class ParenthesizedDisplayListRegressionTests(unittest.TestCase):
+    def test_parenthesized_comma_list_expands_into_display_operands(self):
+        self.assertEqual(cobol2py.split_cobol_items("(01, 01) ERASE"), ["01", "01", "ERASE"])
+        translated = cobol2py.translate_statement("DISPLAY (01, 01) ERASE", set(), {})
+        self.assertIsNotNone(translated)
+        compile("\\n".join(translated or []), "<parenthesized-display-list>", "exec")
