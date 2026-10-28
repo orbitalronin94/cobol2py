@@ -1,10 +1,40 @@
 """Regression tests for cobol2py. Run with: python -m unittest discover -s tests -v."""
+import ast
 import unittest
 
 import cobol2py
 
 
 class PreprocessTests(unittest.TestCase):
+    def test_decimal_point_is_comma_normalizes_numeric_literals_only(self):
+        source = "\n".join([
+            "SPECIAL-NAMES. DECIMAL-POINT IS COMMA.",
+            "IF AMOUNT > 806,80 DISPLAY \"literal 8,80\".",
+            "COMPUTE TAX = AMOUNT * 0,21.",
+        ])
+
+        self.assertEqual(
+            cobol2py.preprocess(source, source_format="free"),
+            [
+                (1, "SPECIAL-NAMES. DECIMAL-POINT IS COMMA."),
+                (2, 'IF AMOUNT > 806.80 DISPLAY "literal 8,80".'),
+                (3, "COMPUTE TAX = AMOUNT * 0.21."),
+            ],
+        )
+
+    def test_decimal_comma_is_not_enabled_by_comment(self):
+        source = "\n".join([
+            "*> DECIMAL-POINT IS COMMA.",
+            "IF AMOUNT > 806,80 DISPLAY AMOUNT.",
+        ])
+
+        self.assertEqual(
+            cobol2py.preprocess(source, source_format="free"),
+            [
+                (2, "IF AMOUNT > 806,80 DISPLAY AMOUNT."),
+            ],
+        )
+
     def test_fixed_format_with_blank_sequence_area_skips_indicator_comments(self):
         source = "\n".join([
             "       IDENTIFICATION DIVISION.",
@@ -87,8 +117,78 @@ class PreprocessTests(unittest.TestCase):
             [(1, "DISPLAY 'OK'.")],
         )
 
+    def test_when_clause_splits_inline_action_from_condition(self):
+        units = cobol2py.split_paragraph_into_units([
+            (1, "EVALUATE 1"),
+            (2, 'WHEN 1 DISPLAY "ONE"'),
+            (3, "END-EVALUATE"),
+        ])
+        self.assertEqual(
+            units,
+            [(1, "EVALUATE 1"), (2, "WHEN 1"), (2, 'DISPLAY "ONE"'), (3, "END-EVALUATE")],
+        )
+
+    def test_fixed_format_hyphen_continuations_join_numeric_literal(self):
+        source = "\n".join([
+            "000100 IDENTIFICATION DIVISION.",
+            "000200 PROGRAM-ID. CONTNUM.",
+            "000300 DATA DIVISION.",
+            "000400 WORKING-STORAGE SECTION.",
+            "000500 01 WS-N PIC 9(5).",
+            "000600 PROCEDURE DIVISION.",
+            "000700 MAIN.",
+            "000800     MOVE 4",
+            "000900-        5",
+            "001000-        6",
+            "001100-        7",
+            "001200-        8 TO WS-N.",
+            "001300     DISPLAY WS-N.",
+            "001400     STOP RUN.",
+        ])
+        lines = cobol2py.preprocess(source, source_format="fixed")
+        self.assertIn((8, "    MOVE 45678 TO WS-N."), lines)
+        generated = cobol2py.emit_python(
+            cobol2py.parse_cobol(source, source_format="fixed")
+        )
+        self.assertIn("45678", generated)
+        compile(generated, "<continued-numeric>", "exec")
+
 
 class TranslationTests(unittest.TestCase):
+    def test_sign_conditions_handle_positive_negative_and_not(self):
+        variable = cobol2py.CobolVar(level=77, name="WS-N", pic="S9(4)")
+        variables = {"WS-N": variable}
+        not_negative = cobol2py.translate_condition("WS-N IS NOT NEGATIVE", variables)
+        positive = cobol2py.translate_condition("WS-N IS POSITIVE", variables)
+        negative = cobol2py.translate_condition("WS-N IS NEGATIVE", variables)
+        zero = cobol2py.translate_condition("WS-N IS ZERO", variables)
+        self.assertTrue(eval(not_negative, {"ws_n": 0}))
+        self.assertTrue(eval(not_negative, {"ws_n": 3}))
+        self.assertFalse(eval(not_negative, {"ws_n": -1}))
+        self.assertTrue(eval(positive, {"ws_n": 3}))
+        self.assertFalse(eval(positive, {"ws_n": 0}))
+        self.assertTrue(eval(negative, {"ws_n": -1}))
+        self.assertTrue(eval(zero, {"ws_n": 0}))
+
+    def test_qualified_level_88_condition_consumes_parent_qualifier(self):
+        variable = cobol2py.CobolVar(level=77, name="WS-D33", pic="X(4)")
+        translated = cobol2py.translate_condition(
+            "C OF WS-D33",
+            variables={"WS-D33": variable},
+            condition_names={"C": ("WS-D33", [('" "', None)])},
+        )
+        self.assertNotIn(" OF ", translated.upper())
+        self.assertTrue(eval(translated, {"ws_d33": " "}))
+
+    def test_unqualified_level_88_condition_still_expands(self):
+        variable = cobol2py.CobolVar(level=77, name="WS-D33", pic="X(4)")
+        translated = cobol2py.translate_condition(
+            "C",
+            variables={"WS-D33": variable},
+            condition_names={"C": ("WS-D33", [('" "', None)])},
+        )
+        self.assertTrue(eval(translated, {"ws_d33": " "}))
+
     def test_simple_value_clause_initializes_variable(self):
         self.assertEqual(
             cobol2py.CobolVar(level=1, name="WS-STATUS", pic="X", value='"A"').py_default(),
@@ -194,6 +294,30 @@ class TranslationTests(unittest.TestCase):
         self.assertEqual(cobol2py.translate_literal("SPACES"), '" "')
         self.assertEqual(cobol2py.translate_java_literal("SPACE", {}), '" "')
         self.assertEqual(cobol2py.translate_java_literal("SPACES", {}), '" "')
+
+    def test_zero_padded_numeric_literals_emit_valid_python(self):
+        self.assertEqual(cobol2py.translate_literal("0007"), "7")
+        self.assertEqual(cobol2py.translate_literal("+0007"), "+7")
+        self.assertEqual(cobol2py.translate_literal("-0007"), "-7")
+        self.assertEqual(cobol2py.translate_literal("000.50"), "0.50")
+        self.assertEqual(cobol2py.translate_condition("WS-NUM = 0007"), "ws_num == 7")
+        self.assertEqual(cobol2py.translate_expr("WS-NUM + 000.50"), "ws_num + 0.50")
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. LEADINGZERO.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-NUM PIC 9(4).",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "MOVE 0007 TO WS-NUM.",
+            "IF WS-NUM = 0007",
+            'DISPLAY "OK"',
+            "END-IF.",
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<leading-zero-literal>", "exec")
 
     def test_value_space_zero_and_low_value_figuratives(self):
         self.assertEqual(cobol2py.translate_literal("ZEROES"), "0")
@@ -1600,3 +1724,1085 @@ class MultiTableDiabolicoTests(unittest.TestCase):
         self.assertEqual(namespace["ws_control"]["ws_found_idx"], 4)
         self.assertEqual(namespace["ws_idx"], 4)
         self.assertEqual(namespace["ws_control"]["ws_result_num"], 700)
+
+class EmptyTryRegressionTests(unittest.TestCase):
+    def test_comment_only_entrypoint_emits_valid_try_body(self):
+        program = cobol2py.Program(
+            paragraphs={"__MAIN__": [
+                cobol2py.Node(kind="stmt", text="UNSUPPORTED VERB", line=1)
+            ]},
+            paragraph_order=["__MAIN__"],
+        )
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<comment-only-entrypoint>", "exec")
+        self.assertIn("        pass", generated)
+
+
+
+class ExternalCorpusSyntaxRegressionTests(unittest.TestCase):
+    def test_equals_synonym_generates_python_comparison(self):
+        self.assertEqual(cobol2py.translate_condition('OPCAO EQUALS "n"'), 'opcao == "n"')
+        self.assertEqual(cobol2py.translate_condition('OPCAO EQUALS TO "N"'), 'opcao == "N"')
+
+    def test_greater_shorthand_condition_generates_python_comparison(self):
+        self.assertEqual(cobol2py.translate_condition("RECORD-COUNT GREATER 50"), "record_count > 50")
+        self.assertEqual(cobol2py.translate_condition("RECORD-COUNT GREATER THAN 50"), "record_count > 50")
+        self.assertEqual(cobol2py.translate_condition("RECORD-COUNT GREATER OR EQUAL 50"), "record_count >= 50")
+        self.assertEqual(cobol2py.translate_condition("RECORD-COUNT LESS OR EQUAL 50"), "record_count <= 50")
+
+    def test_not_equal_phrase_is_not_split_into_python_not_and_equality(self):
+        self.assertEqual(cobol2py.translate_condition("WS-STAT NOT EQUAL 10"), "ws_stat != 10")
+        self.assertEqual(cobol2py.translate_condition("WS-STAT NOT EQUAL TO 10"), "ws_stat != 10")
+
+    def test_digit_leading_cobol_data_names_become_valid_python_identifiers(self):
+        variables = {
+            "11A": cobol2py.CobolVar(level=77, name="11A", pic="9(4)", value="9")
+        }
+        translated = cobol2py.translate_expr("11A", variables)
+        self.assertEqual(translated, "cobol_11a")
+        compile(translated + " = 9", "<generated>", "exec")
+        self.assertEqual(cobol2py.normalize_name("42-DATANAMES"), "cobol_42_datanames")
+
+
+class CobolIntrinsicFunctionRegressionTests(unittest.TestCase):
+    def test_numval_intrinsic_is_emitted_as_a_numeric_conversion(self):
+        translated = cobol2py.translate_expr("FUNCTION NUMVAL(WS-AMOUNT)")
+        self.assertEqual(translated, "float(ws_amount)")
+        compile(translated, "<numval-intrinsic>", "eval")
+
+    def test_case_and_trim_intrinsics_are_valid_python_calls(self):
+        cases = {
+            "FUNCTION LOWER-CASE(WS-NAME)": "(ws_name).lower()",
+            "FUNCTION UPPER-CASE(WS-NAME)": "(ws_name).upper()",
+            "FUNCTION TRIM(WS-NAME)": "(ws_name).strip()",
+            "FUNCTION LENGTH(WS-NAME)": "len(ws_name)",
+        }
+        for source, expected in cases.items():
+            with self.subTest(source=source):
+                translated = cobol2py.translate_expr(source)
+                self.assertEqual(translated, expected)
+                compile(translated, "<cobol-intrinsic>", "eval")
+
+    def test_current_date_intrinsic_emits_valid_python_expression(self):
+        translated = cobol2py.translate_expr("FUNCTION CURRENT-DATE")
+        self.assertIn("datetime.now().astimezone()", translated)
+        compile(translated, "<current-date-intrinsic>", "eval")
+
+
+class StandaloneEqualConditionRegressionTests(unittest.TestCase):
+    def test_standalone_equal_phrase_becomes_python_equality(self):
+        translated = cobol2py.translate_condition("FIM-ARQ EQUAL 1")
+        self.assertEqual(translated, "fim_arq == 1")
+        compile(translated, "<standalone-equal>", "eval")
+
+
+class MultidimensionalTableReferenceRegressionTests(unittest.TestCase):
+    def test_multiple_numeric_subscripts_become_zero_based_python_indexes(self):
+        translated = cobol2py.translate_expr("ENTRY-2(03, 05)")
+        self.assertEqual(translated, "entry_2[2][4]")
+        compile(translated, "<multi-subscript>", "eval")
+
+    def test_multiple_subscripts_are_accepted_in_data_reference_parser(self):
+        self.assertEqual(
+            cobol2py.normalize_data_reference("ENTRY-2(03, 05)"),
+            "entry_2[2][4]",
+        )
+
+
+class NegatedComparisonAndFigurativeConstantTests(unittest.TestCase):
+    def test_not_before_comparison_operator_inverts_operator(self):
+        cases = {
+            "DECL-EXEC-SW NOT = SPACE": "decl_exec_sw != ' '",
+            "WS-NUM NOT < 10": "ws_num >= 10",
+            "WS-NUM NOT > 10": "ws_num <= 10",
+        }
+        for source, expected in cases.items():
+            with self.subTest(source=source):
+                translated = cobol2py.translate_condition(source)
+                self.assertEqual(translated, expected)
+                compile(translated, "<not-comparison>", "eval")
+
+    def test_figurative_constants_survive_expression_tokenization(self):
+        for source, expected in [
+            ("LOW-VALUES", "\x00"),
+            ("HIGH-VALUES", "\xff"),
+            ("SPACES", " "),
+            ("ZEROS", 0),
+        ]:
+            with self.subTest(source=source):
+                translated = cobol2py.translate_expr(source)
+                self.assertEqual(ast.literal_eval(translated), expected)
+                compile(translated, "<figurative-constant>", "eval")
+
+
+class AllFigurativeConstantRegressionTests(unittest.TestCase):
+    def test_all_quote_initializes_fixed_width_field_with_quotes(self):
+        variable = cobol2py.CobolVar(level=77, name="IF-D5", pic="X(10)", value="ALL QUOTE")
+        self.assertEqual(variable.py_default(), repr('"' * 10))
+
+    def test_all_low_values_decodes_to_low_value_byte(self):
+        self.assertEqual(cobol2py.decode_cobol_all_literal("ALL LOW-VALUES"), chr(0))
+
+
+class CurrentDateAndNextSentenceRegressionTests(unittest.TestCase):
+    def test_current_date_value_clause_emits_valid_python_expression(self):
+        translated = cobol2py.translate_literal("FUNCTION CURRENT-DATE")
+        compile(translated, "<current-date-value>", "eval")
+
+    def test_next_sentence_is_not_included_in_if_condition(self):
+        translated = cobol2py.translate_condition("A = 'A' NEXT SENTENCE")
+        self.assertEqual(translated, 'a == "A"')
+        compile(translated, "<next-sentence-condition>", "eval")
+
+
+class ParenthesizedNumericLiteralRegressionTests(unittest.TestCase):
+    def test_parenthesized_leading_zero_number_is_normalized(self):
+        translated = cobol2py.translate_literal("(01)")
+        self.assertEqual(translated, "(1)")
+        compile(translated, "<parenthesized-number>", "eval")
+
+
+class CobolNumericIntrinsicRegressionTests(unittest.TestCase):
+    def test_common_math_intrinsics_emit_valid_python(self):
+        cases = {
+            "FUNCTION ASIN(1.0)": "__import__('math').asin(1.0)",
+            "FUNCTION SQRT(9)": "__import__('math').sqrt(9)",
+            "FUNCTION COS(0)": "__import__('math').cos(0)",
+            "FUNCTION ABS(-3)": "__import__('math').fabs(-3)",
+        }
+        for source, expected in cases.items():
+            with self.subTest(source=source):
+                translated = cobol2py.translate_expr(source)
+                self.assertEqual(translated, expected)
+                compile(translated, "<numeric-intrinsic>", "eval")
+
+
+class CobolOrdinalAndFinanceIntrinsicRegressionTests(unittest.TestCase):
+    def test_ordinal_and_integer_intrinsics_emit_valid_python(self):
+        cases = {
+            'FUNCTION ORD("A")': '(ord("A") + 1)',
+            "FUNCTION CHAR(66)": "chr(int(66) - 1)",
+            "FUNCTION INTEGER(123.456)": "__import__('math').floor(123.456)",
+            "FUNCTION INTEGER-PART(-123.456)": "int(-123.456)",
+        }
+        for source, expected in cases.items():
+            with self.subTest(source=source):
+                translated = cobol2py.translate_expr(source)
+                self.assertEqual(translated, expected)
+                compile(translated, "<ordinal-intrinsic>", "eval")
+
+    def test_present_value_intrinsic_handles_multiple_payments(self):
+        translated = cobol2py.translate_expr("FUNCTION PRESENT-VALUE(0, 23, 12, 9)")
+        self.assertIn("enumerate(_payments, 1)", translated)
+        compile(translated, "<present-value-intrinsic>", "eval")
+
+
+class IntrinsicLiteralRoutingRegressionTests(unittest.TestCase):
+    def test_function_intrinsics_pass_through_expression_translation(self):
+        cases = {
+            "FUNCTION LOWER-CASE(WS-NAME)": "(ws_name).lower()",
+            "FUNCTION ASIN(1.0)": "__import__('math').asin(1.0)",
+            "FUNCTION PRESENT-VALUE(0, 23, 12, 9)": None,
+        }
+        for source, expected in cases.items():
+            with self.subTest(source=source):
+                translated = cobol2py.translate_literal(source)
+                if expected is not None:
+                    self.assertEqual(translated, expected)
+                compile(translated, "<intrinsic-literal>", "eval")
+
+
+class NestedIntrinsicArgumentRegressionTests(unittest.TestCase):
+    def test_math_intrinsic_accepts_nested_parenthesized_argument(self):
+        translated = cobol2py.translate_expr("FUNCTION ASIN((3 / 3) - 1)")
+        self.assertIn("__import__('math').asin(", translated)
+        compile(translated, "<nested-math-intrinsic>", "eval")
+
+    def test_present_value_accepts_parenthesized_payment_expressions(self):
+        translated = cobol2py.translate_expr("FUNCTION PRESENT-VALUE(-0.5, (2 + 3), (6 / 3), (9 - 3))")
+        self.assertIn("enumerate(_payments, 1)", translated)
+        compile(translated, "<nested-present-value>", "eval")
+
+
+class ReferenceModificationRegressionTests(unittest.TestCase):
+    def test_numeric_reference_modification_becomes_python_slice(self):
+        translated = cobol2py.translate_expr("WS-TEXT(1:2)")
+        self.assertEqual(translated, "ws_text[0:(0) + (2)]")
+        compile(translated, "<reference-modification>", "eval")
+
+    def test_variable_reference_modification_becomes_python_slice(self):
+        translated = cobol2py.translate_expr("WS-TEXT(WS-START:1)")
+        self.assertEqual(translated, "ws_text[ws_start - 1:(ws_start - 1) + (1)]")
+        compile(translated, "<variable-reference-modification>", "eval")
+
+
+class AbbreviatedCombinedConditionRegressionTests(unittest.TestCase):
+    def test_or_literal_repeats_previous_condition_subject(self):
+        variables = {
+            "WS-OPCAO": cobol2py.CobolVar(level=1, name="WS-OPCAO", pic="X(1)")
+        }
+        translated = cobol2py.translate_condition("WS-OPCAO = 'S' OR 'N'", variables)
+        self.assertIn("or ws_opcao.ljust(1) ==", translated)
+        self.assertNotIn("or ==", translated)
+        compile(translated, "<abbreviated-condition>", "eval")
+
+
+class DigitLeadingHyphenatedNameRegressionTests(unittest.TestCase):
+    def test_digit_leading_hyphenated_identifier_is_not_split_as_arithmetic(self):
+        translated = cobol2py.translate_condition("0-C = 1")
+        self.assertEqual(translated, "cobol_0_c == 1")
+        compile(translated, "<digit-leading-hyphenated-name>", "eval")
+
+
+class ReferenceModificationSliceSemanticsTests(unittest.TestCase):
+    def test_variable_start_and_length_become_zero_based_python_slice(self):
+        translated = cobol2py.translate_expr("NEW-STRING(SUB-1:1)")
+        self.assertEqual(translated, "cobol_new_string[sub_1 - 1:(sub_1 - 1) + (1)]")
+        compile(translated, "<reference-modification>", "eval")
+
+    def test_numeric_reference_modification_uses_one_based_cobol_positions(self):
+        translated = cobol2py.translate_expr("WS-TEXT(2:3)")
+        self.assertEqual(translated, "ws_text[1:(1) + (3)]")
+        self.assertEqual(eval(translated, {"ws_text": "abcdef"}), "bcd")
+
+
+class AbbreviatedRelationOperatorRegressionTests(unittest.TestCase):
+    def test_greater_or_equal_sign_phrase_is_normalized_before_greater(self):
+        translated = cobol2py.translate_condition("WS-NUM GREATER OR = WS-NUM2")
+        self.assertEqual(translated, "ws_num >= ws_num2")
+        compile(translated, "<greater-or-equal>", "eval")
+
+    def test_less_or_equal_sign_phrase_is_normalized_before_less(self):
+        translated = cobol2py.translate_condition("WS-NUM LESS OR = WS-NUM2")
+        self.assertEqual(translated, "ws_num <= ws_num2")
+        compile(translated, "<less-or-equal>", "eval")
+
+
+class DisplayOperandSplittingRegressionTests(unittest.TestCase):
+    def test_parenthesized_numeric_operands_remain_separate(self):
+        self.assertEqual(cobol2py.split_cobol_items("(01) (01) ERASE"), ["(01)", "(01)", "ERASE"])
+
+    def test_quoted_spaces_and_nested_commas_are_preserved(self):
+        self.assertEqual(
+            cobol2py.split_cobol_items('"HELLO WORLD" WS-TEXT(1, 2), ERASE'),
+            ['"HELLO WORLD"', "WS-TEXT(1, 2)", "ERASE"],
+        )
+
+    def test_parenthesized_numeric_display_generates_valid_python(self):
+        translated = cobol2py.translate_statement("DISPLAY (01) (01) ERASE", set(), {})
+        self.assertIsNotNone(translated)
+        compile("\\n".join(translated or []), "<display-operands>", "exec")
+
+
+class ComputeSizeErrorClauseRegressionTests(unittest.TestCase):
+    def test_size_error_phrase_is_not_translated_as_expression_tokens(self):
+        translated = cobol2py.translate_statement(
+            "COMPUTE WS-TOTAL = WS-LEFT + WS-RIGHT ON SIZE ERROR",
+            set(),
+            {},
+        )
+        self.assertIsNotNone(translated)
+        self.assertEqual(translated, ["ws_total = ws_left + ws_right"])
+        compile("\\n".join(translated or []), "<compute-size-error>", "exec")
+
+
+class FigurativeConstantIdentifierBoundaryTests(unittest.TestCase):
+    def test_hyphenated_data_names_starting_with_zero_are_not_constants(self):
+        self.assertEqual(cobol2py.translate_expr("ZERO-C"), "zero_c")
+        self.assertEqual(cobol2py.translate_condition("ZERO-C = 1"), "zero_c == 1")
+
+    def test_hyphenated_data_names_starting_with_space_are_not_constants(self):
+        self.assertEqual(cobol2py.translate_expr("SPACE-C"), "space_c")
+
+
+class MoveCorrespondingRegressionTests(unittest.TestCase):
+    def test_matching_group_fields_are_copied_with_target_width(self):
+        variables = {
+            "SRC": cobol2py.CobolVar(level=1, name="SRC", is_group=True),
+            "SRC-CODE": cobol2py.CobolVar(level=5, name="CODE", pic="X(3)", parent_name="SRC"),
+            "DST": cobol2py.CobolVar(level=1, name="DST", is_group=True),
+            "DST-CODE": cobol2py.CobolVar(level=5, name="CODE", pic="X(5)", parent_name="DST"),
+        }
+        translated = cobol2py.translate_statement("MOVE CORRESPONDING SRC TO DST", set(), variables)
+        self.assertEqual(translated, ["dst['code'] = str(src['code'])[:5].ljust(5)"])
+        namespace = {"src": {"code": "ABC"}, "dst": {"code": "     "}}
+        exec("\\n".join(translated or []), namespace)
+        self.assertEqual(namespace["dst"]["code"], "ABC  ")
+
+
+class QualifiedDisplayOperandRegressionTests(unittest.TestCase):
+    def test_of_qualified_reference_remains_one_display_operand(self):
+        self.assertEqual(
+            cobol2py.split_cobol_items("WS-NAME OF WS-CUSTOMER ERASE"),
+            ["WS-NAME OF WS-CUSTOMER", "ERASE"],
+        )
+
+
+class SpaceSeparatedSubscriptRegressionTests(unittest.TestCase):
+    def test_numeric_subscripts_separated_by_spaces(self):
+        self.assertEqual(cobol2py.normalize_data_reference("TABLE(1 2)"), "table[0][1]")
+
+    def test_identifier_subscripts_separated_by_spaces(self):
+        self.assertEqual(
+            cobol2py.normalize_data_reference("TABLE(IDX1 IDX2 IDX3)"),
+            "table[int(idx1) - 1][int(idx2) - 1][int(idx3) - 1]",
+        )
+
+    def test_text_backed_identifier_subscript_is_coerced_to_integer(self):
+        variables = {
+            "TABLE": cobol2py.CobolVar(
+                level=1, name="TABLE", is_array=True, occurs=3
+            ),
+            "WS-INDEX": cobol2py.CobolVar(
+                level=1, name="WS-INDEX", pic="X"
+            ),
+        }
+        translated = cobol2py.normalize_data_reference("TABLE(WS-INDEX)", variables)
+        self.assertEqual(translated, "table[int(ws_index) - 1]")
+        self.assertEqual(eval(translated, {"table": ["A", "B", "C"], "ws_index": "2"}), "B")
+
+    def test_arithmetic_subscript_is_not_split_on_spaces(self):
+        self.assertEqual(
+            cobol2py.normalize_data_reference("TABLE(IDX + 1)"),
+            "table[idx + 1 - 1]",
+        )
+
+
+class NestedAndMiscIntrinsicRegressionTests(unittest.TestCase):
+    def test_nested_function_intrinsics_do_not_leave_function_keyword(self):
+        translated = cobol2py.translate_expr("FUNCTION ASIN(FUNCTION ASIN(PI - 3))")
+        self.assertNotIn("function asin", translated.lower())
+        compile(translated, "<nested-intrinsic>", "eval")
+
+    def test_mod_intrinsic_becomes_python_remainder(self):
+        translated = cobol2py.translate_expr("FUNCTION MOD(5, 3)")
+        self.assertEqual(translated, "(5 % (3))")
+        self.assertEqual(eval(translated), 2)
+
+    def test_rem_intrinsic_truncates_quotient_toward_zero(self):
+        positive = cobol2py.translate_expr("FUNCTION REM(7, 3)")
+        negative = cobol2py.translate_expr("FUNCTION REM(-7, 3)")
+        self.assertEqual(eval(positive), 1)
+        self.assertEqual(eval(negative), -1)
+
+    def test_statistical_intrinsics_accept_space_separated_arguments(self):
+        translated = cobol2py.translate_expr("FUNCTION MEAN(1 2 6)")
+        self.assertEqual(eval(translated), 3)
+
+    def test_statistical_intrinsics_match_expected_values(self):
+        cases = {
+            "FUNCTION MEAN(1, 2, 6)": 3,
+            "FUNCTION MEDIAN(1, 5, 9)": 5,
+            "FUNCTION MIDRANGE(1, 5, 9)": 5,
+            "FUNCTION RANGE(1, 5, 9)": 8,
+            "FUNCTION SUM(1, 2, 6)": 9,
+            "FUNCTION VARIANCE(1, 2, 3)": 2 / 3,
+            "FUNCTION STANDARD-DEVIATION(1, 2, 3)": (2 / 3) ** 0.5,
+        }
+        for source, expected in cases.items():
+            with self.subTest(source=source):
+                translated = cobol2py.translate_expr(source)
+                self.assertAlmostEqual(eval(translated), expected)
+
+    def test_concatenate_intrinsic_becomes_string_join(self):
+        translated = cobol2py.translate_expr('FUNCTION CONCATENATE(WS-A, ",")')
+        self.assertEqual(translated, """''.join(str(_item) for _item in [ws_a, ","])""")
+        compile(translated, "<concatenate-intrinsic>", "eval")
+
+    def test_random_intrinsic_without_arguments_is_valid_python(self):
+        translated = cobol2py.translate_expr("FUNCTION RANDOM")
+        self.assertEqual(translated, "__import__('random').random()")
+        compile(translated, "<random-intrinsic>", "eval")
+
+    def test_reverse_intrinsic_reverses_the_argument(self):
+        translated = cobol2py.translate_expr('FUNCTION REVERSE("abc")')
+        self.assertEqual(eval(translated), "cba")
+
+    def test_factorial_intrinsic_returns_exact_integer(self):
+        translated = cobol2py.translate_expr("FUNCTION FACTORIAL(5)")
+        self.assertEqual(eval(translated), 120)
+
+    def test_stored_char_length_ignores_trailing_spaces(self):
+        translated = cobol2py.translate_expr('FUNCTION STORED-CHAR-LENGTH("abc   ")')
+        self.assertEqual(eval(translated), 3)
+
+
+class HexadecimalLiteralRegressionTests(unittest.TestCase):
+    def test_hexadecimal_literal_with_double_quotes(self):
+        translated = cobol2py.translate_literal('X"0D"')
+        self.assertEqual(eval(translated), "\r")
+        compile(translated, "<hex-literal>", "eval")
+
+    def test_hexadecimal_literal_survives_expression_tokenization(self):
+        translated = cobol2py.translate_expr('X"0D"')
+        self.assertEqual(eval(translated), "\r")
+        compile(translated, "<hex-expression>", "eval")
+
+    def test_hexadecimal_literal_with_single_quotes(self):
+        translated = cobol2py.translate_literal("X'4142'")
+        self.assertEqual(eval(translated), "AB")
+
+    def test_hexadecimal_literal_is_kept_as_one_display_operand(self):
+        items = cobol2py.split_cobol_items('X"0D" ERASE')
+        self.assertEqual(items, ['X"0D"', "ERASE"])
+        translated = cobol2py.translate_statement('DISPLAY X"0D" ERASE', set(), {})
+        compile("\\n".join(translated or []), "<hex-display>", "exec")
+
+
+class ParenthesizedDisplayListRegressionTests(unittest.TestCase):
+    def test_parenthesized_comma_list_expands_into_display_operands(self):
+        self.assertEqual(cobol2py.split_cobol_items("(01, 01) ERASE"), ["01", "01", "ERASE"])
+        translated = cobol2py.translate_statement("DISPLAY (01, 01) ERASE", set(), {})
+        self.assertIsNotNone(translated)
+        compile("\\n".join(translated or []), "<parenthesized-display-list>", "exec")
+
+
+class CobolAcceptEofRegressionTests(unittest.TestCase):
+    def test_accept_at_eof_uses_cobol_numeric_and_alphanumeric_defaults(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+        from unittest.mock import patch
+
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. ACCEPTEOF.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-NUM PIC 9(3).",
+            "01 WS-TEXT PIC X(3).",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "ACCEPT WS-NUM.",
+            "ADD 1 TO WS-NUM.",
+            "DISPLAY WS-NUM.",
+            "ACCEPT WS-TEXT.",
+            "DISPLAY WS-TEXT.",
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<accept-eof-output>", "exec"), namespace)
+        output = StringIO()
+        with patch("builtins.input", side_effect=EOFError), redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "001\n   \n", generated)
+
+
+class CobolLevel88ConditionRegressionTests(unittest.TestCase):
+    def test_level_88_condition_name_compares_parent_field(self):
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. COND88.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-STATUS PIC X VALUE 'Y'.",
+            "   88 WS-OK VALUE 'Y'.",
+            "   88 WS-NO VALUE 'N'.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "IF WS-OK",
+            "    DISPLAY 'OK'",
+            "ELSE",
+            "    DISPLAY 'NO'",
+            "END-IF.",
+            "STOP RUN.",
+        ])
+        program = cobol2py.parse_cobol(source, source_format="free")
+        self.assertEqual(program.condition_names["WS-OK"], ("WS-STATUS", [("'Y'", None)]))
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<level-88>", "exec")
+        namespace = {"__name__": "not_main"}
+        exec(generated, namespace)
+        from contextlib import redirect_stdout
+        from io import StringIO
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "OK\n", generated)
+
+    def test_level_88_condition_name_supports_value_ranges(self):
+        condition_names = {
+            "WS-IN-RANGE": ("WS-NUM", [("1", "5")]),
+        }
+        translated = cobol2py.translate_condition(
+            "WS-IN-RANGE", {"WS-NUM": cobol2py.CobolVar(level=1, name="WS-NUM", pic="9")},
+            condition_names,
+        )
+        self.assertIn("ws_num >= 1", translated)
+        self.assertIn("ws_num <= 5", translated)
+        compile(translated, "<level-88-range>", "eval")
+
+
+class CompoundComparisonRegressionTests(unittest.TestCase):
+    def test_greater_or_equal_phrase_is_not_split_at_equal(self):
+        translated = cobol2py.translate_condition("IRC-PARAMS GREATER OR EQUAL TO 1")
+        self.assertEqual(translated, "irc_params >= 1")
+        compile(translated, "<greater-or-equal>", "eval")
+
+    def test_less_or_equal_phrase_is_not_split_at_equal(self):
+        translated = cobol2py.translate_condition("IRC-PARAMS LESS OR EQUAL TO 1")
+        self.assertEqual(translated, "irc_params <= 1")
+        compile(translated, "<less-or-equal>", "eval")
+
+
+class CobolDateIntrinsicRegressionTests(unittest.TestCase):
+    def test_date_of_integer_converts_day_one_to_16010101(self):
+        translated = cobol2py.translate_expr("FUNCTION DATE-OF-INTEGER(1)")
+        compile(translated, "<date-of-integer>", "eval")
+        self.assertEqual(eval(translated), 16010101)
+
+    def test_integer_of_date_converts_16010101_to_day_one(self):
+        translated = cobol2py.translate_expr("FUNCTION INTEGER-OF-DATE(16010101)")
+        compile(translated, "<integer-of-date>", "eval")
+        self.assertEqual(eval(translated), 1)
+
+    def test_seconds_past_midnight_emits_valid_python(self):
+        translated = cobol2py.translate_expr("FUNCTION SECONDS-PAST-MIDNIGHT")
+        compile(translated, "<seconds-past-midnight>", "eval")
+        self.assertGreaterEqual(eval(translated), 0)
+        self.assertLess(eval(translated), 86400)
+
+
+class ChainedReferenceModificationRegressionTests(unittest.TestCase):
+    def test_reference_modification_after_table_subscript_is_valid_python(self):
+        translated = cobol2py.translate_expr("WS-TEXT(WS-I)(WS-J:1)")
+        compile(translated, "<chained-reference-modification>", "eval")
+        self.assertIn("[(ws_j) - 1:", translated)
+
+
+class CobolSetLevel88RegressionTests(unittest.TestCase):
+    def test_set_condition_name_true_assigns_a_permitted_value(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. SETCOND88.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-STATUS PIC X VALUE 'N'.",
+            "   88 WS-OK VALUE 'Y'.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "SET WS-OK TO TRUE.",
+            "IF WS-OK",
+            "    DISPLAY 'OK'",
+            "ELSE",
+            "    DISPLAY 'NO'",
+            "END-IF.",
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<set-level-88>", "exec")
+        namespace = {"__name__": "not_main"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "OK\n", generated)
+
+
+class CompoundRelationEqualityRegressionTests(unittest.TestCase):
+    def test_redundant_equality_before_greater_or_equal_is_collapsed(self):
+        translated = cobol2py.translate_condition("IRC-PARAMS = GREATER OR EQUAL TO 1")
+        self.assertEqual(translated, "irc_params >= 1")
+        compile(translated, "<compound-relation-equality>", "eval")
+
+    def test_redundant_equality_before_less_or_equal_is_collapsed(self):
+        translated = cobol2py.translate_condition("IRC-PARAMS = LESS OR EQUAL TO 1")
+        self.assertEqual(translated, "irc_params <= 1")
+        compile(translated, "<compound-relation-equality>", "eval")
+
+
+class SemicolonSeparatedSubscriptRegressionTests(unittest.TestCase):
+    def test_semicolon_separated_table_subscripts_become_valid_python_indexes(self):
+        translated = cobol2py.translate_expr("GRP-TAB2(S21; S22)")
+        self.assertEqual(translated, "grp_tab2[int(s21) - 1][int(s22) - 1]")
+        compile(translated, "<semicolon-subscript>", "eval")
+
+
+class CobolClassConditionRegressionTests(unittest.TestCase):
+    def test_numeric_class_condition_accepts_signed_decimal_values(self):
+        translated = cobol2py.translate_condition("WS-VALUE IS NUMERIC")
+        compile(translated, "<numeric-class-condition>", "eval")
+        self.assertTrue(eval(translated, {"ws_value": "-12.5"}))
+        self.assertFalse(eval(translated, {"ws_value": "12A"}))
+
+    def test_not_alphabetic_class_condition_rejects_digits(self):
+        translated = cobol2py.translate_condition("WS-FUNC IS NOT ALPHABETIC")
+        compile(translated, "<not-alphabetic-class-condition>", "eval")
+        self.assertFalse(eval(translated, {"ws_func": "ABC"}))
+        self.assertTrue(eval(translated, {"ws_func": "AB2"}))
+
+    def test_alphanumeric_class_condition_allows_spaces_and_digits(self):
+        translated = cobol2py.translate_condition("WS-VALUE IS ALPHANUMERIC")
+        compile(translated, "<alphanumeric-class-condition>", "eval")
+        self.assertTrue(eval(translated, {"ws_value": "A 12"}))
+        self.assertFalse(eval(translated, {"ws_value": "A-12"}))
+
+
+class CobolScopeTerminatorRegressionTests(unittest.TestCase):
+    def test_end_multiply_and_end_add_do_not_get_absorbed_as_operands(self):
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. ENDOPS.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-A PIC 9 VALUE 3.",
+            "01 WS-B PIC 9 VALUE 2.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "MULTIPLY WS-A BY WS-B",
+            "END-MULTIPLY",
+            "ADD WS-A TO WS-B",
+            "END-ADD",
+            "DISPLAY WS-B",
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<scope-terminators>", "exec")
+        namespace = {"__name__": "not_main"}
+        exec(generated, namespace)
+        from contextlib import redirect_stdout
+        from io import StringIO
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "9\n", generated)
+
+
+class CobolDisplayNoAdvancingRegressionTests(unittest.TestCase):
+    def test_with_no_advancing_suppresses_newline_until_next_display(self):
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. DISP-NL.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "DISPLAY 'A' WITH NO ADVANCING",
+            "DISPLAY 'B'",
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<display-no-advancing>", "exec")
+        namespace = {"__name__": "not_main"}
+        exec(generated, namespace)
+        from contextlib import redirect_stdout
+        from io import StringIO
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "AB\n", generated)
+
+
+class ResidualIsRelationRegressionTests(unittest.TestCase):
+    def test_is_relation_word_never_becomes_python_identifier(self):
+        translated = cobol2py.translate_expr("WS-STATUS IS WS-EXPECTED")
+        self.assertEqual(translated, "ws_status == ws_expected")
+        compile(translated, "<residual-is-relation>", "eval")
+
+
+class NegatedRelationalPhraseRegressionTests(unittest.TestCase):
+    def test_is_not_greater_than_maps_to_less_or_equal(self):
+        self.assertEqual(
+            cobol2py.translate_condition("WS-A IS NOT GREATER THAN WS-B"),
+            "ws_a <= ws_b",
+        )
+
+    def test_is_not_less_than_maps_to_greater_or_equal(self):
+        self.assertEqual(
+            cobol2py.translate_condition("WS-A IS NOT LESS THAN WS-B"),
+            "ws_a >= ws_b",
+        )
+
+    def test_negated_compound_comparison_maps_to_inverse_relation(self):
+        cases = {
+            "WS-A IS NOT GREATER THAN OR EQUAL TO WS-B": "ws_a < ws_b",
+            "WS-A IS NOT LESS THAN OR EQUAL TO WS-B": "ws_a > ws_b",
+        }
+        for source, expected in cases.items():
+            with self.subTest(source=source):
+                self.assertEqual(cobol2py.translate_condition(source), expected)
+
+
+class EvaluateRelationalWhenRegressionTests(unittest.TestCase):
+    def test_evaluate_supports_is_greater_than_selection(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\n".join([
+            "       IDENTIFICATION DIVISION.",
+            "       PROGRAM-ID. EVALRELATION.",
+            "       DATA DIVISION.",
+            "       WORKING-STORAGE SECTION.",
+            "       01 WS-CODE PIC 9 VALUE 2.",
+            "       PROCEDURE DIVISION.",
+            "       MAIN.",
+            "           EVALUATE WS-CODE",
+            "               WHEN IS GREATER THAN 1",
+            '                   DISPLAY "HIGH".',
+            "               WHEN OTHER",
+            '                   DISPLAY "LOW".',
+            "           END-EVALUATE.",
+            "           STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<evaluate-relational-output>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "HIGH\n", generated)
+
+
+class FullProgramIsKeywordRegressionTests(unittest.TestCase):
+    def test_is_in_pic_value_and_if_condition_does_not_become_identifier(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\n".join([
+            "       IDENTIFICATION DIVISION.",
+            "       PROGRAM-ID. ISKEYWORDTEST.",
+            "       DATA DIVISION.",
+            "       WORKING-STORAGE SECTION.",
+            "       01 ERROR-COUNTER PIC 9 VALUE 0.",
+            "       01 DELETE-COUNTER PIC 9 VALUE 0.",
+            '       01 WS-CHAR PIC IS X VALUE IS "A".',
+            "       PROCEDURE DIVISION.",
+            "       MAIN.",
+            "           IF ERROR-COUNTER IS EQUAL TO ZERO",
+            '               DISPLAY "PASS".',
+            "           END-IF.",
+            "           IF DELETE-COUNTER IS EQUAL TO ZERO",
+            '               DISPLAY "DELETE".',
+            "           END-IF.",
+            "           STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="fixed"))
+        self.assertNotIn("cobol_is", generated)
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<is-keyword-output>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "PASS\nDELETE\n", generated)
+
+
+class ResidualIsDataReferenceFallbackRegressionTests(unittest.TestCase):
+    def test_relation_is_in_data_reference_fallback_becomes_comparison(self):
+        translated = cobol2py.normalize_data_reference("WS-STATUS IS WS-EXPECTED")
+        self.assertEqual(translated, "ws_status == ws_expected")
+        compile(translated, "<data-reference-is-relation>", "eval")
+
+    def test_is_equal_to_in_data_reference_fallback_becomes_comparison(self):
+        translated = cobol2py.normalize_data_reference("ERROR-COUNTER IS EQUAL TO ZERO")
+        self.assertEqual(translated, "error_counter == 0")
+        compile(translated, "<data-reference-is-equal>", "eval")
+
+
+class TruncatedValueIsClauseRegressionTests(unittest.TestCase):
+    def test_value_is_at_end_of_truncated_declaration_is_not_a_literal(self):
+        variables = cobol2py.parse_variables([(1, "01 WS-CHAR PIC X VALUE IS")])
+        self.assertEqual(len(variables), 1)
+        self.assertIsNone(variables[0].value)
+        self.assertEqual(variables[0].py_default(), repr(" "))
+
+
+class InitializeStatementRegressionTests(unittest.TestCase):
+    def test_initialize_elementary_item_uses_category_default_not_value_clause(self):
+        variables = {
+            item.name: item
+            for item in cobol2py.parse_variables([
+                (1, '01 WS-NAME PIC X(3) VALUE "ABC".')
+            ])
+        }
+        translated = cobol2py.translate_statement("INITIALIZE WS-NAME", set(), variables)
+        self.assertEqual(translated, ["ws_name = '   '"])
+        compile(translated[0], "<initialize-elementary>", "exec")
+
+    def test_initialize_simple_group_resets_alphanumeric_and_numeric_children(self):
+        variables = {
+            item.name: item
+            for item in cobol2py.parse_variables([
+                (1, "01 WS-REC."),
+                (2, "05 WS-NAME PIC X(3) VALUE 'ABC'."),
+                (3, "05 WS-COUNT PIC 9(2) VALUE 12."),
+            ])
+        }
+        translated = cobol2py.translate_statement("INITIALIZE WS-REC", set(), variables)
+        self.assertEqual(
+            translated,
+            ["ws_rec['ws_name'] = '   '", "ws_rec['ws_count'] = 0"],
+        )
+        compile("\n".join(translated), "<initialize-group>", "exec")
+
+
+class BareAlphanumericValueRegressionTests(unittest.TestCase):
+    def test_unquoted_word_value_does_not_emit_unbound_python_name(self):
+        variable = cobol2py.CobolVar(
+            level=2, name="COBOL-IS", pic="X(99)", value="COBOL-IS"
+        )
+        generated = variable.py_default()
+        compile(generated, "<cobol-value-default>", "eval")
+        self.assertEqual(eval(generated), "COBOL-IS".ljust(99))
+
+
+class GroupMoveFillRegressionTests(unittest.TestCase):
+    def test_move_space_to_group_preserves_group_and_child_fields(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. GROUPFILL.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 TEST-RESULTS.",
+            "   02 FEATURE PIC X(20).",
+            "   02 P-OR-F PIC X(5).",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "   MOVE SPACE TO TEST-RESULTS.",
+            '   MOVE "PASS" TO FEATURE OF TEST-RESULTS.',
+            "   DISPLAY FEATURE OF TEST-RESULTS.",
+            "   STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        self.assertNotIn("test_results = ' '", generated)
+        self.assertIn("test_results['feature'] = '                    '", generated)
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<group-move-space>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "PASS                \n")
+    def test_move_space_to_occurs_group_fills_each_row_without_replacing_table(self):
+        variables = {
+            "TEST-RESULTS": cobol2py.CobolVar(
+                level=1, name="TEST-RESULTS", is_group=True
+            ),
+            "RESULT-ROW": cobol2py.CobolVar(
+                level=2, name="RESULT-ROW", is_group=True, is_array=True,
+                occurs=2, parent_name="TEST-RESULTS"
+            ),
+            "FEATURE": cobol2py.CobolVar(
+                level=3, name="FEATURE", pic="X(4)", parent_name="RESULT-ROW"
+            ),
+            "P-OR-F": cobol2py.CobolVar(
+                level=3, name="P-OR-F", pic="X", parent_name="RESULT-ROW"
+            ),
+        }
+        assignments = cobol2py.translate_group_fill_move(
+            "SPACE", "TEST-RESULTS", variables
+        )
+        self.assertEqual(assignments, [
+            "test_results['result_row'][0]['feature'] = '    '",
+            "test_results['result_row'][0]['p_or_f'] = ' '",
+            "test_results['result_row'][1]['feature'] = '    '",
+            "test_results['result_row'][1]['p_or_f'] = ' '",
+        ])
+
+
+class ElementaryOccursMoveRegressionTests(unittest.TestCase):
+    def test_move_space_to_whole_alphanumeric_table_fills_each_occurrence(self):
+        variables = {
+            "WS-RESULTS": cobol2py.CobolVar(
+                level=1, name="WS-RESULTS", pic="X", is_array=True, occurs=3
+            )
+        }
+        translated = cobol2py.translate_move_value("SPACE", "WS-RESULTS", variables)
+        self.assertEqual(translated, "[' '] * 3")
+        compile(translated, "<move-space-table>", "eval")
+        self.assertEqual(eval(translated), [" ", " ", " "])
+
+    def test_move_space_to_one_table_occurrence_stays_scalar(self):
+        variables = {
+            "WS-RESULTS": cobol2py.CobolVar(
+                level=1, name="WS-RESULTS", pic="X", is_array=True, occurs=3
+            )
+        }
+        self.assertEqual(
+            cobol2py.translate_move_value("SPACE", "WS-RESULTS(2)", variables),
+            "' '",
+        )
+
+
+class InitializeOccursGroupRegressionTests(unittest.TestCase):
+    def setUp(self):
+        self.variables = {
+            item.name: item
+            for item in cobol2py.parse_variables([
+                (1, "01 WS-ROWS OCCURS 2 TIMES."),
+                (2, "05 WS-CODE PIC X(3) VALUE 'ABC'."),
+                (2, "05 WS-COUNT PIC 9(2) VALUE 12."),
+            ])
+        }
+
+    def test_initialize_occurs_group_resets_every_row_and_child(self):
+        translated = cobol2py.translate_statement("INITIALIZE WS-ROWS", set(), self.variables)
+        self.assertEqual(translated, [
+            "ws_rows[0]['ws_code'] = '   '",
+            "ws_rows[0]['ws_count'] = 0",
+            "ws_rows[1]['ws_code'] = '   '",
+            "ws_rows[1]['ws_count'] = 0",
+        ])
+        compile("\n".join(translated), "<initialize-occurs-group>", "exec")
+
+    def test_initialize_one_occurs_group_resets_only_selected_row(self):
+        translated = cobol2py.translate_statement("INITIALIZE WS-ROWS(2)", set(), self.variables)
+        self.assertEqual(translated, [
+            "ws_rows[1]['ws_code'] = '   '",
+            "ws_rows[1]['ws_count'] = 0",
+        ])
+        compile("\n".join(translated), "<initialize-one-occurs-group>", "exec")
+
+
+class FillerStorageRegressionTests(unittest.TestCase):
+    def test_repeated_filler_items_get_distinct_storage_keys(self):
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. FILLERTEST.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-REC.",
+            '05 FILLER PIC X(2) VALUE "AB".',
+            "05 WS-TABLE OCCURS 2 TIMES.",
+            '10 FILLER PIC X(3) VALUE "XYZ".',
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "STOP RUN.",
+        ])
+        program = cobol2py.parse_cobol(source, source_format="free")
+        filler_items = [item for item in program.variables if item.name.startswith("FILLER-")]
+        self.assertEqual(len(filler_items), 2)
+        self.assertEqual(len({item.name for item in filler_items}), 2)
+
+        generated = cobol2py.emit_python(program)
+        for item in filler_items:
+            self.assertIn(repr(cobol2py.normalize_name(item.name)), generated)
+        compile(generated, "<filler-storage>", "exec")
+
+
+class AlternateStorageSectionRegressionTests(unittest.TestCase):
+    def test_local_storage_only_program_emits_its_variables(self):
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. LOCALONLY.",
+            "DATA DIVISION.",
+            "LOCAL-STORAGE SECTION.",
+            "01 LS-COUNT PIC 9 VALUE 7.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "DISPLAY LS-COUNT.",
+            "STOP RUN.",
+        ])
+        program = cobol2py.parse_cobol(source, source_format="free")
+        self.assertIn("LS-COUNT", {item.name for item in program.variables})
+        generated = cobol2py.emit_python(program)
+        self.assertIn("ls_count: int = 7", generated)
+        compile(generated, "<local-storage-only>", "exec")
+
+    def test_linkage_only_program_parses_linkage_variables(self):
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. LINKONLY.",
+            "DATA DIVISION.",
+            "LINKAGE SECTION.",
+            "01 LK-COUNT PIC 9.",
+            "PROCEDURE DIVISION USING LK-COUNT.",
+            "MAIN.",
+            "DISPLAY LK-COUNT.",
+            "GOBACK.",
+        ])
+        program = cobol2py.parse_cobol(source, source_format="free")
+        self.assertIn("LK-COUNT", {item.name for item in program.variables})
+        compile(cobol2py.emit_python(program), "<linkage-only>", "exec")
+
+
+class AnnuityIntrinsicRegressionTests(unittest.TestCase):
+    def test_annuity_intrinsic_generates_valid_formula(self):
+        translated = cobol2py.translate_expr("FUNCTION ANNUITY(0.05, 10)")
+        compile(translated, "<annuity-intrinsic>", "eval")
+        self.assertAlmostEqual(eval(translated, {}), 0.05 / (1.0 - (1.05 ** -10)))
+
+    def test_annuity_intrinsic_handles_zero_rate(self):
+        translated = cobol2py.translate_expr("FUNCTION ANNUITY(0, 10)")
+        compile(translated, "<annuity-zero-rate>", "eval")
+        self.assertAlmostEqual(eval(translated, {}), 0.1)
+
+
+class TestNumvalIntrinsicRegressionTests(unittest.TestCase):
+    def test_test_numval_returns_zero_for_numeric_text(self):
+        translated = cobol2py.translate_expr("FUNCTION TEST-NUMVAL('123.45')")
+        compile(translated, "<test-numval-valid>", "eval")
+        self.assertEqual(eval(translated, {}), 0)
+
+    def test_test_numval_returns_first_invalid_character_position(self):
+        translated = cobol2py.translate_expr("FUNCTION TEST-NUMVAL('12X45')")
+        compile(translated, "<test-numval-invalid>", "eval")
+        self.assertEqual(eval(translated, {}), 3)
+
+
+class QualifiedParentSubscriptRegressionTests(unittest.TestCase):
+    def test_qualified_child_uses_subscript_on_parent_table(self):
+        variables = {
+            "TABLE": cobol2py.CobolVar(
+                level=1, name="TABLE", is_group=True, is_array=True, occurs=2
+            ),
+            "PARAM": cobol2py.CobolVar(
+                level=5, name="PARAM", pic="X", parent_name="TABLE"
+            ),
+        }
+        expected = "table[1]['param']"
+        self.assertEqual(
+            cobol2py.normalize_data_reference("PARAM OF TABLE(2)", variables),
+            expected,
+        )
+        self.assertEqual(cobol2py.translate_expr("PARAM OF TABLE(2)", variables), expected)
+
+    def test_qualified_parent_subscript_expression_compiles(self):
+        translated = cobol2py.translate_expr("PARAM OF TABLE(INDEX)")
+        compile(translated, "<qualified-parent-subscript>", "eval")
+        self.assertEqual(translated, "table[int(index) - 1]['param']")
+
+
+class SearchAllNextSentenceRegressionTests(unittest.TestCase):
+    def test_next_sentence_is_not_part_of_search_key_expression(self):
+        variables = {
+            "WS-TABLE": cobol2py.CobolVar(
+                level=1, name="WS-TABLE", is_group=True, is_array=True, occurs=3,
+                ascending_key="WS-KEY", indexed_by="WS-IDX",
+            ),
+            "WS-KEY": cobol2py.CobolVar(
+                level=5, name="WS-KEY", pic="X", parent_name="WS-TABLE"
+            ),
+        }
+        node = cobol2py.Node(
+            kind="search_all",
+            text="SEARCH ALL WS-TABLE",
+            line=10,
+            body=[
+                cobol2py.Node(
+                    kind="when",
+                    text="WS-KEY(WS-IDX) = WS-TARGET NEXT SENTENCE",
+                    line=11,
+                )
+            ],
+        )
+        generated = "\n".join(cobol2py.translate_nodes([node], set(), 0, variables))
+        compile(generated, "<search-all-next-sentence>", "exec")
+        self.assertIn("== ws_target", generated)
+        self.assertNotIn("next sentence", generated.lower())
+
+
+class OrdinalIntrinsicRegressionTests(unittest.TestCase):
+    def test_ord_min_returns_one_based_position_of_first_minimum(self):
+        translated = cobol2py.translate_expr("FUNCTION ORD-MIN(4, 2, 1, 7, 2, 0)")
+        self.assertEqual(eval(translated), 6)
+        compile(translated, "<ord-min>", "eval")
+
+    def test_ord_max_returns_one_based_position_of_first_maximum(self):
+        translated = cobol2py.translate_expr("FUNCTION ORD-MAX(4, 2, 7, 7, 2)")
+        self.assertEqual(eval(translated), 3)
+        compile(translated, "<ord-max>", "eval")

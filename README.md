@@ -6,24 +6,44 @@
 
 La traducción busca **leerse** y, para el subconjunto cubierto por regresiones diferenciales, también ejecutarse. No promete equivalencia completa de COBOL: las construcciones no soportadas quedan documentadas o señaladas explícitamente.
 
-## Roadmap: hito de madurez 0.8
+## Roadmap único de versiones hacia v1.0
 
-El plan inicial de diez días se ha ampliado hasta un hito de ingeniería 0.8: traductor con corpus diferencial acotado, agente multiarchivo, piloto de traducción con comprobación sintáctica, demo web y reportes con clasificación de diagnósticos. **0.8 describe la madurez del flujo de trabajo, no una publicación oficial ni compatibilidad completa con COBOL.** La versión del motor continúa siendo la que declara el encabezado de cobol2py.py.
+Este es el roadmap de producto completo: el hito histórico **v0.2 no es el final**. Los números son hitos de desarrollo previstos, no versiones publicadas automáticamente. La v1.0 permanece bloqueada hasta que se cumplan las puertas de aceptación medibles que se indican aquí.
 
-| Área | Estado actual | Evidencia y límite |
+### Métrica de aceptación de v1.0
+
+**Objetivo: al menos 375/500 (75 %) coincidencias exactas tanto en la muestra primaria como en un holdout disjunto de 500 programas.** Cada coincidencia exige que la traducción termine y que stdout y código de retorno sean idénticos a GnuCOBOL.
+
+- **Línea base externa inicial:** 53/500 (10,60 %).
+- **Última medición externa completa confirmada:** 136/500 (27,20 %) en primaria y 155/500 (31,00 %) en holdout, commit medido `e993037e`, [workflow externo](https://github.com/orbitalronin94/cobol2py/actions/runs/40702665283).
+- **Ganancia confirmada frente a la medición anterior:** +6 casos (+1,20 puntos) en primaria y +7 (+1,40 puntos) en holdout.
+- **Falta para el objetivo:** 239 coincidencias en primaria y 220 en holdout. Hay una medición posterior en curso; no se le atribuye mejora hasta que finalicen ambas muestras.
+- **Límites:** la métrica mide stdout y código de retorno de programas ejecutables del dataset, no equivalencia de archivos, bases de datos, transacciones, interacciones ni todos los dialectos.
+
+### Hitos de versión
+
+| Versión | Objetivo | Estado y criterio de salida |
 |---|---|---|
-| Traductor y benchmark | Base estable para el subconjunto medido | Corpus versionado de 102 casos con GnuCOBOL; no es una estimación de compatibilidad general |
-| Inventario multiarchivo | Implementado con clasificación estática | Dependencias resueltas, sin resolver, ambiguas y CALL dinámicas; los nombres no prueban enlazado en ejecución |
-| Piloto integrado | Informe de esquema v2 | Traducción, sintaxis, clasificación por código/categoría y enlaces exactos a fixtures candidatas; por defecto no ejecuta el código generado |
-| Agente web | Demo heurística local | Selección de archivos, hallazgos y exportación; el análisis web no sustituye al CLI Python |
-| Evidencia de CI | Integrada | CI valida el contrato del informe y publica el informe del piloto como artefacto para revisión |
-| Revisión de los diagnósticos de samples | Triage automatizado: 35 archivos con limitaciones conocidas; 1 falso positivo corregido | El [baseline de triage](docs/pilot-diagnostics-baseline.md) enumera cada fuente. La revisión humana de los 35 casos sigue pendiente |
-| Semántica de control y almacenamiento (objetivo v0.8.x) | Pendiente prioritario: `ALTER`, `GO TO ... DEPENDING ON` y `REDEFINES` | Caso de regresión LABERINTO-COBOL; exige preservar el flujo dinámico y las vistas de almacenamiento compartido, con comparación diferencial frente a GnuCOBOL |
+| **v0.2.0 — trazabilidad con GnuCOBOL** | Capturar trazas y snapshots de variables | Hito histórico completado; no representa el objetivo actual del proyecto |
+| **v0.3.0 — diagnósticos y modo estricto** | Señalar construcciones no soportadas o aproximadas | Implementado inicialmente; falta auditar diagnósticos contra casos reales y reducir falsos positivos/negativos |
+| **v0.4.0 — inventario multiarchivo** | Inventariar COBOL, copybooks, JCL, SQL y dependencias | Primer bloque implementado; falta mejorar resolución estática y documentar casos dinámicos |
+| **v0.5.0 — piloto integrado** | Conectar inventario, traducción del subconjunto y comprobación sintáctica | Implementado como piloto; no es migración autónoma ni prueba de equivalencia |
+| **v0.6.0 — brechas semánticas prioritarias** | Corregir control de flujo y layouts de datos, con regresiones | Base implementada; ampliar overlays, signos, escalas decimales, packed decimal y layouts complejos |
+| **v0.7.0 — cobertura diferencial** | Clasificar discrepancias y añadir regresiones | En curso; priorizar causas raíz que afectan a múltiples programas |
+| **v0.8.0 — medición reproducible** | Benchmark externo determinista, aislamiento, informes y checksums | Infraestructura implementada; mantener informes recuperables y resultados comparables por commit |
+| **v0.9.0 — candidato de release** | Aumentar coincidencias exactas sin cambiar la muestra ni el denominador | Pendiente: alcanzar ≥375/500 en primaria, congelar candidato y validar la muestra disjunta |
+| **v1.0.0 — equivalencia verificada** | Publicar un traductor con resultados reproducibles y límites claros | **No alcanzada.** Requiere ≥75 % en ambas muestras, CI verde, informes publicados y revisión final de regresiones |
 
-El objetivo de cierre de v0.8.x incluye cerrar brechas semánticas de alto impacto antes de ampliar la cobertura: `ALTER` debe cambiar en ejecución el destino del salto asociado, `GO TO ... DEPENDING ON` debe conservar la selección ordinal COBOL (base 1 y comportamiento fuera de rango), y `REDEFINES` debe compartir almacenamiento físico en vez de generar diccionarios independientes. El caso `LABERINTO-COBOL` será una regresión diferencial end-to-end; no se marcará como soportado hasta que coincidan salida y código de retorno con GnuCOBOL y haya pruebas específicas de cada construcción.
+### Plan de ejecución para llegar a v1.0
 
-El roadmap detallado, con los hitos de madurez v0.1–v0.8 y el siguiente ciclo hacia 0.9/1.0, está en [docs/roadmap-two-weeks.md](docs/roadmap-two-weeks.md). La clasificación automática ayuda a priorizar; no declara por sí sola que un hallazgo sea un falso positivo ni que un programa sea seguro para migrar.
+1. **Medir y clasificar:** conservar SHA, checksum, selección, exclusiones y resultado por caso; separar errores del traductor de fallos de referencia.
+2. **Priorizar por impacto:** agrupar fallos por causa raíz (traducción, sintaxis Python, excepción/timeout, stdout o código de retorno) y corregir primero familias frecuentes con soluciones semánticas generales.
+3. **Probar cada corrección:** añadir regresiones mínimas y comparación con GnuCOBOL cuando sea viable; mantener `cobol2py.py` y `web/index.html` sincronizados.
+4. **Repetir la misma medición:** publicar solo ganancias confirmadas, conservar el denominador y registrar también cualquier regresión.
+5. **Validar generalización:** congelar un candidato y comprobar el umbral en la muestra disjunta sin usarla para ajustar las correcciones.
+6. **Autorizar v1.0:** exigir ambas metas, CI completa verde, informes reproducibles, limitaciones documentadas y revisión final de release.
 
+El 75 % es una **puerta de aceptación pendiente**, no una capacidad actual ni una promesa de compatibilidad universal. El calendario operativo y el registro detallado de tareas están en [`docs/roadmap-two-weeks.md`](docs/roadmap-two-weeks.md).
 ---
 
 ## Por qué existe
@@ -41,7 +61,8 @@ El proyecto ha evolucionado desde un traductor de COBOL a Python hacia un reposi
 - **Traductor (`cobol2py.py`)**: recibe un programa COBOL y emite Python o Java. Puede descargarse y utilizarse por sí solo; no necesita `cobol2py_agent.py`.
 - **Agente (`cobol2py_agent.py`)**: inspecciona un repositorio con múltiples programas y artefactos relacionados, y genera un inventario y un plan de migración en Markdown/JSON. No modifica los fuentes.
 - **Piloto integrado (`tools/modernize_pilot.py`)**: conecta inventario y traducción del subconjunto a Python, comprueba sintaxis y crea un informe por archivo. Por defecto no ejecuta el código generado; el flag explícito `--differential` ejecuta únicamente fixtures de ruta exacta y compara stdout/código de retorno con GnuCOBOL.
-- **Evidencia medida**: el piloto traduce 108/108 fuentes de `samples` sin errores de sintaxis ni de traducción. En el modo diferencial opt-in, 102/102 fixtures versionadas coinciden con GnuCOBOL en stdout y código de retorno. Esto no demuestra equivalencia para entradas no medidas ni efectos externos.
+- **Evidencia medida**: el piloto traduce 108/108 fuentes de `samples` sin errores de sintaxis ni de traducción. En el modo diferencial opt-in, 105/105 fixtures versionadas coinciden con GnuCOBOL en stdout y código de retorno. Esto no demuestra equivalencia para entradas no medidas ni efectos externos.
+- **Corpus externo amplio (muestras primaria y holdout)**: el workflow [`external-cobol-corpus`](.github/workflows/external-cobol-corpus.yml) toma dos muestras deterministas disjuntas de 500 fuentes cada una del dataset público [X-COBOL v2](https://zenodo.org/records/14269462), las compara con GnuCOBOL en un contenedor sin red y publica solo hashes y resultados. La línea base externa inicial fue 53/500 coincidencias exactas (10,60 %). La medición externa completa más reciente confirmada es **136/500 (27,20 %) en primaria y 155/500 (31,00 %) en holdout disjunto**, en el workflow [40702665283](https://github.com/orbitalronin94/cobol2py/actions/runs/40702665283), commit `e993037e`. La medición anterior fue 130/500 y 148/500; la ganancia confirmada es +6 y +7 programas, respectivamente. No confundir el éxito del workflow con alcanzar el umbral: siguen faltando 239 coincidencias en primaria y 220 en holdout para llegar a 375/500. Las revisiones posteriores están ejecutando nuevos benchmarks y no se les atribuye mejora hasta que finalicen. Véase [metodología y límites](benchmarks/EXTERNAL_CORPUS.md).
 
 ### Usar solo el traductor
 
@@ -370,39 +391,6 @@ El runner compila cada referencia con el directorio del fuente como ruta de bús
 ```bash
 python benchmarks/run_benchmark.py --translator cobol2py.py
 ```
-
----
-
-## Hoja de ruta
-
-**v0.0.5 — Semántica de datos y regresiones**
-- [x] Ampliar `VALUE` para literales numéricos con signo/decimales y valores figurativos básicos (`SPACE(S)`, `ZERO(ES)`, `HIGH-VALUES`, `LOW-VALUES`, `QUOTE(S)`).
-- [x] Ampliar `MOVE` para campos numéricos con signo y escala decimal, con una fixture diferencial ejecutada contra GnuCOBOL en CI.
-- [x] Añadir pruebas de semántica para campos alfanuméricos, precisión numérica y condiciones; la cobertura de arrays continúa creciendo con el corpus existente.
-
-**v0.0.6 — Control de flujo**
-- [x] Implementar `EVALUATE/WHEN` con pruebas para `WHEN`, `WHEN OTHER` y anidamiento.
-- [x] Sustituir el estado global del árbol por una pila de bloques coherente; cubrir IF anidados y cierres malformados.
-
-**v0.0.7 — Copybook resolver**
-- [x] Localizar `COPY nombre.CPY.` junto al fuente y en rutas explícitas; expandir antes del parseo.
-- [x] Detectar ciclos y dejar constancia de copybooks no resueltos.
-Alcance no cubierto: bibliotecas calificadas y reglas avanzadas de `REPLACING`.
-
-**v0.0.8 — Jerarquía de datos**
-- [x] Modelar grupos COBOL y campos hijos como diccionarios anidados, preservando la relación padre/hijo.
-- [x] Traducir referencias básicas a campos anidados y cualificación `OF/IN`.
-Alcance no cubierto: `REDEFINES`, `RENAMES`, overlays y grupos `OCCURS` complejos.
-
-**v0.1.0 — Salida Java**
-- [x] Reactivar el backend Java sobre el mismo AST y exponer `--lang java`.
-- [x] Añadir fixture y CI que compila el Java generado y compara su salida con GnuCOBOL.
-Alcance no cubierto: el backend Java sigue siendo un subconjunto; construcciones no soportadas se dejan explícitas como comentarios.
-
-**v0.2.0 — Ejecución con GnuCOBOL**
-- [x] Añadir `tools/gnucobol_trace.py`: compila con GnuCOBOL (`-ftraceall`) y ejecuta con trace habilitado.
-- [x] Inyectar snapshots `TRACE_VAR|nombre|valor` para campos escalares, grupos y elementos `OCCURS` (hasta `--max-table-items`, por defecto 1000); los valores los formatea GnuCOBOL.
-- [x] Reportar nombres duplicados y tablas sobre el límite en lugar de omitirlos silenciosamente.
 
 ---
 
