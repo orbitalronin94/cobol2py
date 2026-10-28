@@ -2271,3 +2271,33 @@ class NegatedRelationalPhraseRegressionTests(unittest.TestCase):
         for source, expected in cases.items():
             with self.subTest(source=source):
                 self.assertEqual(cobol2py.translate_condition(source), expected)
+
+
+class EvaluateRelationalWhenRegressionTests(unittest.TestCase):
+    def test_evaluate_supports_is_greater_than_selection(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\n".join([
+            "       IDENTIFICATION DIVISION.",
+            "       PROGRAM-ID. EVALRELATION.",
+            "       DATA DIVISION.",
+            "       WORKING-STORAGE SECTION.",
+            "       01 WS-CODE PIC 9 VALUE 2.",
+            "       PROCEDURE DIVISION.",
+            "       MAIN.",
+            "           EVALUATE WS-CODE",
+            "               WHEN IS GREATER THAN 1",
+            '                   DISPLAY "HIGH".',
+            "               WHEN OTHER",
+            '                   DISPLAY "LOW".',
+            "           END-EVALUATE.",
+            "           STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<evaluate-relational-output>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "HIGH\n", generated)
