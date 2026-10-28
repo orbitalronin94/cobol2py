@@ -2354,3 +2354,32 @@ class TruncatedValueIsClauseRegressionTests(unittest.TestCase):
         self.assertEqual(len(variables), 1)
         self.assertIsNone(variables[0].value)
         self.assertEqual(variables[0].py_default(), repr(" "))
+
+
+class InitializeStatementRegressionTests(unittest.TestCase):
+    def test_initialize_elementary_item_uses_category_default_not_value_clause(self):
+        variables = {
+            item.name: item
+            for item in cobol2py.parse_variables([
+                (1, '01 WS-NAME PIC X(3) VALUE "ABC".')
+            ])
+        }
+        translated = cobol2py.translate_statement("INITIALIZE WS-NAME", set(), variables)
+        self.assertEqual(translated, ["ws_name = '   '"])
+        compile(translated[0], "<initialize-elementary>", "exec")
+
+    def test_initialize_simple_group_resets_alphanumeric_and_numeric_children(self):
+        variables = {
+            item.name: item
+            for item in cobol2py.parse_variables([
+                (1, "01 WS-REC."),
+                (2, "05 WS-NAME PIC X(3) VALUE 'ABC'."),
+                (3, "05 WS-COUNT PIC 9(2) VALUE 12."),
+            ])
+        }
+        translated = cobol2py.translate_statement("INITIALIZE WS-REC", set(), variables)
+        self.assertEqual(
+            translated,
+            ["ws_rec['ws_name'] = '   '", "ws_rec['ws_count'] = 0"],
+        )
+        compile("\\n".join(translated), "<initialize-group>", "exec")
