@@ -2851,6 +2851,71 @@ def emit_reference_modification_move(
     )
 
 
+def emit_corresponding_arithmetic(
+    source_group: str,
+    target_group: str,
+    operator: str,
+    variables: Optional[dict[str, CobolVar]] = None,
+) -> list[str]:
+    """Translate ADD/SUBTRACT CORRESPONDING over matching numeric group leaves."""
+    variable_map = variables or {}
+    source_root_match = re.match(r"[A-Za-z0-9-]+", source_group)
+    target_root_match = re.match(r"[A-Za-z0-9-]+", target_group)
+    if source_root_match is None or target_root_match is None:
+        return []
+    source_root = source_root_match.group(0)
+    target_root = target_root_match.group(0)
+
+    def leaf_paths(
+        group_name: str,
+        group_expr: str,
+        ancestors: set[str],
+    ) -> dict[str, list[tuple[str, CobolVar]]]:
+        paths: dict[str, list[tuple[str, CobolVar]]] = {}
+        if group_name.upper() in ancestors:
+            return paths
+        next_ancestors = ancestors | {group_name.upper()}
+        for item in variable_map.values():
+            if (item.parent_name or "").upper() != group_name.upper():
+                continue
+            child_expr = f"{group_expr}[{normalize_name(item.name)!r}]"
+            if item.is_group:
+                for leaf_name, matches in leaf_paths(
+                    item.name, child_expr, next_ancestors
+                ).items():
+                    paths.setdefault(leaf_name, []).extend(matches)
+            else:
+                paths.setdefault(item.name.upper(), []).append((child_expr, item))
+        return paths
+
+    source_paths = leaf_paths(
+        source_root, normalize_data_reference(source_group, variable_map), set()
+    )
+    target_paths = leaf_paths(
+        target_root, normalize_data_reference(target_group, variable_map), set()
+    )
+    assignments: list[str] = []
+    for leaf_name in sorted(source_paths.keys() & target_paths.keys()):
+        if leaf_name == "FILLER":
+            continue
+        if len(source_paths[leaf_name]) != 1 or len(target_paths[leaf_name]) != 1:
+            continue
+        source_expr, source_var = source_paths[leaf_name][0]
+        target_expr, target_var = target_paths[leaf_name][0]
+        source_pic = (source_var.pic or "").upper()
+        target_pic = (target_var.pic or "").upper()
+        if (
+            "9" not in source_pic
+            or "9" not in target_pic
+            or any(char in source_pic + target_pic for char in ("X", "A"))
+        ):
+            continue
+        expression = f"{target_expr} {operator} {source_expr}"
+        expression = fit_numeric_expression(expression, target_var.name, variable_map)
+        assignments.append(f"{target_expr} = {expression}")
+    return assignments
+
+
 def translate_statement(
     stmt: str,
     paragraphs: set[str],
@@ -3105,6 +3170,25 @@ def translate_statement(
         expression_source = re.sub(r"\s+END-COMPUTE\s*$", "", expression_source, flags=re.IGNORECASE)
         expression = translate_expr(expression_source, variables)
         return [emit_assignment(target, fit_numeric_expression(expression, target, variables or {}), variables)]
+
+    # ADD/SUBTRACT CORRESPONDING operate field-by-field on matching numeric
+    # elementary items; treating CORRESPONDING as an identifier silently
+    # generates NameError at runtime on common record-processing programs.
+    m = re.match(
+        rf"ADD\s+(?:CORRESPONDING|CORR)\s+({DATA_REF_PATTERN})\s+TO\s+({DATA_REF_PATTERN})(?:\s+END-ADD)?$",
+        s, re.IGNORECASE,
+    )
+    if m:
+        assignments = emit_corresponding_arithmetic(m.group(1), m.group(2), "+", variables)
+        return assignments or [f"# ADD CORRESPONDING sin campos numéricos comunes: {m.group(1)} TO {m.group(2)}"]
+
+    m = re.match(
+        rf"SUBTRACT\s+(?:CORRESPONDING|CORR)\s+({DATA_REF_PATTERN})\s+FROM\s+({DATA_REF_PATTERN})(?:\s+END-SUBTRACT)?$",
+        s, re.IGNORECASE,
+    )
+    if m:
+        assignments = emit_corresponding_arithmetic(m.group(1), m.group(2), "-", variables)
+        return assignments or [f"# SUBTRACT CORRESPONDING sin campos numéricos comunes: {m.group(1)} FROM {m.group(2)}"]
 
     # Patch 4: ADD con múltiples operandos
     # ADD ... TO ... GIVING stores the sum in a separate receiving item.
