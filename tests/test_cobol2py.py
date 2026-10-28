@@ -2216,3 +2216,28 @@ class CobolScopeTerminatorRegressionTests(unittest.TestCase):
         with redirect_stdout(output):
             namespace["main"]()
         self.assertEqual(output.getvalue(), "9\n", generated)
+
+
+class CobolDisplayNoAdvancingRegressionTests(unittest.TestCase):
+    def test_with_no_advancing_suppresses_newline_until_next_display(self):
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. DISP-NL.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "DISPLAY 'A' WITH NO ADVANCING",
+            "DISPLAY 'B'",
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<display-no-advancing>", "exec")
+        namespace = {"__name__": "not_main"}
+        exec(generated, namespace)
+        from contextlib import redirect_stdout
+        from io import StringIO
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "AB\n", generated)

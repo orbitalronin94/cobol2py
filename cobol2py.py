@@ -1847,12 +1847,22 @@ def translate_statement(
 
     m = re.match(r"DISPLAY\s+(.+)", s, re.IGNORECASE)
     if m:
-        args = split_cobol_items(m.group(1))
+        display_operands = m.group(1).strip()
+        no_advancing = bool(
+            re.search(r"\s+WITH\s+NO\s+ADVANCING\s*$", display_operands, re.IGNORECASE)
+        )
+        if no_advancing:
+            display_operands = re.sub(
+                r"\s+WITH\s+NO\s+ADVANCING\s*$", "", display_operands, flags=re.IGNORECASE
+            ).rstrip()
+        args = split_cobol_items(display_operands)
         # COBOL DISPLAY concatenates operands. Numeric DISPLAY items also
         # retain the zero-filled width specified by their PIC clause.
         items = ", ".join(
             translate_display_item(a, variables or {}) for a in args
         )
+        if no_advancing:
+            return [f'print("".join([{items}]), end="")']
         return [f'print("".join([{items}]))']
 
     m = re.match(rf"ACCEPT\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
