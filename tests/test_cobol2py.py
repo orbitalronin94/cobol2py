@@ -1690,3 +1690,16 @@ class StandaloneEqualConditionRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_condition("FIM-ARQ EQUAL 1")
         self.assertEqual(translated, "fim_arq == 1")
         compile(translated, "<standalone-equal>", "eval")
+
+
+class MultidimensionalTableReferenceRegressionTests(unittest.TestCase):
+    def test_multiple_numeric_subscripts_become_zero_based_python_indexes(self):
+        translated = cobol2py.translate_expr("ENTRY-2(03, 05)")
+        self.assertEqual(translated, "entry_2[2][4]")
+        compile(translated, "<multi-subscript>", "eval")
+
+    def test_multiple_subscripts_are_accepted_in_data_reference_parser(self):
+        self.assertEqual(
+            cobol2py.normalize_data_reference("ENTRY-2(03, 05)"),
+            "entry_2[2][4]",
+        )
