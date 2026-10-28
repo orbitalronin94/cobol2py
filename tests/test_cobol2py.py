@@ -1819,3 +1819,15 @@ class NestedIntrinsicArgumentRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_expr("FUNCTION PRESENT-VALUE(-0.5, (2 + 3), (6 / 3), (9 - 3))")
         self.assertIn("enumerate(_payments, 1)", translated)
         compile(translated, "<nested-present-value>", "eval")
+
+
+class ReferenceModificationRegressionTests(unittest.TestCase):
+    def test_numeric_reference_modification_becomes_python_slice(self):
+        translated = cobol2py.translate_expr("WS-TEXT(1:2)")
+        self.assertEqual(translated, "ws_text[0:(0) + (2)]")
+        compile(translated, "<reference-modification>", "eval")
+
+    def test_variable_reference_modification_becomes_python_slice(self):
+        translated = cobol2py.translate_expr("WS-TEXT(WS-START:1)")
+        self.assertEqual(translated, "ws_text[ws_start - 1:(ws_start - 1) + (1)]")
+        compile(translated, "<variable-reference-modification>", "eval")
