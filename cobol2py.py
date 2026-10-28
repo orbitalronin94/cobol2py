@@ -2257,7 +2257,7 @@ def split_cobol_items(s: str) -> list[str]:
         if (
             token.upper() == "FUNCTION"
             and i + 1 < len(tokens)
-            and re.match(r"^[A-Za-z][A-Za-z0-9-]*\\s*(?:\\(|\\[)", tokens[i + 1])
+            and re.match(r"^[A-Za-z][A-Za-z0-9-]*\s*(?:\(|\[)", tokens[i + 1])
         ):
             token = f"{token} {tokens[i + 1]}"
             i += 1
