@@ -1531,6 +1531,26 @@ def translate_expr(
         translated,
         flags=re.IGNORECASE,
     )
+
+    # A reference modification may follow an already-translated table/group
+    # reference, e.g. WS-TEXT(WS-I)(WS-J:1). The earlier source-level matcher
+    # only sees a bare COBOL name, so finish the chained slice here.
+    def chained_reference_modification(match: re.Match[str]) -> str:
+        base, start, length = match.group("base", "start", "length")
+        start = start.strip()
+        start_index = str(int(start) - 1) if start.isdigit() else f"({start}) - 1"
+        length = length.strip()
+        if not length:
+            return f"{base}[{start_index}:]"
+        return f"{base}[{start_index}:({start_index}) + ({length})]"
+
+    translated = re.sub(
+        r"(?P<base>[A-Za-z_][A-Za-z0-9_]*(?:\[[^\[\]]+\])*)\s*\(\s*(?P<start>[^():]+)\s*:\s*(?P<length>[^()]*)\)",
+        chained_reference_modification,
+        translated,
+    )
+    # Guard against malformed compound comparisons emitted by dialect variants.
+    translated = translated.replace(">==", ">=").replace("<==", "<=")
     return translated
 
 
