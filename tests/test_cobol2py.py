@@ -1740,6 +1740,10 @@ class EmptyTryRegressionTests(unittest.TestCase):
 
 
 class ExternalCorpusSyntaxRegressionTests(unittest.TestCase):
+    def test_equals_synonym_generates_python_comparison(self):
+        self.assertEqual(cobol2py.translate_condition('OPCAO EQUALS "n"'), 'opcao == "n"')
+        self.assertEqual(cobol2py.translate_condition('OPCAO EQUALS TO "N"'), 'opcao == "N"')
+
     def test_greater_shorthand_condition_generates_python_comparison(self):
         self.assertEqual(cobol2py.translate_condition("RECORD-COUNT GREATER 50"), "record_count > 50")
         self.assertEqual(cobol2py.translate_condition("RECORD-COUNT GREATER THAN 50"), "record_count > 50")
