@@ -2956,3 +2956,34 @@ class GroupToElementaryMoveRegressionTests(unittest.TestCase):
         self.assertIn("test_results['p_or_f']", expression)
         self.assertIn("[:30].ljust(30)", expression)
         compile(expression, "<group-to-elementary-move>", "eval")
+
+
+class GroupToGroupMoveRegressionTests(unittest.TestCase):
+    def test_group_move_to_table_occurrence_copies_storage_without_replacing_row(self):
+        variables = {
+            "SOURCE-GROUP": cobol2py.CobolVar(level=1, name="SOURCE-GROUP", is_group=True),
+            "SRC-TEXT": cobol2py.CobolVar(
+                level=2, name="SRC-TEXT", pic="X(3)", parent_name="SOURCE-GROUP"
+            ),
+            "SRC-NUM": cobol2py.CobolVar(
+                level=2, name="SRC-NUM", pic="99", parent_name="SOURCE-GROUP"
+            ),
+            "TARGET-TABLE": cobol2py.CobolVar(
+                level=1, name="TARGET-TABLE", is_group=True, is_array=True, occurs=2
+            ),
+            "TGT-TEXT": cobol2py.CobolVar(
+                level=2, name="TGT-TEXT", pic="X(3)", parent_name="TARGET-TABLE"
+            ),
+            "TGT-NUM": cobol2py.CobolVar(
+                level=2, name="TGT-NUM", pic="99", parent_name="TARGET-TABLE"
+            ),
+        }
+        translated = cobol2py.translate_group_to_group_move(
+            "SOURCE-GROUP", "TARGET-TABLE(2)", variables
+        )
+        self.assertIsNotNone(translated)
+        joined = "\\n".join(translated or [])
+        self.assertIn("target_table[1]['tgt_text']", joined)
+        self.assertIn("target_table[1]['tgt_num']", joined)
+        self.assertNotIn("target_table[1] = source_group", joined)
+        compile(joined, "<group-to-group-move>", "exec")
