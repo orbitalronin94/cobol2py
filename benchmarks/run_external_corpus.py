@@ -144,7 +144,14 @@ def main() -> int:
                     generated.write_text(translated["stdout"], encoding="utf-8")
                     try: compile(translated["stdout"], str(generated), "exec")
                     except SyntaxError as error:
-                        result.update({"status": "failed", "reason": f"generated Python syntax error: {error.msg}"})
+                        generated_lines = translated["stdout"].splitlines()
+                        offending_line = generated_lines[error.lineno - 1].strip() if error.lineno and error.lineno <= len(generated_lines) else ""
+                        # Keep only a short generated-code excerpt for diagnosis; never publish source corpus text.
+                        excerpt = offending_line[:160].replace("|", "\\|")
+                        diagnostic = f"generated Python syntax error at line {error.lineno}, column {error.offset}: {error.msg}"
+                        if excerpt:
+                            diagnostic += f"; generated line: {excerpt}"
+                        result.update({"status": "failed", "reason": diagnostic})
                     else:
                         candidate = run_process(["python3", "-I", str(generated)], candidate_work, args.translator_timeout)
                         result["candidate_returncode"] = candidate["returncode"]
@@ -184,7 +191,22 @@ def main() -> int:
     for item in report["results"]:
         detail = (item.get("reason") or "Exact stdout and return-code match").replace("|", "\\|").replace("\n", " ")
         lines.append(f"| {item['id']} | {item['source']} | {item['status'].upper()} | {detail} |")
-    lines.extend(["", "See the JSON artifact for source hashes, return codes, and exact match flags.", ""])
+    # Aggregate failure families so a benchmark run points directly to the next fixes.
+    failure_reasons = [item.get("reason") or "" for item in report["results"] if item["status"] != "passed"]
+    syntax_errors = [reason for reason in failure_reasons if reason.startswith("generated Python syntax error")]
+    runtime_mismatches = sum(reason == "stdout or return code differs from GnuCOBOL" for reason in failure_reasons)
+    lines.extend(["", "## Failure summary", "",
+        f"- Generated Python syntax errors: **{len(syntax_errors)}**",
+        f"- Runtime/output mismatches: **{runtime_mismatches}**",
+        f"- Other translator errors/timeouts: **{len(failure_reasons) - len(syntax_errors) - runtime_mismatches}**",
+        "", "### Most frequent syntax diagnostics", ""])
+    diagnostic_counts: dict[str, int] = {}
+    for reason in syntax_errors:
+        message = reason.split("; generated line:", 1)[0]
+        diagnostic_counts[message] = diagnostic_counts.get(message, 0) + 1
+    for message, count in sorted(diagnostic_counts.items(), key=lambda pair: (-pair[1], pair[0]))[:12]:
+        lines.append(f"- **{count}** — {message}")
+    lines.extend(["", "See the JSON artifact for source hashes, return codes, exact match flags, and short generated-line diagnostics.", ""])
     (args.output / "external-corpus-report.md").write_text("\n".join(lines), encoding="utf-8")
     print("\n".join(lines[:18]))
     if not report["target_reached"]:
