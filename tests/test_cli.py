@@ -75,7 +75,7 @@ class CliTests(unittest.TestCase):
             f"expected JSON array on stderr; returncode={result.returncode}, "
             f"stdout={result.stdout!r}, stderr={result.stderr!r}",
         )
-        self.assertTrue(\n            result.stderr,\n            f"expected JSON diagnostics on stderr; returncode={result.returncode}, stdout={result.stdout!r}",\n        )\n        diagnostics = json.loads(result.stderr)
+        diagnostics = json.loads(result.stderr)
         self.assertTrue(diagnostics)
         self.assertIn("OCCURS_DEPENDING_ON_UNSUPPORTED", {item["code"] for item in diagnostics})
         depending_on = next(
