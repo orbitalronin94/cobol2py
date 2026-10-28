@@ -5,7 +5,7 @@ The source archive is an external input and is never copied into the repository.
 Run only in Dockerfile.external, with networking disabled and the checkout read-only.
 """
 from __future__ import annotations
-import argparse, hashlib, json, os, re, shutil, signal, subprocess, tempfile, zipfile
+import argparse, hashlib, json, os, re, selectors, shutil, signal, subprocess, tempfile, time, zipfile
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -13,28 +13,113 @@ ARCHIVE_MD5 = "cbd974caed72b0836777dc2305928ed3"
 ARCHIVE_URL = "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1"
 SOURCE_EXTENSIONS = {".cbl", ".cob", ".cobol"}
 MAX_SOURCE_BYTES = 1_000_000
+MAX_CAPTURE_BYTES = 8 * 1024 * 1024
+MAX_STDERR_BYTES = 1 * 1024 * 1024
 
 def run_process(command: list[str], cwd: Path, timeout: int) -> dict[str, Any]:
-    """Run one untrusted program in its own process group and kill it on timeout."""
+    """Run an untrusted process with a deadline and bounded stdout/stderr capture."""
     try:
-        process = subprocess.Popen(command, cwd=str(cwd), stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8",
-            errors="replace", start_new_session=True,
-            env={"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": str(cwd),
-                 "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8", "TZ": "UTC",
-                 "PYTHONDONTWRITEBYTECODE": "1"})
+        process = subprocess.Popen(
+            command,
+            cwd=str(cwd),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            start_new_session=True,
+            env={
+                "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+                "HOME": str(cwd),
+                "LANG": "C.UTF-8",
+                "LC_ALL": "C.UTF-8",
+                "TZ": "UTC",
+                "PYTHONDONTWRITEBYTECODE": "1",
+            },
+        )
     except OSError as error:
-        return {"launched": False, "returncode": None, "stdout": "", "stderr": str(error), "timeout": False}
+        return {
+            "launched": False, "returncode": None, "stdout": "", "stderr": str(error),
+            "timeout": False, "output_limit": False,
+        }
+
+    buffers = {"stdout": bytearray(), "stderr": bytearray()}
+    caps = {"stdout": MAX_CAPTURE_BYTES, "stderr": MAX_STDERR_BYTES}
+    selector = selectors.DefaultSelector()
+    assert process.stdout is not None and process.stderr is not None
+    selector.register(process.stdout, selectors.EVENT_READ, "stdout")
+    selector.register(process.stderr, selectors.EVENT_READ, "stderr")
+    deadline = time.monotonic() + timeout
+    timed_out = False
+    output_limit = False
+
     try:
-        stdout, stderr = process.communicate(timeout=timeout)
-        return {"launched": True, "returncode": process.returncode, "stdout": stdout,
-                "stderr": stderr, "timeout": False}
-    except subprocess.TimeoutExpired:
-        try: os.killpg(process.pid, signal.SIGKILL)
-        except ProcessLookupError: pass
-        stdout, stderr = process.communicate()
-        return {"launched": True, "returncode": process.returncode, "stdout": stdout or "",
-                "stderr": stderr or "", "timeout": True}
+        while True:
+            if process.poll() is not None and not selector.get_map():
+                break
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                timed_out = True
+                break
+            for key, _ in selector.select(min(remaining, 0.1)):
+                try:
+                    chunk = os.read(key.fd, 65536)
+                except OSError:
+                    chunk = b""
+                if not chunk:
+                    selector.unregister(key.fileobj)
+                    key.fileobj.close()
+                    continue
+                buffer = buffers[key.data]
+                available = caps[key.data] - len(buffer)
+                if len(chunk) > available:
+                    if available > 0:
+                        buffer.extend(chunk[:available])
+                    output_limit = True
+                    break
+                buffer.extend(chunk)
+            if output_limit:
+                break
+
+        if timed_out or output_limit:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            try:
+                process.wait(timeout=1)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+        else:
+            try:
+                process.wait(timeout=max(0.01, deadline - time.monotonic()))
+            except subprocess.TimeoutExpired:
+                timed_out = True
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                process.wait()
+    finally:
+        for key in list(selector.get_map().values()):
+            try:
+                selector.unregister(key.fileobj)
+            except Exception:
+                pass
+            try:
+                key.fileobj.close()
+            except Exception:
+                pass
+        selector.close()
+
+    decode = lambda value: bytes(value).decode("utf-8", errors="replace")
+    return {
+        "launched": True,
+        "returncode": process.returncode,
+        "stdout": decode(buffers["stdout"]),
+        "stderr": decode(buffers["stderr"]),
+        "timeout": timed_out or output_limit,
+        "output_limit": output_limit,
+    }
 
 def candidate_error_context(stderr: str, generated_source: str) -> dict[str, Any]:
     """Return a sanitized generated-code location without exposing string contents."""
