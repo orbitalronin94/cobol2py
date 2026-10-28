@@ -1933,3 +1933,20 @@ class QualifiedDisplayOperandRegressionTests(unittest.TestCase):
             cobol2py.split_cobol_items("WS-NAME OF WS-CUSTOMER ERASE"),
             ["WS-NAME OF WS-CUSTOMER", "ERASE"],
         )
+
+
+class SpaceSeparatedSubscriptRegressionTests(unittest.TestCase):
+    def test_numeric_subscripts_separated_by_spaces(self):
+        self.assertEqual(cobol2py.normalize_data_reference("TABLE(1 2)"), "table[0][1]")
+
+    def test_identifier_subscripts_separated_by_spaces(self):
+        self.assertEqual(
+            cobol2py.normalize_data_reference("TABLE(IDX1 IDX2 IDX3)"),
+            "table[idx_1 - 1][idx_2 - 1][idx_3 - 1]",
+        )
+
+    def test_arithmetic_subscript_is_not_split_on_spaces(self):
+        self.assertEqual(
+            cobol2py.normalize_data_reference("TABLE(IDX + 1)"),
+            "table[idx + 1 - 1]",
+        )
