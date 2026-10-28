@@ -1282,7 +1282,7 @@ def normalize_data_reference(
             # their storage as text; coerce before using Python list indexing.
             return f"int({normalize_name(subscript)}) - 1"
         if re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*\s*[+*/-]\s*[A-Za-z0-9_-]+(?:\s*[+*/-]\s*[A-Za-z0-9_-]+)*", subscript):
-            return f"({translate_expr(subscript, variable_map)}) - 1"
+            return f"{translate_expr(subscript, variable_map)} - 1"
         return f"{normalize_name(subscript)} - 1"
 
     variable = variable_map.get(field_name.upper())
@@ -2199,9 +2199,9 @@ def translate_condition(
     # subject and/or relation operator, e.g. FLAG = "S" OR "N" or N > 10 AND < 21.
     # Expand both forms after tokenization so nested group/table references are safe.
     literal_pattern = r"""(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')"""
-    atom_pattern = r"""(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[-+]?\d+(?:\.\d+)?|[a-z_][a-z0-9_]*(?:\[[^\]]+\])*)"""
+    atom_pattern = r"""(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[-+]?\d+(?:\.\d+)?|(?!and\b|or\b|not\b|is\b)[a-z][a-z0-9_]*(?:\[[^\]]+\])*)"""
     abbreviated = re.compile(
-        r"(?P<lhs>[a-z_][a-z0-9_]*(?:\[[^\]]+\])*(?:\.ljust\(\d+\))?)"
+        r"(?P<lhs>[a-z][a-z0-9_]*(?:\[[^\]]+\])*(?:\.ljust\(\d+\))?)"
         r"\s*(?P<op>==|!=|<=|>=|<|>)\s*(?P<first>" + atom_pattern + r")"
         r"\s+(?P<logic>and|or)\s+(?P<op2>==|!=|<=|>=|<|>)?\s*(?P<second>" + atom_pattern + r")",
         re.IGNORECASE,
