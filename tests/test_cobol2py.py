@@ -1861,3 +1861,15 @@ class ReferenceModificationSliceSemanticsTests(unittest.TestCase):
         translated = cobol2py.translate_expr("WS-TEXT(2:3)")
         self.assertEqual(translated, "ws_text[1:(1) + (3)]")
         self.assertEqual(eval(translated, {"ws_text": "abcdef"}), "bcd")
+
+
+class AbbreviatedRelationOperatorRegressionTests(unittest.TestCase):
+    def test_greater_or_equal_sign_phrase_is_normalized_before_greater(self):
+        translated = cobol2py.translate_condition("WS-NUM GREATER OR = WS-NUM2")
+        self.assertEqual(translated, "ws_num >= ws_num2")
+        compile(translated, "<greater-or-equal>", "eval")
+
+    def test_less_or_equal_sign_phrase_is_normalized_before_less(self):
+        translated = cobol2py.translate_condition("WS-NUM LESS OR = WS-NUM2")
+        self.assertEqual(translated, "ws_num <= ws_num2")
+        compile(translated, "<less-or-equal>", "eval")
