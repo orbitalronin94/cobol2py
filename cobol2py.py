@@ -1305,7 +1305,7 @@ def translate_expr(
     # Resolve a whole qualified identifier before the expression tokenizer sees
     # OF/IN as independent words (which would otherwise become invalid Python).
     if re.fullmatch(
-        r"[A-Za-z0-9-]+(?:\\s*\\([^()]*\\))?(?:\\s+(?:OF|IN)\\s+[A-Za-z0-9-]+(?:\\s*\\([^()]*\\))?)+",
+        r"[A-Za-z0-9-]+(?:\s*\([^()]*\))?(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+(?:\s*\([^()]*\))?)+",
         expr,
         re.IGNORECASE,
     ):
