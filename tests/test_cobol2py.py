@@ -2516,3 +2516,29 @@ class InitializeOccursGroupRegressionTests(unittest.TestCase):
             "ws_rows[1]['ws_count'] = 0",
         ])
         compile("\n".join(translated), "<initialize-one-occurs-group>", "exec")
+
+
+class FillerStorageRegressionTests(unittest.TestCase):
+    def test_repeated_filler_items_get_distinct_storage_keys(self):
+        source = "\\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. FILLERTEST.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-REC.",
+            '05 FILLER PIC X(2) VALUE "AB".',
+            "05 WS-TABLE OCCURS 2 TIMES.",
+            '10 FILLER PIC X(3) VALUE "XYZ".',
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "STOP RUN.",
+        ])
+        program = cobol2py.parse_cobol(source, source_format="free")
+        filler_items = [item for item in program.variables if item.name.startswith("FILLER-")]
+        self.assertEqual(len(filler_items), 2)
+        self.assertEqual(len({item.name for item in filler_items}), 2)
+
+        generated = cobol2py.emit_python(program)
+        for item in filler_items:
+            self.assertIn(repr(cobol2py.normalize_name(item.name)), generated)
+        compile(generated, "<filler-storage>", "exec")
