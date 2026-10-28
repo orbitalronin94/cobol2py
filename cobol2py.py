@@ -1099,7 +1099,7 @@ def translate_expr(
     for tok in tokens:
         if re.fullmatch(r"""[Xx](?:'[0-9A-Fa-f]+'|"[0-9A-Fa-f]+")""", tok):
             out.append(translate_literal(tok, variables))
-        if tok.startswith(('"', "'")):
+        elif tok.startswith(('"', "'")):
             out.append(translate_literal(tok, variables))
         elif tok.lower() in ("and", "or", "not"):
             out.append(tok.lower())
