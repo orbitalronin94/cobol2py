@@ -3583,7 +3583,8 @@ def main() -> int:
     )
     diagnostics = collect_diagnostics(prog, target_language=args.lang)
     if args.diagnostics_json:
-        print(json.dumps(diagnostics, ensure_ascii=False), file=sys.stderr)
+        sys.stderr.write(json.dumps(diagnostics, ensure_ascii=False) + "\n")
+        sys.stderr.flush()
     elif diagnostics and args.strict:
         for diagnostic in diagnostics:
             print(
