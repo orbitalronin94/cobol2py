@@ -2888,7 +2888,7 @@ class WhitespaceSeparatedSubscriptRegressionTests(unittest.TestCase):
 
 class GroupLiteralMoveRegressionTests(unittest.TestCase):
     def test_program_move_to_nested_group_preserves_group_storage(self):
-        source = "\\n".join([
+        source = "\n".join([
             "IDENTIFICATION DIVISION.",
             "PROGRAM-ID. GROUPLITERAL.",
             "DATA DIVISION.",
@@ -2928,7 +2928,7 @@ class GroupLiteralMoveRegressionTests(unittest.TestCase):
             '"CALL-TEST-1"', "PAR-NAME", variables
         )
         self.assertIsNotNone(translated)
-        joined = "\\n".join(translated or [])
+        joined = "\n".join(translated or [])
         self.assertIn("_cobol_group_move_par_name = str('CALL-TEST-1').ljust(22)", joined)
         self.assertIn("test_results['par_name']['filler_100'] = _cobol_group_move_par_name[0:19].ljust(19)", joined)
         self.assertIn("test_results['par_name']['pardot_x'] = _cobol_group_move_par_name[19:20].ljust(1)", joined)
@@ -2982,7 +2982,7 @@ class GroupToGroupMoveRegressionTests(unittest.TestCase):
             "SOURCE-GROUP", "TARGET-TABLE(2)", variables
         )
         self.assertIsNotNone(translated)
-        joined = "\\n".join(translated or [])
+        joined = "\n".join(translated or [])
         self.assertIn("target_table[1]['tgt_text']", joined)
         self.assertIn("target_table[1]['tgt_num']", joined)
         self.assertNotIn("target_table[1] = source_group", joined)
