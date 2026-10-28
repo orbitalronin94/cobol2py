@@ -2730,6 +2730,9 @@ def translate_statement(
         group_fill = translate_group_fill_move(source, target, variable_map)
         if group_fill is not None:
             return group_fill
+        group_literal_move = translate_group_literal_move(source, target, variable_map)
+        if group_literal_move is not None:
+            return group_literal_move
         value = translate_move_value(source, target, variable_map)
         return [emit_assignment(target, value, variables)]
 
