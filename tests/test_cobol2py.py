@@ -2007,6 +2007,21 @@ class NestedAndMiscIntrinsicRegressionTests(unittest.TestCase):
         self.assertEqual(eval(positive), 1)
         self.assertEqual(eval(negative), -1)
 
+    def test_statistical_intrinsics_match_expected_values(self):
+        cases = {
+            "FUNCTION MEAN(1, 2, 6)": 3,
+            "FUNCTION MEDIAN(1, 5, 9)": 5,
+            "FUNCTION MIDRANGE(1, 5, 9)": 5,
+            "FUNCTION RANGE(1, 5, 9)": 8,
+            "FUNCTION SUM(1, 2, 6)": 9,
+            "FUNCTION VARIANCE(1, 2, 3)": 2 / 3,
+            "FUNCTION STANDARD-DEVIATION(1, 2, 3)": (2 / 3) ** 0.5,
+        }
+        for source, expected in cases.items():
+            with self.subTest(source=source):
+                translated = cobol2py.translate_expr(source)
+                self.assertAlmostEqual(eval(translated), expected)
+
     def test_concatenate_intrinsic_becomes_string_join(self):
         translated = cobol2py.translate_expr('FUNCTION CONCATENATE(WS-A, ",")')
         self.assertEqual(translated, """''.join(str(_item) for _item in [ws_a, ","])""")
