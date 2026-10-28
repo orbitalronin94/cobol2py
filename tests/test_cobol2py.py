@@ -3095,7 +3095,7 @@ class StringMultipleSendingOperandsRegressionTests(unittest.TestCase):
         generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
         self.assertNotIn('control_up " - up"', generated)
         self.assertIn("str(control_up)", generated)
-        self.assertIn("str(' - up')", generated)
+        self.assertIn('str(" - up")', generated)
         compile(generated, "<string-shared-delimiter>", "exec")
 
 class TestNumvalIntrinsicRegressionTests(unittest.TestCase):
