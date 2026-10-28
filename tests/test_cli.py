@@ -71,8 +71,8 @@ class CliTests(unittest.TestCase):
         result = self.run_cli(source, "--diagnostics-json", "--strict")
         self.assertEqual(result.returncode, 2)
         self.assertTrue(
-            result.stderr,
-            f"expected JSON on stderr; returncode={result.returncode}, "
+            result.stderr.startswith("["),
+            f"expected JSON array on stderr; returncode={result.returncode}, "
             f"stdout={result.stdout!r}, stderr={result.stderr!r}",
         )
         diagnostics = json.loads(result.stderr)
