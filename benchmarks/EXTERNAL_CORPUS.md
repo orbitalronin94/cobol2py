@@ -39,7 +39,7 @@ The report separately records how many files were discovered, screened, rejected
 
 ## Latest confirmed measurement
 
-The latest fully completed 500 + 500 run is [workflow #40761767797](https://github.com/orbitalronin94/cobol2py/actions/runs/40761767797), measured at commit `e62d8873c48157a2abed7e468894e380e310307f`. A later code revision, `628ccb249f7365b4604f16e90c18aa2abd93e8e9`, has not yet been measured; commits after it on this branch update documentation only.
+The latest fully completed 500 + 500 run is [workflow #40761767797](https://github.com/orbitalronin94/cobol2py/actions/runs/40761767797), measured at commit `e62d8873c48157a2abed7e468894e380e310307f`. Comparing that commit with the current work-branch head shows only documentation and workflow-trigger changes after the measured SHA; translator code is unchanged. Thus 36.40% is representative of the current translator code, although the exact branch-head SHA has not itself been benchmarked.
 
 | Sample | Exact matches | Accuracy |
 |---|---:|---:|
@@ -49,7 +49,7 @@ The latest fully completed 500 + 500 run is [workflow #40761767797](https://gith
 
 Compared with [workflow #40753902144](https://github.com/orbitalronin94/cobol2py/actions/runs/40753902144) at 344/1,000 (34.40%), this latest result gains **20 exact matches (+2.00 percentage points)**. However, the best completed score remains [workflow #40760502862](https://github.com/orbitalronin94/cobol2py/actions/runs/40760502862) at 369/1,000 (36.90%), so the latest run is **5 matches lower (−0.50 points)**: primary fell from 173 to 169 and holdout from 196 to 195. Against the earlier 291/1,000 (29.10%) reference, the latest run is 73 matches higher (+7.30 points).
 
-**Commit caveat:** workflow #40761767797 completed successfully on `e62d8873c48157a2abed7e468894e380e310307f`; its measured combined score is 36.40%, not 36.90%. The work branch has advanced since the measured SHA and still needs its own complete run; do not attribute this score to the current branch head until it is measured. Keep the best observed score (36.90% on #40760502862) separate from the latest completed measurement (36.40%). A green workflow means the benchmark executed successfully; it does not mean all translated programs matched.
+**Commit caveat:** workflow #40761767797 completed successfully on `e62d8873c48157a2abed7e468894e380e310307f`; its measured combined score is 36.40%, not 36.90%. Subsequent commits on the current work branch change only documentation and workflow triggers, not translator code, so the measured score represents the current translator implementation. The exact current branch-head SHA has not itself been benchmarked. Keep the best observed score (36.90% on #40760502862) separate from the latest completed measurement (36.40%). A green workflow means the benchmark executed successfully; it does not mean all translated programs matched.
 
 ## Interpretation limits
 
