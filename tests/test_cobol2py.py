@@ -1859,7 +1859,7 @@ class ReferenceModificationSliceSemanticsTests(unittest.TestCase):
 
     def test_numeric_reference_modification_uses_one_based_cobol_positions(self):
         translated = cobol2py.translate_expr("WS-TEXT(2:3)")
-        self.assertEqual(translated, "ws_text[1:(1) + (3)]")
+        self.assertEqual(translated, "ws_text[1:1 + (3)]")
         self.assertEqual(eval(translated, {"ws_text": "abcdef"}), "bcd")
 
 
