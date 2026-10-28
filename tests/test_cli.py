@@ -56,6 +56,37 @@ class CliTests(unittest.TestCase):
         self.assertIn("OCCURS_DEPENDING_ON_UNSUPPORTED", result.stderr)
         self.assertEqual(result.stdout, "")
 
+    def test_move_into_reference_modification_replaces_field_and_table_element(self):
+        source = "\\n".join([
+            "       IDENTIFICATION DIVISION.",
+            "       PROGRAM-ID. REFMOD.",
+            "       DATA DIVISION.",
+            "       WORKING-STORAGE SECTION.",
+            '       01 WS-TEXT PIC X(5) VALUE "ABCDE".',
+            "       01 WS-TABLE PIC X(5) OCCURS 2 TIMES.",
+            "       PROCEDURE DIVISION.",
+            "       MAIN.",
+            '           MOVE "XY" TO WS-TEXT(2:2).',
+            '           MOVE "12" TO WS-TABLE(1)(2:2).',
+            "           DISPLAY WS-TEXT.",
+            "           DISPLAY WS-TABLE(1).",
+            "           STOP RUN.",
+        ])
+        translated = self.run_cli(source)
+        self.assertEqual(translated.returncode, 0, translated.stderr)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            generated = Path(temp_dir) / "translated.py"
+            generated.write_text(translated.stdout, encoding="utf-8")
+            executed = subprocess.run(
+                [sys.executable, str(generated)],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+        self.assertEqual(executed.returncode, 0, executed.stderr)
+        self.assertEqual(executed.stdout, "AXYDE\\n 12  \\n")
+
     def test_diagnostics_json_is_valid_json_on_stderr(self):
         source = "\n".join([
             "       IDENTIFICATION DIVISION.",
