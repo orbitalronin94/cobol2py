@@ -26,15 +26,15 @@ El hito v0.8.x ya incluye una implementación inicial de `ALTER`, `GO TO ... DEP
 
 ### Estado medido del traductor (benchmark externo)
 
-> **Última línea base externa confirmada en `main`:** ejecución [#40721298984](https://github.com/orbitalronin94/cobol2py/actions/runs/40721298984), commit `0627f8b`, sobre X-COBOL v2. Es una medición anterior a las mejoras de `ACCEPT` en EOF, párrafos que solo contienen sentencias no soportadas y normalización de literales; la nueva medición de esas mejoras está pendiente en GitHub Actions.
+> **Última medición externa completa:** ejecución [#40722539577](https://github.com/orbitalronin94/cobol2py/actions/runs/40722539577), commit `55b8360` (manejo de EOF en `ACCEPT`). El `main` actual también incluye una corrección de párrafos que solo contienen sentencias no soportadas y normalización de literales/identificadores; la nueva medición de esos cambios sigue pendiente en GitHub Actions. No se atribuye todavía una puntuación a cambios que no han terminado el benchmark.
 
-| Métrica X-COBOL v2 | Línea base confirmada | Objetivo de la fase 0.9 |
-|---|---:|---:|
-| Muestra principal | 53/500 (**10,6 %**) | ≥375/500 (**75 %**) |
-| Holdout independiente | 48/500 (**9,6 %**) | ≥375/500 (**75 %**) |
-| Total de ambas muestras | 101/1.000 (**10,1 %**) | ≥750/1.000 (**75 %**), además de superar cada muestra por separado |
+| Métrica X-COBOL v2 | Línea base anterior | Última medición completa | Objetivo de la fase 0.9 |
+|---|---:|---:|---:|
+| Muestra principal | 53/500 (**10,6 %**) | 66/500 (**13,2 %**) | ≥375/500 (**75 %**) |
+| Holdout independiente | 48/500 (**9,6 %**) | 71/500 (**14,2 %**) | ≥375/500 (**75 %**) |
+| Total de ambas muestras | 101/1.000 (**10,1 %**) | 137/1.000 (**13,7 %**) | ≥750/1.000 (**75 %**), además de superar cada muestra por separado |
 
-**Brecha hasta el umbral del 75 %:** 64,4 puntos porcentuales en la muestra principal y 65,4 puntos en holdout. El objetivo del 75 % es un gate de ingeniería del benchmark, no una afirmación de que se soporte el 75 % de todo COBOL existente.
+La mejora medida de `ACCEPT` al llegar EOF es de **+2,6 puntos porcentuales** en la muestra principal y **+4,6 puntos** en holdout; el total combinado subió **+3,6 puntos** (de 10,1 % a 13,7 %). La brecha hasta el umbral del 75 % es ahora 61,8 puntos en la muestra principal y 60,8 puntos en holdout, para esa revisión medida. El objetivo del 75 % es un gate de ingeniería, no una afirmación de compatibilidad con el 75 % de todo COBOL existente.
 
 **Regla para cada mejora incremental:** aceptar una modificación del traductor como mejora demostrada solo si gana al menos **+1 punto porcentual absoluto** en la muestra principal, sin regresiones en el corpus diferencial versionado ni en holdout. Publicaremos siempre coincidencias, denominador, commit y artefactos; si no hay medición comparable, la puntuación de esa versión se marca como pendiente.
 
