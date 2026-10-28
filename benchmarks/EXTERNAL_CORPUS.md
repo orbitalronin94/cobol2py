@@ -39,17 +39,17 @@ The report separately records how many files were discovered, screened, rejected
 
 ## Latest confirmed measurement
 
-The latest fully completed 500 + 500 run is [workflow #40757950854](https://github.com/orbitalronin94/cobol2py/actions/runs/40757950854), measured at commit `eba3b3aacd420c19f6fd4f24d32ad64883d5ebac`.
+The latest fully completed 500 + 500 run is [workflow #40760502862](https://github.com/orbitalronin94/cobol2py/actions/runs/40760502862), measured at commit `0f8817709d3baaaecc7b15c022e6ea7ab96f2542`.
 
 | Sample | Exact matches | Accuracy |
 |---|---:|---:|
-| Primary (first 500 eligible programs) | 162/500 | 32.40% |
-| Disjoint holdout (next 500 eligible programs) | 184/500 | 36.80% |
-| Combined (both samples) | 346/1,000 | 34.60% |
+| Primary (first 500 eligible programs) | 173/500 | 34.60% |
+| Disjoint holdout (next 500 eligible programs) | 196/500 | 39.20% |
+| Combined (both samples) | 369/1,000 | 36.90% |
 
-The immediately preceding complete run, [workflow #40753902144](https://github.com/orbitalronin94/cobol2py/actions/runs/40753902144), scored 161/500 primary and 183/500 holdout (344/1,000 combined, 34.40%). The measured gain is **2 additional exact matches, or +0.20 percentage points combined**. Against the earlier 291/1,000 (29.10%) reference, the increase is 55 exact matches (+5.50 percentage points).
+The immediately preceding complete run, [workflow #40757950854](https://github.com/orbitalronin94/cobol2py/actions/runs/40757950854), scored 162/500 primary and 184/500 holdout (346/1,000 combined, 34.60%). The measured gain is **23 additional exact matches, or +2.30 percentage points combined**: +11 in primary and +12 in holdout. Compared with [workflow #40753902144](https://github.com/orbitalronin94/cobol2py/actions/runs/40753902144) at 344/1,000 (34.40%), the increase is **25 exact matches (+2.50 percentage points)**. Against the earlier 291/1,000 (29.10%) reference, the increase is 78 exact matches (+7.80 percentage points).
 
-**Commit caveat:** the current development branch head is newer than the measured commit. Do not attribute this score to newer commits until both samples of a fresh run have completed. A green workflow means the benchmark executed successfully; it does not mean all translated programs matched.
+**Commit caveat:** newer development revisions have not yet been validated by a completed external run. Workflow [#40761767797](https://github.com/orbitalronin94/cobol2py/actions/runs/40761767797) is still in progress on commit `e62d8873c48157a2abed7e468894e380e310307f`, which is not the current branch head. Do not attribute 36.90% to later commits until both samples complete for the relevant SHA. A green workflow means the benchmark executed successfully; it does not mean all translated programs matched.
 
 ## Interpretation limits
 
