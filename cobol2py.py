@@ -1475,7 +1475,7 @@ def translate_condition(
         # Some legacy sources express a compound relation with an equality
         # marker immediately before GREATER/LESS OR EQUAL. The compound
         # relation is the operator; retaining both creates invalid "== >=".
-        c = re.sub(r"(?<![!<>=])==\\s*(>=|<=)", r"\\1", c)
+        c = re.sub(r"(?<![!<>=])==\s*(>=|<=)", r"\1", c)
 
         # COBOL permits NOT immediately before a comparison operator (NOT =,
         # NOT <, NOT >). Python does not permit infix "not", so invert the
