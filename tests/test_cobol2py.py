@@ -90,6 +90,17 @@ class PreprocessTests(unittest.TestCase):
             ['"DON""T"', "'IT''S OK'"],
         )
 
+    def test_split_cobol_items_keeps_function_intrinsic_as_one_operand(self):
+        self.assertEqual(
+            cobol2py.split_cobol_items('FUNCTION UPPER-CASE("abc") "tail"'),
+            ['FUNCTION UPPER-CASE("abc")', '"tail"'],
+        )
+
+    def test_value_is_without_literal_is_not_parsed_as_value_is(self):
+        variables = cobol2py.parse_variables([(1, "01 WS-N PIC PP99 VALUE IS.")])
+        self.assertEqual(len(variables), 1)
+        self.assertIsNone(variables[0].value)
+
     def test_split_concat_statements_keeps_quoted_text_atomic(self):
         source = 'DISPLAY "MOVE END-IF *> inside" MOVE WS-A TO WS-B'
         self.assertEqual(
