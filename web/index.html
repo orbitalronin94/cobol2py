@@ -362,6 +362,12 @@ class CobolVar:
                         initial = repr("\xff" * width)
                     elif self.value.upper() in ("SPACE", "SPACES"):
                         initial = repr(" " * width)
+                    elif re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", self.value.strip()):
+                        # VALUE clauses are literals, not references to other
+                        # data-names. Treat an unquoted alphanumeric token as
+                        # text rather than emitting an unbound Python variable.
+                        initial = repr(self.value.strip())
+                        initial = f"{initial}[:{width}].ljust({width})"
                     else:
                         initial = f"str({initial})[:{width}].ljust({width})"
         # Numeric VALUE clauses may use COBOL's leading-zero notation
