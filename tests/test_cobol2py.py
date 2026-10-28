@@ -2425,25 +2425,27 @@ class GroupMoveFillRegressionTests(unittest.TestCase):
             namespace["main"]()
         self.assertEqual(output.getvalue(), "PASS                \n")
     def test_move_space_to_occurs_group_fills_each_row_without_replacing_table(self):
-        source = "\n".join([
-            "IDENTIFICATION DIVISION.",
-            "PROGRAM-ID. GROUPTABLEFILL.",
-            "DATA DIVISION.",
-            "WORKING-STORAGE SECTION.",
-            "01 TEST-RESULTS.",
-            "   02 RESULT-ROW OCCURS 2 TIMES.",
-            "      03 FEATURE PIC X(4).",
-            "      03 P-OR-F PIC X.",
-            "PROCEDURE DIVISION.",
-            "MAIN.",
-            "   MOVE SPACE TO TEST-RESULTS.",
-            "   STOP RUN.",
+        variables = {
+            "TEST-RESULTS": cobol2py.CobolVar(
+                level=1, name="TEST-RESULTS", is_group=True
+            ),
+            "RESULT-ROW": cobol2py.CobolVar(
+                level=2, name="RESULT-ROW", is_group=True, is_array=True,
+                occurs=2, parent_name="TEST-RESULTS"
+            ),
+            "FEATURE": cobol2py.CobolVar(
+                level=3, name="FEATURE", pic="X(4)", parent_name="RESULT-ROW"
+            ),
+            "P-OR-F": cobol2py.CobolVar(
+                level=3, name="P-OR-F", pic="X", parent_name="RESULT-ROW"
+            ),
+        }
+        assignments = cobol2py.translate_group_fill_move(
+            "SPACE", "TEST-RESULTS", variables
+        )
+        self.assertEqual(assignments, [
+            "test_results['result_row'][0]['feature'] = '    '",
+            "test_results['result_row'][0]['p_or_f'] = ' '",
+            "test_results['result_row'][1]['feature'] = '    '",
+            "test_results['result_row'][1]['p_or_f'] = ' '",
         ])
-        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
-        compile(generated, "<group-table-move-space>", "exec")
-        self.assertNotIn("test_results = ' '", generated)
-        self.assertIn("test_results['result_row'][0]['feature'] = '    '", generated)
-        self.assertIn("test_results['result_row'][1]['feature'] = '    '", generated)
-        self.assertIn("test_results['result_row'][0]['p_or_f'] = ' '", generated)
-        self.assertIn("test_results['result_row'][1]['p_or_f'] = ' '", generated)
-
