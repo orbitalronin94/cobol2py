@@ -393,37 +393,78 @@ python benchmarks/run_benchmark.py --translator cobol2py.py
 
 ---
 
-## Hoja de ruta
+## Hoja de ruta: de v0.2.0 a v1.0.0
 
-**v0.0.5 — Semántica de datos y regresiones**
-- [x] Ampliar `VALUE` para literales numéricos con signo/decimales y valores figurativos básicos (`SPACE(S)`, `ZERO(ES)`, `HIGH-VALUES`, `LOW-VALUES`, `QUOTE(S)`).
-- [x] Ampliar `MOVE` para campos numéricos con signo y escala decimal, con una fixture diferencial ejecutada contra GnuCOBOL en CI.
-- [x] Añadir pruebas de semántica para campos alfanuméricos, precisión numérica y condiciones; la cobertura de arrays continúa creciendo con el corpus existente.
+Este roadmap distingue lo ya implementado de lo que sigue pendiente. Los números de versión son **hitos de desarrollo previstos**, no implican que cada versión se haya publicado como release. El criterio de salida de v1.0 es la evidencia diferencial externa descrita arriba: **≥75 % de coincidencia exacta en dos muestras disjuntas de 500 programas**.
 
-**v0.0.6 — Control de flujo**
-- [x] Implementar `EVALUATE/WHEN` con pruebas para `WHEN`, `WHEN OTHER` y anidamiento.
-- [x] Sustituir el estado global del árbol por una pila de bloques coherente; cubrir IF anidados y cierres malformados.
+**v0.2.0 — Trazabilidad con GnuCOBOL** · **Completado**
+- [x] Añadir `tools/gnucobol_trace.py` para compilar y ejecutar con trazas.
+- [x] Capturar snapshots `TRACE_VAR|nombre|valor` de campos escalares, grupos y elementos `OCCURS`.
+- [x] Informar de nombres duplicados y tablas por encima del límite de captura.
 
-**v0.0.7 — Copybook resolver**
-- [x] Localizar `COPY nombre.CPY.` junto al fuente y en rutas explícitas; expandir antes del parseo.
-- [x] Detectar ciclos y dejar constancia de copybooks no resueltos.
-Alcance no cubierto: bibliotecas calificadas y reglas avanzadas de `REPLACING`.
+**v0.3.0 — Diagnósticos y modo estricto** · **Implementado; cobertura por ampliar**
+- [x] Emitir diagnósticos JSON y advertencias para construcciones conocidas no soportadas o aproximadas.
+- [x] Añadir `--strict` para poder fallar ante diagnósticos relevantes en vez de aceptar silenciosamente una traducción incompleta.
+- [ ] Auditar las familias de diagnósticos contra ejemplos COBOL reales y reducir falsos positivos/negativos.
+- [ ] Asegurar que cada limitación de alto impacto tenga una prueba de regresión reproducible.
 
-**v0.0.8 — Jerarquía de datos**
-- [x] Modelar grupos COBOL y campos hijos como diccionarios anidados, preservando la relación padre/hijo.
-- [x] Traducir referencias básicas a campos anidados y cualificación `OF/IN`.
-Alcance no cubierto: `REDEFINES`, `RENAMES`, overlays y grupos `OCCURS` complejos.
+**v0.4.0 — Inventario de sistemas multiarchivo** · **Implementado como primer bloque**
+- [x] Inventariar programas, copybooks, JCL, SQL y referencias entre artefactos.
+- [x] Diferenciar referencias resueltas, no resueltas, ambiguas y llamadas dinámicas.
+- [ ] Mejorar resolución de dependencias y documentar los casos dinámicos o específicos de dialecto que no se pueden resolver estáticamente.
 
-**v0.1.0 — Salida Java**
-- [x] Reactivar el backend Java sobre el mismo AST y exponer `--lang java`.
-- [x] Añadir fixture y CI que compila el Java generado y compara su salida con GnuCOBOL.
-Alcance no cubierto: el backend Java sigue siendo un subconjunto; construcciones no soportadas se dejan explícitas como comentarios.
+**v0.5.0 — Piloto integrado de modernización** · **Implementado; no es migración autónoma**
+- [x] Conectar inventario, traducción del subconjunto y comprobación sintáctica en un informe por archivo.
+- [x] Mantener la ejecución diferencial opt-in y limitada a fixtures explícitas.
+- [ ] Mejorar trazabilidad entre diagnóstico, línea fuente, código generado y prueba que respalda la compatibilidad.
+- [ ] No presentar sintaxis válida ni análisis estático como prueba de equivalencia semántica.
 
-**v0.2.0 — Ejecución con GnuCOBOL**
-- [x] Añadir `tools/gnucobol_trace.py`: compila con GnuCOBOL (`-ftraceall`) y ejecuta con trace habilitado.
-- [x] Inyectar snapshots `TRACE_VAR|nombre|valor` para campos escalares, grupos y elementos `OCCURS` (hasta `--max-table-items`, por defecto 1000); los valores los formatea GnuCOBOL.
-- [x] Reportar nombres duplicados y tablas sobre el límite en lugar de omitirlos silenciosamente.
+**v0.6.0 — Cerrar brechas semánticas prioritarias** · **Pendiente**
+- [ ] Implementar y probar el comportamiento dinámico de `ALTER`.
+- [ ] Corregir `GO TO ... DEPENDING ON` para respetar la selección ordinal COBOL (base 1) y el comportamiento fuera de rango.
+- [ ] Modelar `REDEFINES` como almacenamiento compartido, no como campos independientes.
+- [ ] Convertir el caso LABERINTO-COBOL en regresión diferencial end-to-end: salida y código de retorno deben coincidir con GnuCOBOL.
+- [ ] Añadir una regresión específica por construcción antes de declarar soporte.
 
+**v0.7.0 — Cobertura diferencial y errores accionables** · **En curso**
+- [x] Mantener el corpus diferencial versionado y ejecutar las referencias contra GnuCOBOL.
+- [x] Hacer visibles las diferencias de salida y código de retorno en CI.
+- [ ] Ampliar el corpus con casos representativos de las construcciones prioritarias y de errores observados en proyectos reales.
+- [ ] Clasificar cada fallo por causa raíz: traducción, sintaxis Python, excepción/timeout, stdout distinto o código de retorno distinto.
+- [ ] Añadir cada corrección al conjunto de regresiones para evitar que la puntuación suba a costa de romper casos existentes.
+
+**v0.8.0 — Flujo reproducible de benchmark y diagnóstico** · **En curso**
+- [x] Añadir benchmark externo determinista sobre X-COBOL v2, con checksum fijado, contenedor aislado y límites de recursos.
+- [x] Publicar metodología, denominador, exclusiones y límites del conjunto evaluado.
+- [ ] Garantizar que el informe JSON/Markdown y los artefactos se conserven incluso cuando una ejecución falla.
+- [ ] Validar que la infraestructura de CI puede escribir, subir y recuperar los informes; no confundir una ejecución de medición completada con un traductor correcto.
+- [ ] Registrar commit evaluado, checksum del dataset, selección, exclusiones, causas de fallo y tasa exacta en cada iteración.
+
+**v0.9.0 — Candidato hacia el umbral v1.0** · **Pendiente**
+- [ ] Usar la muestra primaria fija de 500 programas para cada iteración y publicar la puntuación real, sin alterar el denominador para mejorar resultados.
+- [ ] Corregir primero las causas raíz que permitan recuperar más casos con cambios semánticos generales, respaldados por regresiones.
+- [ ] Alcanzar y verificar ≥375/500 coincidencias exactas (≥75 %) en la muestra primaria.
+- [ ] Congelar un candidato y evaluar una segunda muestra disjunta de 500 programas, no utilizada para decidir los cambios.
+- [ ] Corregir regresiones y repetir las mediciones; si el umbral no se cumple, v1.0 sigue bloqueada.
+
+**v1.0.0 — Primera versión con umbral de equivalencia verificado** · **No alcanzada**
+- [ ] ≥75 % de equivalencia exacta en la muestra primaria de 500 programas y ≥75 % en la muestra disjunta de validación.
+- [ ] CI obligatorio verde: pruebas unitarias, regresiones diferenciales y validación del formato de los informes.
+- [ ] Informes reproducibles disponibles con revisión de fallos, exclusiones y limitaciones.
+- [ ] Documentación de soporte y diagnósticos alineada con el comportamiento medido; no declarar compatibilidad universal con COBOL.
+- [ ] Revisión final de regresiones y publicación explícita de los resultados. No se declara v1.0 hasta satisfacer todos los criterios anteriores.
+
+### Indicadores que gobiernan el avance
+
+| Indicador | Línea base | Criterio para v1.0 |
+|---|---:|---:|
+| Equivalencia exacta en muestra primaria | 53/500 (10,60 %) | ≥375/500 (≥75 %) |
+| Equivalencia exacta en muestra disjunta | Pendiente de medir | ≥375/500 (≥75 %) |
+| Definición de coincidencia | stdout y código de retorno idénticos a GnuCOBOL | Sin cambios en la métrica |
+| Informes reproducibles | En validación de infraestructura | Disponibles para ambas muestras |
+| Compatibilidad general con COBOL | No demostrada | No se afirma; se documenta el alcance real |
+
+El 75 % es una **meta de aceptación pendiente**, no la capacidad actual del traductor. La muestra externa solo incluye fuentes que compilan y terminan con GnuCOBOL y no representa todos los dialectos, entradas, ficheros, bases de datos ni efectos externos. El roadmap detallado de ejecución y seguimiento está en [`docs/roadmap-two-weeks.md`](docs/roadmap-two-weeks.md).
 ---
 
 ## Filosofía
