@@ -430,6 +430,7 @@ RE_DATA = re.compile(r"DATA\s+DIVISION", re.IGNORECASE)
 RE_PROC = re.compile(r"PROCEDURE\s+DIVISION", re.IGNORECASE)
 RE_PROGRAM_ID = re.compile(r"PROGRAM-ID\.\s*([A-Za-z0-9\-]+)", re.IGNORECASE)
 RE_WORKING_STORAGE = re.compile(r"WORKING-STORAGE\s+SECTION", re.IGNORECASE)
+RE_STORAGE_SECTION = re.compile(r"(?:WORKING-STORAGE|LOCAL-STORAGE|LINKAGE)\s+SECTION", re.IGNORECASE)
 RE_VAR = re.compile(r"^\s*(\d{1,2})\s+([A-Za-z0-9\-]+)\s*(.*?)(?:\.\s*)?$", re.IGNORECASE)
 RE_PIC = re.compile(r"PIC(?:TURE)?\s+(?:IS\s+)?([A-Za-z0-9\(\)VSPX]+)", re.IGNORECASE)
 RE_VALUE = re.compile(
@@ -1058,14 +1059,17 @@ def parse_cobol(
 
     if idx_data >= 0:
         end_data = idx_proc if idx_proc > 0 else len(lines)
-        ws_start = None
+        storage_start = None
         for i in range(idx_data, end_data):
-            if RE_WORKING_STORAGE.search(lines[i][1]):
-                ws_start = i + 1
+            if RE_STORAGE_SECTION.search(lines[i][1]):
+                storage_start = i + 1
                 break
-        if ws_start is not None:
-            prog.variables = parse_variables(lines[ws_start:end_data])
-            prog.condition_names = parse_condition_names(lines[ws_start:end_data])
+        if storage_start is not None:
+            # Some small programs declare storage only in LOCAL-STORAGE or
+            # LINKAGE. Start at the first supported storage section and parse
+            # all subsequent declarations through PROCEDURE DIVISION.
+            prog.variables = parse_variables(lines[storage_start:end_data])
+            prog.condition_names = parse_condition_names(lines[storage_start:end_data])
 
     if idx_proc >= 0:
         proc_lines = lines[idx_proc + 1:]
