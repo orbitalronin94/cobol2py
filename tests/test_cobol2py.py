@@ -1972,3 +1972,20 @@ class NestedAndMiscIntrinsicRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_expr("FUNCTION RANDOM")
         self.assertEqual(translated, "__import__('random').random()")
         compile(translated, "<random-intrinsic>", "eval")
+
+
+class HexadecimalLiteralRegressionTests(unittest.TestCase):
+    def test_hexadecimal_literal_with_double_quotes(self):
+        translated = cobol2py.translate_literal('X"0D"')
+        self.assertEqual(eval(translated), "\\r")
+        compile(translated, "<hex-literal>", "eval")
+
+    def test_hexadecimal_literal_with_single_quotes(self):
+        translated = cobol2py.translate_literal("X'4142'")
+        self.assertEqual(eval(translated), "AB")
+
+    def test_hexadecimal_literal_is_kept_as_one_display_operand(self):
+        items = cobol2py.split_cobol_items('X"0D" ERASE')
+        self.assertEqual(items, ['X"0D"', "ERASE"])
+        translated = cobol2py.translate_statement('DISPLAY X"0D" ERASE', set(), {})
+        compile("\\n".join(translated or []), "<hex-display>", "exec")
