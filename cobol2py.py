@@ -995,15 +995,15 @@ def translate_expr(
         def replacement(match: re.Match[str]) -> str:
             token = match.group(0).upper()
             if token.startswith("LOW-VALUE"):
-                return repr("\\x00")
+                return repr("\x00")
             if token.startswith("HIGH-VALUE"):
-                return repr("\\xff")
+                return repr("\xff")
             if token.startswith("SPACE"):
                 return repr(" ")
             return "0"
 
         return re.sub(
-            r"\\b(?:LOW-VALUES?|HIGH-VALUES?|SPACES?|ZERO(?:S|ES)?)\\b",
+            r"\b(?:LOW-VALUES?|HIGH-VALUES?|SPACES?|ZERO(?:S|ES)?)\b",
             replacement,
             chunk,
             flags=re.IGNORECASE,
