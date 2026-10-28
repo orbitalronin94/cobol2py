@@ -2627,7 +2627,7 @@ class GroupMoveFillRegressionTests(unittest.TestCase):
         statements = cobol2py.translate_group_move("ALL \"A\"", "TARGET-GROUP", variables)
         self.assertIsNotNone(statements)
         namespace = {"target_group": {"target_a": " ", "target_b": "   "}}
-        exec("\\n".join(statements), namespace)
+        exec("\n".join(statements), namespace)
         self.assertEqual(namespace["target_group"], {"target_a": "A", "target_b": "AAA"})
 
     def test_group_to_group_move_copies_bytes_across_different_field_layouts(self):
