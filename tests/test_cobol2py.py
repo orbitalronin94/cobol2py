@@ -6,6 +6,35 @@ import cobol2py
 
 
 class PreprocessTests(unittest.TestCase):
+    def test_decimal_point_is_comma_normalizes_numeric_literals_only(self):
+        source = "\n".join([
+            "SPECIAL-NAMES. DECIMAL-POINT IS COMMA.",
+            "IF AMOUNT > 806,80 DISPLAY \"literal 8,80\".",
+            "COMPUTE TAX = AMOUNT * 0,21.",
+        ])
+
+        self.assertEqual(
+            cobol2py.preprocess(source, source_format="free"),
+            [
+                (1, "SPECIAL-NAMES. DECIMAL-POINT IS COMMA."),
+                (2, 'IF AMOUNT > 806.80 DISPLAY "literal 8,80".'),
+                (3, "COMPUTE TAX = AMOUNT * 0.21."),
+            ],
+        )
+
+    def test_decimal_comma_is_not_enabled_by_comment(self):
+        source = "\n".join([
+            "*> DECIMAL-POINT IS COMMA.",
+            "IF AMOUNT > 806,80 DISPLAY AMOUNT.",
+        ])
+
+        self.assertEqual(
+            cobol2py.preprocess(source, source_format="free"),
+            [
+                (2, "IF AMOUNT > 806,80 DISPLAY AMOUNT."),
+            ],
+        )
+
     def test_fixed_format_with_blank_sequence_area_skips_indicator_comments(self):
         source = "\n".join([
             "       IDENTIFICATION DIVISION.",
