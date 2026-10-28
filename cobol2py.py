@@ -1332,13 +1332,13 @@ def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = No
     abbreviated = re.compile(
         r"(?P<lhs>[a-z_][a-z0-9_]*(?:\[[^\]]+\])*(?:\.ljust\(\d+\))?)"
         r"\s*(?P<op>==|!=|<=|>=|<|>)\s*(?P<first>" + literal_pattern + r")"
-        r"\s+(?P<logic>and|or)\s+(?P<op2>==|!=|<=|>=|<|>)\s*(?P<second>" + literal_pattern + r")",
+        r"\s+(?P<logic>and|or)\s+(?P<op2>==|!=|<=|>=|<|>)?\s*(?P<second>" + literal_pattern + r")",
         re.IGNORECASE,
     )
     translated = abbreviated.sub(
         lambda match: (
             f"{match.group('lhs')} {match.group('op')} {match.group('first')} "
-            f"{match.group('logic')} {match.group('lhs')} {match.group('op2')} {match.group('second')}"
+            f"{match.group('logic')} {match.group('lhs')} {match.group('op2') or match.group('op')} {match.group('second')}"
         ),
         translated,
     )
