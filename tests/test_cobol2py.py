@@ -1942,8 +1942,21 @@ class SpaceSeparatedSubscriptRegressionTests(unittest.TestCase):
     def test_identifier_subscripts_separated_by_spaces(self):
         self.assertEqual(
             cobol2py.normalize_data_reference("TABLE(IDX1 IDX2 IDX3)"),
-            "table[idx1 - 1][idx2 - 1][idx3 - 1]",
+            "table[int(idx1) - 1][int(idx2) - 1][int(idx3) - 1]",
         )
+
+    def test_text_backed_identifier_subscript_is_coerced_to_integer(self):
+        variables = {
+            "TABLE": cobol2py.CobolVar(
+                level=1, name="TABLE", is_array=True, occurs=3
+            ),
+            "WS-INDEX": cobol2py.CobolVar(
+                level=1, name="WS-INDEX", pic="X"
+            ),
+        }
+        translated = cobol2py.normalize_data_reference("TABLE(WS-INDEX)", variables)
+        self.assertEqual(translated, "table[int(ws_index) - 1]")
+        self.assertEqual(eval(translated, {"table": ["A", "B", "C"], "ws_index": "2"}), "B")
 
     def test_arithmetic_subscript_is_not_split_on_spaces(self):
         self.assertEqual(
