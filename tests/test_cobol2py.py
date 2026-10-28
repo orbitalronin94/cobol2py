@@ -1792,3 +1792,18 @@ class CobolOrdinalAndFinanceIntrinsicRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_expr("FUNCTION PRESENT-VALUE(0, 23, 12, 9)")
         self.assertIn("enumerate(_payments, 1)", translated)
         compile(translated, "<present-value-intrinsic>", "eval")
+
+
+class IntrinsicLiteralRoutingRegressionTests(unittest.TestCase):
+    def test_function_intrinsics_pass_through_expression_translation(self):
+        cases = {
+            "FUNCTION LOWER-CASE(WS-NAME)": "(ws_name).lower()",
+            "FUNCTION ASIN(1.0)": "__import__('math').asin(1.0)",
+            "FUNCTION PRESENT-VALUE(0, 23, 12, 9)": None,
+        }
+        for source, expected in cases.items():
+            with self.subTest(source=source):
+                translated = cobol2py.translate_literal(source)
+                if expected is not None:
+                    self.assertEqual(translated, expected)
+                compile(translated, "<intrinsic-literal>", "eval")
