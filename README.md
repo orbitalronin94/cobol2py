@@ -18,11 +18,46 @@ El plan inicial de diez días se ha ampliado hasta un hito de ingeniería 0.8: t
 | Agente web | Demo heurística local | Selección de archivos, hallazgos y exportación; el análisis web no sustituye al CLI Python |
 | Evidencia de CI | Integrada | CI valida el contrato del informe y publica el informe del piloto como artefacto para revisión |
 | Revisión de los diagnósticos de samples | Triage automatizado: 35 archivos con limitaciones conocidas; 1 falso positivo corregido | El [baseline de triage](docs/pilot-diagnostics-baseline.md) enumera cada fuente. La revisión humana de los 35 casos sigue pendiente |
-| Semántica de control y almacenamiento (objetivo v0.8.x) | Pendiente prioritario: `ALTER`, `GO TO ... DEPENDING ON` y `REDEFINES` | Caso de regresión LABERINTO-COBOL; exige preservar el flujo dinámico y las vistas de almacenamiento compartido, con comparación diferencial frente a GnuCOBOL |
+| Semántica de control y almacenamiento (v0.8.x) | Implementación inicial para `ALTER`, `GO TO ... DEPENDING ON` y `REDEFINES` simples | `samples/control_flow_redefines.cbl` y `samples/laberinto_cobol.cbl`; 104/104 casos diferenciales según el roadmap técnico. Overlays con signo, decimales empaquetados, arrays y layouts complejos siguen fuera de cobertura |
 
 El objetivo de cierre de v0.8.x incluye cerrar brechas semánticas de alto impacto antes de ampliar la cobertura: `ALTER` debe cambiar en ejecución el destino del salto asociado, `GO TO ... DEPENDING ON` debe conservar la selección ordinal COBOL (base 1 y comportamiento fuera de rango), y `REDEFINES` debe compartir almacenamiento físico en vez de generar diccionarios independientes. El caso `LABERINTO-COBOL` será una regresión diferencial end-to-end; no se marcará como soportado hasta que coincidan salida y código de retorno con GnuCOBOL y haya pruebas específicas de cada construcción.
 
-El roadmap detallado, con los hitos de madurez v0.1–v0.8 y el siguiente ciclo hacia 0.9/1.0, está en [docs/roadmap-two-weeks.md](docs/roadmap-two-weeks.md). La clasificación automática ayuda a priorizar; no declara por sí sola que un hallazgo sea un falso positivo ni que un programa sea seguro para migrar.
+## Roadmap hacia v1.0
+
+**Objetivo de v1.0:** una versión útil y auditable para migraciones asistidas de un subconjunto COBOL explícitamente definido; no una promesa de compatibilidad universal ni una herramienta que pueda migrar sistemas de producción sin revisión humana.
+
+### Fase 0.9 — Fiabilidad medible (en curso)
+
+- [ ] Mantener una línea base externa reproducible sobre X-COBOL v2, con corpus, checksum, selección de casos y entorno fijados; publicar los informes y conservar muestras de validación independientes.
+- [ ] Priorizar errores frecuentes del benchmark externo por familia (errores de sintaxis generada, nombres/símbolos, semántica de datos, tablas y flujo de control), creando primero una fixture mínima que reproduzca cada fallo.
+- [ ] Aceptar cambios del traductor solo si una comparación repetible muestra una mejora de **al menos 1 punto porcentual absoluto** en la métrica principal del corpus externo, sin regresiones en las fixtures diferenciales versionadas ni en la muestra de validación independiente. Si un cambio no alcanza ese umbral, mantenerlo como experimento, no como mejora demostrada.
+- [ ] Hacer que cada discrepancia indique si procede de la traducción, la compilación/ejecución de referencia o el entorno; no contar referencias inválidas como fallos del candidato.
+- [ ] Mantener `web/index.html` sincronizado con el traductor de CLI y ejecutar la suite en Python 3.10–3.13.
+
+**Criterio de salida:** una secuencia de mejoras pequeñas, reproducibles y comparables; la puntuación y el denominador deben acompañar siempre a cualquier porcentaje publicado.
+
+### Fase 0.9.5 — Contrato de compatibilidad y diagnósticos
+
+- [ ] Definir una matriz pública por construcción COBOL: soportada y probada, parcial, diagnosticada o no soportada.
+- [ ] Evitar que una traducción incompleta parezca completa: mejorar `--strict` y `--diagnostics-json` para exponer construcciones omitidas, aproximaciones semánticas y riesgos detectados.
+- [ ] Ampliar las pruebas diferenciales para las construcciones de mayor frecuencia e impacto; añadir cada nueva capacidad con una fixture positiva y, cuando corresponda, casos de límite/negativos.
+- [ ] Documentar los límites de formatos fixed/free, copybooks, PIC, signo/escala, overlays, operaciones de archivo y llamadas a subprogramas.
+- [ ] Mantener separados los resultados de traducción sintáctica, equivalencia diferencial y cobertura funcional; ninguno sustituye a los otros.
+
+**Criterio de salida:** una persona usuaria puede saber qué se ha traducido, qué se ha probado, qué queda pendiente y por qué no debe confiarse ciegamente en el resultado.
+
+### Fase 1.0 — Primera versión estable del subconjunto declarado
+
+- [ ] Publicar una especificación de alcance con construcciones y dialectos admitidos, ejemplos y limitaciones explícitas.
+- [ ] Cero regresiones en el corpus diferencial versionado y en la suite de unidad; CI obligatorio verde en el commit de publicación.
+- [ ] Alcanzar y sostener un umbral de equivalencia externa acordado a partir de la línea base medida, reportando por separado el conjunto principal y el holdout. No presentar el porcentaje como compatibilidad general de COBOL.
+- [ ] Proporcionar informes reproducibles con versión del traductor, commit, hash del corpus, entorno, denominadores, coincidencias exactas y categorías de fallo.
+- [ ] Verificar los ejemplos de documentación desde cero y publicar instrucciones de instalación/uso, matriz de compatibilidad, notas de versión y procedimiento para informar de discrepancias.
+- [ ] Mantener una lista de riesgos conocidos y una política conservadora: si no se puede traducir con seguridad, emitir un diagnóstico en vez de afirmar equivalencia.
+
+**No es requisito para v1.0:** soporte completo de todos los dialectos, equivalencia de CICS/DB2/IMS, migración autónoma de sistemas empresariales, ni certificación de aptitud para producción sin validación específica.
+
+El roadmap detallado de ingeniería está en [docs/roadmap-two-weeks.md](docs/roadmap-two-weeks.md). La clasificación automática ayuda a priorizar; no declara por sí sola que un hallazgo sea un falso positivo ni que un programa sea seguro para migrar.
 
 ---
 
