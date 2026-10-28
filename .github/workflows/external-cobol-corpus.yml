@@ -20,6 +20,12 @@ on:
 permissions:
   contents: read
 
+# This 500-program benchmark is intentionally expensive. Keep only the newest
+# run for a PR/ref so rapid fix commits do not consume runners on stale revisions.
+concurrency:
+  group: external-cobol-corpus-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   external-corpus:
     runs-on: ubuntu-latest
