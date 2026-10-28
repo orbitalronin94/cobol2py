@@ -2401,6 +2401,11 @@ class CobolSetLevel88RegressionTests(unittest.TestCase):
 
 
 class CompoundRelationEqualityRegressionTests(unittest.TestCase):
+    def test_duplicate_symbolic_equality_is_collapsed(self):
+        translated = cobol2py.translate_condition("WS-INPUT-FILE-FS IS = 0")
+        self.assertEqual(translated, "ws_input_file_fs == 0")
+        compile(translated, "<duplicate-equality>", "eval")
+
     def test_redundant_equality_before_greater_or_equal_is_collapsed(self):
         translated = cobol2py.translate_condition("IRC-PARAMS = GREATER OR EQUAL TO 1")
         self.assertEqual(translated, "irc_params >= 1")
