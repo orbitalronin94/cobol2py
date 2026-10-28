@@ -1188,6 +1188,28 @@ def translate_expr(
     expr: str,
     variables: Optional[dict[str, CobolVar]] = None,
 ) -> str:
+    # COBOL figurative constants must be recognized before hyphenated words
+    # are tokenized as subtraction operators. Rewrite only outside quoted text.
+    def replace_figurative_constants(chunk: str) -> str:
+        def replacement(match: re.Match[str]) -> str:
+            token = match.group(0).upper()
+            if token.startswith("LOW-VALUE"):
+                return repr("\x00")
+            if token.startswith("HIGH-VALUE"):
+                return repr("\xff")
+            if token.startswith("SPACE"):
+                return repr(" ")
+            return "0"
+
+        return re.sub(
+            r"\b(?:LOW-VALUES?|HIGH-VALUES?|SPACES?|ZERO(?:S|ES)?)\b",
+            replacement,
+            chunk,
+            flags=re.IGNORECASE,
+        )
+
+    expr = rewrite_outside_literals(expr, replace_figurative_constants)
+
     # Rewrite qualified data-names first; unqualified child names are resolved
     # through the parsed hierarchy when they are unambiguous in the model.
     expr = re.sub(
@@ -1343,7 +1365,19 @@ def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = No
         c = re.sub(r"\bNOT\b", "not", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\b", "==", c, flags=re.IGNORECASE)
         c = re.sub(r"(?<![!<>=])=(?!=)", "==", c)
-        return c.replace("<>", "!=")
+        c = c.replace("<>", "!=")
+
+        # COBOL permits NOT immediately before a comparison operator (NOT =,
+        # NOT <, NOT >). Python does not permit infix "not", so invert the
+        # operator instead of emitting invalid expressions such as "x not == y".
+        inverse_operator = {"==": "!=", "!=": "==", "<": ">=", ">": "<=", "<=": ">", ">=": "<"}
+        c = re.sub(
+            r"\\bnot\\s*(==|!=|<=|>=|<|>)",
+            lambda match: inverse_operator[match.group(1)],
+            c,
+            flags=re.IGNORECASE,
+        )
+        return c
 
     c = rewrite_outside_literals(cond.strip(), rewrite)
     translated = translate_expr(c, variables)
