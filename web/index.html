@@ -1280,6 +1280,13 @@ def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = No
         finish = r"(?![A-Za-z0-9-])"
         c = re.sub(start + r"AND" + finish, "and", chunk, flags=re.IGNORECASE)
         c = re.sub(start + r"OR" + finish, "or", c, flags=re.IGNORECASE)
+        # COBOL accepts abbreviated negated relational operators such as NOT =,
+        # NOT < and NOT >. Normalize them before EQUAL/LESS/GREATER and NOT
+        # are rewritten independently, otherwise Python receives invalid "not ==".
+        c = re.sub(start + r"IS\s+NOT\s*=" + finish, "!=", c, flags=re.IGNORECASE)
+        c = re.sub(start + r"NOT\s*=" + finish, "!=", c, flags=re.IGNORECASE)
+        c = re.sub(start + r"NOT\s*<" + finish, ">=", c, flags=re.IGNORECASE)
+        c = re.sub(start + r"NOT\s*>" + finish, "<=", c, flags=re.IGNORECASE)
         c = re.sub(start + r"IS\s+NOT\s+EQUAL\s+TO" + finish, "!=", c, flags=re.IGNORECASE)
         c = re.sub(start + r"NOT\s+EQUAL\s+TO" + finish, "!=", c, flags=re.IGNORECASE)
         c = re.sub(start + r"NOT\s+EQUAL" + finish, "!=", c, flags=re.IGNORECASE)
