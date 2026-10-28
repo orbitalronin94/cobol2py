@@ -1317,7 +1317,7 @@ def translate_expr(
         expr,
         flags=re.IGNORECASE,
     )
-    intrinsic_names = {"NUMVAL", "NUMVAL-C", "LOWER-CASE", "UPPER-CASE", "TRIM", "LENGTH", "ABS", "ACOS", "ASIN", "ATAN", "COS", "EXP", "LOG", "LOG10", "SIN", "SQRT", "TAN", "MIN", "MAX", "COBOL-MIN", "COBOL-MAX", "PRESENT-VALUE", "INTEGER", "INTEGER-PART", "ORD", "CHAR", "MOD", "CONCATENATE", "RANDOM"}
+    intrinsic_names = {"NUMVAL", "NUMVAL-C", "LOWER-CASE", "UPPER-CASE", "TRIM", "LENGTH", "ABS", "ACOS", "ASIN", "ATAN", "COS", "EXP", "LOG", "LOG10", "SIN", "SQRT", "TAN", "MIN", "MAX", "COBOL-MIN", "COBOL-MAX", "PRESENT-VALUE", "INTEGER", "INTEGER-PART", "ORD", "CHAR", "MOD", "CONCATENATE", "RANDOM", "DATE-OF-INTEGER", "INTEGER-OF-DATE", "DAY-OF-INTEGER", "INTEGER-OF-DAY", "SECONDS-PAST-MIDNIGHT"}
     # COBOL reference modification uses 1-based (start:length) positions.
     # Convert the start to a zero-based Python offset and retain the requested
     # character count as the slice end.
@@ -2019,6 +2019,13 @@ def translate_statement(
                 value = f"int(_cobol_accept_value) % (10 ** {digits})"
             return ["_cobol_accept_value = _cobol_input('0')", emit_assignment(target, value, variables)]
         return [f"{target_expr} = _cobol_input()"]
+
+    m = re.fullmatch(r"SET\s+([A-Za-z0-9-]+)\s+TO\s+TRUE", s, re.IGNORECASE)
+    if m and condition_names:
+        condition = condition_names.get(m.group(1).upper())
+        if condition and condition[1]:
+            parent_name, allowed_values = condition
+            return [emit_assignment(parent_name, translate_literal(allowed_values[0][0], variables), variables)]
 
     m = re.fullmatch(rf"SET\s+({DATA_REF_PATTERN})\s+TO\s+(.+)", s, re.IGNORECASE)
     if m:
