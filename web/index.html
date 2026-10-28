@@ -1899,6 +1899,65 @@ def fit_numeric_expression(expression: str, target: str, variables: dict[str, Co
     return f"int({expression}) % (10 ** {digits})"
 
 
+def translate_group_fill_move(source: str, target: str, variables: dict[str, CobolVar]) -> Optional[list[str]]:
+    """Translate MOVE of a figurative constant to a group without replacing its structure."""
+    figuratives = {
+        "SPACE": " ",
+        "SPACES": " ",
+        "LOW-VALUE": "\x00",
+        "LOW-VALUES": "\x00",
+        "HIGH-VALUE": "\xff",
+        "HIGH-VALUES": "\xff",
+    }
+    fill_char = figuratives.get(source.strip().upper())
+    if fill_char is None:
+        return None
+    target_match = re.match(r"([A-Za-z0-9-]+)", target.strip())
+    if target_match is None:
+        return None
+    root = variables.get(target_match.group(1).upper())
+    if root is None or not root.is_group or root.is_array:
+        return None
+
+    assignments: list[str] = []
+    target_expr = normalize_data_reference(target, variables)
+
+    def field_width(variable: CobolVar) -> int:
+        if variable.pic:
+            width = pic_character_count(variable.pic)
+            if width:
+                return width
+            digits = pic_digit_count(variable.pic)
+            if digits:
+                return digits
+        return 1
+
+    def visit(group: CobolVar, group_expr: str, ancestors: set[str]) -> None:
+        if group.name.upper() in ancestors:
+            return
+        next_ancestors = ancestors | {group.name.upper()}
+        children = [
+            child for child in variables.values()
+            if (child.parent_name or "").upper() == group.name.upper()
+        ]
+        for child in children:
+            child_expr = f"{group_expr}[{normalize_name(child.name)!r}]"
+            if child.is_group and not child.is_array:
+                visit(child, child_expr, next_ancestors)
+                continue
+            # OCCURS groups need per-row field paths; avoid replacing their
+            # structured representation with a scalar.
+            if child.is_group and child.is_array:
+                continue
+            value = repr(fill_char * field_width(child))
+            if child.is_array:
+                value = f"[{value}] * {child.occurs}" if child.occurs else "[]"
+            assignments.append(f"{child_expr} = {value}")
+
+    visit(root, target_expr, set())
+    return assignments or None
+
+
 def translate_move_value(source: str, target: str, variables: dict[str, CobolVar]) -> str:
     """Translate MOVE with basic receiving-field size semantics.
 
@@ -2239,8 +2298,12 @@ def translate_statement(
 
     m = re.match(rf"MOVE\s+(.+?)\s+TO\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
-        target = m.group(2)
-        value = translate_move_value(m.group(1), target, variables or {})
+        source, target = m.groups()
+        variable_map = variables or {}
+        group_fill = translate_group_fill_move(source, target, variable_map)
+        if group_fill is not None:
+            return group_fill
+        value = translate_move_value(source, target, variable_map)
         return [emit_assignment(target, value, variables)]
 
     m = re.match(rf"COMPUTE\s+({DATA_REF_PATTERN})\s*=\s*(.+)", s, re.IGNORECASE)
