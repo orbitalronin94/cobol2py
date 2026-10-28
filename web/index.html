@@ -2362,6 +2362,75 @@ def translate_group_fill_move(source: str, target: str, variables: dict[str, Cob
     return assignments or None
 
 
+def translate_group_literal_move(source: str, target: str, variables: dict[str, CobolVar]) -> Optional[list[str]]:
+    """Move a literal into a group by distributing its bytes across elementary fields."""
+    target_match = re.fullmatch(r"([A-Za-z0-9-]+)", target.strip())
+    if target_match is None:
+        return None
+    root = variables.get(target_match.group(1).upper())
+    if root is None or not root.is_group:
+        return None
+    raw = source.strip()
+    if not (len(raw) >= 2 and raw[0] in ("'", '"') and raw[-1] == raw[0]):
+        return None
+
+    target_expr = normalize_data_reference(target, variables)
+    root_name = normalize_name(root.name)
+    temp_name = f"_cobol_group_move_{root_name}"
+    total_width = 0
+
+    def width_of(variable: CobolVar) -> int:
+        if variable.pic:
+            width = pic_character_count(variable.pic) or pic_digit_count(variable.pic)
+            if width:
+                return width
+        return 1
+
+    def leaves(group: CobolVar, group_expr: str, ancestors: set[str]):
+        if group.name.upper() in ancestors:
+            return
+        next_ancestors = ancestors | {group.name.upper()}
+        children = [
+            child for child in variables.values()
+            if (child.parent_name or "").upper() == group.name.upper()
+        ]
+        for child in children:
+            child_expr = f"{group_expr}[{normalize_name(child.name)!r}]"
+            if child.is_group:
+                if child.is_array:
+                    for index in range(child.occurs or 0):
+                        yield from leaves(child, f"{child_expr}[{index}]", next_ancestors)
+                else:
+                    yield from leaves(child, child_expr, next_ancestors)
+            elif child.is_array:
+                for index in range(child.occurs or 0):
+                    yield (f"{child_expr}[{index}]", child, width_of(child))
+            else:
+                yield (child_expr, child, width_of(child))
+
+    assignments: list[str] = []
+    offset = 0
+    for field_expr, field, width in leaves(root, target_expr, set()):
+        chunk = f"{temp_name}[{offset}:{offset + width}]"
+        pic = (field.pic or "").upper()
+        if "X" in pic or "A" in pic:
+            value = f"{chunk}.ljust({width})"
+        elif "V" in pic:
+            scale = pic_digit_count(pic.split("V", 1)[1])
+            divisor = 10 ** scale
+            value = f"(int(({chunk}).strip() or '0') / {divisor})"
+        elif "9" in pic:
+            value = f"int(({chunk}).strip() or '0')"
+        else:
+            value = f"{chunk}.ljust({width})"
+        assignments.append(f"{field_expr} = {value}")
+        offset += width
+
+    if not assignments:
+        return None
+    return [f"{temp_name} = str({translate_literal(raw, variables)}).ljust({offset})", *assignments]
+
+
 def translate_move_value(source: str, target: str, variables: dict[str, CobolVar]) -> str:
     """Translate MOVE with basic receiving-field size semantics.
 
@@ -2860,6 +2929,9 @@ def translate_statement(
         group_fill = translate_group_fill_move(source, target, variable_map)
         if group_fill is not None:
             return group_fill
+        group_literal_move = translate_group_literal_move(source, target, variable_map)
+        if group_literal_move is not None:
+            return group_literal_move
         value = translate_move_value(source, target, variable_map)
         return [emit_assignment(target, value, variables)]
 
