@@ -1300,30 +1300,30 @@ def translate_statement(
         base = re.match(r"[A-Za-z0-9-]+", target)
         variable = variables.get(base.group(0).upper()) if base and variables else None
         if variable is None or not variable.pic:
-            return [emit_assignment(target, "input()", variables)]
+            return [emit_assignment(target, "_cobol_input()", variables)]
         pic = variable.pic.upper()
         if any(char in pic for char in ("X", "A")):
             width = pic_character_count(pic)
             if width:
-                return [emit_assignment(target, f"str(input())[:{width}].ljust({width})", variables)]
-            return [f"{target_expr} = input()"]
+                return [emit_assignment(target, f"str(_cobol_input())[:{width}].ljust({width})", variables)]
+            return [f"{target_expr} = _cobol_input()"]
         if "9" in pic:
             digits = pic_digit_count(pic)
             if "V" in pic:
                 scale = pic_digit_count(pic.split("V", 1)[1])
                 factor = 10 ** scale
                 value = (
-                    f"(-1 if float(_cobol_accept_value) < 0 else 1) * "
+                    f"(-1 if float(_cobol_accept_value or '0') < 0 else 1) * "
                     f"((int(abs(float(_cobol_accept_value)) * {factor}) % (10 ** {digits})) / {factor})"
                 )
             elif "S" in pic:
                 value = (
-                    f"(-1 if int(_cobol_accept_value) < 0 else 1) * "
+                    f"(-1 if int(_cobol_accept_value or '0') < 0 else 1) * "
                     f"(abs(int(_cobol_accept_value)) % (10 ** {digits}))"
                 )
             else:
                 value = f"int(_cobol_accept_value) % (10 ** {digits})"
-            return ["_cobol_accept_value = input()", emit_assignment(target, value, variables)]
+            return ["_cobol_accept_value = _cobol_input()", emit_assignment(target, value, variables)]
         return [f"{target_expr} = input()"]
 
     m = re.fullmatch(rf"SET\s+({DATA_REF_PATTERN})\s+TO\s+(.+)", s, re.IGNORECASE)
@@ -2150,6 +2150,12 @@ def emit_python(prog: Program) -> str:
     lines.append("class _CobolStopRun(Exception):")
     lines.append('    """Internal signal for COBOL STOP RUN; caught by the entry paragraph."""')
     lines.append("    pass")
+    lines.append("")
+    lines.append("def _cobol_input():")
+    lines.append("    try:")
+    lines.append("        return input()")
+    lines.append("    except EOFError:")
+    lines.append('        return ""')
     lines.append("")
     lines.append("class _CobolGoTo(Exception):")
     lines.append("    def __init__(self, target):")
