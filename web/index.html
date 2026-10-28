@@ -2344,6 +2344,115 @@ def translate_group_fill_move(source: str, target: str, variables: dict[str, Cob
     return assignments or None
 
 
+def translate_group_move(source: str, target: str, variables: dict[str, CobolVar]) -> Optional[list[str]]:
+    """Move bytes between simple COBOL groups without replacing their dict storage.
+
+    COBOL group moves copy a contiguous byte sequence, not Python dictionaries.
+    Flatten the source leaves in declaration order, then distribute those bytes
+    across the receiving group's elementary fields. Overlays are left to the
+    dedicated storage-overlay path rather than guessed here.
+    """
+    target_match = re.match(r"([A-Za-z0-9-]+)", target.strip())
+    source_match = re.match(r"([A-Za-z0-9-]+)", source.strip())
+    if target_match is None:
+        return None
+    target_root = variables.get(target_match.group(1).upper())
+    if target_root is None or not target_root.is_group:
+        return None
+
+    source_root = variables.get(source_match.group(1).upper()) if source_match else None
+
+    def descendants(root: CobolVar) -> list[CobolVar]:
+        found: list[CobolVar] = []
+        pending = [root.name.upper()]
+        while pending:
+            parent = pending.pop()
+            children = [
+                item for item in variables.values()
+                if (item.parent_name or "").upper() == parent
+            ]
+            found.extend(children)
+            pending.extend(item.name.upper() for item in children if item.is_group)
+        return found
+
+    # REDEFINES shares bytes with another view. Do not flatten such layouts
+    # independently, because doing so would double-count the overlaid storage.
+    if any(item.redefines for item in descendants(target_root)):
+        return None
+    if source_root is not None and source_root.is_group:
+        if any(item.redefines for item in descendants(source_root)):
+            return None
+
+    def width(variable: CobolVar) -> int:
+        if variable.pic:
+            if any(char in variable.pic.upper() for char in "XA"):
+                return max(1, pic_character_count(variable.pic))
+            return max(1, pic_digit_count(variable.pic))
+        return 1
+
+    def leaves(group: CobolVar, expression: str, ancestors: set[str]) -> list[tuple[str, CobolVar]]:
+        if group.name.upper() in ancestors:
+            return []
+        next_ancestors = ancestors | {group.name.upper()}
+        result: list[tuple[str, CobolVar]] = []
+        children = [
+            item for item in variables.values()
+            if (item.parent_name or "").upper() == group.name.upper()
+        ]
+        for child in children:
+            child_expr = f"{expression}[{normalize_name(child.name)!r}]"
+            if child.is_group:
+                if child.is_array:
+                    for index in range(child.occurs or 0):
+                        result.extend(leaves(child, f"{child_expr}[{index}]", next_ancestors))
+                else:
+                    result.extend(leaves(child, child_expr, next_ancestors))
+            elif child.is_array:
+                for index in range(child.occurs or 0):
+                    result.append((f"{child_expr}[{index}]", child))
+            else:
+                result.append((child_expr, child))
+        return result
+
+    target_expression = normalize_data_reference(target, variables)
+    if target_root.is_array and not re.search(r"\(\s*[^)]*\)", target.strip()):
+        # An unsubscripted OCCURS group denotes the whole table, not one row.
+        return None
+    target_leaves = leaves(target_root, target_expression, set())
+    if not target_leaves:
+        return None
+    target_width = sum(width(item) for _, item in target_leaves)
+
+    if source_root is not None and source_root.is_group:
+        source_expression = normalize_data_reference(source, variables)
+        source_leaves = leaves(source_root, source_expression, set())
+        if not source_leaves:
+            return None
+        source_parts: list[str] = []
+        for expression, variable in source_leaves:
+            item_width = width(variable)
+            if variable.pic and any(char in variable.pic.upper() for char in "XA"):
+                source_parts.append(f"str({expression})[:{item_width}].ljust({item_width})")
+            else:
+                source_parts.append(f"str({expression}).zfill({item_width})[-{item_width}:]")
+        source_bytes = " + ".join(source_parts)
+    else:
+        source_bytes = f"str({translate_expr(source, variables)})"
+
+    statements = [f"_cobol_group_move_value = ({source_bytes})[:{target_width}].ljust({target_width})"]
+    offset = 0
+    for expression, variable in target_leaves:
+        item_width = width(variable)
+        chunk = f"_cobol_group_move_value[{offset}:{offset + item_width}]"
+        if variable.pic and any(char in variable.pic.upper() for char in "XA"):
+            value = f"{chunk}.ljust({item_width})"
+        else:
+            value = f"int(({chunk}).strip() or '0')"
+        statements.append(f"{expression} = {value}")
+        offset += item_width
+    return statements
+
+
 def translate_move_value(source: str, target: str, variables: dict[str, CobolVar]) -> str:
     """Translate MOVE with basic receiving-field size semantics.
 
@@ -2748,6 +2857,9 @@ def translate_statement(
         group_fill = translate_group_fill_move(source, target, variable_map)
         if group_fill is not None:
             return group_fill
+        group_move = translate_group_move(source, target, variable_map)
+        if group_move is not None:
+            return group_move
         value = translate_move_value(source, target, variable_map)
         return [emit_assignment(target, value, variables)]
 
