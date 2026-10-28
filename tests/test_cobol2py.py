@@ -3014,3 +3014,10 @@ class GroupToGroupProgramRegressionTests(unittest.TestCase):
         self.assertIn("target_table[1]['tgt_text']", generated)
         self.assertIn("target_table[1]['tgt_num']", generated)
         self.assertNotIn("target_table[1] = source_group", generated)
+
+
+class WhitespaceSeparatedIntrinsicRegressionTests(unittest.TestCase):
+    def test_max_intrinsic_separates_whitespace_delimited_arguments(self):
+        translated = cobol2py.translate_expr("FUNCTION MAX(4 0 5 3 7)")
+        self.assertEqual(eval(translated), 7)
+        compile(translated, "<max-intrinsic>", "eval")
