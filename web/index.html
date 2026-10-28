@@ -1810,8 +1810,26 @@ def translate_condition(
                         )
                 if alternatives:
                     replacement = "(" + " or ".join(alternatives) + ")"
+                    # A qualified level-88 reference (NAME OF parent) must
+                    # consume its qualifier together with the condition name.
+                    # Otherwise the leftover "OF parent" is later tokenized as
+                    # part of an invalid expression (e.g. 0_(parent == value)).
+                    qualified_pattern = (
+                        rf"\b{re.escape(condition_name)}\b\s+(?:OF|IN)\s+"
+                        rf"{re.escape(parent_name)}\b"
+                    )
                     chunk = re.sub(
-                        rf"\b{re.escape(condition_name)}\b",
+                        qualified_pattern,
+                        lambda _: replacement,
+                        chunk,
+                        flags=re.IGNORECASE,
+                    )
+                    unqualified_pattern = (
+                        rf"\b{re.escape(condition_name)}\b"
+                        rf"(?!\s+(?:OF|IN)\b)"
+                    )
+                    chunk = re.sub(
+                        unqualified_pattern,
                         lambda _: replacement,
                         chunk,
                         flags=re.IGNORECASE,
