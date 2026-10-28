@@ -2147,3 +2147,15 @@ class CobolSetLevel88RegressionTests(unittest.TestCase):
         with redirect_stdout(output):
             namespace["main"]()
         self.assertEqual(output.getvalue(), "OK\n", generated)
+
+
+class CompoundRelationEqualityRegressionTests(unittest.TestCase):
+    def test_redundant_equality_before_greater_or_equal_is_collapsed(self):
+        translated = cobol2py.translate_condition("IRC-PARAMS = GREATER OR EQUAL TO 1")
+        self.assertEqual(translated, "irc_params >= 1")
+        compile(translated, "<compound-relation-equality>", "eval")
+
+    def test_redundant_equality_before_less_or_equal_is_collapsed(self):
+        translated = cobol2py.translate_condition("IRC-PARAMS = LESS OR EQUAL TO 1")
+        self.assertEqual(translated, "irc_params <= 1")
+        compile(translated, "<compound-relation-equality>", "eval")
