@@ -1725,7 +1725,7 @@ def translate_group_fill_move(source: str, target: str, variables: dict[str, Cob
     # A subscripted group reference names one occurrence. An unsubscripted
     # OCCURS group names the whole table, so fill each row without replacing
     # the list-of-dictionaries storage with a scalar string.
-    has_explicit_subscript = bool(re.search(r"\\(\\s*[^)]*\\)", target.strip()))
+    has_explicit_subscript = bool(re.search(r"\(\s*[^)]*\)", target.strip()))
     if root.is_array and not has_explicit_subscript and not root.occurs:
         return None
 
