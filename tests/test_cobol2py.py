@@ -2159,3 +2159,10 @@ class CompoundRelationEqualityRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_condition("IRC-PARAMS = LESS OR EQUAL TO 1")
         self.assertEqual(translated, "irc_params <= 1")
         compile(translated, "<compound-relation-equality>", "eval")
+
+
+class SemicolonSeparatedSubscriptRegressionTests(unittest.TestCase):
+    def test_semicolon_separated_table_subscripts_become_valid_python_indexes(self):
+        translated = cobol2py.translate_expr("GRP-TAB2(S21; S22)")
+        self.assertEqual(translated, "grp_tab2[s21 - 1][s22 - 1]")
+        compile(translated, "<semicolon-subscript>", "eval")
