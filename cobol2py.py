@@ -1066,7 +1066,7 @@ def translate_expr(
             return f"{base_expr}[{start_index}:]"
         length = length.strip()
         length_expr = str(int(length)) if length.isdigit() else normalize_data_reference(length, variables)
-        return f"{base_expr}[{start_index}:({start_index}) + ({length_expr})]"
+        return f"{base_expr}[{start_index}:{start_index} + ({length_expr})]"
 
     expr = re.sub(
         r"\b([A-Za-z][A-Za-z0-9-]*)\s*\(\s*([^():]+)\s*:\s*([^()]*)\)",
