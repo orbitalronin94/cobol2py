@@ -1977,7 +1977,7 @@ class NestedAndMiscIntrinsicRegressionTests(unittest.TestCase):
 class HexadecimalLiteralRegressionTests(unittest.TestCase):
     def test_hexadecimal_literal_with_double_quotes(self):
         translated = cobol2py.translate_literal('X"0D"')
-        self.assertEqual(eval(translated), "\\r")
+        self.assertEqual(eval(translated), "\r")
         compile(translated, "<hex-literal>", "eval")
 
     def test_hexadecimal_literal_with_single_quotes(self):
