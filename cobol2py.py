@@ -1180,7 +1180,7 @@ def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = No
         # operator instead of emitting invalid expressions such as "x not == y".
         inverse_operator = {"==": "!=", "!=": "==", "<": ">=", ">": "<=", "<=": ">", ">=": "<"}
         c = re.sub(
-            r"\\bnot\\s*(==|!=|<=|>=|<|>)",
+            r"\bnot\s*(==|!=|<=|>=|<|>)",
             lambda match: inverse_operator[match.group(1)],
             c,
             flags=re.IGNORECASE,
