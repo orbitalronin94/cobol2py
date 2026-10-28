@@ -40,8 +40,8 @@ def candidate_error_context(stderr: str, generated_source: str) -> dict[str, Any
     """Return a sanitized generated-code location without exposing string contents."""
     frames = re.findall(r'translated\.py["\']?, line (\d+)', stderr)
     if not frames:
+        return {}
     line_number = int(frames[-1])
-    line_number = int(frames[-1][1])
     generated_lines = generated_source.splitlines()
     context: dict[str, Any] = {"candidate_error_line_number": line_number}
     if 1 <= line_number <= len(generated_lines):
