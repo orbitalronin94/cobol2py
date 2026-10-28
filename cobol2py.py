@@ -1376,7 +1376,7 @@ def translate_expr(
         else:
             out.append(tok)
     translated = "".join(out).strip()
-    translated = translated.replace("cobol_zzcobolgeneratedlambdazz", "lambda")
+    translated = translated.replace("zzcobolgeneratedlambdazz", "lambda")
     # The expression tokenizer normally renames Python built-ins that could
     # collide with COBOL data-names. Restore only the generated integer-coercion
     # call immediately inside a subscript; ordinary COBOL INT identifiers stay
