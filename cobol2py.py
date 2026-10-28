@@ -1481,7 +1481,7 @@ def translate_expr(
         return token
 
     expr = re.sub(
-        r"\b[A-Za-z][A-Za-z0-9-]*(?:\s*\((?:[^()]|\([^()]*\))*\))?\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*(?:\s*\((?:[^()]|\([^()]*\))*\))?",
+        r"\b[A-Za-z][A-Za-z0-9-]*(?:\s*\((?:[^()]|\([^()]*\))*\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*(?:\s*\((?:[^()]|\([^()]*\))*\))?)+",
         protect_qualified_reference,
         expr,
         flags=re.IGNORECASE,

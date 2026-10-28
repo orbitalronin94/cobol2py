@@ -3129,6 +3129,18 @@ class NestedQualifiedDataReferenceRegressionTests(unittest.TestCase):
             expected,
         )
 
+    def test_nested_qualification_inside_condition_is_not_split_into_in_keyword(self):
+        variables = {
+            "RECORD": cobol2py.CobolVar(level=1, name="RECORD", is_group=True),
+            "GROUP": cobol2py.CobolVar(level=5, name="GROUP", is_group=True, parent_name="RECORD"),
+            "FIELD": cobol2py.CobolVar(level=10, name="FIELD", pic="X", parent_name="GROUP"),
+        }
+        translated = cobol2py.translate_condition('FIELD IN GROUP IN RECORD = "A"', variables)
+        self.assertNotIn("cobol_in", translated)
+        compile(translated, "<nested-qualified-condition>", "eval")
+        self.assertIn("cobol_record['group']['field']", translated)
+
+
 
 class SearchAllNextSentenceRegressionTests(unittest.TestCase):
     def test_next_sentence_is_not_part_of_search_key_expression(self):
