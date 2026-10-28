@@ -2033,3 +2033,48 @@ class CobolAcceptEofRegressionTests(unittest.TestCase):
         with patch("builtins.input", side_effect=EOFError), redirect_stdout(output):
             namespace["main"]()
         self.assertEqual(output.getvalue(), "001\n   \n", generated)
+
+
+class CobolLevel88ConditionRegressionTests(unittest.TestCase):
+    def test_level_88_condition_name_compares_parent_field(self):
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. COND88.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-STATUS PIC X VALUE 'Y'.",
+            "   88 WS-OK VALUE 'Y'.",
+            "   88 WS-NO VALUE 'N'.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "IF WS-OK",
+            "    DISPLAY 'OK'",
+            "ELSE",
+            "    DISPLAY 'NO'",
+            "END-IF.",
+            "STOP RUN.",
+        ])
+        program = cobol2py.parse_cobol(source, source_format="free")
+        self.assertEqual(program.condition_names["WS-OK"], ("WS-STATUS", [("'Y'", None)]))
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<level-88>", "exec")
+        namespace = {"__name__": "not_main"}
+        exec(generated, namespace)
+        from contextlib import redirect_stdout
+        from io import StringIO
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "OK\n", generated)
+
+    def test_level_88_condition_name_supports_value_ranges(self):
+        condition_names = {
+            "WS-IN-RANGE": ("WS-NUM", [("1", "5")]),
+        }
+        translated = cobol2py.translate_condition(
+            "WS-IN-RANGE", {"WS-NUM": cobol2py.CobolVar(level=1, name="WS-NUM", pic="9")},
+            condition_names,
+        )
+        self.assertIn("ws_num >= 1", translated)
+        self.assertIn("ws_num <= 5", translated)
+        compile(translated, "<level-88-range>", "eval")
