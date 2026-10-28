@@ -1333,6 +1333,23 @@ def translate_expr(
 
     expr = rewrite_outside_literals(expr, replace_figurative_constants)
 
+    # ALL literal is a COBOL figurative literal (ALL "A", ALL SPACE, etc.),
+    # not a data-name followed by a string. Resolve it before tokenization so
+    # expressions and group moves cannot emit invalid Python such as
+    # cobol_all "A".
+    def replace_all_literals(chunk: str) -> str:
+        pattern = (
+            r""" \bALL\s+(?:"(?:[^"]|"")*"|'(?:[^']|'')*'|"""
+            r"""QUOTE|QUOTES|SPACE|SPACES|ZERO|ZEROS|ZEROES|"""
+            r"""LOW-VALUE|LOW-VALUES|HIGH-VALUE|HIGH-VALUES)\b?"""
+        ).lstrip()
+        def replacement(match: re.Match[str]) -> str:
+            value = decode_cobol_all_literal(match.group(0))
+            return repr(value) if value is not None else match.group(0)
+        return re.sub(pattern, replacement, chunk, flags=re.IGNORECASE)
+
+    expr = rewrite_outside_literals(expr, replace_all_literals)
+
     # ORD-MIN / ORD-MAX return the 1-based position of the first minimum /
     # maximum argument. Rewrite before generic COBOL subscripts turn calls
     # into chained brackets and lose argument separators.
