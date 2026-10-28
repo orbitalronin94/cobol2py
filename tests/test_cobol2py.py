@@ -3194,7 +3194,19 @@ class PerformTestAfterRegressionTests(unittest.TestCase):
         self.assertEqual(namespace["ws_i"], 3, generated)
 
 
-class OrdinalIntrinsicRegressionTests(unittest.TestCase):
+class DayOrdinalIntrinsicRegressionTests(unittest.TestCase):
+    def test_day_of_integer_and_integer_of_day_round_trip(self):
+        day_of_integer = cobol2py.translate_expr("FUNCTION DAY-OF-INTEGER(1)")
+        integer_of_day = cobol2py.translate_expr("FUNCTION INTEGER-OF-DAY(1601001)")
+        self.assertEqual(eval(day_of_integer), 1601001)
+        self.assertEqual(eval(integer_of_day), 1)
+        self.assertEqual(
+            eval(cobol2py.translate_expr("FUNCTION DAY-OF-INTEGER(FUNCTION INTEGER-OF-DAY(2000060))")),
+            2000060,
+        )
+
+
+class OrdinalIntrinsicRegressionTests(unittest.TestCase):class OrdinalIntrinsicRegressionTests(unittest.TestCase):
     def test_ord_min_returns_one_based_position_of_first_minimum(self):
         translated = cobol2py.translate_expr("FUNCTION ORD-MIN(4, 2, 1, 7, 2, 0)")
         self.assertEqual(eval(translated), 6)
