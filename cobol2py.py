@@ -529,7 +529,12 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
 
         if upper.startswith("WHEN "):
             flush()
-            units.append((num, text.strip()))
+            # EVALUATE/SEARCH WHEN clauses may carry an inline imperative
+            # statement on the same source line. Split that action away so
+            # the branch condition remains a condition, not invalid Python
+            # such as "if subject == 1 perform paragraph:".
+            when_units = split_concat_statements(text)
+            units.extend((num, unit) for unit in when_units)
             continue
 
         # Scope terminators must be standalone parser units. Otherwise a
