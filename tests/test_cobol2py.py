@@ -2382,7 +2382,7 @@ class InitializeStatementRegressionTests(unittest.TestCase):
             translated,
             ["ws_rec['ws_name'] = '   '", "ws_rec['ws_count'] = 0"],
         )
-        compile("\\n".join(translated), "<initialize-group>", "exec")
+        compile("\n".join(translated), "<initialize-group>", "exec")
 
 
 class BareAlphanumericValueRegressionTests(unittest.TestCase):
