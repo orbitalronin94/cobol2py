@@ -820,6 +820,9 @@ JAVA_RESERVED_WORDS = frozenset({
 
 def normalize_identifier(name: str) -> str:
     normalized = name.replace("-", "_").lower()
+    # COBOL data-names may begin with digits; Python identifiers may not.
+    if normalized and normalized[0].isdigit():
+        normalized = "cobol_" + normalized
     if (
         keyword.iskeyword(normalized)
         or normalized in JAVA_RESERVED_WORDS
@@ -833,7 +836,7 @@ def normalize_name(name: str) -> str:
     # Normalize identifiers consistently for both target languages and avoid
     # Python/Java reserved words. This also applies to identifiers in subscripts.
     normalized = re.sub(
-        r"[A-Za-z][A-Za-z0-9-]*",
+        r"(?:[A-Za-z][A-Za-z0-9-]*|[0-9]+[A-Za-z][A-Za-z0-9-]*)",
         lambda match: normalize_identifier(match.group(0)),
         name,
     )
@@ -991,7 +994,7 @@ def translate_expr(
         lambda match: normalize_data_reference(match.group(0), variables),
         expr,
     )
-    token_pattern = r"""("(?:[^"]|"")*"|'(?:[^']|'')*'|[A-Za-z][A-Za-z0-9-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&\[\]-]|\s+|.)"""
+    token_pattern = r"""("(?:[^"]|"")*"|'(?:[^']|'')*'|\d+[A-Za-z][A-Za-z0-9-]*|[A-Za-z][A-Za-z0-9-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&\[\]-]|\s+|.)"""
     tokens = re.findall(token_pattern, expr)
     out = []
     for tok in tokens:
@@ -1001,7 +1004,7 @@ def translate_expr(
             out.append(tok.lower())
         elif tok.upper() in ("TRUE", "FALSE"):
             out.append("True" if tok.upper() == "TRUE" else "False")
-        elif re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", tok):
+        elif re.fullmatch(r"(?:[A-Za-z][A-Za-z0-9-]*|\d+[A-Za-z][A-Za-z0-9-]*)", tok):
             out.append(normalize_data_reference(tok, variables))
         elif re.fullmatch(r"\d+(?:\.\d+)?", tok):
             out.append(normalize_cobol_number(tok))
@@ -1068,15 +1071,21 @@ def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = No
     def rewrite(chunk: str) -> str:
         c = re.sub(r"\bAND\b", "and", chunk, flags=re.IGNORECASE)
         c = re.sub(r"\bOR\b", "or", c, flags=re.IGNORECASE)
-        c = re.sub(r"\bNOT\b", "not", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\s+NOT\s+EQUAL\s+TO\b", "!=", c, flags=re.IGNORECASE)
         c = re.sub(r"\bNOT\s+EQUAL\s+TO\b", "!=", c, flags=re.IGNORECASE)
+        c = re.sub(r"\bIS\s+NOT\s+EQUAL\b", "!=", c, flags=re.IGNORECASE)
+        c = re.sub(r"\bNOT\s+EQUAL\b", "!=", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\s+EQUAL\s+TO\b", "==", c, flags=re.IGNORECASE)
         c = re.sub(r"\bEQUAL\s+TO\b", "==", c, flags=re.IGNORECASE)
+        c = re.sub(r"\bIS\s+GREATER\s+THAN\s+OR\s+EQUAL(?:\s+TO)?\b", ">=", c, flags=re.IGNORECASE)
+        c = re.sub(r"\bGREATER\s+(?:THAN\s+)?OR\s+EQUAL(?:\s+TO)?\b", ">=", c, flags=re.IGNORECASE)
+        c = re.sub(r"\bIS\s+LESS\s+THAN\s+OR\s+EQUAL(?:\s+TO)?\b", "<=", c, flags=re.IGNORECASE)
+        c = re.sub(r"\bLESS\s+(?:THAN\s+)?OR\s+EQUAL(?:\s+TO)?\b", "<=", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\s+GREATER\s+THAN\b", ">", c, flags=re.IGNORECASE)
-        c = re.sub(r"\bGREATER\s+THAN\b", ">", c, flags=re.IGNORECASE)
+        c = re.sub(r"\bGREATER\s+(?:THAN\s+)?", ">", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\s+LESS\s+THAN\b", "<", c, flags=re.IGNORECASE)
-        c = re.sub(r"\bLESS\s+THAN\b", "<", c, flags=re.IGNORECASE)
+        c = re.sub(r"\bLESS\s+(?:THAN\s+)?", "<", c, flags=re.IGNORECASE)
+        c = re.sub(r"\bNOT\b", "not", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\b", "==", c, flags=re.IGNORECASE)
         c = re.sub(r"(?<![!<>=])=(?!=)", "==", c)
         return c.replace("<>", "!=")
