@@ -1043,7 +1043,7 @@ def translate_expr(
         expr,
         flags=re.IGNORECASE,
     )
-    intrinsic_names = {"NUMVAL", "NUMVAL-C", "LOWER-CASE", "UPPER-CASE", "TRIM", "LENGTH", "ABS", "ACOS", "ASIN", "ATAN", "COS", "EXP", "LOG", "LOG10", "SIN", "SQRT", "TAN", "MIN", "MAX", "COBOL-MIN", "COBOL-MAX"}
+    intrinsic_names = {"NUMVAL", "NUMVAL-C", "LOWER-CASE", "UPPER-CASE", "TRIM", "LENGTH", "ABS", "ACOS", "ASIN", "ATAN", "COS", "EXP", "LOG", "LOG10", "SIN", "SQRT", "TAN", "MIN", "MAX", "COBOL-MIN", "COBOL-MAX", "PRESENT-VALUE", "INTEGER", "INTEGER-PART", "ORD", "CHAR"}
     expr = re.sub(
         r"\b([A-Za-z][A-Za-z0-9-]*)\s*\(([A-Za-z0-9_,\s-]+)\)",
         lambda match: match.group(0) if match.group(1).upper() in intrinsic_names
@@ -1111,6 +1111,36 @@ def translate_expr(
             translated,
             flags=re.IGNORECASE,
         )
+    translated = re.sub(
+        r"\b(?:function\s+)?present_value\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
+        lambda match: "(lambda _rate, *_payments: sum((_payment / ((1 + _rate) ** _period)) for _period, _payment in enumerate(_payments, 1)))(" + intrinsic_argument(match) + ")",
+        translated,
+        flags=re.IGNORECASE,
+    )
+    translated = re.sub(
+        r"\b(?:function\s+)?integer_part\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
+        lambda match: "int(" + intrinsic_argument(match) + ")",
+        translated,
+        flags=re.IGNORECASE,
+    )
+    translated = re.sub(
+        r"\b(?:function\s+)?integer\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
+        lambda match: "__import__('math').floor(" + intrinsic_argument(match) + ")",
+        translated,
+        flags=re.IGNORECASE,
+    )
+    translated = re.sub(
+        r"\b(?:function\s+)?ord\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
+        lambda match: "(ord(" + intrinsic_argument(match) + ") + 1)",
+        translated,
+        flags=re.IGNORECASE,
+    )
+    translated = re.sub(
+        r"\b(?:function\s+)?char\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
+        lambda match: "chr(int(" + intrinsic_argument(match) + ") - 1)",
+        translated,
+        flags=re.IGNORECASE,
+    )
 
     translated = re.sub(
         r"\b(?:function\s+)?numval(?:_c)?\s*(?:\[([^\]]*)\]|\(([^()]*)\))",
