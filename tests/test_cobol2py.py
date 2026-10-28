@@ -2108,3 +2108,10 @@ class CobolDateIntrinsicRegressionTests(unittest.TestCase):
         compile(translated, "<seconds-past-midnight>", "eval")
         self.assertGreaterEqual(eval(translated), 0)
         self.assertLess(eval(translated), 86400)
+
+
+class ChainedReferenceModificationRegressionTests(unittest.TestCase):
+    def test_reference_modification_after_table_subscript_is_valid_python(self):
+        translated = cobol2py.translate_expr("WS-TEXT(WS-I)(WS-J:1)")
+        compile(translated, "<chained-reference-modification>", "eval")
+        self.assertIn("[ws_j - 1:", translated)
