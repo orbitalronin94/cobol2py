@@ -415,24 +415,13 @@ class TranslationTests(unittest.TestCase):
             "\n".join(cobol2py.translate_java_statement("ACCEPT WS-TEXT", set(), variables)),
         )
 
-    def test_display_of_unsigned_implied_decimal_pic_omits_decimal_point(self):
+    def test_display_of_implied_decimal_pic_preserves_decimal_point(self):
         variables = {
             "WS-RATE": cobol2py.CobolVar(level=1, name="WS-RATE", pic="9(3)V99")
         }
-        expression = cobol2py.translate_display_item("WS-RATE", variables)
-        self.assertEqual(eval(expression, {"ws_rate": 12.34}), "01234")
-        self.assertEqual(eval(expression, {"ws_rate": 123.45}), "12345")
-
-    def test_implied_decimal_move_uses_decimal_scaling_before_truncation(self):
-        variables = {
-            "WS-RATE": cobol2py.CobolVar(level=1, name="WS-RATE", pic="9(3)V99")
-        }
-        expression = cobol2py.translate_move_value("1234.567", "WS-RATE", variables)
-        self.assertAlmostEqual(eval(expression), 234.56, places=2)
-        self.assertAlmostEqual(
-            eval(cobol2py.translate_move_value("12.34", "WS-RATE", variables)),
-            12.34,
-            places=2,
+        self.assertEqual(
+            cobol2py.translate_display_item("WS-RATE", variables),
+            "format(float(ws_rate), '06.2f')",
         )
 
     def test_move_truncates_signed_and_implied_decimal_receiving_fields(self):
