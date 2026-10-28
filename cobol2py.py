@@ -1369,7 +1369,39 @@ def rewrite_outside_literals(text: str, transform) -> str:
     return rewritten
 
 
-def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = None) -> str:
+def translate_condition(
+    cond: str,
+    variables: Optional[dict[str, CobolVar]] = None,
+    condition_names: Optional[dict[str, tuple[str, list[tuple[str, Optional[str]]]]]] = None,
+) -> str:
+    # Expand level-88 condition names into comparisons against their parent item.
+    if condition_names:
+        def expand_condition_names(chunk: str) -> str:
+            for condition_name, (parent_name, allowed_values) in sorted(
+                condition_names.items(), key=lambda item: len(item[0]), reverse=True
+            ):
+                parent = normalize_data_reference(parent_name, variables)
+                alternatives = []
+                for low, high in allowed_values:
+                    low_expr = translate_literal(low, variables)
+                    if high is None:
+                        alternatives.append(f"({parent} == {low_expr})")
+                    else:
+                        high_expr = translate_literal(high, variables)
+                        alternatives.append(
+                            f"(({parent} >= {low_expr}) and ({parent} <= {high_expr}))"
+                        )
+                if alternatives:
+                    replacement = "(" + " or ".join(alternatives) + ")"
+                    chunk = re.sub(
+                        rf"\b{re.escape(condition_name)}\b",
+                        lambda _: replacement,
+                        chunk,
+                        flags=re.IGNORECASE,
+                    )
+            return chunk
+        cond = rewrite_outside_literals(cond, expand_condition_names)
+
     # Some source forms attach NEXT SENTENCE directly to an IF line. It is a
     # branch action, not part of the Boolean condition.
     cond = re.sub(r"\s+NEXT\s+SENTENCE\s*$", "", cond, flags=re.IGNORECASE)
@@ -1870,7 +1902,7 @@ def translate_statement(
     m = re.match(r"PERFORM\s+([A-Za-z0-9\-]+)\s+UNTIL\s+(.+)", s, re.IGNORECASE)
     if m and m.group(1).upper() in paragraphs:
         return [
-            f"while not ({translate_condition(m.group(2), variables or {})}):",
+            f"while not ({translate_condition(m.group(2), variables or {}, condition_names)}):",
             f"{normalize_name(m.group(1))}()",
         ]
 
@@ -1890,11 +1922,12 @@ def translate_nodes(
     indent: int,
     variables: Optional[dict[str, CobolVar]] = None,
     current_paragraph: Optional[str] = None,
+    condition_names: Optional[dict[str, tuple[str, list[tuple[str, Optional[str]]]]]] = None,
 ) -> list[str]:
     out: list[str] = []
     for node in nodes:
         if node.kind == "stmt":
-            lines = translate_statement(node.text, paragraphs, variables, current_paragraph)
+            lines = translate_statement(node.text, paragraphs, variables, current_paragraph, condition_names)
             if lines:
                 opens_block = lines[0].rstrip().endswith(":")
                 for i, line in enumerate(lines):
@@ -1906,9 +1939,9 @@ def translate_nodes(
             if not m:
                 out.append("    " * indent + f"# IF malformado: {node.text}")
                 continue
-            cond = translate_condition(m.group(1), variables)
+            cond = translate_condition(m.group(1), variables, condition_names)
             out.append("    " * indent + f"if {cond}:")
-            then_body = translate_nodes(node.then_branch, paragraphs, indent + 1, variables, current_paragraph)
+            then_body = translate_nodes(node.then_branch, paragraphs, indent + 1, variables, current_paragraph, condition_names)
             if not then_body:
                 then_body = ["    " * (indent + 1) + "pass"]
             elif all(not line.strip() or line.strip().startswith("#") for line in then_body):
@@ -1916,7 +1949,7 @@ def translate_nodes(
             out.extend(then_body)
             if node.else_branch:
                 out.append("    " * indent + "else:")
-                else_body = translate_nodes(node.else_branch, paragraphs, indent + 1, variables, current_paragraph)
+                else_body = translate_nodes(node.else_branch, paragraphs, indent + 1, variables, current_paragraph, condition_names)
                 if not else_body:
                     else_body = ["    " * (indent + 1) + "pass"]
                 elif all(not line.strip() or line.strip().startswith("#") for line in else_body):
@@ -1925,7 +1958,7 @@ def translate_nodes(
 
         elif node.kind == "perform_inline":
             out.append("    " * indent + f"# PERFORM inline: {node.text}")
-            body = translate_nodes(node.body, paragraphs, indent + 1, variables, current_paragraph)
+            body = translate_nodes(node.body, paragraphs, indent + 1, variables, current_paragraph, condition_names)
             if not body:
                 body = ["    " * (indent + 1) + "pass"]
             elif all(not line.strip() or line.strip().startswith("#") for line in body):
@@ -1936,7 +1969,7 @@ def translate_nodes(
             match = re.match(r"^PERFORM\s+(\d+)\s+TIMES$", node.text, re.IGNORECASE)
             count = match.group(1) if match else "0"
             out.append("    " * indent + f"for _ in range({count}):")
-            body = translate_nodes(node.body, paragraphs, indent + 1, variables)
+            body = translate_nodes(node.body, paragraphs, indent + 1, variables, condition_names=condition_names)
             if not body or all(not line.strip() or line.strip().startswith("#") for line in body):
                 body = ["    " * (indent + 1) + "pass"]
             out.extend(body)
@@ -1971,10 +2004,10 @@ def translate_nodes(
                 out.append(prefix + f"        {temp}_hi = {temp}_mid")
                 out.append(prefix + f"if {temp}_lo < {temp}_size and {key_expr(temp + '_lo')} == {target_expr}:")
                 out.append(prefix + f"    {normalize_name(index_name)} = {temp}_lo + 1")
-                branch_body = translate_nodes(when_branch.then_branch, paragraphs, indent + 1, variables, current_paragraph)
+                branch_body = translate_nodes(when_branch.then_branch, paragraphs, indent + 1, variables, current_paragraph, condition_names)
                 out.extend(branch_body or [prefix + "    pass"])
                 out.append(prefix + "else:")
-                end_body = translate_nodes(at_end_branch.then_branch, paragraphs, indent + 1, variables, current_paragraph) if at_end_branch else []
+                end_body = translate_nodes(at_end_branch.then_branch, paragraphs, indent + 1, variables, current_paragraph, condition_names) if at_end_branch else []
                 out.extend(end_body or [prefix + "    pass"])
 
         elif node.kind == "evaluate":
@@ -1994,7 +2027,7 @@ def translate_nodes(
                     prefix = "if True:" if condition else "else:"
                 else:
                     if is_boolean:
-                        condition = translate_condition(choice, variables)
+                        condition = translate_condition(choice, variables, condition_names)
                         if subject.upper() == "FALSE":
                             condition = f"not ({condition})"
                     elif re.search(r"\s+(?:THRU|THROUGH)\s+", choice, re.IGNORECASE):
@@ -2007,7 +2040,7 @@ def translate_nodes(
                         condition = f"{temp_name} == {translate_literal(choice, variables)}"
                     prefix = ("if " if emitted == 0 else "elif ") + condition + ":"
                 out.append("    " * indent + prefix)
-                branch_body = translate_nodes(branch.then_branch, paragraphs, indent + 1, variables, current_paragraph)
+                branch_body = translate_nodes(branch.then_branch, paragraphs, indent + 1, variables, current_paragraph, condition_names)
                 if not branch_body:
                     branch_body = ["    " * (indent + 1) + "pass"]
                 elif all(not line.strip() or line.strip().startswith("#") for line in branch_body):
@@ -2028,10 +2061,11 @@ def translate_paragraph(
     paragraphs: set[str],
     variables: Optional[dict[str, CobolVar]] = None,
     current_paragraph: Optional[str] = None,
+    condition_names: Optional[dict[str, tuple[str, list[tuple[str, Optional[str]]]]]] = None,
 ) -> list[str]:
     return translate_nodes(
         nodes, paragraphs, indent=1, variables=variables,
-        current_paragraph=current_paragraph,
+        current_paragraph=current_paragraph, condition_names=condition_names,
     )
 
 
