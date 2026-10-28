@@ -130,6 +130,13 @@ class TranslationTests(unittest.TestCase):
         variable = cobol2py.CobolVar(level=1, name="WS-FLAG", pic="X(4)", value='ALL "Y"')
         self.assertEqual(variable.py_default(), "'YYYY'")
 
+    def test_all_figurative_literals_are_decoded(self):
+        self.assertEqual(cobol2py.decode_cobol_all_literal("ALL QUOTE"), '"')
+        self.assertEqual(cobol2py.decode_cobol_all_literal("ALL SPACES"), " ")
+        self.assertEqual(cobol2py.decode_cobol_all_literal("ALL ZEROES"), "0")
+        variable = cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(3)", value="ALL QUOTE")
+        self.assertEqual(variable.py_default(), repr('"""'))
+
     def test_all_literal_decodes_doubled_quotes(self):
         variable = cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(5)", value='ALL "DON""T"')
         self.assertEqual(variable.py_default(), "'DON\"T'")
@@ -406,6 +413,11 @@ class TranslationTests(unittest.TestCase):
             "WS-I": cobol2py.CobolVar(level=1, name="WS-I", pic="9(2)"),
         }), "ws_i == 2")
         self.assertEqual(cobol2py.normalize_name("11A"), "cobol_11a")
+
+    def test_abbreviated_equal_operators_are_translated(self):
+        variables = {"WS-I": cobol2py.CobolVar(level=1, name="WS-I", pic="9(2)")}
+        self.assertEqual(cobol2py.translate_condition("WS-I EQUAL 02", variables), "ws_i == 2")
+        self.assertEqual(cobol2py.translate_condition("WS-I NOT EQUAL 02", variables), "ws_i != 2")
 
     def test_equality_condition_uses_python_operator(self):
         self.assertEqual(
