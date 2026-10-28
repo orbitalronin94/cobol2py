@@ -1854,7 +1854,7 @@ class DigitLeadingHyphenatedNameRegressionTests(unittest.TestCase):
 class ReferenceModificationSliceSemanticsTests(unittest.TestCase):
     def test_variable_start_and_length_become_zero_based_python_slice(self):
         translated = cobol2py.translate_expr("NEW-STRING(SUB-1:1)")
-        self.assertEqual(translated, "new_string[sub_1 - 1:(sub_1 - 1) + (1)]")
+        self.assertEqual(translated, "cobol_new_string[sub_1 - 1:(sub_1 - 1) + (1)]")
         compile(translated, "<reference-modification>", "eval")
 
     def test_numeric_reference_modification_uses_one_based_cobol_positions(self):
@@ -1906,7 +1906,7 @@ class ComputeSizeErrorClauseRegressionTests(unittest.TestCase):
 class FigurativeConstantIdentifierBoundaryTests(unittest.TestCase):
     def test_hyphenated_data_names_starting_with_zero_are_not_constants(self):
         self.assertEqual(cobol2py.translate_expr("ZERO-C"), "zero_c")
-        self.assertEqual(cobol2py.translate_expr("ZERO-C = 1"), "zero_c == 1")
+        self.assertEqual(cobol2py.translate_condition("ZERO-C = 1"), "zero_c == 1")
 
     def test_hyphenated_data_names_starting_with_space_are_not_constants(self):
         self.assertEqual(cobol2py.translate_expr("SPACE-C"), "space_c")
@@ -1942,7 +1942,7 @@ class SpaceSeparatedSubscriptRegressionTests(unittest.TestCase):
     def test_identifier_subscripts_separated_by_spaces(self):
         self.assertEqual(
             cobol2py.normalize_data_reference("TABLE(IDX1 IDX2 IDX3)"),
-            "table[idx_1 - 1][idx_2 - 1][idx_3 - 1]",
+            "table[idx1 - 1][idx2 - 1][idx3 - 1]",
         )
 
     def test_arithmetic_subscript_is_not_split_on_spaces(self):
