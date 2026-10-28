@@ -66,7 +66,7 @@ def sanitize_exception_message(message: str) -> str:
             return match.group(0)
         return "<quoted>"
 
-    return re.sub(r"""(['"])(.*?)\\1""", mask_quoted, message)[:240]
+    return re.sub(r"""(['"])(.*?)\1""", mask_quoted, message)[:240]
 
 
 def sha256_file(path: Path) -> str:
