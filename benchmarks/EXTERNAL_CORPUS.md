@@ -39,7 +39,7 @@ The report separately records how many files were discovered, screened, rejected
 
 ## Latest confirmed measurement
 
-The latest fully completed 500 + 500 run is [workflow #40761767797](https://github.com/orbitalronin94/cobol2py/actions/runs/40761767797), measured at commit `e62d8873c48157a2abed7e468894e380e310307f`. The current branch head is newer (`628ccb249f7365b4604f16e90c18aa2abd93e8e9`) and has not yet been measured.
+The latest fully completed 500 + 500 run is [workflow #40761767797](https://github.com/orbitalronin94/cobol2py/actions/runs/40761767797), measured at commit `e62d8873c48157a2abed7e468894e380e310307f`. A later code revision, `628ccb249f7365b4604f16e90c18aa2abd93e8e9`, has not yet been measured; commits after it on this branch update documentation only.
 
 | Sample | Exact matches | Accuracy |
 |---|---:|---:|
