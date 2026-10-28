@@ -4236,3 +4236,5 @@ if __name__ == "__main__":
     sys.exit(main())
 
 # External benchmark revalidation marker; no runtime behavior change.
+
+# External benchmark revalidation: arithmetic subscripts, ALL group MOVE, and nested qualification.
