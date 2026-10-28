@@ -460,7 +460,7 @@ Este roadmap distingue lo ya implementado de lo que sigue pendiente. Los número
 | Indicador | Línea base | Criterio para v1.0 |
 |---|---:|---:|
 | Línea base inicial de la muestra primaria | 53/500 (10,60 %) | Referencia histórica |
-| Última medición externa confirmada (`300f6b7e`) | 72/500 (14,40 %) | ≥375/500 (≥75 %) en la revisión candidata |
+| Última medición externa confirmada (`20da4a9b`) | 81/500 (16,20 %) | ≥375/500 (≥75 %) en la revisión candidata |
 | Equivalencia exacta en muestra disjunta | Pendiente de medir | ≥375/500 (≥75 %) |
 | Definición de coincidencia | stdout y código de retorno idénticos a GnuCOBOL | Sin cambios en la métrica |
 | Informes reproducibles | En validación de infraestructura | Disponibles para ambas muestras |
