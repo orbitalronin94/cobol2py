@@ -106,7 +106,7 @@ class PreprocessTests(unittest.TestCase):
             "001400     STOP RUN.",
         ])
         lines = cobol2py.preprocess(source, source_format="fixed")
-        self.assertIn((8, "MOVE 45678 TO WS-N."), lines)
+        self.assertIn((8, "    MOVE 45678 TO WS-N."), lines)
         generated = cobol2py.emit_python(
             cobol2py.parse_cobol(source, source_format="fixed")
         )
