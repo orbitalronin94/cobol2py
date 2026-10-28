@@ -2225,7 +2225,7 @@ class StringStatementRegressionTests(unittest.TestCase):
             variables,
         )
         namespace = {"ws_a": " " * 5, "ws_b": " " * 5, "ws_c": " " * 5}
-        exec("\\n".join(translated or []), namespace)
+        exec("\n".join(translated or []), namespace)
         self.assertEqual(namespace["ws_a"], "ALPHA")
         self.assertEqual(namespace["ws_b"], "BETA ")
         self.assertEqual(namespace["ws_c"], "GAMMA")
