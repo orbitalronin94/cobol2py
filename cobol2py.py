@@ -1165,7 +1165,7 @@ def translate_expr(
         expr,
         flags=re.IGNORECASE,
     )
-    intrinsic_names = {"NUMVAL", "NUMVAL-C", "LOWER-CASE", "UPPER-CASE", "TRIM", "LENGTH", "ABS", "ACOS", "ASIN", "ATAN", "COS", "EXP", "LOG", "LOG10", "SIN", "SQRT", "TAN", "MIN", "MAX", "COBOL-MIN", "COBOL-MAX", "PRESENT-VALUE", "ANNUITY", "TEST-NUMVAL", "INTEGER", "INTEGER-PART", "ORD", "CHAR", "MOD", "CONCATENATE", "RANDOM", "DATE-OF-INTEGER", "INTEGER-OF-DATE", "DAY-OF-INTEGER", "INTEGER-OF-DAY", "SECONDS-PAST-MIDNIGHT"}
+    intrinsic_names = {"NUMVAL", "NUMVAL-C", "LOWER-CASE", "UPPER-CASE", "TRIM", "LENGTH", "ABS", "ACOS", "ASIN", "ATAN", "COS", "EXP", "LOG", "LOG10", "SIN", "SQRT", "TAN", "MIN", "MAX", "COBOL-MIN", "COBOL-MAX", "PRESENT-VALUE", "ANNUITY", "TEST-NUMVAL", "INTEGER", "INTEGER-PART", "ORD", "CHAR", "MOD", "CONCATENATE", "RANDOM", "REVERSE", "FACTORIAL", "STORED-CHAR-LENGTH", "DATE-OF-INTEGER", "INTEGER-OF-DATE", "DAY-OF-INTEGER", "INTEGER-OF-DAY", "SECONDS-PAST-MIDNIGHT"}
     # COBOL reference modification uses 1-based (start:length) positions.
     # Convert the start to a zero-based Python offset and retain the requested
     # character count as the slice end.
@@ -1277,7 +1277,7 @@ def translate_expr(
     intrinsic_call_names = (
         r"NUMVAL(?:_C)?|LOWER_CASE|UPPER_CASE|TRIM|LENGTH|ABS|ACOS|ASIN|ATAN|"
         r"COS|EXP|LOG|LOG10|SIN|SQRT|TAN|MIN|MAX|COBOL_MIN|COBOL_MAX|"
-        r"PRESENT_VALUE|ANNUITY|TEST_NUMVAL|INTEGER_PART|INTEGER|ORD|CHAR|MOD|CONCATENATE|RANDOM|"
+        r"PRESENT_VALUE|ANNUITY|TEST_NUMVAL|INTEGER_PART|INTEGER|ORD|CHAR|MOD|CONCATENATE|RANDOM|REVERSE|FACTORIAL|STORED_CHAR_LENGTH|"
         r"DATE_OF_INTEGER|INTEGER_OF_DATE|DAY_OF_INTEGER|INTEGER_OF_DAY|SECONDS_PAST_MIDNIGHT"
     )
     translated = re.sub(
@@ -1346,6 +1346,24 @@ def translate_expr(
     translated = re.sub(
         r"\b(?:function\s+)?char\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
         lambda match: "chr(int(" + intrinsic_argument(match) + ") - 1)",
+        translated,
+        flags=re.IGNORECASE,
+    )
+    translated = re.sub(
+        r"\b(?:function\s+)?reverse\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
+        lambda match: "str(" + intrinsic_argument(match) + ")[::-1]",
+        translated,
+        flags=re.IGNORECASE,
+    )
+    translated = re.sub(
+        r"\b(?:function\s+)?factorial\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
+        lambda match: "__import__('math').factorial(int(" + intrinsic_argument(match) + "))",
+        translated,
+        flags=re.IGNORECASE,
+    )
+    translated = re.sub(
+        r"\b(?:function\s+)?stored_char_length\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
+        lambda match: "len(str(" + intrinsic_argument(match) + ").rstrip())",
         translated,
         flags=re.IGNORECASE,
     )
