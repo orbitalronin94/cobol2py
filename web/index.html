@@ -1126,13 +1126,19 @@ def decode_cobol_quoted_literal(token: str) -> Optional[str]:
 
 
 def normalize_cobol_number(token: str) -> str:
-    """Normalize COBOL numeric literals to valid Python numeric syntax."""
+    """Normalize COBOL numeric literals to valid Python numeric syntax.
+
+    COBOL source commonly zero-pads integer constants (for example 0007).
+    Python rejects those as decimal integer literals, so preserve their numeric
+    value while removing redundant leading zeros from the integer part.
+    """
     text = token.strip()
     match = re.fullmatch(r"([+-]?)(\d+)(\.\d+)?", text)
     if not match:
         return text
     sign, integer_part, fractional_part = match.groups()
-    return f"{sign}{int(integer_part)}{fractional_part or ''}"
+    normalized_integer = str(int(integer_part))
+    return f"{sign}{normalized_integer}{fractional_part or ''}"
 
 
 def translate_literal(
