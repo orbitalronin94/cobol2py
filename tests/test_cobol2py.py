@@ -473,6 +473,63 @@ class TranslationTests(unittest.TestCase):
 
 
 class DynamicControlFlowTests(unittest.TestCase):
+    def test_perform_thru_executes_contiguous_paragraphs_in_source_order(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. PERFORMTHRUTEST.
+PROCEDURE DIVISION.
+MAIN-LOGIC.
+    PERFORM P-A THRU P-C.
+    DISPLAY "AFTER".
+    STOP RUN.
+P-A.
+    DISPLAY "A".
+P-B.
+    DISPLAY "B".
+P-C.
+    DISPLAY "C".
+"""
+        program = cobol2py.parse_cobol(source, source_format="free")
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<perform-thru>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["_cobol_dispatch"]("MAIN-LOGIC")
+        self.assertEqual(output.getvalue(), "A\\nB\\nC\\nAFTER\\n", generated)
+
+    def test_perform_thru_internal_go_to_keeps_transfer_inside_range(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. PERFORMTHRUGOTO.
+PROCEDURE DIVISION.
+MAIN-LOGIC.
+    PERFORM P-A THRU P-C.
+    DISPLAY "AFTER".
+    STOP RUN.
+P-A.
+    DISPLAY "A".
+    GO TO P-C.
+P-B.
+    DISPLAY "BAD".
+P-C.
+    DISPLAY "C".
+"""
+        program = cobol2py.parse_cobol(source, source_format="free")
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<perform-thru-goto>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["_cobol_dispatch"]("MAIN-LOGIC")
+        self.assertEqual(output.getvalue(), "A\\nC\\nAFTER\\n", generated)
+
     def test_alter_redirects_goto_and_dispatcher_unwinds_current_paragraph(self):
         source = """IDENTIFICATION DIVISION.
 PROGRAM-ID. ALTERTEST.
