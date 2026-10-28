@@ -2078,3 +2078,15 @@ class CobolLevel88ConditionRegressionTests(unittest.TestCase):
         self.assertIn("ws_num >= 1", translated)
         self.assertIn("ws_num <= 5", translated)
         compile(translated, "<level-88-range>", "eval")
+
+
+class CompoundComparisonRegressionTests(unittest.TestCase):
+    def test_greater_or_equal_phrase_is_not_split_at_equal(self):
+        translated = cobol2py.translate_condition("IRC-PARAMS GREATER OR EQUAL TO 1")
+        self.assertEqual(translated, "irc_params >= 1")
+        compile(translated, "<greater-or-equal>", "eval")
+
+    def test_less_or_equal_phrase_is_not_split_at_equal(self):
+        translated = cobol2py.translate_condition("IRC-PARAMS LESS OR EQUAL TO 1")
+        self.assertEqual(translated, "irc_params <= 1")
+        compile(translated, "<less-or-equal>", "eval")
