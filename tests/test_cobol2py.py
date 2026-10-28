@@ -2301,3 +2301,36 @@ class EvaluateRelationalWhenRegressionTests(unittest.TestCase):
         with redirect_stdout(output):
             namespace["main"]()
         self.assertEqual(output.getvalue(), "HIGH\n", generated)
+
+
+class FullProgramIsKeywordRegressionTests(unittest.TestCase):
+    def test_is_in_pic_value_and_if_condition_does_not_become_identifier(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\n".join([
+            "       IDENTIFICATION DIVISION.",
+            "       PROGRAM-ID. ISKEYWORDTEST.",
+            "       DATA DIVISION.",
+            "       WORKING-STORAGE SECTION.",
+            "       01 ERROR-COUNTER PIC 9 VALUE 0.",
+            "       01 DELETE-COUNTER PIC 9 VALUE 0.",
+            '       01 WS-CHAR PIC IS X VALUE IS "A".',
+            "       PROCEDURE DIVISION.",
+            "       MAIN.",
+            "           IF ERROR-COUNTER IS EQUAL TO ZERO",
+            '               DISPLAY "PASS".',
+            "           END-IF.",
+            "           IF DELETE-COUNTER IS EQUAL TO ZERO",
+            '               DISPLAY "DELETE".',
+            "           END-IF.",
+            "           STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
+        self.assertNotIn("cobol_is", generated)
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<is-keyword-output>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "PASS\nDELETE\n", generated)
