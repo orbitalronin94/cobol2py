@@ -1323,6 +1323,7 @@ def translate_condition(cond: str, variables: Optional[dict[str, CobolVar]] = No
         c = re.sub(r"\bNOT\s+EQUAL\b", "!=", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\s+EQUAL\s+TO\b", "==", c, flags=re.IGNORECASE)
         c = re.sub(r"\bEQUAL\s+TO\b", "==", c, flags=re.IGNORECASE)
+        c = re.sub(r"\bEQUAL\b", "==", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\s+GREATER\s+THAN\s+OR\s+EQUAL(?:\s+TO)?\b", ">=", c, flags=re.IGNORECASE)
         c = re.sub(r"\bGREATER\s+(?:THAN\s+)?OR\s+EQUAL(?:\s+TO)?\b", ">=", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\s+LESS\s+THAN\s+OR\s+EQUAL(?:\s+TO)?\b", "<=", c, flags=re.IGNORECASE)
