@@ -6,6 +6,12 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Keep CI focused on the newest revision instead of running stale matrix jobs
+# for every rapid fix commit on the same branch.
+concurrency:
+  group: tests-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   browser-smoke:
     runs-on: ubuntu-latest
