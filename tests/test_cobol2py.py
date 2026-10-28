@@ -1901,3 +1901,12 @@ class ComputeSizeErrorClauseRegressionTests(unittest.TestCase):
         self.assertIsNotNone(translated)
         self.assertEqual(translated, ["ws_total = ws_left + ws_right"])
         compile("\\n".join(translated or []), "<compute-size-error>", "exec")
+
+
+class FigurativeConstantIdentifierBoundaryTests(unittest.TestCase):
+    def test_hyphenated_data_names_starting_with_zero_are_not_constants(self):
+        self.assertEqual(cobol2py.translate_expr("ZERO-C"), "zero_c")
+        self.assertEqual(cobol2py.translate_expr("ZERO-C = 1"), "zero_c == 1")
+
+    def test_hyphenated_data_names_starting_with_space_are_not_constants(self):
+        self.assertEqual(cobol2py.translate_expr("SPACE-C"), "space_c")
