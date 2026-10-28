@@ -2921,8 +2921,8 @@ def translate_statement(
     initialize_prefix = re.match(r"INITIALIZE\s+", s, re.IGNORECASE)
     if initialize_prefix:
         target_and_clauses = s[initialize_prefix.end():].strip()
-        target_and_clauses = re.sub(r"\\s+END-INITIALIZE\\s*$", "", target_and_clauses, flags=re.IGNORECASE)
-        replacing_match = re.search(r"\\s+REPLACING\\b(.*)$", target_and_clauses, re.IGNORECASE)
+        target_and_clauses = re.sub(r"\s+END-INITIALIZE\s*$", "", target_and_clauses, flags=re.IGNORECASE)
+        replacing_match = re.search(r"\s+REPLACING\b(.*)$", target_and_clauses, re.IGNORECASE)
         target = target_and_clauses[:replacing_match.start()].strip() if replacing_match else target_and_clauses
         variable_map = variables or {}
         root_name = target.split()[0].split("(")[0].upper()
@@ -2933,7 +2933,7 @@ def translate_statement(
         replacing_values: dict[str, str] = {}
         if replacing_match:
             replacement_pattern = re.compile(
-                r"""\\b(ALPHABETIC|ALPHANUMERIC|NUMERIC|ALPHANUMERIC-EDITED|NUMERIC-EDITED)\\s+DATA\\s+BY\\s+((?:"(?:[^"]|"")*"|'(?:[^']|'')*'|[+-]?\\d+(?:\\.\\d+)?|[A-Za-z][A-Za-z0-9-]*))""",
+                r"""\b(ALPHABETIC|ALPHANUMERIC|NUMERIC|ALPHANUMERIC-EDITED|NUMERIC-EDITED)\s+DATA\s+BY\s+((?:"(?:[^"]|"")*"|'(?:[^']|'')*'|[+-]?\d+(?:\.\d+)?|[A-Za-z][A-Za-z0-9-]*))""",
                 re.IGNORECASE,
             )
             for replacement in replacement_pattern.finditer(replacing_match.group(1)):
