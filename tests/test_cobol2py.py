@@ -1739,3 +1739,14 @@ class AllFigurativeConstantRegressionTests(unittest.TestCase):
 
     def test_all_low_values_decodes_to_low_value_byte(self):
         self.assertEqual(cobol2py.decode_cobol_all_literal("ALL LOW-VALUES"), chr(0))
+
+
+class CurrentDateAndNextSentenceRegressionTests(unittest.TestCase):
+    def test_current_date_value_clause_emits_valid_python_expression(self):
+        translated = cobol2py.translate_literal("FUNCTION CURRENT-DATE")
+        compile(translated, "<current-date-value>", "eval")
+
+    def test_next_sentence_is_not_included_in_if_condition(self):
+        translated = cobol2py.translate_condition("A = 'A' NEXT SENTENCE")
+        self.assertEqual(translated, 'a == "A"')
+        compile(translated, "<next-sentence-condition>", "eval")
