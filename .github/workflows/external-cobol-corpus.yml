@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - ".github/workflows/external-cobol-corpus.yml"
+      - "cobol2py.py"
+      - "tests/test_cobol2py.py"
+      - "web/index.html"
       - "benchmarks/Dockerfile.external"
       - "benchmarks/run_external_corpus.py"
   workflow_dispatch:
