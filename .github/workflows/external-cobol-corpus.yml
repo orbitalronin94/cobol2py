@@ -28,6 +28,12 @@ concurrency:
 
 jobs:
   external-corpus:
+    strategy:
+      fail-fast: false
+      matrix:
+        sample:
+          - { name: primary, skip: 0 }
+          - { name: holdout, skip: 500 }
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -49,10 +55,12 @@ jobs:
           TARGET: ${{ inputs.target || '500' }}
           CONTAINER_NAME: cobol2py-external-${{ github.run_id }}
           OUTPUT_DIR: ${{ runner.temp }}/external-corpus-artifacts
+          SAMPLE_NAME: ${{ matrix.sample.name }}
+          SKIP: ${{ matrix.sample.skip }}
         shell: bash
         run: |
           set +e
-          mkdir -p "$OUTPUT_DIR"
+          mkdir -p "$OUTPUT_DIR/$SAMPLE_NAME"
           # The benchmark container runs as UID 65534 and must be able to
           # write only into this dedicated artifact directory.
           chmod 0777 "$OUTPUT_DIR"
@@ -73,8 +81,9 @@ jobs:
             benchmarks/run_external_corpus.py \
             --archive /input.zip \
             --translator /workspace/cobol2py.py \
-            --output /output \
-            --target "$TARGET"
+            --output "/output/$SAMPLE_NAME" \
+            --target "$TARGET" \
+            --skip "$SKIP"
           benchmark_status=$?
           docker rm "$CONTAINER_NAME" >/dev/null 2>&1
           exit "$benchmark_status"
@@ -82,8 +91,9 @@ jobs:
       - name: Publish benchmark summary
         if: always()
         run: |
-          if [ -f "$RUNNER_TEMP/external-corpus-artifacts/external-corpus-report.md" ]; then
-            cat "$RUNNER_TEMP/external-corpus-artifacts/external-corpus-report.md" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f "$RUNNER_TEMP/external-corpus-artifacts/$SAMPLE_NAME/external-corpus-report.md" ]; then
+            echo "## $SAMPLE_NAME sample" >> "$GITHUB_STEP_SUMMARY"
+            cat "$RUNNER_TEMP/external-corpus-artifacts/$SAMPLE_NAME/external-corpus-report.md" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "No benchmark report was produced; inspect the container and download logs." >> "$GITHUB_STEP_SUMMARY"
           fi
@@ -92,7 +102,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: external-cobol-corpus-report-${{ github.run_number }}
-          path: ${{ runner.temp }}/external-corpus-artifacts/
+          name: external-cobol-corpus-${{ matrix.sample.name }}-${{ github.run_number }}
+          path: ${{ runner.temp }}/external-corpus-artifacts/${{ matrix.sample.name }}/
           if-no-files-found: warn
           retention-days: 90
