@@ -3019,6 +3019,13 @@ def translate_statement(
     m = re.match(r"DISPLAY\s+(.+)", s, re.IGNORECASE)
     if m:
         display_operands = m.group(1).strip()
+        # UPON selects the output device; it is not another DISPLAY operand.
+        display_operands = re.sub(
+            r"\\s+UPON\\s+[A-Za-z0-9-]+\\s*$",
+            "",
+            display_operands,
+            flags=re.IGNORECASE,
+        ).rstrip()
         no_advancing = bool(
             re.search(r"\s+WITH\s+NO\s+ADVANCING\s*$", display_operands, re.IGNORECASE)
         )
