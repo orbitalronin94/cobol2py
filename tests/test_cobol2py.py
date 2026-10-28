@@ -2052,6 +2052,10 @@ class NestedAndMiscIntrinsicRegressionTests(unittest.TestCase):
         self.assertEqual(eval(positive), 1)
         self.assertEqual(eval(negative), -1)
 
+    def test_statistical_intrinsics_accept_space_separated_arguments(self):
+        translated = cobol2py.translate_expr("FUNCTION MEAN(1 2 6)")
+        self.assertEqual(eval(translated), 3)
+
     def test_statistical_intrinsics_match_expected_values(self):
         cases = {
             "FUNCTION MEAN(1, 2, 6)": 3,
