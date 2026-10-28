@@ -1110,6 +1110,11 @@ def normalize_data_reference(
         expr = f"{parent_expr}[{normalize_name(field_name)!r}]"
     else:
         expr = normalize_name(field_name)
+    if subscript_text and ":" in subscript_text:
+        start_text, length_text = (part.strip() for part in subscript_text.split(":", 1))
+        start_expr = index_expression(start_text)
+        length_expr = normalize_cobol_number(length_text) if re.fullmatch(r"\d+(?:\.\d+)?", length_text) else normalize_name(length_text)
+        return f"{expr}[{start_expr}:({start_expr}) + ({length_expr})]"
     for subscript in subscripts:
         expr += f"[{index_expression(subscript)}]"
     return expr
@@ -1203,7 +1208,7 @@ def translate_literal(
         return "False"
     if re.fullmatch(r"FUNCTION\s+CURRENT-DATE", t, re.IGNORECASE):
         return "(lambda _dt: _dt.strftime('%Y%m%d%H%M%S') + f'{_dt.microsecond // 10000:02d}' + _dt.strftime('%z'))(__import__('datetime').datetime.now().astimezone())"
-    if re.match(r"FUNCTION\s+[A-Z][A-Z0-9-]*\s*(?:\(|\[)", t, re.IGNORECASE):
+    if re.match(r"FUNCTION\s+[A-Z][A-Z0-9-]*\s*(?:\(|\[)", t, re.IGNORECASE) or re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*\s*\([^()]*:[^()]*\)", t):
         return translate_expr(t, variables)
     if t.upper() in ("QUOTE", "QUOTES"):
         return repr('"')
@@ -1245,6 +1250,13 @@ def translate_expr(
         flags=re.IGNORECASE,
     )
     intrinsic_names = {"NUMVAL", "NUMVAL-C", "LOWER-CASE", "UPPER-CASE", "TRIM", "LENGTH", "ABS", "ACOS", "ASIN", "ATAN", "COS", "EXP", "LOG", "LOG10", "SIN", "SQRT", "TAN", "MIN", "MAX", "COBOL-MIN", "COBOL-MAX", "PRESENT-VALUE", "INTEGER", "INTEGER-PART", "ORD", "CHAR"}
+    # COBOL reference modification uses (start:length), which must become
+    # a Python slice rather than a call or table subscript.
+    expr = re.sub(
+        r"\b[A-Za-z][A-Za-z0-9-]*\s*\([^()]*:[^()]*\)",
+        lambda match: normalize_data_reference(match.group(0), variables),
+        expr,
+    )
     expr = re.sub(
         r"\b([A-Za-z][A-Za-z0-9-]*)\s*\(([A-Za-z0-9_,\s-]+)\)",
         lambda match: match.group(0) if match.group(1).upper() in intrinsic_names
