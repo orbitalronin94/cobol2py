@@ -2866,6 +2866,24 @@ class QualifiedParentSubscriptRegressionTests(unittest.TestCase):
         self.assertEqual(translated, "table[int(index) - 1]['param']")
 
 
+class NestedQualifiedDataReferenceRegressionTests(unittest.TestCase):
+    def test_nested_qualification_uses_nearest_parent_path(self):
+        variables = {
+            "RECORD": cobol2py.CobolVar(level=1, name="RECORD", is_group=True),
+            "GROUP": cobol2py.CobolVar(level=5, name="GROUP", is_group=True, parent_name="RECORD"),
+            "FIELD": cobol2py.CobolVar(level=10, name="FIELD", pic="X", parent_name="GROUP"),
+        }
+        expected = "record['group']['field']"
+        self.assertEqual(
+            cobol2py.normalize_data_reference("FIELD OF GROUP OF RECORD", variables),
+            expected,
+        )
+        self.assertEqual(
+            cobol2py.translate_expr("FIELD IN GROUP IN RECORD", variables),
+            expected,
+        )
+
+
 class SearchAllNextSentenceRegressionTests(unittest.TestCase):
     def test_next_sentence_is_not_part_of_search_key_expression(self):
         variables = {
