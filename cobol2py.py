@@ -2409,7 +2409,7 @@ def translate_statement(
         display_operands = rewrite_outside_literals(
             display_operands,
             lambda chunk: re.sub(
-                r"\\s+UPON\\s+[A-Za-z0-9-]+\\s*$", "", chunk, flags=re.IGNORECASE
+                r"\s+UPON\s+[A-Za-z0-9-]+\s*$", "", chunk, flags=re.IGNORECASE
             ),
         )
         args = split_cobol_items(display_operands)
@@ -2431,7 +2431,7 @@ def translate_statement(
                 args[index].strip().upper() == "FUNCTION"
                 and index + 1 < len(args)
                 and re.match(
-                    rf"^(?:{intrinsic_names})\\b(?:\\s*\\(|$)",
+                    rf"^(?:{intrinsic_names})\b(?:\s*\(|$)",
                     args[index + 1].strip(),
                     re.IGNORECASE,
                 )
