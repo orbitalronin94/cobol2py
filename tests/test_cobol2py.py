@@ -3077,6 +3077,23 @@ class AnnuityIntrinsicRegressionTests(unittest.TestCase):
         self.assertAlmostEqual(eval(translated, {}), 0.1)
 
 
+class StringMultipleSendingOperandsRegressionTests(unittest.TestCase):
+    def test_string_shared_delimiter_splits_multiple_sending_operands(self):
+        variables = {
+            "CONTROL-UP": cobol2py.CobolVar(level=1, name="CONTROL-UP", pic="X", value='"UP"'),
+            "TARGET": cobol2py.CobolVar(level=1, name="TARGET", pic="X(10)"),
+        }
+        translated = cobol2py.translate_paragraph(
+            [cobol2py.Node(kind="statement", value='STRING CONTROL-UP " - up" DELIMITED BY SIZE INTO TARGET')],
+            set(), variables,
+        )
+        generated = "\\n".join(translated)
+        self.assertNotIn('control_up " - up"', generated)
+        compile(generated, "<string-shared-delimiter>", "exec")
+        self.assertIn("str(control_up)", generated)
+        self.assertIn("str(' - up')", generated)
+
+
 class TestNumvalIntrinsicRegressionTests(unittest.TestCase):
     def test_test_numval_returns_zero_for_numeric_text(self):
         translated = cobol2py.translate_expr("FUNCTION TEST-NUMVAL('123.45')")

@@ -3359,7 +3359,13 @@ def translate_statement(
                     item_source = item_match.group(1).strip()
                     delimiter = item_match.group(2).strip()
                     if item_source:
-                        sending_items.append((item_source, delimiter))
+                        # COBOL permits several sending operands to share a
+                        # trailing DELIMITED BY phrase. Split those operands
+                        # individually; otherwise e.g. STRING A " - up"
+                        # DELIMITED BY SIZE becomes invalid Python (A " - up").
+                        sending_items.extend(
+                            (item, delimiter) for item in split_cobol_items(item_source)
+                        )
                     cursor = item_match.end()
                 if not sending_items:
                     sending_items.append((sending_text, "SIZE"))
