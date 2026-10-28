@@ -2248,3 +2248,26 @@ class ResidualIsRelationRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_expr("WS-STATUS IS WS-EXPECTED")
         self.assertEqual(translated, "ws_status == ws_expected")
         compile(translated, "<residual-is-relation>", "eval")
+
+
+class NegatedRelationalPhraseRegressionTests(unittest.TestCase):
+    def test_is_not_greater_than_maps_to_less_or_equal(self):
+        self.assertEqual(
+            cobol2py.translate_condition("WS-A IS NOT GREATER THAN WS-B"),
+            "ws_a <= ws_b",
+        )
+
+    def test_is_not_less_than_maps_to_greater_or_equal(self):
+        self.assertEqual(
+            cobol2py.translate_condition("WS-A IS NOT LESS THAN WS-B"),
+            "ws_a >= ws_b",
+        )
+
+    def test_negated_compound_comparison_maps_to_inverse_relation(self):
+        cases = {
+            "WS-A IS NOT GREATER THAN OR EQUAL TO WS-B": "ws_a < ws_b",
+            "WS-A IS NOT LESS THAN OR EQUAL TO WS-B": "ws_a > ws_b",
+        }
+        for source, expected in cases.items():
+            with self.subTest(source=source):
+                self.assertEqual(cobol2py.translate_condition(source), expected)
