@@ -1288,6 +1288,8 @@ def translate_expr(
     # ORD-MIN / ORD-MAX return the 1-based position of the first minimum /
     # maximum argument. Rewrite before generic COBOL subscripts turn calls
     # into chained brackets and lose argument separators.
+    ordinal_intrinsic_replacements: dict[str, str] = {}
+
     def translate_ordinal_intrinsic(match: re.Match[str]) -> str:
         operation, raw_arguments = match.groups()
         arguments = split_cobol_items(raw_arguments)
@@ -1295,7 +1297,10 @@ def translate_expr(
             return match.group(0)
         translated_arguments = ", ".join(translate_expr(item, variables) for item in arguments)
         reducer = "min" if operation.upper() == "MIN" else "max"
-        return f"(lambda *_values: _values.index({reducer}(_values)) + 1)({translated_arguments})"
+        replacement = f"(lambda *_values: _values.index({reducer}(_values)) + 1)({translated_arguments})"
+        token = f"ZZCOBOLORDINAL{len(ordinal_intrinsic_replacements)}ZZ"
+        ordinal_intrinsic_replacements[token.lower()] = replacement
+        return token
 
     expr = re.sub(
         r"\b(?:FUNCTION\s+)?ORD-(MIN|MAX)\s*\(((?:[^()]|\([^()]*\))*)\)",
@@ -1706,9 +1711,11 @@ def translate_expr(
         chained_reference_modification,
         translated,
     )
-    # Restore protected qualified references only after all COBOL tokens and
-    # intrinsic names have been normalized.
+    # Restore protected references/intrinsics only after all COBOL tokens and
+    # intrinsic names have been normalized; generated Python must not be retokenized.
     for token, replacement in qualified_reference_replacements.items():
+        translated = translated.replace(token, replacement)
+    for token, replacement in ordinal_intrinsic_replacements.items():
         translated = translated.replace(token, replacement)
 
     # Guard against malformed compound comparisons emitted by dialect variants.
