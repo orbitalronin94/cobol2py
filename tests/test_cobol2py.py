@@ -430,6 +430,14 @@ class TranslationTests(unittest.TestCase):
         self.assertEqual(cobol2py.translate_condition("WS-GREATER = 02", hyphenated), "ws_greater == 2")
         self.assertEqual(cobol2py.translate_condition("WS-NOT = 02", hyphenated), "ws_not == 2")
 
+    def test_negated_abbreviated_relational_operators_are_valid_python(self):
+        self.assertEqual(cobol2py.translate_condition("WS-A NOT = 2"), "ws_a != 2")
+        self.assertEqual(cobol2py.translate_condition("WS-A IS NOT = 2"), "ws_a != 2")
+        self.assertEqual(cobol2py.translate_condition("WS-A NOT < 2"), "ws_a >= 2")
+        self.assertEqual(cobol2py.translate_condition("WS-A NOT > 2"), "ws_a <= 2")
+        variables = {"WS-NOT": cobol2py.CobolVar(level=1, name="WS-NOT", pic="9(2)")}
+        self.assertEqual(cobol2py.translate_condition("WS-NOT = 2", variables), "ws_not == 2")
+
     def test_equality_condition_uses_python_operator(self):
         self.assertEqual(
             cobol2py.translate_condition("WS-NUM = 10"),
