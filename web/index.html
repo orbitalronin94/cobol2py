@@ -1500,6 +1500,16 @@ def translate_expr(
     expr: str,
     variables: Optional[dict[str, CobolVar]] = None,
 ) -> str:
+    expr = expr.strip()
+    # Resolve a whole qualified identifier before the expression tokenizer sees
+    # OF/IN as independent words (which would otherwise become invalid Python).
+    if re.fullmatch(
+        r"[A-Za-z0-9-]+(?:\s*\([^()]*\))?(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+(?:\s*\([^()]*\))?)+",
+        expr,
+        re.IGNORECASE,
+    ):
+        return normalize_data_reference(expr, variables)
+
     # COBOL figurative constants must be recognized before hyphenated words
     # are tokenized as subtraction operators. Rewrite only outside quoted text.
     def replace_figurative_constants(chunk: str) -> str:
