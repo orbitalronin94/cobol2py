@@ -26,15 +26,15 @@ El hito v0.8.x ya incluye una implementación inicial de `ALTER`, `GO TO ... DEP
 
 ### Estado medido del traductor (benchmark externo)
 
-> **Última medición externa completa:** ejecución [#40722539577](https://github.com/orbitalronin94/cobol2py/actions/runs/40722539577), commit `55b8360` (manejo de EOF en `ACCEPT`). El `main` actual también incluye una corrección de párrafos que solo contienen sentencias no soportadas y normalización de literales/identificadores; la nueva medición de esos cambios sigue pendiente en GitHub Actions. No se atribuye todavía una puntuación a cambios que no han terminado el benchmark.
+> **Última medición externa completa:** ejecución [#40723702138](https://github.com/orbitalronin94/cobol2py/actions/runs/40723702138), commit `97354c5`. Esta revisión incluye manejo de EOF en `ACCEPT`, generación de `pass` en párrafos que solo contienen sentencias no soportadas y normalización de literales numéricos/identificadores. El `main` actual también incorpora soporte para figurativos `ALL`, operadores comparativos abreviados y un límite de tiempo correcto para los candidatos; esa siguiente medición está pendiente.
 
 | Métrica X-COBOL v2 | Línea base anterior | Última medición completa | Objetivo de la fase 0.9 |
 |---|---:|---:|---:|
-| Muestra principal | 53/500 (**10,6 %**) | 66/500 (**13,2 %**) | ≥375/500 (**75 %**) |
-| Holdout independiente | 48/500 (**9,6 %**) | 71/500 (**14,2 %**) | ≥375/500 (**75 %**) |
-| Total de ambas muestras | 101/1.000 (**10,1 %**) | 137/1.000 (**13,7 %**) | ≥750/1.000 (**75 %**), además de superar cada muestra por separado |
+| Muestra principal | 53/500 (**10,6 %**) | 85/500 (**17,0 %**) | ≥375/500 (**75 %**) |
+| Holdout independiente | 48/500 (**9,6 %**) | 88/500 (**17,6 %**) | ≥375/500 (**75 %**) |
+| Total de ambas muestras | 101/1.000 (**10,1 %**) | 173/1.000 (**17,3 %**) | ≥750/1.000 (**75 %**), además de superar cada muestra por separado |
 
-La mejora medida de `ACCEPT` al llegar EOF es de **+2,6 puntos porcentuales** en la muestra principal y **+4,6 puntos** en holdout; el total combinado subió **+3,6 puntos** (de 10,1 % a 13,7 %). La brecha hasta el umbral del 75 % es ahora 61,8 puntos en la muestra principal y 60,8 puntos en holdout, para esa revisión medida. El objetivo del 75 % es un gate de ingeniería, no una afirmación de compatibilidad con el 75 % de todo COBOL existente.
+La mejora medida desde la línea base es de **+6,4 puntos porcentuales** en la muestra principal y **+8,0 puntos** en holdout; el total combinado subió **+7,2 puntos** (de 10,1 % a 17,3 %). La brecha hasta el umbral del 75 % es de 58,0 puntos en la muestra principal y 57,4 puntos en holdout. El objetivo del 75 % es un gate de ingeniería, no una afirmación de compatibilidad con el 75 % de todo COBOL existente.
 
 **Regla para cada mejora incremental:** aceptar una modificación del traductor como mejora demostrada solo si gana al menos **+1 punto porcentual absoluto** en la muestra principal, sin regresiones en el corpus diferencial versionado ni en holdout. Publicaremos siempre coincidencias, denominador, commit y artefactos; si no hay medición comparable, la puntuación de esa versión se marca como pendiente.
 
