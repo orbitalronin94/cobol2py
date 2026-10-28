@@ -1126,13 +1126,14 @@ def translate_expr(
         "cos": "cos", "exp": "exp", "log": "log", "log10": "log10",
         "sin": "sin", "sqrt": "sqrt", "tan": "tan",
     }
-    for cobol_name, python_name in math_intrinsics.items():
-        translated = re.sub(
-            rf"\b(?:function\s+)?{cobol_name}\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
-            lambda match, name=python_name: f"__import__('math').{name}({intrinsic_argument(match)})",
-            translated,
-            flags=re.IGNORECASE,
-        )
+    for _intrinsic_pass in range(4):
+        for cobol_name, python_name in math_intrinsics.items():
+            translated = re.sub(
+                rf"(?<!\.)\b(?:function\s+)?{cobol_name}\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
+                lambda match, name=python_name: f"__import__('math').{name}({intrinsic_argument(match)})",
+                translated,
+                flags=re.IGNORECASE,
+            )
     for cobol_name, python_name in (("min", "min"), ("max", "max"), ("cobol_min", "min"), ("cobol_max", "max")):
         translated = re.sub(
             rf"\b(?:function\s+)?{cobol_name}\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
