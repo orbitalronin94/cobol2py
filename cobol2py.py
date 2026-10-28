@@ -1082,14 +1082,17 @@ def normalize_data_reference(
         return normalize_name(text)
     field_name, subscript_text, qualifier, qualifier_subscript = match.groups()
     subscripts = [part.strip() for part in re.split(r"[,;]", subscript_text)] if subscript_text else []
-    if subscript_text and len(subscripts) == 1 and re.fullmatch(
-        r"\s*[A-Za-z0-9_-]+(?:\s+[A-Za-z0-9_-]+)+\s*",
-        subscript_text,
-    ):
-        # Some fixed-format COBOL dialects separate multiple subscripts with
-        # spaces rather than commas. Avoid splitting arithmetic expressions
-        # such as "INDEX + 1" by accepting only bare names/numbers here.
-        subscripts = subscript_text.split()
+    if subscript_text and len(subscripts) == 1 and re.search(r"\s", subscript_text.strip()):
+        # Some COBOL sources separate multidimensional subscripts with spaces
+        # rather than commas, and individual subscripts may themselves contain
+        # arithmetic (e.g. TABLE(I J + 1 K + 1)). Split only before an identifier
+        # when the preceding token is not an arithmetic operator.
+        candidate_subscripts = re.split(
+            r"(?<![+\-*/])\s+(?=[A-Za-z][A-Za-z0-9_-]*(?:\s|$))",
+            subscript_text.strip(),
+        )
+        if len(candidate_subscripts) > 1:
+            subscripts = candidate_subscripts
     variable_map = variables or {}
     overlay_fields, _overlay_buffers = build_overlay_layout(variable_map)
     if not subscripts and field_name.upper() in overlay_fields:
