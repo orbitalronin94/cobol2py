@@ -2725,6 +2725,26 @@ class InitializeStatementRegressionTests(unittest.TestCase):
         self.assertEqual(translated, ["ws_name = '   '"])
         compile(translated[0], "<initialize-elementary>", "exec")
 
+    def test_initialize_replacing_alphabetic_data_uses_replacement_literal(self):
+        variables = {
+            item.name: item
+            for item in cobol2py.parse_variables([
+                (1, "01 WS-REC."),
+                (2, "05 WS-ALPHA PIC A(6)."),
+                (3, "05 WS-COUNT PIC 9(2)."),
+            ])
+        }
+        translated = cobol2py.translate_statement(
+            'INITIALIZE WS-REC REPLACING ALPHABETIC DATA BY "ABCDEF"',
+            set(),
+            variables,
+        )
+        self.assertEqual(
+            translated,
+            ['ws_rec[\'ws_alpha\'] = str("ABCDEF")[:6].ljust(6)', "ws_rec['ws_count'] = 0"],
+        )
+        compile("\\n".join(translated or []), "<initialize-replacing>", "exec")
+
     def test_initialize_simple_group_resets_alphanumeric_and_numeric_children(self):
         variables = {
             item.name: item
