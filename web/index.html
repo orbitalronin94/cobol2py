@@ -3240,6 +3240,81 @@ def translate_statement(
     if upper in ("CONTINUE", "EXIT"):
         return ["pass"]
 
+    # Basic STRING ... DELIMITED BY ... INTO support. Each sending item is
+    # copied up to its delimiter (or in full for DELIMITED BY SIZE).
+    if upper.startswith("STRING "):
+        string_text = re.sub(r"\s+END-STRING\s*$", "", s, flags=re.IGNORECASE).strip()
+        into_match = re.search(r"\s+INTO\s+", string_text, re.IGNORECASE)
+        if into_match:
+            sending_text = string_text[len("STRING "):into_match.start()].strip()
+            target_options = string_text[into_match.end():].strip()
+            target_match = re.match(rf"({DATA_REF_PATTERN})", target_options, re.IGNORECASE)
+            if target_match:
+                target = target_match.group(1).strip()
+                options = target_options[target_match.end():]
+                pointer_match = re.search(
+                    rf"\bWITH\s+POINTER\s+({DATA_REF_PATTERN})",
+                    options,
+                    re.IGNORECASE,
+                )
+                pointer = pointer_match.group(1).strip() if pointer_match else None
+                variable_map = variables or {}
+                target_base = re.match(r"[A-Za-z0-9-]+", target)
+                target_var = variable_map.get(target_base.group(0).upper()) if target_base else None
+
+                sending_items: list[tuple[str, str]] = []
+                item_pattern = re.compile(
+                    r"""(.+?)\s+DELIMITED\s+BY\s+("(?:[^"]|"")*"|'(?:[^']|'')*'|SIZE|SPACES?|ZEROS?|[A-Za-z][A-Za-z0-9-]*)""",
+                    re.IGNORECASE,
+                )
+                cursor = 0
+                for item_match in item_pattern.finditer(sending_text):
+                    item_source = item_match.group(1).strip()
+                    delimiter = item_match.group(2).strip()
+                    if item_source:
+                        sending_items.append((item_source, delimiter))
+                    cursor = item_match.end()
+                if not sending_items:
+                    sending_items.append((sending_text, "SIZE"))
+                elif sending_text[cursor:].strip():
+                    sending_items.append((sending_text[cursor:].strip(), "SIZE"))
+
+                pieces: list[str] = []
+                for item_source, delimiter in sending_items:
+                    expression = translate_literal(item_source, variable_map)
+                    if delimiter.upper() == "SIZE":
+                        pieces.append(f"str({expression})")
+                    else:
+                        if delimiter.upper() in ("SPACE", "SPACES"):
+                            delimiter_expr = repr(" ")
+                        elif delimiter.upper() in ("ZERO", "ZEROS"):
+                            delimiter_expr = repr("\x00")
+                        else:
+                            delimiter_expr = translate_literal(delimiter, variable_map)
+                        pieces.append(
+                            f"(str({expression}).split(str({delimiter_expr}), 1)[0] "
+                            f"if str({delimiter_expr}) else str({expression}))"
+                        )
+                value_expr = "''.join([" + ", ".join(pieces) + "])"
+                target_expr = normalize_data_reference(target, variable_map)
+                if target_var is not None and target_var.pic and any(
+                    char in target_var.pic.upper() for char in ("X", "A")
+                ):
+                    width = pic_character_count(target_var.pic)
+                    if pointer:
+                        pointer_expr = normalize_data_reference(pointer, variable_map)
+                        start_index = f"max(int({pointer_expr}) - 1, 0)"
+                        assignment = (
+                            f"{target_expr} = str({target_expr})[:{start_index}] + "
+                            f"str({value_expr})[:max({width} - {start_index}, 0)] + "
+                            f"str({target_expr})[{start_index} + len(str({value_expr})):]"
+                        )
+                        pointer_assignment = f"{pointer_expr} = int({pointer_expr}) + len(str({value_expr}))"
+                        return [assignment, pointer_assignment]
+                    value_expr = f"str({value_expr})[:{width}].ljust({width})"
+                return [emit_assignment(target, value_expr, variable_map)]
+        return [f"# STRING no traducido: {s}"]
+
     m = re.match(r"DISPLAY\s+(.+)", s, re.IGNORECASE)
     if m:
         display_operands = m.group(1).strip()
