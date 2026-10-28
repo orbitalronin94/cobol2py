@@ -2425,7 +2425,7 @@ class GroupMoveFillRegressionTests(unittest.TestCase):
             namespace["main"]()
         self.assertEqual(output.getvalue(), "PASS                \n")
     def test_move_space_to_occurs_group_fills_each_row_without_replacing_table(self):
-        source = "\\n".join([
+        source = "\n".join([
             "IDENTIFICATION DIVISION.",
             "PROGRAM-ID. GROUPTABLEFILL.",
             "DATA DIVISION.",
