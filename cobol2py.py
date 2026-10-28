@@ -1666,13 +1666,13 @@ def translate_statement(
         base = re.match(r"[A-Za-z0-9-]+", target)
         variable = variables.get(base.group(0).upper()) if base and variables else None
         if variable is None or not variable.pic:
-            return [emit_assignment(target, "input()", variables)]
+            return [emit_assignment(target, "_cobol_input()", variables)]
         pic = variable.pic.upper()
         if any(char in pic for char in ("X", "A")):
             width = pic_character_count(pic)
             if width:
-                return [emit_assignment(target, f"str(input())[:{width}].ljust({width})", variables)]
-            return [f"{target_expr} = input()"]
+                return [emit_assignment(target, f"str(_cobol_input())[:{width}].ljust({width})", variables)]
+            return [f"{target_expr} = _cobol_input()"]
         if "9" in pic:
             digits = pic_digit_count(pic)
             if "V" in pic:
@@ -1689,8 +1689,8 @@ def translate_statement(
                 )
             else:
                 value = f"int(_cobol_accept_value) % (10 ** {digits})"
-            return ["_cobol_accept_value = input()", emit_assignment(target, value, variables)]
-        return [f"{target_expr} = input()"]
+            return ["_cobol_accept_value = _cobol_input('0')", emit_assignment(target, value, variables)]
+        return [f"{target_expr} = _cobol_input()"]
 
     m = re.fullmatch(rf"SET\s+({DATA_REF_PATTERN})\s+TO\s+(.+)", s, re.IGNORECASE)
     if m:
@@ -2574,6 +2574,12 @@ def emit_python(prog: Program) -> str:
     lines.append("    def __init__(self, target):")
     lines.append("        super().__init__(target)")
     lines.append("        self.target = target")
+    lines.append("")
+    lines.append("def _cobol_input(default=''):")
+    lines.append("    try:")
+    lines.append("        return input()")
+    lines.append("    except EOFError:")
+    lines.append("        return default")
     lines.append("")
     for warning in prog.unresolved_copybooks:
         lines.append(f"# COPYBOOK RESOLUTION WARNING: {warning}")
