@@ -2467,6 +2467,72 @@ def translate_group_move(source: str, target: str, variables: dict[str, CobolVar
     return statements
 
 
+def translate_group_bytes(source: str, variables: dict[str, CobolVar]) -> Optional[str]:
+    """Return a COBOL group's raw DISPLAY bytes as a Python expression."""
+    source_match = re.match(r"([A-Za-z0-9-]+)", source.strip())
+    if source_match is None:
+        return None
+    root = variables.get(source_match.group(1).upper())
+    if root is None or not root.is_group:
+        return None
+
+    def descendants(group: CobolVar) -> list[CobolVar]:
+        result: list[CobolVar] = []
+        pending = [group.name.upper()]
+        while pending:
+            parent = pending.pop()
+            children = [
+                item for item in variables.values()
+                if (item.parent_name or "").upper() == parent
+            ]
+            result.extend(children)
+            pending.extend(item.name.upper() for item in children if item.is_group)
+        return result
+
+    if any(item.redefines for item in descendants(root)):
+        return None
+
+    def width(variable: CobolVar) -> int:
+        if variable.pic and any(char in variable.pic.upper() for char in "XA"):
+            return max(1, pic_character_count(variable.pic))
+        return max(1, pic_digit_count(variable.pic)) if variable.pic else 1
+
+    def leaves(group: CobolVar, expression: str, ancestors: set[str]) -> list[tuple[str, CobolVar]]:
+        if group.name.upper() in ancestors:
+            return []
+        next_ancestors = ancestors | {group.name.upper()}
+        result: list[tuple[str, CobolVar]] = []
+        for child in variables.values():
+            if (child.parent_name or "").upper() != group.name.upper():
+                continue
+            child_expr = f"{expression}[{normalize_name(child.name)!r}]"
+            if child.is_group:
+                if child.is_array:
+                    for index in range(child.occurs or 0):
+                        result.extend(leaves(child, f"{child_expr}[{index}]", next_ancestors))
+                else:
+                    result.extend(leaves(child, child_expr, next_ancestors))
+            elif child.is_array:
+                for index in range(child.occurs or 0):
+                    result.append((f"{child_expr}[{index}]", child))
+            else:
+                result.append((child_expr, child))
+        return result
+
+    expression = normalize_data_reference(source, variables)
+    fields = leaves(root, expression, set())
+    if not fields:
+        return None
+    parts: list[str] = []
+    for field_expr, variable in fields:
+        field_width = width(variable)
+        if variable.pic and any(char in variable.pic.upper() for char in "XA"):
+            parts.append(f"str({field_expr})[:{field_width}].ljust({field_width})")
+        else:
+            parts.append(f"str({field_expr}).zfill({field_width})[-{field_width}:]")
+    return " + ".join(parts)
+
+
 def translate_move_value(source: str, target: str, variables: dict[str, CobolVar]) -> str:
     """Translate MOVE with basic receiving-field size semantics.
 
@@ -2474,7 +2540,8 @@ def translate_move_value(source: str, target: str, variables: dict[str, CobolVar
     truncates values that exceed the receiving field. Other PIC categories
     retain the existing simple assignment behavior.
     """
-    value = translate_literal(source, variables)
+    group_bytes = translate_group_bytes(source, variables)
+    value = group_bytes if group_bytes is not None else translate_literal(source, variables)
     target_base = re.match(r"([A-Za-z0-9-]+)", target)
     variable = variables.get(target_base.group(1).upper()) if target_base else None
     whole_array = bool(
