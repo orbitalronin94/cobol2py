@@ -2049,7 +2049,7 @@ def emit_reference_modification_move(
     a prefix + padded replacement + suffix instead of assigning to a string
     character/slice. This also works for a table element such as FIELD(1)(2:3).
     """
-    match = re.fullmatch(r"(.+?)\\s*\\(\\s*([^():]+)\\s*:\\s*([^()]*)\\)", target.strip())
+    match = re.fullmatch(r"(.+?)\s*\(\s*([^():]+)\s*:\s*([^()]*)\)", target.strip())
     if not match:
         return None
     base, start, length = (part.strip() for part in match.groups())
