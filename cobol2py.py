@@ -836,7 +836,7 @@ def normalize_name(name: str) -> str:
     # Normalize identifiers consistently for both target languages and avoid
     # Python/Java reserved words. This also applies to identifiers in subscripts.
     normalized = re.sub(
-        r"(?:[A-Za-z][A-Za-z0-9-]*|[0-9]+[A-Za-z][A-Za-z0-9-]*)",
+        r"(?:[A-Za-z][A-Za-z0-9-]*|[0-9]+[A-Za-z0-9-]*[A-Za-z][A-Za-z0-9-]*)",
         lambda match: normalize_identifier(match.group(0)),
         name,
     )
