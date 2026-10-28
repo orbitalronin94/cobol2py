@@ -2076,6 +2076,11 @@ def translate_condition(
         # marker immediately before GREATER/LESS OR EQUAL. The compound
         # relation is the operator; retaining both creates invalid "== >=".
         c = re.sub(r"(?<![!<>=])==\s*(>=|<=)", r"\1", c)
+        # A few COBOL dialects combine IS and a symbolic relation, producing
+        # duplicate comparison tokens after the phrase and symbol rewrites
+        # (for example, "FIELD IS = 0" -> "field == == 0"). Collapse the
+        # duplicate equality without touching valid chained comparisons.
+        c = re.sub(r"(?<![!<>=])==\s*==", "==", c)
 
         # COBOL permits NOT immediately before a comparison operator (NOT =,
         # NOT <, NOT >). Python does not permit infix "not", so invert the
