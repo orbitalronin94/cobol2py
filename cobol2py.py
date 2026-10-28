@@ -1995,12 +1995,14 @@ def translate_condition(
     )
 
     # COBOL abbreviated combined relation conditions may omit the repeated
-    # subject, e.g. IF FLAG = "S" OR "N". Restore it in Python output.
+    # subject and/or relation operator, e.g. FLAG = "S" OR "N" or N > 10 AND < 21.
+    # Expand both forms after tokenization so nested group/table references are safe.
     literal_pattern = r"""(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')"""
+    atom_pattern = r"""(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[-+]?\d+(?:\.\d+)?|[a-z_][a-z0-9_]*(?:\[[^\]]+\])*)"""
     abbreviated = re.compile(
         r"(?P<lhs>[a-z_][a-z0-9_]*(?:\[[^\]]+\])*(?:\.ljust\(\d+\))?)"
-        r"\s*(?P<op>==|!=|<=|>=|<|>)\s*(?P<first>" + literal_pattern + r")"
-        r"\s+(?P<logic>and|or)\s+(?P<op2>==|!=|<=|>=|<|>)?\s*(?P<second>" + literal_pattern + r")",
+        r"\s*(?P<op>==|!=|<=|>=|<|>)\s*(?P<first>" + atom_pattern + r")"
+        r"\s+(?P<logic>and|or)\s+(?P<op2>==|!=|<=|>=|<|>)?\s*(?P<second>" + atom_pattern + r")",
         re.IGNORECASE,
     )
     translated = abbreviated.sub(
