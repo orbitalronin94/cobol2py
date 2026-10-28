@@ -15,7 +15,7 @@ Open-source availability of a dataset does not automatically grant the same lice
 
 ## Run it
 
-From GitHub Actions, launch **Actions → external-cobol-corpus → Run workflow** and keep the target at `500`. The workflow is manual because it downloads an external archive and runs programs from third-party repositories.
+On pull requests that change the translator or benchmark, the workflow runs two samples in parallel. You can also launch **Actions → external-cobol-corpus → Run workflow** and keep the target at `500`. The workflow downloads an external archive and runs programs from third-party repositories.
 
 The job builds a small Docker image with Python and GnuCOBOL, then runs the test process with:
 - network disabled;
@@ -31,8 +31,9 @@ This is a defense-in-depth sandbox, not a claim that arbitrary code execution is
 1. Verify the downloaded archive checksum before extracting it.
 2. Extract only safe, ordinary ZIP entries and consider `.cbl`, `.cob`, and `.cobol` files up to 1 MB.
 3. Deduplicate identical source contents and order candidates deterministically by SHA-256.
-4. Count only standalone files that compile with the installed GnuCOBOL and whose reference run terminates within the timeout toward the requested 500.
-5. A tested program passes only when translated Python has **exactly the same stdout and process return code** as the GnuCOBOL executable.
+4. The primary sample tests the first 500 eligible programs in that order. The disjoint holdout skips those first 500 eligible programs, then tests the next 500, using the same eligibility rules.
+5. Count only standalone files that compile with the installed GnuCOBOL and whose reference run terminates within the timeout toward the requested sample size.
+6. A tested program passes only when translated Python has **exactly the same stdout and process return code** as the GnuCOBOL executable.
 
 The report separately records how many files were discovered, screened, rejected by reference compilation, excluded because the reference timed out, and actually compared. If fewer than 500 executable standalone sources can be selected, the run fails as incomplete rather than presenting a smaller sample as 500.
 
@@ -46,4 +47,4 @@ The report separately records how many files were discovered, screened, rejected
 
 ## Output
 
-The workflow uploads `external-corpus-report.json` and `external-corpus-report.md` as a 90-day artifact. It never uploads the source archive or extracted source files. The workflow's success status means the requested sample was measured successfully; it does **not** mean every translated program passed. Candidate mismatches are counted in the report so we can establish the baseline. The run fails only if it cannot reach the requested sample size or the benchmark infrastructure fails.
+The workflow uploads a separate `external-corpus-report.json` and `external-corpus-report.md` artifact for each sample (primary and holdout) with 90-day retention. It never uploads the source archive or extracted source files. The workflow's success status means the requested sample was measured successfully; it does **not** mean every translated program passed. Candidate mismatches are counted in the report so we can establish the baseline. The run fails only if it cannot reach the requested sample size or the benchmark infrastructure fails.
