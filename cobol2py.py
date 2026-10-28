@@ -1905,9 +1905,9 @@ def translate_condition(
         c = re.sub(r"\bLESS\s+(?:THAN\s+)?", "< ", c, flags=re.IGNORECASE)
         # Handle equality phrases only after compound >= / <= phrases; otherwise
         # "GREATER OR EQUAL" is split into "GREATER OR ==" before it can match.
-        c = re.sub(r"\bIS\s+EQUAL\s+TO\b", "==", c, flags=re.IGNORECASE)
-        c = re.sub(r"\bEQUAL\s+TO\b", "==", c, flags=re.IGNORECASE)
-        c = re.sub(r"\bEQUAL\b", "==", c, flags=re.IGNORECASE)
+        c = re.sub(r"\bIS\s+EQUALS?\s+TO\b", "==", c, flags=re.IGNORECASE)
+        c = re.sub(r"\bEQUALS?\s+TO\b", "==", c, flags=re.IGNORECASE)
+        c = re.sub(r"\bEQUALS?\b", "==", c, flags=re.IGNORECASE)
         c = re.sub(r"\bNOT\b", "not", c, flags=re.IGNORECASE)
         c = re.sub(r"\bIS\b", "==", c, flags=re.IGNORECASE)
         c = re.sub(r"(?<![!<>=])=(?!=)", "==", c)
