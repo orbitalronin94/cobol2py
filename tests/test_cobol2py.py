@@ -2602,7 +2602,7 @@ class GroupMoveFillRegressionTests(unittest.TestCase):
             "src_group": {"src_a": "AB", "src_b": "CD"},
             "target_group": {"target_a": " ", "target_b": "   "},
         }
-        exec("\\n".join(statements), namespace)
+        exec("\n".join(statements), namespace)
         self.assertEqual(namespace["target_group"], {"target_a": "A", "target_b": "BCD"})
 
     def test_move_space_to_group_preserves_group_and_child_fields(self):
