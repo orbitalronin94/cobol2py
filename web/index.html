@@ -541,6 +541,17 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
     for line_number, source_line in lines:
         if RE_VAR.match(source_line):
             declarations.append((line_number, source_line))
+        elif (
+            declarations
+            and re.search(r"\bVALUE(?:\s+IS)?\s*$", declarations[-1][1], re.IGNORECASE)
+            and re.match(
+                r"""^\s*(?:"(?:[^"]|"")*"|'(?:[^']|'')*'|[+-]?\d+(?:\.\d+)?|[A-Za-z][A-Za-z0-9-]*)\s*\.?\s*$""",
+                source_line,
+            )
+        ):
+            # COBOL commonly places a VALUE literal on the next physical line.
+            prior_number, prior_text = declarations[-1]
+            declarations[-1] = (prior_number, prior_text.rstrip() + " " + source_line.strip())
         elif declarations and continuation.match(source_line):
             prior_number, prior_text = declarations[-1]
             declarations[-1] = (prior_number, prior_text.rstrip() + " " + source_line.strip())
