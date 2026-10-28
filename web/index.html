@@ -1194,9 +1194,9 @@ def translate_literal(
     if t.upper() in ("ZEROS", "ZERO", "ZEROES", "ZEROES"):
         return "0"
     if t.upper() in ("LOW-VALUE", "LOW-VALUES"):
-        return "ZZCOBOLFIGLOWVALUEZZ"
+        return repr(chr(0))
     if t.upper() in ("HIGH-VALUE", "HIGH-VALUES"):
-        return "ZZCOBOLFIGHIGHVALUEZZ"
+        return repr(chr(255))
     if t.upper() == "TRUE":
         return "True"
     if t.upper() == "FALSE":
