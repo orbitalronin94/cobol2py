@@ -1774,7 +1774,20 @@ def split_cobol_items(s: str) -> list[str]:
             i += 2
         combined.append(token)
         i += 1
-    return combined
+
+    # Some source files wrap a comma-separated DISPLAY operand list in an
+    # extra pair of parentheses. Treat that as adjacent DISPLAY operands,
+    # not as a Python tuple containing COBOL numeric literals.
+    expanded: list[str] = []
+    for token in combined:
+        wrapped = re.fullmatch(r"\(\s*(.+?)\s*\)", token)
+        if wrapped and "," in wrapped.group(1):
+            inner_items = split_cobol_items(wrapped.group(1))
+            if len(inner_items) > 1:
+                expanded.extend(inner_items)
+                continue
+        expanded.append(token)
+    return expanded
 
 
 DATA_REF_PATTERN = r"[A-Za-z0-9-]+(?:\s*\([A-Za-z0-9_,\s-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?"
