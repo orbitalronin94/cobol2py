@@ -263,7 +263,7 @@ class TranslationTests(unittest.TestCase):
         from io import StringIO
         from unittest.mock import patch
 
-        source = "\\n".join([
+        source = "\n".join([
             "IDENTIFICATION DIVISION.",
             "PROGRAM-ID. ACCEPTEOF.",
             "DATA DIVISION.",
@@ -284,7 +284,7 @@ class TranslationTests(unittest.TestCase):
         output = StringIO()
         with patch("builtins.input", side_effect=EOFError), redirect_stdout(output):
             namespace["main"]()
-        self.assertEqual(output.getvalue(), "000\\n   \\n", generated)
+        self.assertEqual(output.getvalue(), "000\n   \n", generated)
 
     def test_java_accept_applies_numeric_and_alphanumeric_receiving_types(self):
         variables = {
