@@ -1000,7 +1000,7 @@ class EndToEndTests(unittest.TestCase):
             "       PROGRAM-ID. LOOPTEST.",
             "       PROCEDURE DIVISION.",
             "       MAIN-PARA.",
-            "           PERFORM WORK-PARA 3 TIMES.",
+            "           PERFORM WORK-PARA 03 TIMES.",
             "           STOP RUN.",
             "       WORK-PARA.",
             '           DISPLAY "OK".',
@@ -1430,7 +1430,7 @@ PROCEDURE DIVISION.
             "       PROGRAM-ID. INLINELOOP.",
             "       PROCEDURE DIVISION.",
             "       MAIN.",
-            '           PERFORM 2 TIMES DISPLAY "TICK" END-PERFORM.',
+            '           PERFORM 02 TIMES DISPLAY "TICK" END-PERFORM.',
             "           STOP RUN.",
         ])
         generated = cobol2py.emit_python(cobol2py.parse_cobol(source))
@@ -1946,6 +1946,22 @@ class AbbreviatedCombinedConditionRegressionTests(unittest.TestCase):
         self.assertNotIn("or ==", translated)
         compile(translated, "<abbreviated-condition>", "eval")
 
+    def test_numeric_range_repeats_subject_and_relation(self):
+        translated = cobol2py.translate_condition("WS-NUM > 10 AND < 21")
+        self.assertEqual(translated, "ws_num > 10 and ws_num < 21")
+        self.assertTrue(eval(translated, {"ws_num": 15}))
+        self.assertFalse(eval(translated, {"ws_num": 25}))
+
+    def test_numeric_or_value_repeats_subject_and_equality(self):
+        translated = cobol2py.translate_condition("WS-NUM = 1 OR 2")
+        self.assertEqual(translated, "ws_num == 1 or ws_num == 2")
+        self.assertTrue(eval(translated, {"ws_num": 2}))
+        self.assertFalse(eval(translated, {"ws_num": 3}))
+
+    def test_two_complete_conditions_are_not_treated_as_abbreviated(self):
+        translated = cobol2py.translate_condition("WS-A > 1 AND WS-B > 2")
+        self.assertEqual(translated, "ws_a > 1 and ws_b > 2")
+
 
 class DigitLeadingHyphenatedNameRegressionTests(unittest.TestCase):
     def test_digit_leading_hyphenated_identifier_is_not_split_as_arithmetic(self):
@@ -1955,6 +1971,17 @@ class DigitLeadingHyphenatedNameRegressionTests(unittest.TestCase):
 
 
 class ReferenceModificationSliceSemanticsTests(unittest.TestCase):
+    def test_arithmetic_expression_in_table_subscript_is_preserved(self):
+        variables = {
+            "WS-TABLE": cobol2py.CobolVar(
+                level=1, name="WS-TABLE", pic="9(2)", is_array=True, occurs=5
+            ),
+            "WS-INDEX": cobol2py.CobolVar(level=1, name="WS-INDEX", pic="9(2)"),
+        }
+        translated = cobol2py.translate_expr("WS-TABLE(WS-INDEX + 1)", variables)
+        self.assertEqual(translated, "ws_table[ws_index + 1 - 1]")
+        compile(translated, "<arithmetic-table-subscript>", "eval")
+
     def test_variable_start_and_length_become_zero_based_python_slice(self):
         translated = cobol2py.translate_expr("NEW-STRING(SUB-1:1)")
         self.assertEqual(translated, "cobol_new_string[sub_1 - 1:(sub_1 - 1) + (1)]")

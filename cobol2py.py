@@ -1082,6 +1082,8 @@ def normalize_data_reference(
             # COBOL subscripts are numeric even when the translator inferred
             # their storage as text; coerce before using Python list indexing.
             return f"int({normalize_name(subscript)}) - 1"
+        if re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*\s*[+*/-]\s*[A-Za-z0-9_-]+(?:\s*[+*/-]\s*[A-Za-z0-9_-]+)*", subscript):
+            return f"{translate_expr(subscript, variable_map)} - 1"
         return f"{normalize_name(subscript)} - 1"
 
     variable = variable_map.get(field_name.upper())
@@ -1345,7 +1347,7 @@ def translate_expr(
         expr,
     )
     expr = re.sub(
-        r"\b([A-Za-z][A-Za-z0-9-]*)\s*\(([A-Za-z0-9_,;\s-]+)\)",
+        r"\b([A-Za-z][A-Za-z0-9-]*)\s*\(([A-Za-z0-9_,;+*/\s-]+)\)",
         lambda match: match.group(0) if match.group(1).upper() in intrinsic_names
         else normalize_data_reference(match.group(0), variables),
         expr,
@@ -1995,12 +1997,14 @@ def translate_condition(
     )
 
     # COBOL abbreviated combined relation conditions may omit the repeated
-    # subject, e.g. IF FLAG = "S" OR "N". Restore it in Python output.
+    # subject and/or relation operator, e.g. FLAG = "S" OR "N" or N > 10 AND < 21.
+    # Expand both forms after tokenization so nested group/table references are safe.
     literal_pattern = r"""(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')"""
+    atom_pattern = r"""(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[-+]?\d+(?:\.\d+)?|(?!and\b|or\b|not\b|is\b)[a-z][a-z0-9_]*(?:\[[^\]]+\])*)"""
     abbreviated = re.compile(
-        r"(?P<lhs>[a-z_][a-z0-9_]*(?:\[[^\]]+\])*(?:\.ljust\(\d+\))?)"
-        r"\s*(?P<op>==|!=|<=|>=|<|>)\s*(?P<first>" + literal_pattern + r")"
-        r"\s+(?P<logic>and|or)\s+(?P<op2>==|!=|<=|>=|<|>)?\s*(?P<second>" + literal_pattern + r")",
+        r"(?P<lhs>[a-z][a-z0-9_]*(?:\[[^\]]+\])*(?:\.ljust\(\d+\))?)"
+        r"\s*(?P<op>==|!=|<=|>=|<|>)\s*(?P<first>" + atom_pattern + r")"
+        r"\s+(?P<logic>and|or)\s+(?P<op2>==|!=|<=|>=|<|>)?\s*(?P<second>" + atom_pattern + r")(?![a-z0-9_])(?!\s*(?:==|!=|<=|>=|<|>))",
         re.IGNORECASE,
     )
     translated = abbreviated.sub(
@@ -2600,7 +2604,7 @@ def translate_statement(
 
     m = re.match(r"PERFORM\s+([A-Za-z0-9\-]+)\s+(\d+)\s+TIMES", s, re.IGNORECASE)
     if m and m.group(1).upper() in paragraphs:
-        return [f"for _ in range({m.group(2)}):", f"{normalize_name(m.group(1))}()"]
+        return [f"for _ in range({int(m.group(2))}):", f"{normalize_name(m.group(1))}()"]
 
     m = re.match(r"PERFORM\s+([A-Za-z0-9\-]+)\s+UNTIL\s+(.+)", s, re.IGNORECASE)
     if m and m.group(1).upper() in paragraphs:
@@ -2670,7 +2674,7 @@ def translate_nodes(
 
         elif node.kind == "perform_times_inline":
             match = re.match(r"^PERFORM\s+(\d+)\s+TIMES$", node.text, re.IGNORECASE)
-            count = match.group(1) if match else "0"
+            count = str(int(match.group(1))) if match else "0"
             out.append("    " * indent + f"for _ in range({count}):")
             body = translate_nodes(node.body, paragraphs, indent + 1, variables, condition_names=condition_names)
             if not body or all(not line.strip() or line.strip().startswith("#") for line in body):
