@@ -2789,7 +2789,8 @@ def emit_python(prog: Program) -> str:
         if global_vars:
             lines.append("    global " + ", ".join(global_vars))
         body = translate_paragraph(
-            nodes, para_names, variables_by_name, current_paragraph=para_name
+            nodes, para_names, variables_by_name, current_paragraph=para_name,
+            condition_names=prog.condition_names,
         )
         # A paragraph containing only comments/blank lines still needs a
         # real Python statement. This is especially important inside the
