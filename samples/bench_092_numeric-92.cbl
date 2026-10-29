@@ -1,0 +1,10 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. B092.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 WS-NUM PIC 9(3).
+       PROCEDURE DIVISION.
+       MAIN-PARA.
+           MOVE 123 TO WS-NUM.
+           DISPLAY WS-NUM.
+           STOP RUN.

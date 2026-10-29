@@ -1,0 +1,11 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. B090.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 WS-NUM PIC 9(3) VALUE 3.
+       PROCEDURE DIVISION.
+       MAIN-PARA.
+           MULTIPLY 5 BY WS-NUM.
+           ADD 2 TO WS-NUM.
+           DISPLAY WS-NUM.
+           STOP RUN.

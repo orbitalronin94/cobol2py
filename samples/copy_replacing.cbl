@@ -1,0 +1,10 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. COPYREPLACING.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       COPY R REPLACING ==FN== BY ==WS-CODE== ==FP== BY ==X(4)==.
+       PROCEDURE DIVISION.
+       MAIN.
+           MOVE "OK" TO WS-CODE.
+           DISPLAY WS-CODE.
+           STOP RUN.

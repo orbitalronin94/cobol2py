@@ -1,0 +1,10 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. B064.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 WS-NUM PIC 9(3).
+       PROCEDURE DIVISION.
+       MAIN-PARA.
+           COMPUTE WS-NUM = 12 + 8.
+           DISPLAY WS-NUM.
+       STOP RUN.

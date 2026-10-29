@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "corpus": "external-cobol-candidates",
+  "status": "candidate-ledger",
+  "description": "Preliminary externally hosted COBOL sources. Entries are not yet compile-validated or differential-tested; do not count as benchmark passes.",
+  "entries": [
+    {
+      "id": "legacy-ledger-validate",
+      "project": "COBOL Legacy Ledger",
+      "program_id": "VALIDATE",
+      "repository": "albertdobmeyer/cobol-legacy-ledger",
+      "source_path": "COBOL-BANKING/src/VALIDATE.cob",
+      "source_url": "https://github.com/albertdobmeyer/cobol-legacy-ledger/blob/4ec2a1fd9a569fa694c384a6a06201f0045904b2/COBOL-BANKING/src/VALIDATE.cob",
+      "source_commit": "4ec2a1fd9a569fa694c384a6a06201f0045904b2",
+      "source_blob_sha": "ed75f1c17253860ff5f3f59480c68a3a29369485",
+      "source_lines": 219,
+      "license_spdx": "MIT",
+      "license_path": "LICENSE",
+      "license_evidence": "repository license file checked at pinned revision",
+      "vendored": false,
+      "compile_status": "NOT_RUN",
+      "runtime_status": "NOT_RUN",
+      "blockers": [
+        "dependencies and runtime fixture not yet audited"
+      ]
+    },
+    {
+      "id": "banco-en-cobol-banco",
+      "project": "Banco-en-COBOL",
+      "program_id": "BANCO",
+      "repository": "Mel-Roses/Banco-en-COBOL",
+      "source_path": "banco.cob",
+      "source_url": "https://github.com/Mel-Roses/Banco-en-COBOL/blob/7ea14ed7512e77cae43c0b837884f7bc76beec90/banco.cob",
+      "source_commit": "7ea14ed7512e77cae43c0b837884f7bc76beec90",
+      "source_blob_sha": "9318ff8a94b597e7c54ace97540de8185809dbc1",
+      "source_lines": 1583,
+      "license_spdx": "AGPL-3.0",
+      "license_path": "LICENSE",
+      "license_evidence": "repository license file checked at pinned revision",
+      "vendored": false,
+      "compile_status": "NOT_RUN",
+      "runtime_status": "NOT_RUN",
+      "blockers": [
+        "AGPL attribution and license obligations review",
+        "Linux reproducibility not yet verified"
+      ]
+    },
+    {
+      "id": "payroll-management-payroll",
+      "project": "Payroll Management System",
+      "program_id": "PAYROLL",
+      "repository": "JAGADISHSUNILPEDNEKAR/Payroll_Management_System",
+      "source_path": "payroll.cbl",
+      "source_url": "https://github.com/JAGADISHSUNILPEDNEKAR/Payroll_Management_System/blob/433ea0074b4a90466136d41963b29abae69c4cfe/payroll.cbl",
+      "source_commit": "433ea0074b4a90466136d41963b29abae69c4cfe",
+      "source_blob_sha": "586401b76eac3fa26d684eec56f0e57efa0b4c88",
+      "source_lines": 639,
+      "license_spdx": "MIT",
+      "license_path": "LICENSE",
+      "license_evidence": "repository license file checked at pinned revision",
+      "vendored": false,
+      "compile_status": "NOT_RUN",
+      "runtime_status": "NOT_RUN",
+      "blockers": [
+        "data files and execution fixture not yet audited"
+      ]
+    },
+    {
+      "id": "enterprise-txn-txnval00",
+      "project": "Enterprise Financial Transaction Processor",
+      "program_id": "TXNVAL00",
+      "repository": "ItsSNOWMOBILE/cobol-enterprise-txn-processor",
+      "source_path": "src/programs/TXNVAL00.cbl",
+      "source_url": "https://github.com/ItsSNOWMOBILE/cobol-enterprise-txn-processor/blob/5b328496120afbbc3e1bcadf60421598c19db2ea/src/programs/TXNVAL00.cbl",
+      "source_commit": "5b328496120afbbc3e1bcadf60421598c19db2ea",
+      "source_blob_sha": "5fb7579a856181f7a15cb8063c3f4885f86c3b35",
+      "source_lines": 812,
+      "license_spdx": "MIT",
+      "license_path": "LICENSE",
+      "license_evidence": "repository license file checked at pinned revision",
+      "vendored": false,
+      "compile_status": "NOT_RUN",
+      "runtime_status": "NOT_RUN",
+      "blockers": [
+        "pipeline copybooks and fixtures must be assessed as a system"
+      ]
+    },
+    {
+      "id": "ibm-stocktrader-cash00",
+      "project": "IBM StockTrader Cash Account",
+      "program_id": "CASH00",
+      "repository": "IBMStockTrader/cash-account-cobol",
+      "source_path": "COBOL/CASH00.cbl",
+      "source_url": "https://github.com/IBMStockTrader/cash-account-cobol/blob/c35db0d1f283367109bcd5dfadd76560cf53b2dc/COBOL/CASH00.cbl",
+      "source_commit": "c35db0d1f283367109bcd5dfadd76560cf53b2dc",
+      "source_blob_sha": "9c04a8d1db4673102fe0095fed8a63a96ac37b9d",
+      "source_lines": 270,
+      "license_spdx": "Apache-2.0",
+      "license_path": "LICENSE",
+      "license_evidence": "repository license file checked at pinned revision",
+      "vendored": false,
+      "compile_status": "NOT_RUN",
+      "runtime_status": "NOT_RUN",
+      "blockers": [
+        "CICS/embedded SQL constructs may require unavailable platform services"
+      ]
+    },
+    {
+      "id": "cobol-cashier-bankled",
+      "project": "COBOL Cashier",
+      "program_id": "BANKLED",
+      "repository": "bitoiu/cobol-cashier",
+      "source_path": "src/BANKLED.cob",
+      "source_url": "https://github.com/bitoiu/cobol-cashier/blob/3eb401ee417b01ee28d8e560b3c4330e3c4eccaa/src/BANKLED.cob",
+      "source_commit": "3eb401ee417b01ee28d8e560b3c4330e3c4eccaa",
+      "source_blob_sha": "c69d3f839725a811f175ea066572bc3ea6a0ebd2",
+      "source_lines": 653,
+      "license_spdx": "MIT",
+      "license_path": "LICENSE",
+      "license_evidence": "repository license file checked at pinned revision",
+      "vendored": false,
+      "compile_status": "NOT_RUN",
+      "runtime_status": "NOT_RUN",
+      "blockers": [
+        "indexed-file and copybook setup plus fixtures not yet audited"
+      ]
+    }
+  ]
+}

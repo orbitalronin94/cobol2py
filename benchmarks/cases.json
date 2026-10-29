@@ -1,0 +1,767 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "control-flow-redefines",
+      "path": "samples/control_flow_redefines.cbl",
+      "features": [
+        "ALTER dynamic destination",
+        "GO TO DEPENDING ON ordinal dispatch",
+        "REDEFINES shared storage",
+        "cross-paragraph dispatcher"
+      ]
+    },
+    {
+      "id": "realtest",
+      "path": "samples/realtest.cbl",
+      "features": [
+        "MOVE",
+        "PIC X/9",
+        "ADD",
+        "IF/ELSE",
+        "PERFORM TIMES",
+        "tables/subscripts",
+        "paragraph calls"
+      ]
+    },
+    {
+      "id": "move-semantics",
+      "path": "samples/move_semantics.cbl",
+      "features": [
+        "PIC X fixed-width initialization",
+        "MOVE text padding/truncation",
+        "PIC 9 overflow truncation",
+        "DISPLAY"
+      ]
+    },
+    {
+      "id": "copy-replacing-basic",
+      "path": "samples/copy_replacing.cbl",
+      "features": [
+        "COPY REPLACING multiple pseudo-text pairs",
+        "copybook field rename and PIC replacement",
+        "MOVE and DISPLAY"
+      ]
+    },
+    {
+      "id": "display-hello",
+      "path": "samples/bench_01_display_hello.cbl",
+      "features": [
+        "DISPLAY literal"
+      ]
+    },
+    {
+      "id": "display-number-literal",
+      "path": "samples/bench_02_display_number_literal.cbl",
+      "features": [
+        "DISPLAY numeric-looking literal"
+      ]
+    },
+    {
+      "id": "display-two-literals",
+      "path": "samples/bench_03_display_two_literals.cbl",
+      "features": [
+        "DISPLAY multiple operands"
+      ]
+    },
+    {
+      "id": "display-punctuation",
+      "path": "samples/bench_04_display_punctuation.cbl",
+      "features": [
+        "DISPLAY punctuation"
+      ]
+    },
+    {
+      "id": "picx-value",
+      "path": "samples/bench_05_picx_value.cbl",
+      "features": [
+        "PIC X VALUE"
+      ]
+    },
+    {
+      "id": "picx-move-short",
+      "path": "samples/bench_06_picx_move_short.cbl",
+      "features": [
+        "MOVE text padding"
+      ]
+    },
+    {
+      "id": "picx-move-long",
+      "path": "samples/bench_07_picx_move_long.cbl",
+      "features": [
+        "MOVE text truncation"
+      ]
+    },
+    {
+      "id": "picx-overwrite",
+      "path": "samples/bench_08_picx_overwrite.cbl",
+      "features": [
+        "overwrite alphanumeric"
+      ]
+    },
+    {
+      "id": "picx-two-moves",
+      "path": "samples/bench_09_picx_two_moves.cbl",
+      "features": [
+        "sequential MOVE"
+      ]
+    },
+    {
+      "id": "picx-two-fields",
+      "path": "samples/bench_10_picx_two_fields.cbl",
+      "features": [
+        "multiple working-storage fields"
+      ]
+    },
+    {
+      "id": "numeric-move-small",
+      "path": "samples/bench_11_numeric_move_small.cbl",
+      "features": [
+        "numeric MOVE and IF"
+      ]
+    },
+    {
+      "id": "numeric-add",
+      "path": "samples/bench_12_numeric_add.cbl",
+      "features": [
+        "ADD"
+      ]
+    },
+    {
+      "id": "numeric-subtract",
+      "path": "samples/bench_13_numeric_subtract.cbl",
+      "features": [
+        "SUBTRACT"
+      ]
+    },
+    {
+      "id": "numeric-multiply",
+      "path": "samples/bench_14_numeric_multiply.cbl",
+      "features": [
+        "MULTIPLY"
+      ]
+    },
+    {
+      "id": "numeric-compute",
+      "path": "samples/bench_15_numeric_compute.cbl",
+      "features": [
+        "COMPUTE addition"
+      ]
+    },
+    {
+      "id": "numeric-compute-expression",
+      "path": "samples/bench_16_compute_expr.cbl",
+      "features": [
+        "COMPUTE expression"
+      ]
+    },
+    {
+      "id": "if-true",
+      "path": "samples/bench_17_if_true.cbl",
+      "features": [
+        "IF true branch"
+      ]
+    },
+    {
+      "id": "if-false",
+      "path": "samples/bench_18_if_false.cbl",
+      "features": [
+        "IF false branch"
+      ]
+    },
+    {
+      "id": "if-greater",
+      "path": "samples/bench_19_if_greater.cbl",
+      "features": [
+        "greater-than comparison"
+      ]
+    },
+    {
+      "id": "if-less-equal",
+      "path": "samples/bench_20_if_less_equal.cbl",
+      "features": [
+        "less-than-or-equal comparison"
+      ]
+    },
+    {
+      "id": "if-nested",
+      "path": "samples/bench_21_if_nested.cbl",
+      "features": [
+        "nested IF"
+      ]
+    },
+    {
+      "id": "if-string-equal",
+      "path": "samples/bench_22_if_string_equal.cbl",
+      "features": [
+        "alphanumeric comparison"
+      ]
+    },
+    {
+      "id": "if-string-else",
+      "path": "samples/bench_23_if_string_else.cbl",
+      "features": [
+        "alphanumeric ELSE"
+      ]
+    },
+    {
+      "id": "perform-times-1",
+      "path": "samples/bench_24_perform_times_1.cbl",
+      "features": [
+        "PERFORM TIMES count 1"
+      ]
+    },
+    {
+      "id": "perform-times-3",
+      "path": "samples/bench_25_perform_times_3.cbl",
+      "features": [
+        "PERFORM TIMES count 3"
+      ]
+    },
+    {
+      "id": "perform-times-5",
+      "path": "samples/bench_26_perform_times_5.cbl",
+      "features": [
+        "PERFORM TIMES count 5"
+      ]
+    },
+    {
+      "id": "paragraph-call",
+      "path": "samples/bench_27_paragraph_call.cbl",
+      "features": [
+        "paragraph call"
+      ]
+    },
+    {
+      "id": "paragraph-twice",
+      "path": "samples/bench_28_paragraph_twice.cbl",
+      "features": [
+        "repeated paragraph call"
+      ]
+    },
+    {
+      "id": "paragraph-chain",
+      "path": "samples/bench_29_paragraph_chain.cbl",
+      "features": [
+        "paragraph chain"
+      ]
+    },
+    {
+      "id": "multiple-displays",
+      "path": "samples/bench_30_multiple_displays.cbl",
+      "features": [
+        "multiple DISPLAY statements"
+      ]
+    },
+    {
+      "id": "move-literal-condition",
+      "path": "samples/bench_31_move_literal_condition.cbl",
+      "features": [
+        "single-character flag"
+      ]
+    },
+    {
+      "id": "move-flag-change",
+      "path": "samples/bench_32_move_flag_change.cbl",
+      "features": [
+        "flag update"
+      ]
+    },
+    {
+      "id": "numeric-increment",
+      "path": "samples/bench_33_numeric_increment.cbl",
+      "features": [
+        "repeated increment"
+      ]
+    },
+    {
+      "id": "numeric-decrement",
+      "path": "samples/bench_34_numeric_decrement.cbl",
+      "features": [
+        "repeated decrement"
+      ]
+    },
+    {
+      "id": "numeric-overflow",
+      "path": "samples/bench_35_numeric_overflow.cbl",
+      "features": [
+        "numeric MOVE truncation"
+      ]
+    },
+    {
+      "id": "numeric-zero",
+      "path": "samples/bench_36_numeric_zero.cbl",
+      "features": [
+        "numeric zero VALUE"
+      ]
+    },
+    {
+      "id": "numeric-initial-value",
+      "path": "samples/bench_37_numeric_initial_value.cbl",
+      "features": [
+        "numeric VALUE"
+      ]
+    },
+    {
+      "id": "compute-subtract",
+      "path": "samples/bench_38_compute_subtract.cbl",
+      "features": [
+        "COMPUTE subtraction"
+      ]
+    },
+    {
+      "id": "compute-multiply",
+      "path": "samples/bench_39_compute_multiply.cbl",
+      "features": [
+        "COMPUTE multiplication"
+      ]
+    },
+    {
+      "id": "compute-divide-exact",
+      "path": "samples/bench_40_compute_divide_exact.cbl",
+      "features": [
+        "COMPUTE exact division"
+      ]
+    },
+    {
+      "id": "if-and-equivalent",
+      "path": "samples/bench_41_if_and_equivalent.cbl",
+      "features": [
+        "compound AND condition"
+      ]
+    },
+    {
+      "id": "if-or-equivalent",
+      "path": "samples/bench_42_if_or_equivalent.cbl",
+      "features": [
+        "compound OR condition"
+      ]
+    },
+    {
+      "id": "table-first",
+      "path": "samples/bench_43_table_first.cbl",
+      "features": [
+        "table element 1"
+      ]
+    },
+    {
+      "id": "table-second",
+      "path": "samples/bench_44_table_second.cbl",
+      "features": [
+        "table element 2"
+      ]
+    },
+    {
+      "id": "table-index-variable",
+      "path": "samples/bench_45_table_index_variable.cbl",
+      "features": [
+        "variable table subscript"
+      ]
+    },
+    {
+      "id": "picx-default",
+      "path": "samples/bench_46_picx_default.cbl",
+      "features": [
+        "PIC X default spaces"
+      ]
+    },
+    {
+      "id": "literal-spaces",
+      "path": "samples/bench_47_literal_spaces.cbl",
+      "features": [
+        "literal embedded spaces"
+      ]
+    },
+    {
+      "id": "multiple-conditions",
+      "path": "samples/bench_48_multiple_conditions.cbl",
+      "features": [
+        "variable-to-variable comparison"
+      ]
+    },
+    {
+      "id": "display-51",
+      "path": "samples/bench_051_display-51.cbl",
+      "features": [
+        "DISPLAY literal with punctuation"
+      ]
+    },
+    {
+      "id": "display-52",
+      "path": "samples/bench_052_display-52.cbl",
+      "features": [
+        "multiple DISPLAY statements"
+      ]
+    },
+    {
+      "id": "display-53",
+      "path": "samples/bench_053_display-53.cbl",
+      "features": [
+        "literal embedded spaces"
+      ]
+    },
+    {
+      "id": "display-54",
+      "path": "samples/bench_054_display-54.cbl",
+      "features": [
+        "PIC X VALUE and DISPLAY"
+      ]
+    },
+    {
+      "id": "display-55",
+      "path": "samples/bench_055_display-55.cbl",
+      "features": [
+        "short alphanumeric MOVE padding"
+      ]
+    },
+    {
+      "id": "display-56",
+      "path": "samples/bench_056_display-56.cbl",
+      "features": [
+        "long alphanumeric MOVE truncation"
+      ]
+    },
+    {
+      "id": "display-57",
+      "path": "samples/bench_057_display-57.cbl",
+      "features": [
+        "two independent fields"
+      ]
+    },
+    {
+      "id": "display-58",
+      "path": "samples/bench_058_display-58.cbl",
+      "features": [
+        "overwrite alphanumeric field"
+      ]
+    },
+    {
+      "id": "numeric-59",
+      "path": "samples/bench_059_numeric-59.cbl",
+      "features": [
+        "numeric MOVE small value"
+      ]
+    },
+    {
+      "id": "numeric-60",
+      "path": "samples/bench_060_numeric-60.cbl",
+      "features": [
+        "unsigned numeric overflow truncation"
+      ]
+    },
+    {
+      "id": "numeric-61",
+      "path": "samples/bench_061_numeric-61.cbl",
+      "features": [
+        "ADD one operand"
+      ]
+    },
+    {
+      "id": "numeric-62",
+      "path": "samples/bench_062_numeric-62.cbl",
+      "features": [
+        "SUBTRACT one operand"
+      ]
+    },
+    {
+      "id": "numeric-63",
+      "path": "samples/bench_063_numeric-63.cbl",
+      "features": [
+        "MULTIPLY one operand"
+      ]
+    },
+    {
+      "id": "numeric-64",
+      "path": "samples/bench_064_numeric-64.cbl",
+      "features": [
+        "COMPUTE addition"
+      ]
+    },
+    {
+      "id": "numeric-65",
+      "path": "samples/bench_065_numeric-65.cbl",
+      "features": [
+        "COMPUTE subtraction"
+      ]
+    },
+    {
+      "id": "numeric-66",
+      "path": "samples/bench_066_numeric-66.cbl",
+      "features": [
+        "COMPUTE multiplication"
+      ]
+    },
+    {
+      "id": "numeric-67",
+      "path": "samples/bench_067_numeric-67.cbl",
+      "features": [
+        "exact integer division"
+      ]
+    },
+    {
+      "id": "numeric-68",
+      "path": "samples/bench_068_numeric-68.cbl",
+      "features": [
+        "ADD multiple operands"
+      ]
+    },
+    {
+      "id": "numeric-69",
+      "path": "samples/bench_069_numeric-69.cbl",
+      "features": [
+        "MOVE zero into numeric field"
+      ]
+    },
+    {
+      "id": "display-70",
+      "path": "samples/bench_070_display-70.cbl",
+      "features": [
+        "default spaces in PIC X"
+      ]
+    },
+    {
+      "id": "paragraph-71",
+      "path": "samples/bench_071_paragraph-71.cbl",
+      "features": [
+        "single paragraph call"
+      ]
+    },
+    {
+      "id": "paragraph-72",
+      "path": "samples/bench_072_paragraph-72.cbl",
+      "features": [
+        "paragraph called twice"
+      ]
+    },
+    {
+      "id": "paragraph-73",
+      "path": "samples/bench_073_paragraph-73.cbl",
+      "features": [
+        "paragraph chain"
+      ]
+    },
+    {
+      "id": "perform-74",
+      "path": "samples/bench_074_perform-74.cbl",
+      "features": [
+        "paragraph repeated twice"
+      ]
+    },
+    {
+      "id": "perform-75",
+      "path": "samples/bench_075_perform-75.cbl",
+      "features": [
+        "paragraph repeated four times"
+      ]
+    },
+    {
+      "id": "perform-76",
+      "path": "samples/bench_076_perform-76.cbl",
+      "features": [
+        "PERFORM paragraph UNTIL condition"
+      ]
+    },
+    {
+      "id": "numeric-77",
+      "path": "samples/bench_077_numeric-77.cbl",
+      "features": [
+        "repeated increment"
+      ]
+    },
+    {
+      "id": "display-78",
+      "path": "samples/bench_078_display-78.cbl",
+      "features": [
+        "display text after MOVE"
+      ]
+    },
+    {
+      "id": "display-79",
+      "path": "samples/bench_079_display-79.cbl",
+      "features": [
+        "DISPLAY numeric field with width"
+      ]
+    },
+    {
+      "id": "display-80",
+      "path": "samples/bench_080_display-80.cbl",
+      "features": [
+        "concatenate text and numeric"
+      ]
+    },
+    {
+      "id": "display-81",
+      "path": "samples/bench_081_display-81.cbl",
+      "features": [
+        "truncate and overwrite text"
+      ]
+    },
+    {
+      "id": "display-82",
+      "path": "samples/bench_082_display-82.cbl",
+      "features": [
+        "right-padding text to width"
+      ]
+    },
+    {
+      "id": "display-83",
+      "path": "samples/bench_083_display-83.cbl",
+      "features": [
+        "single character field"
+      ]
+    },
+    {
+      "id": "display-84",
+      "path": "samples/bench_084_display-84.cbl",
+      "features": [
+        "ten character initial value"
+      ]
+    },
+    {
+      "id": "numeric-85",
+      "path": "samples/bench_085_numeric-85.cbl",
+      "features": [
+        "two digit initial value"
+      ]
+    },
+    {
+      "id": "numeric-86",
+      "path": "samples/bench_086_numeric-86.cbl",
+      "features": [
+        "four digit initial value"
+      ]
+    },
+    {
+      "id": "numeric-87",
+      "path": "samples/bench_087_numeric-87.cbl",
+      "features": [
+        "COMPUTE with parentheses"
+      ]
+    },
+    {
+      "id": "numeric-88",
+      "path": "samples/bench_088_numeric-88.cbl",
+      "features": [
+        "ADD three operands"
+      ]
+    },
+    {
+      "id": "numeric-89",
+      "path": "samples/bench_089_numeric-89.cbl",
+      "features": [
+        "SUBTRACT multiple operands"
+      ]
+    },
+    {
+      "id": "numeric-90",
+      "path": "samples/bench_090_numeric-90.cbl",
+      "features": [
+        "MULTIPLY then ADD"
+      ]
+    },
+    {
+      "id": "numeric-91",
+      "path": "samples/bench_091_numeric-91.cbl",
+      "features": [
+        "DIVIDE exact result"
+      ]
+    },
+    {
+      "id": "numeric-92",
+      "path": "samples/bench_092_numeric-92.cbl",
+      "features": [
+        "move numeric literal to field"
+      ]
+    },
+    {
+      "id": "numeric-93",
+      "path": "samples/bench_093_numeric-93.cbl",
+      "features": [
+        "MOVE between numeric fields"
+      ]
+    },
+    {
+      "id": "display-94",
+      "path": "samples/bench_094_display-94.cbl",
+      "features": [
+        "MOVE between alphanumeric fields"
+      ]
+    },
+    {
+      "id": "paragraph-95",
+      "path": "samples/bench_095_paragraph-95.cbl",
+      "features": [
+        "paragraph emits literal"
+      ]
+    },
+    {
+      "id": "perform-96",
+      "path": "samples/bench_096_perform-96.cbl",
+      "features": [
+        "paragraph repeated three times"
+      ]
+    },
+    {
+      "id": "numeric-97",
+      "path": "samples/bench_097_numeric-97.cbl",
+      "features": [
+        "arithmetic across two variables"
+      ]
+    },
+    {
+      "id": "display-98",
+      "path": "samples/bench_098_display-98.cbl",
+      "features": [
+        "three sequential displays"
+      ]
+    },
+    {
+      "id": "numeric-99",
+      "path": "samples/bench_099_numeric-99.cbl",
+      "features": [
+        "numeric decrement twice"
+      ]
+    },
+    {
+      "id": "display-100",
+      "path": "samples/bench_100_display-100.cbl",
+      "features": [
+        "final corpus marker"
+      ]
+    },
+    {
+      "id": "arithmetic-receiving-pic",
+      "path": "samples/arithmetic_size.cbl",
+      "features": [
+        "ADD receiving PIC overflow",
+        "COMPUTE receiving PIC overflow",
+        "MULTIPLY receiving PIC overflow",
+        "SUBTRACT receiving PIC sizing",
+        "DIVIDE receiving PIC truncation"
+      ]
+    },
+    {
+      "id": "laberinto-cobol",
+      "path": "samples/laberinto_cobol.cbl",
+      "features": [
+        "ALTER target mutation across paragraph dispatch",
+        "GO TO DEPENDING ON ordinal routing and out-of-range fallthrough",
+        "REDEFINES shared storage for numeric and alphanumeric views",
+        "nested WORKING-STORAGE group overlay",
+        "ADD ... TO ... GIVING",
+        "looping paragraph control flow"
+      ]
+    },
+    {
+      "id": "el-multi-tabla-diabolico",
+      "path": "samples/el_multi_tabla_diabolico.cbl",
+      "features": [
+        "OCCURS DEPENDING ON active length",
+        "ASCENDING KEY and INDEXED BY",
+        "SEARCH ALL binary search",
+        "base-1 SET index semantics",
+        "recursive PERFORM with single base-case DISPLAY"
+      ]
+    }
+  ]
+}

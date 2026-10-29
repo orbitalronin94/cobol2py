@@ -1,0 +1,12 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. B081.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 WS-TEXT PIC X(3).
+       PROCEDURE DIVISION.
+       MAIN-PARA.
+           MOVE "LONGER" TO WS-TEXT.
+           DISPLAY WS-TEXT.
+           MOVE "OK" TO WS-TEXT.
+           DISPLAY WS-TEXT.
+           STOP RUN.
