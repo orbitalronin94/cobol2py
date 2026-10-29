@@ -3231,3 +3231,15 @@ class ExternalBenchmarkConditionRegressionTests(unittest.TestCase):
         self.assertTrue(eval(translated, {"ws_opcao": "A"}))
         self.assertFalse(eval(translated, {"ws_opcao": "N"}))
         self.assertFalse(eval(translated, {"ws_opcao": "S"}))
+
+    def test_abbreviated_negated_relation_repeats_operator(self):
+        variables = {
+            "WS-OPCAO": cobol2py.CobolVar(level=77, name="WS-OPCAO", pic="X(1)")
+        }
+        translated = cobol2py.translate_condition(
+            'WS-OPCAO NOT = "N" AND NOT = "S"', variables
+        )
+        ast.parse(translated, mode="eval")
+        self.assertTrue(eval(translated, {"ws_opcao": "A"}))
+        self.assertFalse(eval(translated, {"ws_opcao": "N"}))
+        self.assertFalse(eval(translated, {"ws_opcao": "S"}))
