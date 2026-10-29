@@ -37,6 +37,14 @@ class NativeBackendTests(unittest.TestCase):
         self.assertIn('print!("{}\\n", ws_name);', output)
         self.assertIn("ws_count += 1;", output)
 
+
+    def test_c_numeric_display_literals_use_matching_varargs_types(self):
+        import cobol2py
+        source = SOURCE.replace('DISPLAY WS-NAME.', 'DISPLAY 123 1.5.')
+        program = cobol2py.parse_cobol(source, source_format="free")
+        output = cobol2native.emit_native(program, "c")
+        self.assertIn('printf("%lld%g\\\\n", (long long)(123), (double)(1.5));', output)
+
     def test_unsupported_control_flow_fails_closed(self):
         import cobol2py
         source = SOURCE.replace("ADD 1 TO WS-COUNT.", 'IF WS-COUNT = 1 DISPLAY "YES" END-IF.')
