@@ -4,6 +4,8 @@
 **Proyecto:** `cobol2py`  
 **Propósito:** priorizar cambios con mayor potencial de recuperar casos en el corpus externo, sin alterar el corpus ni la métrica.
 
+> **Nota de vigencia (2026-10-29):** las tablas de los apartados 1–3 describen la ejecución histórica #511 (SHA `2307c7b`) y no deben interpretarse como el estado actual. El apartado **7. Estado actual y trabajo en curso** contiene la medición posterior y prevalece para decisiones nuevas.
+
 ## 1. Resumen ejecutivo
 
 La última evaluación completa analizada del candidato de trabajo obtuvo:
@@ -158,3 +160,39 @@ Revisar:
 Objetivo de planificación: buscar una mejora de **+5 puntos porcentuales combinados** en una iteración concentrada; +10 puntos sería un objetivo aspiracional, no una promesa. Solo se declarará alcanzado cuando primaria y holdout terminen en el mismo SHA, se revise el delta de regresiones y la ejecución sea reproducible.
 
 La prioridad inmediata es corregir una causa compartida que recupere varios casos y que pueda validarse con una prueba pequeña. La métrica final debe mejorar por equivalencia real, no por tolerar diferencias.
+
+
+## 7. Estado actual y trabajo en curso (2026-10-29)
+
+### Mediciones externas
+
+La ejecución de referencia compartida por el usuario es [#511](https://github.com/orbitalronin94/cobol2py/actions/runs/40839194532): 178/500 en primaria, 197/500 en holdout y **375/1000 = 37,5 %** combinado. El objetivo solicitado es superar esa referencia en al menos cinco puntos porcentuales: **42,5 % o más (mínimo 425/1000)** usando la misma métrica de salida exacta y código de retorno.
+
+La ejecución multilenguaje posterior [#581](https://github.com/orbitalronin94/cobol2py/actions/runs/40889090638) mide una selección distinta y por eso es diagnóstica, no un sustituto exacto de #511:
+
+| Backend | Primaria | Holdout | Combinado |
+|---|---:|---:|---:|
+| Python | 168/500 (33,6 %) | 193/500 (38,6 %) | 361/1000 (36,1 %) |
+| C | 19/500 (3,8 %) | 21/500 (4,2 %) | 40/1000 (4,0 %) |
+| Rust | 18/500 (3,6 %) | 20/500 (4,0 %) | 38/1000 (3,8 %) |
+
+No se ha confirmado todavía una subida del benchmark comparable de Python; los cambios enumerados abajo necesitan superar CI y una ejecución externa completa. La mejora interna de la suite no cuenta como porcentaje externo.
+
+### Cambios ya comprometidos en `main`
+
+- Añadida clasificación estable de rechazos C/Rust en el reporte del benchmark, sin publicar texto fuente externo.
+- Añadidos tests para las categorías de diagnóstico.
+- Añadido soporte para `PERFORM` inline y `PERFORM n TIMES` en los backends C/Rust, con regresiones de generación.
+- Corregida la representación de `DISPLAY` para campos numéricos sin signo con decimal implícito (`PIC 9(...)V...`): el punto decimal no debe aparecer en la salida.
+- Añadido un smoke workflow externo de 50 programas para iterar más rápido.
+- Añadido un workflow Python que usa `run_external_corpus.py`, divide la muestra en primaria/holdout y calcula explícitamente el progreso hacia 42,5 % sobre 1.000 casos.
+
+### Próximas prioridades basadas en el reporte multilenguaje actual
+
+1. **Python — referencias ausentes:** `file_cobol_record_information_rec` fue el nombre ausente más repetido (39 casos en los artefactos analizados). Hay que rastrear declaración, COPY/FILE SECTION y resolución de símbolos antes de introducir valores por defecto.
+2. **Python — salida/código de retorno:** 485 casos del reporte multilenguaje actual caen en esta categoría. Agruparlos por causa semántica y corregir reglas compartidas; no modificar el criterio de coincidencia.
+3. **Python — sintaxis generada:** 75 casos; cada corrección debe añadir fixture y compilar el Python generado.
+4. **Python — terminación:** 68 timeouts de programas traducidos; distinguir bucles no terminantes de diferencias de datos/control.
+5. **C/Rust — cobertura:** 949 rechazos de traducción por backend en la selección actual. Los códigos de rechazo recién añadidos deben revelar qué familias conviene implementar primero.
+
+El siguiente hito de puntuación es una ejecución completa comparable con #511 en el mismo SHA, con primaria y holdout juntas. Solo si el resultado combinado alcanza al menos 425/1000 se considerará logrado el objetivo de +5 puntos porcentuales.
