@@ -1793,6 +1793,36 @@ class InlinePerformUntilRegressionTests(unittest.TestCase):
         self.assertIn("break", generated)
 
 
+class InlinePerformVaryingRegressionTests(unittest.TestCase):
+    def test_perform_varying_initializes_checks_and_increments_index(self):
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. PERFORMVARYING.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-IDX PIC 9 VALUE 0.",
+            "01 WS-COUNT PIC 9 VALUE 0.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "PERFORM VARYING WS-IDX FROM 1 BY 1 UNTIL WS-IDX > 3",
+            "ADD 1 TO WS-COUNT",
+            "END-PERFORM.",
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(
+            cobol2py.parse_cobol(source, source_format="free")
+        )
+        compile(generated, "<perform-varying>", "exec")
+        namespace = {"__name__": "not_main"}
+        exec(generated, namespace)
+        try:
+            namespace["main"]()
+        except namespace["_CobolStopRun"]:
+            pass
+        self.assertEqual(namespace["ws_count"], 3)
+        self.assertEqual(namespace["ws_idx"], 4)
+
+
 if __name__ == "__main__":
     unittest.main()
 
