@@ -3391,9 +3391,17 @@ def translate_statement(
                         )
                     cursor = item_match.end()
                 if not sending_items:
-                    sending_items.append((sending_text, "SIZE"))
+                    # Keep the permissive fallback safe too: when a source
+                    # omits or obscures DELIMITED BY, do not pass adjacent
+                    # operands to translate_literal as one malformed token.
+                    sending_items.extend(
+                        (item, "SIZE") for item in split_cobol_items(sending_text)
+                    )
                 elif sending_text[cursor:].strip():
-                    sending_items.append((sending_text[cursor:].strip(), "SIZE"))
+                    sending_items.extend(
+                        (item, "SIZE")
+                        for item in split_cobol_items(sending_text[cursor:].strip())
+                    )
 
                 pieces: list[str] = []
                 for item_source, delimiter in sending_items:
