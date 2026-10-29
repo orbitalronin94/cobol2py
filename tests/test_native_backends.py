@@ -38,6 +38,31 @@ class NativeBackendTests(unittest.TestCase):
         self.assertIn("ws_count += 1;", output)
 
 
+    def test_scalar_group_fields_are_flattened_for_c_and_rust(self):
+        import cobol2py
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. GROUP-DEMO.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-RECORD.
+   05 WS-NAME PIC X(3) VALUE "HI".
+   05 WS-COUNT PIC 9(2) VALUE 1.
+PROCEDURE DIVISION.
+MAIN.
+DISPLAY WS-NAME.
+ADD 1 TO WS-COUNT.
+STOP RUN.
+"""
+        program = cobol2py.parse_cobol(source, source_format="free")
+        c_output = cobol2native.emit_native(program, "c")
+        rust_output = cobol2native.emit_native(program, "rust")
+        self.assertIn("char ws_record_ws_name[4]", c_output)
+        self.assertIn("long long ws_record_ws_count = 1;", c_output)
+        self.assertIn('printf("%s\\\\n", ws_record_ws_name);', c_output)
+        self.assertIn("ws_record_ws_count += 1;", c_output)
+        self.assertIn("let mut ws_record_ws_name: String", rust_output)
+        self.assertIn("ws_record_ws_count += 1;", rust_output)
+
     def test_c_numeric_display_literals_use_matching_varargs_types(self):
         import cobol2py
         source = SOURCE.replace('DISPLAY WS-NAME.', 'DISPLAY 123 1.5.')
