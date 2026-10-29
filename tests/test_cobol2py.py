@@ -1739,6 +1739,18 @@ class DataReferenceResolutionTests(unittest.TestCase):
         self.assertIsInstance(translated, str)
         self.assertIn("group", translated)
 
+class ImpliedDecimalDisplayRegressionTests(unittest.TestCase):
+    def test_unsigned_implied_decimal_displays_digits_without_decimal_point(self):
+        variable = cobol2py.CobolVar(
+            level=1, name="WS-RATE", pic="9(3)V99"
+        )
+        expression = cobol2py.translate_display_item(
+            "WS-RATE", {"WS-RATE": variable}
+        )
+        self.assertEqual(eval(expression, {"ws_rate": 234.56}), "23456")
+        self.assertNotIn(".", eval(expression, {"ws_rate": 234.56}))
+
+
 if __name__ == "__main__":
     unittest.main()
 
