@@ -44,6 +44,26 @@ def safe_reason(language: str, stage: str, process: dict[str, Any]) -> str:
     return stage + " failed"
 
 
+def native_rejection_code(stderr: str) -> str:
+    """Classify native-backend rejections without publishing source or diagnostics verbatim."""
+    message = stderr.lower()
+    if "statement not supported" in message:
+        return "unsupported_statement"
+    if "control-flow node" in message or "perform" in message:
+        return "unsupported_control_flow"
+    if "occurs and redefines" in message or "data layout outside" in message:
+        return "unsupported_data_layout"
+    if "if condition outside" in message:
+        return "unsupported_condition"
+    if "unsupported pic" in message:
+        return "unsupported_picture"
+    if "literal/identifier not supported" in message or "unknown or unsupported" in message:
+        return "unresolved_identifier_or_operand"
+    if "malformed" in message:
+        return "malformed_intermediate_node"
+    return "other_native_rejection"
+
+
 def run_language(language: str, source: Path, reference: dict[str, Any], work: Path,
                  compile_timeout: int, run_timeout: int, translator_timeout: int) -> dict[str, Any]:
     if language == "python":
@@ -67,6 +87,8 @@ def run_language(language: str, source: Path, reference: dict[str, Any], work: P
             tail = [line.strip() for line in stderr_text.splitlines() if line.strip()]
             if tail:
                 result["translator_error_type"] = tail[-1].split(":", 1)[0].split()[-1][:80]
+            if language in ("c", "rust") and "cobol2native:" in stderr_text:
+                result["translator_error_code"] = native_rejection_code(stderr_text)
         return result
 
     generated = work / ("translated" + suffix)
@@ -253,6 +275,16 @@ def main() -> int:
             "failures_by_reason": dict(sorted(failures.items(), key=lambda pair: (-pair[1], pair[0]))),
         }
     evaluated = [item for item in report["results"] if item.get("status")]
+    report["native_rejection_codes"] = {}
+    for language in ("c", "rust"):
+        codes: dict[str, int] = {}
+        for result in per_language[language]:
+            code = result.get("translator_error_code")
+            if code:
+                codes[code] = codes.get(code, 0) + 1
+        report["native_rejection_codes"][language] = dict(
+            sorted(codes.items(), key=lambda pair: (-pair[1], pair[0]))
+        )
     report["cross_backend_diagnostics"] = {
         "c_passes_python_fails": [item["id"] for item in evaluated if item["status"]["c"].get("matched") and not item["status"]["python"].get("matched")],
         "rust_passes_python_fails": [item["id"] for item in evaluated if item["status"]["rust"].get("matched") and not item["status"]["python"].get("matched")],
