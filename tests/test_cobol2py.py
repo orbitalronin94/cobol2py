@@ -1713,6 +1713,32 @@ class DiagnosticTests(unittest.TestCase):
         self.assertEqual(malformed["line"], 9)
 
 
+
+class DataReferenceResolutionTests(unittest.TestCase):
+    def test_three_level_qualified_reference_resolves_nearest_parent(self):
+        variables = {
+            "RECORD": cobol2py.CobolVar(level=1, name="RECORD", is_group=True),
+            "GROUP": cobol2py.CobolVar(level=5, name="GROUP", is_group=True, parent_name="RECORD"),
+            "FIELD": cobol2py.CobolVar(level=10, name="FIELD", pic="X(3)", parent_name="GROUP"),
+        }
+
+        translated = cobol2py.normalize_data_reference(
+            "FIELD OF GROUP OF RECORD", variables
+        )
+
+        self.assertEqual(translated, "record['group']['field']")
+
+    def test_cyclic_group_metadata_does_not_recurse_forever(self):
+        variables = {
+            "GROUP-A": cobol2py.CobolVar(level=1, name="GROUP-A", is_group=True, parent_name="GROUP-B"),
+            "GROUP-B": cobol2py.CobolVar(level=1, name="GROUP-B", is_group=True, parent_name="GROUP-A"),
+        }
+
+        translated = cobol2py.normalize_data_reference("GROUP-A", variables)
+
+        self.assertIsInstance(translated, str)
+        self.assertIn("group", translated)
+
 if __name__ == "__main__":
     unittest.main()
 
