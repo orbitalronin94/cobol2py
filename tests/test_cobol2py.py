@@ -3123,6 +3123,24 @@ class StringMultipleSendingOperandsRegressionTests(unittest.TestCase):
         self.assertIn('str(" - up")', generated)
         compile(generated, "<string-shared-delimiter>", "exec")
 
+    def test_string_fallback_splits_adjacent_operands_when_delimiter_clause_is_missing(self):
+        source = "\\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. STRFALLBACK.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            '01 CONTROL-UP PIC X VALUE "UP".',
+            "01 TARGET PIC X(10).",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            'STRING CONTROL-UP " - up" INTO TARGET.',
+            "DISPLAY TARGET.",
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        self.assertNotIn('control_up " - up"', generated)
+        compile(generated, "<string-fallback-operands>", "exec")
+
 class TestNumvalIntrinsicRegressionTests(unittest.TestCase):
     def test_test_numval_returns_zero_for_numeric_text(self):
         translated = cobol2py.translate_expr("FUNCTION TEST-NUMVAL('123.45')")
