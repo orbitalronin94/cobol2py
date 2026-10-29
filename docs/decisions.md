@@ -407,7 +407,7 @@ Añadir una sección con:
 - **Contexto:** los porcentajes calculados sobre corpus, denominadores o reglas de éxito diferentes no permiten atribuir mejoras a un backend.
 - **Decisión:** añadir `benchmarks/run_multilang_benchmark.py` y el workflow `multilang-benchmark.yml`. Los tres lenguajes procesan los mismos casos de `benchmarks/cases.json`; cada salida se compara con la misma referencia compilada por GnuCOBOL. Un acierto exige igualdad byte a byte de stdout y el mismo código de retorno.
 - **Regla de puntuación:** traducción rechazada/no soportada, error de compilación, timeout, fallo de ejecución o salida diferente cuentan como fallo para el backend evaluado. Los errores al compilar/ejecutar la propia referencia se identifican por separado en el informe, no se deben interpretar como defectos de un traductor.
-- **Consecuencias:** la primera medición comparable usa el corpus versionado de 102 casos y publica JSON/Markdown como artefacto de CI. El porcentaje es cobertura de ese corpus, no una estimación universal de compatibilidad COBOL. El benchmark es exploratorio y no bloquea CI por una puntuación inferior al 100 %.
+- **Consecuencias:** la primera medición comparable usa el corpus versionado actual de 105 casos y publica JSON/Markdown como artefacto de CI. El porcentaje es cobertura de ese corpus, no una estimación universal de compatibilidad COBOL. El benchmark es exploratorio y no bloquea CI por una puntuación inferior al 100 %.
 - **Revisión:** ampliar a muestras externas solo cuando el runner, los límites de recursos y la selección del corpus sean idénticos entre lenguajes; conservar por separado la puntuación de cada conjunto.
 
 ## D-044 — Usar C y Rust como instrumentos de diagnóstico, no como autoridad semántica
