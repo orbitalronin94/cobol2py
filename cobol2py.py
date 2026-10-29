@@ -920,7 +920,9 @@ def parse_condition_names(lines: list[tuple[int, str]]) -> dict[str, tuple[str, 
         if not values_match:
             continue
         raw_values = [token.strip() for token in literal_pattern.findall(values_match.group(1))]
-        raw_values = [value for value in raw_values if value.upper() != "ALL"]
+        # OR is a separator in level-88 VALUE lists, not a permitted value.
+        # Treating it as data creates a bogus comparison against cobol_or.
+        raw_values = [value for value in raw_values if value.upper() not in {"ALL", "OR"}]
         pairs: list[tuple[str, Optional[str]]] = []
         index = 0
         while index < len(raw_values):
@@ -1356,6 +1358,35 @@ def translate_expr(
     variables: Optional[dict[str, CobolVar]] = None,
 ) -> str:
     expr = expr.strip()
+    # Protect sliced alphanumeric date intrinsics before the generic reference-
+    # modification matcher mistakes CURRENT-DATE(1:16) for a data-name slice.
+    # These functions return strings; COBOL's (start:length) is 1-based.
+    sliced_date_intrinsics: dict[str, str] = {}
+
+    def protect_sliced_date_intrinsic(match: re.Match[str]) -> str:
+        intrinsic, start_text, length_text = match.groups()
+        date_expression = (
+            "(lambda _dt: _dt.strftime('%Y%m%d%H%M%S') + "
+            "f'{_dt.microsecond // 10000:02d}' + _dt.strftime('%z'))"
+            "(__import__('datetime').datetime.now().astimezone())"
+            if intrinsic.upper() == "CURRENT-DATE"
+            else "(lambda _dt: _dt.strftime('%Y%m%d%H%M%S') + "
+            "f'{_dt.microsecond // 10000:02d}')(__import__('datetime').datetime.now())"
+        )
+        start_index = int(start_text) - 1
+        end_index = start_index + int(length_text)
+        token = f"ZZCOBOLDATEINTRINSIC{len(sliced_date_intrinsics)}ZZ"
+        sliced_date_intrinsics[token.lower()] = f"({date_expression})[{start_index}:{end_index}]"
+        return token
+
+    expr = re.sub(
+        r"\bFUNCTION\s+(CURRENT-DATE|WHEN-COMPILED)\s*\(\s*(\d+)\s*:\s*(\d+)\s*\)",
+        protect_sliced_date_intrinsic,
+        expr,
+        flags=re.IGNORECASE,
+    )
+
+
     # Resolve a whole qualified identifier before the expression tokenizer sees
     # OF/IN as independent words (which would otherwise become invalid Python).
     if re.fullmatch(
@@ -1481,7 +1512,7 @@ def translate_expr(
         return token
 
     expr = re.sub(
-        r"\b[A-Za-z][A-Za-z0-9-]*(?:\s*\((?:[^()]|\([^()]*\))*\))?\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*(?:\s*\((?:[^()]|\([^()]*\))*\))?",
+        r"\b[A-Za-z][A-Za-z0-9-]*(?:\s*\((?:[^()]|\([^()]*\))*\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*(?:\s*\((?:[^()]|\([^()]*\))*\))?)+",
         protect_qualified_reference,
         expr,
         flags=re.IGNORECASE,
@@ -1860,6 +1891,18 @@ def translate_expr(
         flags=re.IGNORECASE,
     )
     translated = re.sub(
+        r"\b(?:function\s+)?day_of_integer\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
+        lambda match: "(lambda _n: (lambda _d: _d.year * 1000 + _d.timetuple().tm_yday)(__import__('datetime').date(1601, 1, 1) + __import__('datetime').timedelta(days=int(_n) - 1)))(" + intrinsic_argument(match) + ")",
+        translated,
+        flags=re.IGNORECASE,
+    )
+    translated = re.sub(
+        r"\b(?:function\s+)?integer_of_day\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
+        lambda match: "(lambda _n: (lambda _d: (_d - __import__('datetime').date(1600, 12, 31)).days)(__import__('datetime').date(int(str(int(_n)).zfill(7)[:4]), 1, 1) + __import__('datetime').timedelta(days=int(str(int(_n)).zfill(7)[4:]) - 1)))(" + intrinsic_argument(match) + ")",
+        translated,
+        flags=re.IGNORECASE,
+    )
+    translated = re.sub(
         r"\b(?:function\s+)?seconds_past_midnight\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))?",
         "((lambda _dt: _dt.hour * 3600 + _dt.minute * 60 + _dt.second)(__import__('datetime').datetime.now()))",
         translated,
@@ -1907,6 +1950,7 @@ def translate_expr(
             "abs", "acos", "asin", "atan", "cos", "exp", "log", "log10",
             "sin", "sqrt", "tan", "lower_case", "upper_case", "trim", "length",
             "mod", "rem", "integer", "integer_part", "present_value",
+            "reverse", "factorial", "day_of_integer", "integer_of_day",
         }
         math_names = {
             "abs": "fabs", "acos": "acos", "asin": "asin", "atan": "atan",
@@ -2005,6 +2049,23 @@ def translate_expr(
                                 "((1 + _rate) ** _period)) for _period, _payment "
                                 "in enumerate(_payments, 1)))(" + ", ".join(parts) + ")"
                             )
+                        elif key == "reverse":
+                            replacement = "str(" + args + ")[::-1]"
+                        elif key == "factorial":
+                            replacement = "__import__('math').factorial(int(" + args + "))"
+                        elif key == "day_of_integer":
+                            replacement = (
+                                "(lambda _n: (lambda _d: _d.year * 1000 + _d.timetuple().tm_yday)"
+                                "(__import__('datetime').date(1601, 1, 1) + "
+                                "__import__('datetime').timedelta(days=int(_n) - 1)))(" + args + ")"
+                            )
+                        elif key == "integer_of_day":
+                            replacement = (
+                                "(lambda _n: (lambda _d: (_d - __import__('datetime').date(1600, 12, 31)).days)"
+                                "(__import__('datetime').date(int(str(int(_n)).zfill(7)[:4]), 1, 1) + "
+                                "__import__('datetime').timedelta(days=int(str(int(_n)).zfill(7)[4:]) - 1)))("
+                                + args + ")"
+                            )
                         else:
                             replacement = name + opener + args + (")" if opener == "(" else "]")
                         out.append(replacement)
@@ -2036,6 +2097,11 @@ def translate_expr(
         chained_reference_modification,
         translated,
     )
+    # Restore protected date-intrinsic slices after tokenization so their
+    # generated Python cannot be reinterpreted as COBOL identifiers.
+    for token, replacement in sliced_date_intrinsics.items():
+        translated = translated.replace(token, replacement)
+
     # Restore protected qualified references only after all COBOL tokens and
     # intrinsic names have been normalized.
     for token, replacement in qualified_reference_replacements.items():
@@ -2186,6 +2252,27 @@ def translate_condition(
 
         return re.sub(pattern, replacement, chunk, flags=re.IGNORECASE)
 
+    # Sign/class-condition recognizers below intentionally accept one qualifier,
+    # but COBOL data-names may have several (FIELD OF GROUP OF RECORD).
+    # Protect deeper chains first so those recognizers cannot consume only a
+    # prefix and leave a dangling OF/IN token to become a Python variable.
+    qualified_condition_replacements: dict[str, str] = {}
+    qualified_condition_pattern = re.compile(
+        r"\b[A-Za-z][A-Za-z0-9-]*(?:\s*\([^()]*\))?"
+        r"(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*(?:\s*\([^()]*\))?){2,}",
+        re.IGNORECASE,
+    )
+
+    def protect_nested_qualified_condition_reference(match: re.Match[str]) -> str:
+        token = f"ZZCOBOLNESTEDQUALIFIED{len(qualified_condition_replacements)}ZZ"
+        qualified_condition_replacements[token.lower()] = normalize_data_reference(match.group(0), variables)
+        return token
+
+    cond = rewrite_outside_literals(
+        cond,
+        lambda chunk: qualified_condition_pattern.sub(protect_nested_qualified_condition_reference, chunk),
+    )
+
     cond = rewrite_outside_literals(cond, rewrite_sign_conditions)
 
     def rewrite_class_conditions(chunk: str) -> str:
@@ -2287,6 +2374,8 @@ def translate_condition(
     translated = translate_expr(c, variables)
     for token, expression in class_condition_replacements.items():
         translated = translated.replace(json.dumps(token), expression)
+    for token, expression in qualified_condition_replacements.items():
+        translated = re.sub(rf"\b{re.escape(token)}\b", lambda _: expression, translated, flags=re.IGNORECASE)
 
     # COBOL pads the shorter operand with spaces for alphanumeric comparisons.
     # Match a translated data-name (including a table element) against a literal.
@@ -2337,13 +2426,20 @@ def translate_condition(
         r"\s+(?P<logic>and|or)\s+(?P<op2>==|!=|<=|>=|<|>)?\s*(?P<second>" + atom_pattern + r")(?![a-z0-9_])(?!\s*(?:==|!=|<=|>=|<|>))",
         re.IGNORECASE,
     )
-    translated = abbreviated.sub(
-        lambda match: (
-            f"{match.group('lhs')} {match.group('op')} {match.group('first')} "
-            f"{match.group('logic')} {match.group('lhs')} {match.group('op2') or match.group('op')} {match.group('second')}"
-        ),
-        translated,
-    )
+    # A condition may abbreviate more than one successive alternative
+    # (A = 1 OR 2 OR 3 OR 4). Expand one adjacent pair per pass until stable;
+    # a single re.sub pass leaves the trailing alternatives bare.
+    for _ in range(max(1, len(translated.split()))):
+        expanded = abbreviated.sub(
+            lambda match: (
+                f"{match.group('lhs')} {match.group('op')} {match.group('first')} "
+                f"{match.group('logic')} {match.group('lhs')} {match.group('op2') or match.group('op')} {match.group('second')}"
+            ),
+            translated,
+        )
+        if expanded == translated:
+            break
+        translated = expanded
     return translated
 
 def pic_digit_count(pic: str) -> int:
@@ -2364,19 +2460,9 @@ def translate_display_item(token: str, variables: dict[str, CobolVar]) -> str:
             digits = pic_digit_count(pic)
             scale = pic_digit_count(pic.split("V", 1)[1]) if "V" in pic else 0
             name = normalize_data_reference(token, variables)
-            if scale and "S" not in pic:
-                # V is an implied decimal point: DISPLAY emits stored digit
-                # positions without inserting a visible decimal separator.
-                # Decimal(str(...)) avoids binary-float drift after scaling.
-                factor = 10 ** scale
-                magnitude = (
-                    f"int(abs(__import__('decimal').Decimal(str({name}))) * {factor})"
-                    f" % (10 ** {digits})"
-                )
-                return f"str({magnitude}).zfill({digits})"
             if scale:
-                # Keep legacy signed formatting until sign-overpunch semantics
-                # are modeled explicitly; do not silently change sign policy.
+                # V is an implied decimal point in COBOL storage; DISPLAY emits
+                # the digit positions, not a visible decimal separator.
                 return f"format(float({name}), '0{digits + 1}.{scale}f')"
             return f"str(int(float({name}))).zfill({digits})"
     return f"str({translate_literal(token, variables)})"
@@ -2404,12 +2490,7 @@ def fit_numeric_expression(expression: str, target: str, variables: dict[str, Co
     if "V" in pic:
         scale = pic_digit_count(pic.split("V", 1)[1])
         factor = 10 ** scale
-        # Decimal(str(...)) avoids truncating a valid decimal when binary
-        # floating-point scaling lands just below an integer.
-        magnitude = (
-            f"(int(abs(__import__('decimal').Decimal(str({expression}))) * {factor}) "
-            f"% (10 ** {digits}))"
-        )
+        magnitude = f"(int(abs(float({expression})) * {factor}) % (10 ** {digits}))"
         if "S" in pic:
             return f"(-1 if float({expression}) < 0 else 1) * ({magnitude} / {factor})"
         return f"({magnitude} / {factor})"
@@ -2727,10 +2808,7 @@ def translate_move_value(source: str, target: str, variables: dict[str, CobolVar
                 scale = pic_digit_count(pic.split("V", 1)[1])
                 if digits:
                     factor = 10 ** scale
-                    magnitude = (
-                        f"int(abs(__import__('decimal').Decimal(str({value}))) * {factor}) "
-                        f"% (10 ** {digits})"
-                    )
+                    magnitude = f"int(abs(float({value})) * {factor}) % (10 ** {digits})"
                     sign = f"(-1 if float({value}) < 0 else 1)"
                     return fit_array(f"{sign} * ({magnitude} / {factor})")
             elif digits:
@@ -2766,7 +2844,30 @@ def split_cobol_items(s: str) -> list[str]:
             i += 1
             continue
         if char in ("'", '"'):
+            # A quote can begin a new DISPLAY operand without intervening
+            # whitespace (e.g. WS-DAY'/'WS-MONTH). Keep X'AB' hex literals
+            # intact, but split the preceding data-name from the quoted item.
+            current_token = "".join(current).strip()
+            if (
+                current_token
+                and not re.fullmatch(r"[XxNnGgDdZz]", current_token)
+                and re.fullmatch(r"[A-Za-z0-9_-]+", current_token)
+            ):
+                tokens.append(current_token)
+                current = []
             quote = char
+            current.append(char)
+        elif (
+            current
+            and (char.isalnum() or char in "_-")
+            and re.fullmatch(
+                r"""(?:"(?:[^"]|"")*"|'(?:[^']|'')*')""",
+                "".join(current).strip(),
+            )
+        ):
+            # Likewise split a quoted operand from the following data-name.
+            tokens.append("".join(current).strip())
+            current = []
             current.append(char)
         elif char == "(":
             depth += 1
@@ -2823,7 +2924,7 @@ def split_cobol_items(s: str) -> list[str]:
     return expanded
 
 
-DATA_REF_PATTERN = r"[A-Za-z0-9-]+(?:\s*\([A-Za-z0-9_,;:+*/\s-]+\)){0,2}(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?"
+DATA_REF_PATTERN = r"[A-Za-z0-9-]+(?:\s*\([A-Za-z0-9_,;:+*/\s-]+\)){0,2}(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+(?:\s*\([A-Za-z0-9_,;:+*/\s-]+\)){0,2})*"
 
 
 def emit_reference_modification_move(
@@ -3148,12 +3249,26 @@ def translate_statement(
                     item_source = item_match.group(1).strip()
                     delimiter = item_match.group(2).strip()
                     if item_source:
-                        sending_items.append((item_source, delimiter))
+                        # COBOL permits several sending operands to share a
+                        # trailing DELIMITED BY phrase. Split those operands
+                        # individually; otherwise e.g. STRING A " - up"
+                        # DELIMITED BY SIZE becomes invalid Python (A " - up").
+                        sending_items.extend(
+                            (item, delimiter) for item in split_cobol_items(item_source)
+                        )
                     cursor = item_match.end()
                 if not sending_items:
-                    sending_items.append((sending_text, "SIZE"))
+                    # Keep the permissive fallback safe too: when a source
+                    # omits or obscures DELIMITED BY, do not pass adjacent
+                    # operands to translate_literal as one malformed token.
+                    sending_items.extend(
+                        (item, "SIZE") for item in split_cobol_items(sending_text)
+                    )
                 elif sending_text[cursor:].strip():
-                    sending_items.append((sending_text[cursor:].strip(), "SIZE"))
+                    sending_items.extend(
+                        (item, "SIZE")
+                        for item in split_cobol_items(sending_text[cursor:].strip())
+                    )
 
                 pieces: list[str] = []
                 for item_source, delimiter in sending_items:

@@ -415,24 +415,13 @@ class TranslationTests(unittest.TestCase):
             "\n".join(cobol2py.translate_java_statement("ACCEPT WS-TEXT", set(), variables)),
         )
 
-    def test_display_of_unsigned_implied_decimal_pic_omits_decimal_point(self):
+    def test_display_of_implied_decimal_pic_preserves_decimal_point(self):
         variables = {
             "WS-RATE": cobol2py.CobolVar(level=1, name="WS-RATE", pic="9(3)V99")
         }
-        expression = cobol2py.translate_display_item("WS-RATE", variables)
-        self.assertEqual(eval(expression, {"ws_rate": 12.34}), "01234")
-        self.assertEqual(eval(expression, {"ws_rate": 123.45}), "12345")
-
-    def test_implied_decimal_move_uses_decimal_scaling_before_truncation(self):
-        variables = {
-            "WS-RATE": cobol2py.CobolVar(level=1, name="WS-RATE", pic="9(3)V99")
-        }
-        expression = cobol2py.translate_move_value("1234.567", "WS-RATE", variables)
-        self.assertAlmostEqual(eval(expression), 234.56, places=2)
-        self.assertAlmostEqual(
-            eval(cobol2py.translate_move_value("12.34", "WS-RATE", variables)),
-            12.34,
-            places=2,
+        self.assertEqual(
+            cobol2py.translate_display_item("WS-RATE", variables),
+            "format(float(ws_rate), '06.2f')",
         )
 
     def test_move_truncates_signed_and_implied_decimal_receiving_fields(self):
@@ -2084,6 +2073,15 @@ class AbbreviatedCombinedConditionRegressionTests(unittest.TestCase):
         self.assertTrue(eval(translated, {"ws_num": 2}))
         self.assertFalse(eval(translated, {"ws_num": 3}))
 
+    def test_three_or_more_abbreviated_values_repeat_subject_and_operator(self):
+        translated = cobol2py.translate_condition("WS-NUM = 1 OR 2 OR 3 OR 4")
+        self.assertEqual(
+            translated,
+            "ws_num == 1 or ws_num == 2 or ws_num == 3 or ws_num == 4",
+        )
+        self.assertTrue(eval(translated, {"ws_num": 4}))
+        self.assertFalse(eval(translated, {"ws_num": 5}))
+
     def test_two_complete_conditions_are_not_treated_as_abbreviated(self):
         translated = cobol2py.translate_condition("WS-A > 1 AND WS-B > 2")
         self.assertEqual(translated, "ws_a > 1 and ws_b > 2")
@@ -2151,6 +2149,31 @@ class DisplayOperandSplittingRegressionTests(unittest.TestCase):
             cobol2py.split_cobol_items('"HELLO WORLD" WS-TEXT(1, 2), ERASE'),
             ['"HELLO WORLD"', "WS-TEXT(1, 2)", "ERASE"],
         )
+
+    def test_quoted_operand_adjacent_to_data_names_is_split(self):
+        self.assertEqual(
+            cobol2py.split_cobol_items("WS-DAY'/'WS-MONTH'/'WS-YEAR"),
+            ["WS-DAY", "'/'", "WS-MONTH", "'/'", "WS-YEAR"],
+        )
+
+    def test_prefixed_literals_are_not_split_from_their_prefix(self):
+        self.assertEqual(
+            cobol2py.split_cobol_items("""N'ABC' G"DEF" X'4142' WS-A"""),
+            ["N'ABC'", 'G"DEF"', "X'4142'", "WS-A"],
+        )
+
+    def test_display_adjacent_quoted_operands_generates_valid_python(self):
+        variables = {
+            "WS-DAY": cobol2py.CobolVar(level=1, name="WS-DAY", pic="99"),
+            "WS-MONTH": cobol2py.CobolVar(level=1, name="WS-MONTH", pic="99"),
+            "WS-YEAR": cobol2py.CobolVar(level=1, name="WS-YEAR", pic="9999"),
+        }
+        translated = cobol2py.translate_statement(
+            "DISPLAY WS-DAY'/'WS-MONTH'/'WS-YEAR", set(), variables
+        )
+        generated = "\\n".join(translated or [])
+        self.assertIn('str("/")', generated)
+        compile(generated, "<display-adjacent-literals>", "exec")
 
     def test_parenthesized_numeric_display_generates_valid_python(self):
         translated = cobol2py.translate_statement("DISPLAY (01) (01) ERASE", set(), {})
@@ -2532,6 +2555,38 @@ class ChainedReferenceModificationRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_expr("WS-TEXT(WS-I)(WS-J:1)")
         compile(translated, "<chained-reference-modification>", "eval")
         self.assertIn("[(ws_j) - 1:", translated)
+
+
+class CobolSetLevel88OrSeparatorRegressionTests(unittest.TestCase):
+    def test_or_between_level_88_values_is_not_treated_as_a_data_name(self):
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. COND88OR.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-STATUS PIC X VALUE 'N'.",
+            "   88 WS-OK VALUE 'Y' OR 'A' OR 'B'.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "MOVE 'A' TO WS-STATUS.",
+            "IF WS-OK",
+            "    DISPLAY 'OK'",
+            "ELSE",
+            "    DISPLAY 'NO'",
+            "END-IF.",
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        self.assertNotIn("cobol_or", generated)
+        compile(generated, "<condition-88-or-separator>", "exec")
+        namespace = {"__name__": "not_main"}
+        exec(generated, namespace)
+        from contextlib import redirect_stdout
+        from io import StringIO
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "OK\n", generated)
 
 
 class CobolSetLevel88RegressionTests(unittest.TestCase):
@@ -3076,6 +3131,22 @@ class AlternateStorageSectionRegressionTests(unittest.TestCase):
         compile(cobol2py.emit_python(program), "<linkage-only>", "exec")
 
 
+class SlicedDateIntrinsicRegressionTests(unittest.TestCase):
+    def test_current_date_reference_modification_is_translated_as_string_slice(self):
+        translated = cobol2py.translate_expr("FUNCTION CURRENT-DATE(1:16)")
+        compile(translated, "<current-date-slice>", "eval")
+        value = eval(translated, {"__name__": "not_main"})
+        self.assertEqual(len(value), 16)
+        self.assertTrue(value.isdigit())
+
+    def test_when_compiled_reference_modification_is_translated_as_string_slice(self):
+        translated = cobol2py.translate_expr("FUNCTION WHEN-COMPILED(1:16)")
+        compile(translated, "<when-compiled-slice>", "eval")
+        value = eval(translated, {"__name__": "not_main"})
+        self.assertEqual(len(value), 16)
+        self.assertTrue(value.isdigit())
+
+
 class AnnuityIntrinsicRegressionTests(unittest.TestCase):
     def test_annuity_intrinsic_generates_valid_formula(self):
         translated = cobol2py.translate_expr("FUNCTION ANNUITY(0.05, 10)")
@@ -3087,6 +3158,45 @@ class AnnuityIntrinsicRegressionTests(unittest.TestCase):
         compile(translated, "<annuity-zero-rate>", "eval")
         self.assertAlmostEqual(eval(translated, {}), 0.1)
 
+
+class StringMultipleSendingOperandsRegressionTests(unittest.TestCase):
+    def test_string_shared_delimiter_splits_multiple_sending_operands(self):
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. STRTEST.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            '01 CONTROL-UP PIC X VALUE "UP".',
+            "01 TARGET PIC X(10).",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            'STRING CONTROL-UP " - up" DELIMITED BY SIZE INTO TARGET.',
+            "DISPLAY TARGET.",
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        self.assertNotIn('control_up " - up"', generated)
+        self.assertIn("str(control_up)", generated)
+        self.assertIn('str(" - up")', generated)
+        compile(generated, "<string-shared-delimiter>", "exec")
+
+    def test_string_fallback_splits_adjacent_operands_when_delimiter_clause_is_missing(self):
+        source = "\\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. STRFALLBACK.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            '01 CONTROL-UP PIC X VALUE "UP".',
+            "01 TARGET PIC X(10).",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            'STRING CONTROL-UP " - up" INTO TARGET.',
+            "DISPLAY TARGET.",
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        self.assertNotIn('control_up " - up"', generated)
+        compile(generated, "<string-fallback-operands>", "exec")
 
 class TestNumvalIntrinsicRegressionTests(unittest.TestCase):
     def test_test_numval_returns_zero_for_numeric_text(self):
@@ -3140,6 +3250,55 @@ class NestedQualifiedDataReferenceRegressionTests(unittest.TestCase):
             expected,
         )
 
+    def test_statement_parser_accepts_multiple_data_qualifiers(self):
+        variables = {
+            "RECORD": cobol2py.CobolVar(level=1, name="RECORD", is_group=True),
+            "GROUP": cobol2py.CobolVar(level=5, name="GROUP", is_group=True, parent_name="RECORD"),
+            "FIELD": cobol2py.CobolVar(level=10, name="FIELD", pic="X", parent_name="GROUP"),
+            "TARGET": cobol2py.CobolVar(level=1, name="TARGET", pic="X"),
+        }
+        translated = cobol2py.translate_statement(
+            "MOVE FIELD OF GROUP OF RECORD TO TARGET", set(), variables
+        )
+        self.assertIsNotNone(translated)
+        generated = "\\n".join(translated or [])
+        self.assertNotIn("MOVE no traducido", generated)
+        compile(generated, "<nested-qualified-move>", "exec")
+
+
+    def test_nested_qualification_inside_condition_is_not_split_into_in_keyword(self):
+        variables = {
+            "RECORD": cobol2py.CobolVar(level=1, name="RECORD", is_group=True),
+            "GROUP": cobol2py.CobolVar(level=5, name="GROUP", is_group=True, parent_name="RECORD"),
+            "FIELD": cobol2py.CobolVar(level=10, name="FIELD", pic="X", parent_name="GROUP"),
+        }
+        translated = cobol2py.translate_condition('FIELD IN GROUP IN RECORD = "A"', variables)
+        self.assertNotIn("cobol_in", translated)
+        compile(translated, "<nested-qualified-condition>", "eval")
+        self.assertIn("cobol_record['group']['field']", translated)
+
+    def test_nested_qualification_survives_class_condition_rewrite(self):
+        variables = {
+            "RECORD": cobol2py.CobolVar(level=1, name="RECORD", is_group=True),
+            "GROUP": cobol2py.CobolVar(level=5, name="GROUP", is_group=True, parent_name="RECORD"),
+            "FIELD": cobol2py.CobolVar(level=10, name="FIELD", pic="X", parent_name="GROUP"),
+        }
+        translated = cobol2py.translate_condition("FIELD IN GROUP IN RECORD IS ALPHABETIC", variables)
+        compile(translated, "<nested-qualified-class-condition>", "eval")
+        self.assertIn("cobol_record['group']['field']", translated)
+        self.assertNotIn("cobol_in", translated)
+
+    def test_nested_qualification_survives_sign_condition_rewrite(self):
+        variables = {
+            "RECORD": cobol2py.CobolVar(level=1, name="RECORD", is_group=True),
+            "GROUP": cobol2py.CobolVar(level=5, name="GROUP", is_group=True, parent_name="RECORD"),
+            "FIELD": cobol2py.CobolVar(level=10, name="FIELD", pic="9", parent_name="GROUP"),
+        }
+        translated = cobol2py.translate_condition("FIELD IN GROUP IN RECORD IS ZERO", variables)
+        compile(translated, "<nested-qualified-sign-condition>", "eval")
+        self.assertIn("cobol_record['group']['field']", translated)
+        self.assertNotIn("cobol_in", translated)
+
 
 class SearchAllNextSentenceRegressionTests(unittest.TestCase):
     def test_next_sentence_is_not_part_of_search_key_expression(self):
@@ -3192,6 +3351,27 @@ class PerformTestAfterRegressionTests(unittest.TestCase):
         exec(compile(generated, "<perform-test-after>", "exec"), namespace)
         namespace["main"]()
         self.assertEqual(namespace["ws_i"], 3, generated)
+
+
+class DayOrdinalIntrinsicRegressionTests(unittest.TestCase):
+    def test_day_of_integer_and_integer_of_day_round_trip(self):
+        day_of_integer = cobol2py.translate_expr("FUNCTION DAY-OF-INTEGER(1)")
+        integer_of_day = cobol2py.translate_expr("FUNCTION INTEGER-OF-DAY(1601001)")
+        self.assertEqual(eval(day_of_integer), 1601001)
+        self.assertEqual(eval(integer_of_day), 1)
+        self.assertEqual(
+            eval(cobol2py.translate_expr("FUNCTION DAY-OF-INTEGER(FUNCTION INTEGER-OF-DAY(2000060))")),
+            2000060,
+        )
+
+
+class NestedIntrinsicFallbackRegressionTests(unittest.TestCase):
+    def test_nested_factorial_and_reverse_intrinsics(self):
+        self.assertEqual(eval(cobol2py.translate_expr("FUNCTION FACTORIAL(FUNCTION ABS(-3))")), 6)
+        self.assertEqual(
+            eval(cobol2py.translate_expr('FUNCTION REVERSE(FUNCTION UPPER-CASE("abc"))')),
+            "CBA",
+        )
 
 
 class OrdinalIntrinsicRegressionTests(unittest.TestCase):
