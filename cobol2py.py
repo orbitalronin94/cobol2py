@@ -587,7 +587,7 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
 
         if re.match(r"^PERFORM(?:\s+WITH\s+TEST\s+(?:BEFORE|AFTER))?\s+(?:UNTIL|VARYING)\b", upper):
             flush()
-            units.append((num, text.strip())
+            units.append((num, text.strip()))
             continue
 
         if upper == "ELSE":
