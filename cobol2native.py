@@ -111,27 +111,42 @@ def _translate_statement(statement: str, variables: dict[str, core.CobolVar], la
         fmt = "".join(item[0] for item in rendered) + ("" if no_newline else "\\n")
         args = ", ".join(item[1] for item in rendered)
         return [f'print!("{fmt}", {args});']
-    match = re.fullmatch(r"MOVE\s+(.+?)\s+TO\s+([A-Za-z][A-Za-z0-9-]*(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*)*)", s, re.I)
+    match = re.fullmatch(r"MOVE\s+(.+?)\s+TO\s+(.+)", s, re.I)
     if match:
-        source, target = match.groups()
-        var = _resolve_native_variable(target, variables)
-        if var is None or var.is_group or var.is_array:
-            raise UnsupportedConstruct(f"MOVE target outside prototype subset: {target}")
+        source, targets_text = match.groups()
+        targets = core.split_cobol_items(targets_text)
+        if not targets:
+            raise UnsupportedConstruct("MOVE has no target")
         value = _literal(source, variables, lang)
-        ident = _native_ident(var, variables)
-        if var.pic and any(c in var.pic.upper() for c in "XA"):
-            width = core.pic_character_count(var.pic)
-            if lang == "c":
-                return [f'snprintf({ident}, sizeof({ident}), "%-{width}.{width}s", {value});']
-            return [f'{ident} = format!("{{:<{width}}}", {value});', f'{ident}.truncate({width});']
-        return [f"{ident} = {value};" if lang == "c" else f"{ident} = {value};"]
-    match = re.fullmatch(r"ADD\s+(.+?)\s+TO\s+([A-Za-z][A-Za-z0-9-]*(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*)*)", s, re.I)
+        output: list[str] = []
+        for target in targets:
+            var = _resolve_native_variable(target, variables)
+            if var is None or var.is_group or var.is_array:
+                raise UnsupportedConstruct(f"MOVE target outside prototype subset: {target}")
+            ident = _native_ident(var, variables)
+            if var.pic and any(c in var.pic.upper() for c in "XA"):
+                width = core.pic_character_count(var.pic)
+                if lang == "c":
+                    output.append(f'snprintf({ident}, sizeof({ident}), "%-{width}.{width}s", {value});')
+                else:
+                    output.extend([f'{ident} = format!("{{:<{width}}}", {value});', f'{ident}.truncate({width});'])
+            else:
+                output.append(f"{ident} = {value};")
+        return output
+    match = re.fullmatch(r"ADD\s+(.+?)\s+TO\s+(.+)", s, re.I)
     if match:
-        source, target = match.groups()
-        variable = _resolve_native_variable(target, variables)
+        source_text, target_text = match.groups()
+        operands = core.split_cobol_items(source_text)
+        if not operands:
+            raise UnsupportedConstruct("ADD has no operands")
+        target = core.split_cobol_items(target_text)
+        if len(target) != 1:
+            raise UnsupportedConstruct(f"ADD requires one target in prototype subset: {target_text}")
+        variable = _resolve_native_variable(target[0], variables)
         if variable is None or variable.is_group or variable.is_array:
-            raise UnsupportedConstruct(f"unknown or unsupported ADD target: {target}")
-        return [f"{_native_ident(variable, variables)} += {_literal(source, variables, lang)};"]
+            raise UnsupportedConstruct(f"unknown or unsupported ADD target: {target_text}")
+        expression = " + ".join(_literal(item, variables, lang) for item in operands)
+        return [f"{_native_ident(variable, variables)} += {expression};"]
     if upper in ("CONTINUE", "EXIT"):
         return [";"] if lang == "c" else ["()"]
     raise UnsupportedConstruct(f"statement not supported by experimental {lang} backend: {s}")
