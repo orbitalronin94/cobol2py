@@ -2548,6 +2548,38 @@ class ChainedReferenceModificationRegressionTests(unittest.TestCase):
         self.assertIn("[(ws_j) - 1:", translated)
 
 
+class CobolSetLevel88OrSeparatorRegressionTests(unittest.TestCase):
+    def test_or_between_level_88_values_is_not_treated_as_a_data_name(self):
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. COND88OR.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-STATUS PIC X VALUE 'N'.",
+            "   88 WS-OK VALUE 'Y' OR 'A' OR 'B'.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "MOVE 'A' TO WS-STATUS.",
+            "IF WS-OK",
+            "    DISPLAY 'OK'",
+            "ELSE",
+            "    DISPLAY 'NO'",
+            "END-IF.",
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        self.assertNotIn("cobol_or", generated)
+        compile(generated, "<condition-88-or-separator>", "exec")
+        namespace = {"__name__": "not_main"}
+        exec(generated, namespace)
+        from contextlib import redirect_stdout
+        from io import StringIO
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "OK\n", generated)
+
+
 class CobolSetLevel88RegressionTests(unittest.TestCase):
     def test_set_condition_name_true_assigns_a_permitted_value(self):
         from contextlib import redirect_stdout

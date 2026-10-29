@@ -920,7 +920,9 @@ def parse_condition_names(lines: list[tuple[int, str]]) -> dict[str, tuple[str, 
         if not values_match:
             continue
         raw_values = [token.strip() for token in literal_pattern.findall(values_match.group(1))]
-        raw_values = [value for value in raw_values if value.upper() != "ALL"]
+        # OR is a separator in level-88 VALUE lists, not a permitted value.
+        # Treating it as data creates a bogus comparison against cobol_or.
+        raw_values = [value for value in raw_values if value.upper() not in {"ALL", "OR"}]
         pairs: list[tuple[str, Optional[str]]] = []
         index = 0
         while index < len(raw_values):
