@@ -2698,6 +2698,40 @@ class GroupMoveFillRegressionTests(unittest.TestCase):
         ])
 
 
+class GroupToGroupMoveRegressionTests(unittest.TestCase):
+    def test_move_group_to_occurs_record_preserves_target_record_shape(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. GROUPCOPY.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 ROOT-AREA.",
+            "   03 SKELETON.",
+            '      05 FILLER PIC X(3) VALUE "ABC".',
+            '      05 FILLER PIC X(3) VALUE "DEF".',
+            "   03 TABLE-AREA OCCURS 2 TIMES.",
+            "      05 FIELD-ONE PIC X(3).",
+            "      05 FIELD-TWO PIC X(3).",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "   MOVE SKELETON TO TABLE-AREA(1).",
+            '   MOVE "XYZ" TO FIELD-ONE(1).',
+            "   DISPLAY FIELD-ONE(1).",
+            "   DISPLAY FIELD-TWO(1).",
+            "   STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<group-to-group-move>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "XYZ\\nDEF\\n")
+
+
 class ElementaryOccursMoveRegressionTests(unittest.TestCase):
     def test_move_space_to_whole_alphanumeric_table_fills_each_occurrence(self):
         variables = {
