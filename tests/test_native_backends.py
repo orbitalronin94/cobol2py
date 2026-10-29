@@ -58,7 +58,7 @@ STOP RUN.
         rust_output = cobol2native.emit_native(program, "rust")
         self.assertIn("char ws_record_ws_name[4]", c_output)
         self.assertIn("long long ws_record_ws_count = 1;", c_output)
-        self.assertIn('printf("%s\\\\n", ws_record_ws_name);', c_output)
+        self.assertIn('printf("%s\\n", ws_record_ws_name);', c_output)
         self.assertIn("ws_record_ws_count += 1;", c_output)
         self.assertIn("let mut ws_record_ws_name: String", rust_output)
         self.assertIn("ws_record_ws_count += 1;", rust_output)
