@@ -48,15 +48,11 @@ def main() -> int:
             ref_compile = run(["cobc", "-x", "-I", str(source.parent), "-o", str(ref_exe), str(source)], case_dir, args.compile_timeout)
             if not ref_compile["launched"] or ref_compile["timeout"] or ref_compile["returncode"] != 0:
                 row["reference_error"] = (ref_compile["stderr"] or b"reference compile failed").decode("utf-8", "replace")[-400:]
-                for lang in per_language:
-                    per_language[lang].append({"id": case["id"], "matched": False, "reason": "reference compile failed"})
                 report["cases"].append(row)
                 continue
             reference = run([str(ref_exe)], case_dir, args.run_timeout)
             if not reference["launched"] or reference["timeout"]:
                 row["reference_error"] = "reference execution timed out or could not launch"
-                for lang in per_language:
-                    per_language[lang].append({"id": case["id"], "matched": False, "reason": "reference execution failed"})
                 report["cases"].append(row)
                 continue
             row["reference_returncode"] = reference["returncode"]
@@ -133,7 +129,7 @@ def main() -> int:
         lines.append("")
     lines.extend(["## Per-case results", "", "| Case | Features | Python | C | Rust |", "|---|---|---:|---:|---:|"])
     for row in report["cases"]:
-        marks = ["PASS" if row.get(lang, {}).get("matched") else "FAIL" for lang in ("python", "c", "rust")]
+        marks = [("REFERR" if row.get("reference_error") else ("PASS" if row.get(lang, {}).get("matched") else "FAIL")) for lang in ("python", "c", "rust")]
         lines.append(f"| {row['id']} | {', '.join(row.get('features', []))} | {marks[0]} | {marks[1]} | {marks[2]} |")
     lines.extend(["", "## Interpretation", "",
         "- Scores are comparable because the same fixtures and GnuCOBOL outputs are used for all three backends.",
