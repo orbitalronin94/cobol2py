@@ -1177,7 +1177,7 @@ def parse_cobol(
         # independently so the hierarchy from FILE SECTION cannot leak into
         # WORKING-STORAGE or LINKAGE.
         section_header = re.compile(r"^\s*([A-Za-z0-9-]+)\s+SECTION\b", re.IGNORECASE)
-        supported_sections = {"FILE", "WORKING-STORAGE", "LOCAL-STORAGE", "LINKAGE"}
+        supported_sections = {"FILE", "WORKING-STORAGE", "LOCAL-STORAGE", "LINKAGE", "SCREEN"}
         current_section: Optional[str] = None
         section_lines: list[tuple[int, str]] = []
         parsed_variables: list[CobolVar] = []
