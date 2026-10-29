@@ -18,6 +18,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from run_external_corpus import (  # noqa: E402
     ARCHIVE_MD5, extract_archive, run_process, sha256_file, case_id, stdout_matches,
+    candidate_error_context, sanitize_exception_message,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -57,6 +58,15 @@ def run_language(language: str, source: Path, reference: dict[str, Any], work: P
     if (not translated.get("launched") or translated.get("timeout")
             or translated.get("stdout_truncated") or translated.get("returncode") != 0):
         result["reason"] = safe_reason(language, "translation", translated)
+        # Keep failures actionable without copying arbitrary source or output text.
+        result["translator_exit_code"] = translated.get("returncode")
+        stderr_text = translated.get("stderr", "")
+        if isinstance(stderr_text, bytes):
+            stderr_text = stderr_text.decode("utf-8", "replace")
+        if stderr_text:
+            tail = [line.strip() for line in stderr_text.splitlines() if line.strip()]
+            if tail:
+                result["translator_error_type"] = tail[-1].split(":", 1)[0].split()[-1][:80]
         return result
 
     generated = work / ("translated" + suffix)
@@ -64,8 +74,15 @@ def run_language(language: str, source: Path, reference: dict[str, Any], work: P
     if language == "python":
         try:
             compile(translated["stdout"], str(generated), "exec")
-        except SyntaxError:
+        except SyntaxError as error:
             result["reason"] = "generated Python syntax error"
+            result["syntax_error_line"] = error.lineno
+            result["syntax_error_column"] = error.offset
+            generated_lines = translated["stdout"].splitlines()
+            if error.lineno and error.lineno <= len(generated_lines):
+                line = generated_lines[error.lineno - 1].strip()
+                line = re.sub(r"'(?:[^'\\\\]|\\\\.)*'|\\\"(?:[^\\\"\\\\]|\\\\.)*\\\"", "<literal>", line)
+                result["candidate_error_line"] = line[:160].replace("|", "\\\\|")
             return result
         executable = ["python3", "-I", str(generated)]
     elif language == "c":
@@ -95,6 +112,20 @@ def run_language(language: str, source: Path, reference: dict[str, Any], work: P
         "returncode_match": actual.get("returncode") == reference.get("returncode"),
         "candidate_returncode": actual.get("returncode"),
     })
+    if language == "python" and actual.get("stderr"):
+        stderr_lines = [line.strip() for line in actual["stderr"].splitlines() if line.strip()]
+        if stderr_lines:
+            result.update(candidate_error_context(actual["stderr"], translated["stdout"]))
+            tail = stderr_lines[-1]
+            exception_type = tail.split(":", 1)[0].split()[-1]
+            if exception_type and exception_type[0].isupper() and exception_type.replace("_", "").isalnum():
+                result["candidate_exception_type"] = exception_type[:80]
+                if ":" in tail:
+                    result["candidate_exception_message"] = sanitize_exception_message(tail.split(":", 1)[1].strip())
+                if exception_type == "NameError":
+                    missing = re.search(r"name ['\\\"]([^'\\\"]+)['\\\"] is not defined", tail)
+                    if missing:
+                        result["candidate_missing_name"] = missing.group(1)[:80]
     if not match:
         if actual.get("timeout"):
             result["reason"] = "translated program timeout"
@@ -228,6 +259,17 @@ def main() -> int:
         "python_passes_native_fails": [item["id"] for item in evaluated if item["status"]["python"].get("matched") and (not item["status"]["c"].get("matched") or not item["status"]["rust"].get("matched"))],
         "all_three_fail": [item["id"] for item in evaluated if not any(item["status"][lang].get("matched") for lang in languages)],
     }
+    python_results = per_language["python"]
+    report["python_exception_types"] = {}
+    for result in python_results:
+        exception_type = result.get("candidate_exception_type")
+        if exception_type:
+            report["python_exception_types"][exception_type] = report["python_exception_types"].get(exception_type, 0) + 1
+    # A workflow must not report a green, completed benchmark when the Python
+    # translator failed to launch successfully for every eligible case.
+    report["benchmark_valid"] = not (
+        python_results and all(result.get("reason") == "translator exited unsuccessfully" for result in python_results)
+    )
     report["source_code_republished"] = False
     report["notes"] = [
         "Only sources that compile and terminate under GnuCOBOL enter the denominator.",
@@ -248,7 +290,8 @@ def main() -> int:
         "- Reference compile failures: " + str(report["reference_compile_failures"]),
         "- Reference runtime exclusions: " + str(report["reference_runtime_exclusions"]),
         "- Eligible sample: " + str(report["tested"]) + "/" + str(args.target),
-        "- Sample complete: " + str(report["sample_complete"]), "",
+        "- Sample complete: " + str(report["sample_complete"]),
+        "- Benchmark valid: " + str(report["benchmark_valid"]), "",
         "| Backend | Exact matches | Pass rate |", "|---|---:|---:|",
     ]
     for language in languages:
@@ -282,7 +325,7 @@ def main() -> int:
     md_path.write_text("\n".join(lines), encoding="utf-8")
     print("\n".join(lines[:20]))
     print("\nReports: " + str(md_path) + " and " + str(json_path))
-    return 0 if report["sample_complete"] else 2
+    return 0 if report["sample_complete"] and report["benchmark_valid"] else 2
 
 
 if __name__ == "__main__":
