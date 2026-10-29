@@ -1,0 +1,61 @@
+name: multilang-benchmark
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "cobol2py.py"
+      - "cobol2native.py"
+      - "benchmarks/cases.json"
+      - "benchmarks/run_multilang_benchmark.py"
+      - ".github/workflows/multilang-benchmark.yml"
+  pull_request:
+    paths:
+      - "cobol2py.py"
+      - "cobol2native.py"
+      - "benchmarks/cases.json"
+      - "benchmarks/run_multilang_benchmark.py"
+      - ".github/workflows/multilang-benchmark.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: multilang-benchmark-\${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  paired-benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install GnuCOBOL, C compiler, and Rust compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gnucobol build-essential rustc
+      - name: Record toolchain versions
+        run: |
+          python3 --version
+          cobc --version
+          cc --version | head -n 1
+          rustc --version
+      - name: Run paired Python, C, and Rust benchmark
+        run: python3 benchmarks/run_multilang_benchmark.py --output-dir "$RUNNER_TEMP/multilang-report"
+      - name: Publish benchmark summary
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/multilang-report/multilang-benchmark.md" ]; then
+            cat "$RUNNER_TEMP/multilang-report/multilang-benchmark.md" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No benchmark report was produced; inspect job logs." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload detailed benchmark report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: multilang-benchmark-\${{ github.run_number }}
+          path: \${{ runner.temp }}/multilang-report/
+          if-no-files-found: warn
+          retention-days: 90
