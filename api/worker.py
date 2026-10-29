@@ -25,7 +25,7 @@ def run_once() -> bool:
                     target.parent.mkdir(parents=True,exist_ok=True)
                     target.write_text(source.content,encoding="utf-8")
                 data=analyze_repository(root); markdown=render_markdown(data)
-            db.add(Report(project_id=pid,job_id=jid,data=data,markdown=markdown))
+            db.add(Report(project_id=pid,job_id=jid,report_json=data,report_markdown=markdown))
             job=db.get(Job,jid); job.status="succeeded"; job.finished_at=datetime.now(timezone.utc)
             db.commit()
     except Exception as exc:
