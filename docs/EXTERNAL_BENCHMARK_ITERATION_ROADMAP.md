@@ -16,6 +16,10 @@ La aprobación por caso exige coincidencia exacta de stdout y código de retorno
 
 La última medición queda 13 programas por debajo del récord. El hito de recuperación es 375/1000; el objetivo aspiracional de la iteración concentrada sigue siendo 425/1000 (42,5 %), sin prometerlo antes de medirlo. Antes de atribuir cifras a `main`, registrar siempre el SHA exacto del workflow y confirmar que las dos mitades corresponden al mismo SHA.
 
+## Ingeniería inspirada en compiladores open source
+
+La investigación comparativa y la propuesta de arquitectura incremental están en [`docs/OPEN_SOURCE_COMPILER_RESEARCH.md`](OPEN_SOURCE_COMPILER_RESEARCH.md). La primera aplicación será mejorar resolución de referencias y jerarquía de datos sin reescribir el parser ni mezclar varios cambios de semántica. La inspiración principal es la separación AST/ASG de ProLeap, el uso de GnuCOBOL como oráculo, el runtime de opensource COBOL 4J y la frontera AST→IR→codegen descrita por CobGo.
+
 ## Prioridad técnica
 
 ### P0 — Evitar regresiones de terminación y salida explosiva
