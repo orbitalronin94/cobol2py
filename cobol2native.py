@@ -188,7 +188,7 @@ def _emit_nodes(nodes: list[core.Node], variables: dict[str, core.CobolVar], lan
             output.extend(body or ["    " * (indent + 1) + (";" if lang == "c" else "() ;")])
             output.append(pad + "}")
         elif node.kind == "perform_times_inline":
-            match = re.match(r"^PERFORM\\s+(\\d+)\\s+TIMES$", node.text, re.IGNORECASE)
+            match = re.match(r"^PERFORM\s+(\d+)\s+TIMES$", node.text, re.IGNORECASE)
             count = int(match.group(1)) if match else 0
             loop_name = f"_cobol_perform_{len(output)}"
             if lang == "c":
