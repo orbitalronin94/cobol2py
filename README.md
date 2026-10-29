@@ -90,7 +90,9 @@ Ejecuta localmente con Python, GnuCOBOL, un compilador C y Rust instalados:
 python3 benchmarks/run_multilang_benchmark.py --output-dir /tmp/cobol2py-multilang
 ```
 
-El primer benchmark usa el corpus versionado actual (105 casos), no el corpus externo de 500 programas. Los porcentajes se documentan cuando termine el workflow; hasta entonces no se deben inferir resultados. Consulta las decisiones [D-042 a D-044](docs/decisions.md) para la motivación de los dos backends nuevos y el método para convertir discrepancias en regresiones de Python.
+La primera medición pareada terminó en el workflow [#40860402652](https://github.com/orbitalronin94/cobol2py/actions/runs/40860402652): Python **105/105 (100,00 %)**, C **40/105 (38,10 %)** y Rust **40/105 (38,10 %)**. Los tres usaron las mismas 105 fixtures y GnuCOBOL como oráculo; el criterio es stdout byte a byte y código de retorno idénticos. El 100 % de Python solo describe este corpus pequeño y no contradice el benchmark externo, mucho más difícil.
+
+El workflow [external-cobol-corpus](.github/workflows/external-cobol-corpus.yml) se ha ampliado para medir los tres backends sobre la misma selección determinista de X-COBOL v2 (muestra primaria y holdout de 500 programas cada una). Consulta las decisiones [D-042 a D-045](docs/decisions.md) para la motivación de los dos backends nuevos y el método para convertir discrepancias en regresiones de Python.
 
 Los resultados de C, Rust y Python deberán medirse contra GnuCOBOL con las mismas muestras congeladas, sin comparar porcentajes de corpus distintos ni asumir que un lenguaje es más fiel por diseño.
 
