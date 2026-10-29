@@ -3051,3 +3051,27 @@ class OrdinalIntrinsicRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_expr("FUNCTION ORD-MAX(4, 2, 7, 7, 2)")
         self.assertEqual(eval(translated), 3)
         compile(translated, "<ord-max>", "eval")
+
+class ScreenSectionParsingRegressionTests(unittest.TestCase):
+    def test_screen_section_items_are_parsed_without_leaking_hierarchy(self):
+        source = "\\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. SCREENDECL.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-COUNT PIC 9 VALUE 1.",
+            "SCREEN SECTION.",
+            "01 MENU-SCREEN.",
+            '   05 MENU-OPTION PIC X(1) VALUE "Y".',
+            "PROCEDURE DIVISION.",
+            "DISPLAY MENU-OPTION.",
+            "STOP RUN.",
+        ])
+        program = cobol2py.parse_cobol(source, source_format="free")
+        variables = {item.name: item for item in program.variables}
+        self.assertIn("WS-COUNT", variables)
+        self.assertIn("MENU-SCREEN", variables)
+        self.assertIn("MENU-OPTION", variables)
+        self.assertEqual(variables["MENU-OPTION"].parent_name, "MENU-SCREEN")
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<screen-section>", "exec")
