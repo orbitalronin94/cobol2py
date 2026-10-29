@@ -514,7 +514,10 @@ RE_STORAGE_SECTION = re.compile(r"(?:WORKING-STORAGE|LOCAL-STORAGE|LINKAGE)\s+SE
 RE_VAR = re.compile(r"^\s*(\d{1,2})\s+([A-Za-z0-9\-]+)\s*(.*?)(?:\.\s*)?$", re.IGNORECASE)
 RE_PIC = re.compile(r"PIC(?:TURE)?\s+(?:IS\s+)?([A-Za-z0-9\(\)VSPX]+)", re.IGNORECASE)
 RE_VALUE = re.compile(
-    r"""VALUE\s+(?!IS\s*\.?\s*$)(?:IS\s+)?((?:ALL\s+)?(?:"(?:[^"]|"")*"|'(?:[^']|'')*'|[+-]?\d+(?:\.\d+)?|[A-Za-z][A-Za-z0-9-]*))""",
+    # The optional IS is a clause keyword, never a VALUE literal. Keep the
+    # negative lookahead after the optional keyword so regex backtracking
+    # cannot capture IS itself when a declaration is truncated or continued.
+    r"""VALUE\s+(?:IS\s+)?(?!IS\b)((?:ALL\s+)?(?:"(?:[^"]|"")*"|'(?:[^']|'')*'|[+-]?\d+(?:\.\d+)?|[A-Za-z][A-Za-z0-9-]*))""",
     re.IGNORECASE,
 )
 # Patch 2: OCCURS dinámico
@@ -3218,6 +3221,13 @@ def translate_statement(
     m = re.match(r"DISPLAY\s+(.+)", s, re.IGNORECASE)
     if m:
         display_operands = m.group(1).strip()
+        # UPON selects the output device; it is not another DISPLAY operand.
+        display_operands = re.sub(
+            r"\s+UPON\s+[A-Za-z0-9-]+\s*$",
+            "",
+            display_operands,
+            flags=re.IGNORECASE,
+        ).rstrip()
         no_advancing = bool(
             re.search(r"\s+WITH\s+NO\s+ADVANCING\s*$", display_operands, re.IGNORECASE)
         )
