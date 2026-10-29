@@ -419,3 +419,17 @@ Añadir una sección con:
 - **Proceso de transferencia:** para cada caso diferencial, minimizar el fuente, verificar el resultado COBOL con GnuCOBOL, añadir una regresión y solo entonces portar la regla al backend Python. No copiar automáticamente código C/Rust ni tratar el comportamiento de otro traductor como especificación.
 - **Consecuencias:** el informe por caso sirve como mapa de causas probables y puede aumentar la calidad de Python, pero no autoriza extrapolaciones desde una muestra pequeña ni cambios semánticos sin oráculo.
 - **Revisión:** reevaluar la estrategia tras varias rondas de benchmark y al crecer la cobertura nativa más allá del subconjunto inicial.
+
+
+- **Resultado de la primera medición (2026-10-29):** Python 105/105 (100,00 %), C 40/105 (38,10 %) y Rust 40/105 (38,10 %), workflow [#40860402652](https://github.com/orbitalronin94/cobol2py/actions/runs/40860402652). La suite actual es fácil para Python y no ofrece ningún caso en el que C/Rust pasen y Python falle; por tanto, esta puntuación no identifica todavía mejoras que suban el porcentaje Python en ese corpus. C/Rust fallan principalmente por IF no soportado (19 casos), además de PERFORM, aritmética y layouts de datos.
+
+## D-045 — Extender la comparación pareada al corpus externo
+
+- **Fecha:** 2026-10-29.
+- **Estado:** aceptada; primera ejecución externa en curso.
+- **Contexto:** el corpus versionado de 105 fixtures da 100 % a Python, así que no contiene fallos Python útiles para evaluar si los backends nativos ayudan a priorizar arreglos reales.
+- **Decisión:** ampliar el runner externo para evaluar Python, C y Rust sobre la misma selección determinista de programas ejecutables de X-COBOL v2, con el mismo binario de referencia GnuCOBOL, timeout y definición de coincidencia. Mantener separadas las muestras primaria y holdout de 500 programas.
+- **Privacidad y seguridad:** el corpus externo se descarga durante CI, se verifica por checksum, se ejecuta en Docker sin red y con el checkout de solo lectura. Los artefactos contienen hashes, rutas relativas y diagnósticos agregados, nunca el texto fuente ni stdout completo de terceros.
+- **Consecuencias:** los tres porcentajes serán comparables dentro de cada muestra. Las construcciones no soportadas por C/Rust contarán como fallos del backend, mientras que fuentes que no compilen o no terminen bajo GnuCOBOL se excluyen del denominador y se informan por separado.
+- **Validación:** workflow external-cobol-corpus con el nuevo benchmarks/run_external_multilang.py; resultados pendientes de completar en CI.
+- **Revisión:** si el tiempo de ejecución excede el presupuesto, optimizar la reutilización de referencias/compilación sin cambiar la selección, los timeouts ni el criterio de coincidencia.
