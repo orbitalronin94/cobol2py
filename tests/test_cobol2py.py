@@ -2101,10 +2101,7 @@ class MoveMultipleTargetsRegressionTests(unittest.TestCase):
             "WS-LONG": cobol2py.CobolVar(level=1, name="WS-LONG", pic="X(5)"),
         }
         translated = cobol2py.translate_statement('MOVE "ABCDE" TO WS-SHORT WS-LONG', set(), variables)
-        self.assertEqual(
-            translated,
-            ["ws_short = str('ABCDE')[:2].ljust(2)", "ws_long = str('ABCDE')[:5].ljust(5)"],
-        )
+        self.assertEqual(len(translated or []), 2, translated)
         namespace = {}
         exec("\\n".join(translated or []), namespace)
         self.assertEqual(namespace["ws_short"], "AB")
@@ -2116,10 +2113,11 @@ class MoveMultipleTargetsRegressionTests(unittest.TestCase):
             "WS-B": cobol2py.CobolVar(level=1, name="WS-B", pic="X(4)"),
         }
         translated = cobol2py.translate_statement('MOVE "TO" TO WS-A WS-B', set(), variables)
-        self.assertEqual(
-            translated,
-            ["ws_a = str('TO')[:2].ljust(2)", "ws_b = str('TO')[:4].ljust(4)"],
-        )
+        self.assertEqual(len(translated or []), 2, translated)
+        namespace = {}
+        exec("\\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_a"], "TO")
+        self.assertEqual(namespace["ws_b"], "TO  ")
 
 
 class MoveCorrespondingRegressionTests(unittest.TestCase):
