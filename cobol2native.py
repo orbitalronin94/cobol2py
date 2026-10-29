@@ -182,6 +182,22 @@ def _emit_nodes(nodes: list[core.Node], variables: dict[str, core.CobolVar], lan
     for node in nodes:
         if node.kind == "stmt":
             output.extend(pad + line for line in _translate_statement(node.text, variables, lang))
+        elif node.kind == "perform_inline":
+            output.append(pad + "{")
+            body = _emit_nodes(node.body, variables, lang, indent + 1)
+            output.extend(body or ["    " * (indent + 1) + (";" if lang == "c" else "() ;")])
+            output.append(pad + "}")
+        elif node.kind == "perform_times_inline":
+            match = re.match(r"^PERFORM\\s+(\\d+)\\s+TIMES$", node.text, re.IGNORECASE)
+            count = int(match.group(1)) if match else 0
+            loop_name = f"_cobol_perform_{len(output)}"
+            if lang == "c":
+                output.append(pad + f"for (int {loop_name} = 0; {loop_name} < {count}; ++{loop_name}) {{")
+            else:
+                output.append(pad + f"for {loop_name} in 0..{count} {{")
+            body = _emit_nodes(node.body, variables, lang, indent + 1)
+            output.extend(body or ["    " * (indent + 1) + (";" if lang == "c" else "() ;")])
+            output.append(pad + "}")
         elif node.kind == "if":
             match = core.RE_IF_OPEN.match(node.text)
             if not match:
