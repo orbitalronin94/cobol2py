@@ -145,7 +145,7 @@ jobs:
               "",
           ]
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
-              handle.write("\\n".join(summary))
-          print("\\n".join(summary))
+              handle.write("\n".join(summary))
+          print("\n".join(summary))
           if not reports:
               raise SystemExit("No benchmark reports found; inspect the sample jobs.")
