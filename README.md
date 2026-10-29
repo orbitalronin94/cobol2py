@@ -1,6 +1,6 @@
 # cobol2py
 
-> Traductor mínimo de COBOL a Python. Un archivo. Cero dependencias. Solo stdlib.
+> Traductor COBOL a Python, con prototipos experimentales a C y Rust. El núcleo de análisis COBOL se comparte; los backends nativos tienen cobertura limitada y no prometen equivalencia general.
 
 `cobol2py` nació como un traductor pequeño y autónomo de un archivo COBOL a Python legible. Después, el proyecto se amplió con un **agente inicial de análisis y planificación para sistemas empresariales multiarchivo** que ayuda a entender programas relacionados, copybooks, JCL y SQL antes de planificar una modernización. Son dos herramientas relacionadas, pero independientes: puedes usar el traductor sin el agente, y ejecutar el agente sin traducir código. El agente todavía no es un migrador autónomo ni promete equivalencia completa.
 
@@ -63,6 +63,24 @@ El proyecto ha evolucionado desde un traductor de COBOL a Python hacia un reposi
 - **Piloto integrado (`tools/modernize_pilot.py`)**: conecta inventario y traducción del subconjunto a Python, comprueba sintaxis y crea un informe por archivo. Por defecto no ejecuta el código generado; el flag explícito `--differential` ejecuta únicamente fixtures de ruta exacta y compara stdout/código de retorno con GnuCOBOL.
 - **Evidencia medida**: el piloto traduce 108/108 fuentes de `samples` sin errores de sintaxis ni de traducción. En el modo diferencial opt-in, 105/105 fixtures versionadas coinciden con GnuCOBOL en stdout y código de retorno. Esto no demuestra equivalencia para entradas no medidas ni efectos externos.
 - **Corpus externo amplio (muestras primaria y holdout)**: el workflow [`external-cobol-corpus`](.github/workflows/external-cobol-corpus.yml) compara dos muestras deterministas disjuntas de 500 fuentes de [X-COBOL v2](https://zenodo.org/records/14269462) con GnuCOBOL en un contenedor sin red. El último candidato medido obtuvo **169/500 (33,80 %) en primaria y 195/500 (39,00 %) en holdout, 364/1.000 (36,40 %) combinado**, en [workflow #40761767797](https://github.com/orbitalronin94/cobol2py/actions/runs/40761767797), commit `e62d8873c48157a2abed7e468894e380e310307f`. Desde el 34,40 % anterior son +20 aciertos (+2,00 puntos); el máximo observado es 369/1.000 (36,90 %), cinco aciertos más. Frente a la referencia histórica de 291/1.000 (29,10 %), el avance es +73 aciertos (+7,30 puntos). Esta medición corresponde al candidato de la rama de trabajo; `main` debe repetir el benchmark tras integrar los cambios antes de atribuirse el resultado. Para alcanzar 375/500 faltan 206 aciertos en primaria y 180 en holdout. Véase [metodología y límites](benchmarks/EXTERNAL_CORPUS.md).
+
+### Prototipos experimentales C y Rust
+
+El repositorio incluye ahora `cobol2native.py`, que reutiliza el parser y el modelo de datos de `cobol2py.py` y emite C o Rust para un subconjunto explícito de COBOL. **No es todavía un backend de cobertura general ni tiene una puntuación del corpus externo.** Las construcciones fuera del subconjunto se rechazan en lugar de producir una traducción que parezca correcta.
+
+```bash
+python cobol2native.py programa.cbl --lang c --out programa.c
+cc -std=c11 -Wall -Wextra programa.c -o programa
+./programa
+
+python cobol2native.py programa.cbl --lang rust --out programa.rs
+rustc programa.rs -o programa-rust
+./programa-rust
+```
+
+La cobertura inicial se limita a almacenamiento elemental de nivel superior con PIC alfanumérico o entero simple, DISPLAY, MOVE literal/referencia simple, ADD básico y terminación. Grupos, OCCURS, REDEFINES, control de flujo estructurado, decimales y muchas otras construcciones todavía no están soportadas. Consulta [alcance y arquitectura prevista](docs/native-backends.md).
+
+Los resultados de C, Rust y Python deberán medirse contra GnuCOBOL con las mismas muestras congeladas, sin comparar porcentajes de corpus distintos ni asumir que un lenguaje es más fiel por diseño.
 
 ### Usar solo el traductor
 
