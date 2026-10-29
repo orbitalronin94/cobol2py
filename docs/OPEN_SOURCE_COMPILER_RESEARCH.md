@@ -34,6 +34,8 @@ GnuCOBOL debe seguir siendo el oráculo de ejecución. El código C emitido es u
 
 **Patrón a adoptar:** para cada fallo representativo, conservar el COBOL original, la salida/código de retorno de referencia y, cuando ayude, el C generado. Esos artefactos sirven para formular una hipótesis semántica y diseñar un fixture mínimo. Nunca relajar la comparación exacta de stdout y return code.
 
+**Detalle observado en la fuente:** el modelo de campos de `cobc/field.c` valida restricciones de REDEFINES, incluyendo casos donde la definición original no puede tener longitud variable. Esto apunta a una lección concreta: validar restricciones entre declaraciones antes del codegen, en lugar de tratar REDEFINES como una simple asignación de dos nombres al mismo buffer. La lógica relacionada está en el código fuente enlazado; no se ha portado código.
+
 ### 3. opensource COBOL 4J: compilador por etapas y runtime
 
 Fuentes:
