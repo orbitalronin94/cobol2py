@@ -86,9 +86,9 @@ STOP RUN.
         rust_output = cobol2native.emit_native(program, "rust")
         self.assertIn("for (int _cobol_perform_", c_output)
         self.assertIn("< 3;", c_output)
-        self.assertIn('printf("%s\\\\n", "X");', c_output)
+        self.assertIn('printf("%s\\n", "X");', c_output)
         self.assertIn("in 0..3 {", rust_output)
-        self.assertIn('print!("{}\\\\n", "X");', rust_output)
+        self.assertIn('print!("{}\\n", "X");', rust_output)
 
     def test_if_control_flow_is_emitted_for_c_and_rust(self):
         import cobol2py
