@@ -2723,7 +2723,7 @@ class NistGroupStorageRegressionTests(unittest.TestCase):
         output = StringIO()
         with redirect_stdout(output):
             namespace["main"]()
-        self.assertEqual(output.getvalue(), "PASS                \\n")
+        self.assertEqual(output.getvalue(), "PASS                \n")
 
 
 class GroupToGroupMoveRegressionTests(unittest.TestCase):
