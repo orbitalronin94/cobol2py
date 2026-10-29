@@ -11,6 +11,7 @@ on:
       - "benchmarks/Dockerfile.external"
       - "benchmarks/run_external_corpus.py"
       - "benchmarks/run_external_multilang.py"
+      - "benchmarks/run_external_multilang.py"
   pull_request:
     paths:
       - ".github/workflows/external-cobol-corpus.yml"
@@ -19,6 +20,7 @@ on:
       - "web/index.html"
       - "benchmarks/Dockerfile.external"
       - "benchmarks/run_external_corpus.py"
+      - "benchmarks/run_external_multilang.py"
   workflow_dispatch:
     inputs:
       target:
@@ -103,7 +105,7 @@ jobs:
         run: |
           if [ -f "$RUNNER_TEMP/external-corpus-artifacts/$SAMPLE_NAME/external-multilang-report.md" ]; then
             echo "## $SAMPLE_NAME sample" >> "$GITHUB_STEP_SUMMARY"
-            cat "$RUNNER_TEMP/external-corpus-artifacts/$SAMPLE_NAME/external-corpus-report.md" >> "$GITHUB_STEP_SUMMARY"
+            cat "$RUNNER_TEMP/external-corpus-artifacts/$SAMPLE_NAME/external-multilang-report.md" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "No benchmark report was produced; inspect the container and download logs." >> "$GITHUB_STEP_SUMMARY"
           fi
@@ -112,7 +114,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: external-cobol-corpus-${{ matrix.sample.name }}-${{ github.run_number }}
+          name: external-multilang-cobol-corpus-${{ matrix.sample.name }}-${{ github.run_number }}
           path: ${{ runner.temp }}/external-corpus-artifacts/${{ matrix.sample.name }}/
           if-no-files-found: warn
           retention-days: 90
