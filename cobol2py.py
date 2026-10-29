@@ -585,9 +585,9 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
             continue
         upper = text.upper().rstrip(".")
 
-        if re.match(r"^PERFORM(?:\s+WITH\s+TEST\s+(?:BEFORE|AFTER))?\s+UNTIL\b", upper):
+        if re.match(r"^PERFORM(?:\s+WITH\s+TEST\s+(?:BEFORE|AFTER))?\s+(?:UNTIL|VARYING)\b", upper):
             flush()
-            units.append((num, text.strip()))
+            units.append((num, text.strip())
             continue
 
         if upper == "ELSE":
@@ -702,6 +702,18 @@ def build_tree(units: list[tuple[int, str]]) -> list[Node]:
             current_list.append(node)
             stack.append(("if", node, current_list))
             current_list = node.then_branch
+            continue
+
+        inline_varying = re.match(
+            r"^PERFORM(?:\s+WITH\s+TEST\s+(BEFORE|AFTER))?\s+VARYING\s+([A-Za-z0-9-]+)\s+FROM\s+(.+?)\s+BY\s+(.+?)\s+UNTIL\s+(.+)$",
+            normalized,
+            re.IGNORECASE,
+        )
+        if inline_varying:
+            node = Node(kind="perform_varying_inline", text=normalized, line=line)
+            current_list.append(node)
+            stack.append(("perform", node, current_list))
+            current_list = node.body
             continue
 
         inline_until = re.match(
@@ -3708,6 +3720,41 @@ def translate_nodes(
                     else_body.append("    " * (indent + 1) + "pass")
                 out.extend(else_body)
 
+        elif node.kind == "perform_varying_inline":
+            match = re.match(
+                r"^PERFORM(?:\s+WITH\s+TEST\s+(BEFORE|AFTER))?\s+VARYING\s+([A-Za-z0-9-]+)\s+FROM\s+(.+?)\s+BY\s+(.+?)\s+UNTIL\s+(.+)$",
+                node.text,
+                re.IGNORECASE,
+            )
+            if match:
+                test_mode = match.group(1).upper() if match.group(1) else "BEFORE"
+                index_token, start_text, step_text, condition_text = match.group(2, 3, 4, 5)
+                index_expr = normalize_data_reference(index_token, variables)
+                start_expr = translate_expr(start_text, variables)
+                step_expr = translate_expr(step_text, variables)
+                condition = translate_condition(condition_text, variables, condition_names)
+                prefix = "    " * indent
+                out.append(prefix + f"{index_expr} = {start_expr}")
+                if test_mode == "AFTER":
+                    out.append(prefix + "while True:")
+                    body = translate_nodes(node.body, paragraphs, indent + 1, variables, current_paragraph, condition_names)
+                    if not body or all(not line.strip() or line.strip().startswith("#") for line in body):
+                        body = ["    " * (indent + 1) + "pass"]
+                    out.extend(body)
+                    increment = fit_numeric_expression(f"({index_expr} + ({step_expr}))", index_token, variables)
+                    out.append("    " * (indent + 1) + f"{index_expr} = {increment}")
+                    out.append("    " * (indent + 1) + f"if {condition}:")
+                    out.append("    " * (indent + 2) + "break")
+                else:
+                    out.append(prefix + f"while not ({condition}):")
+                    body = translate_nodes(node.body, paragraphs, indent + 1, variables, current_paragraph, condition_names)
+                    if not body or all(not line.strip() or line.strip().startswith("#") for line in body):
+                        body = ["    " * (indent + 1) + "pass"]
+                    out.extend(body)
+                    increment = fit_numeric_expression(f"({index_expr} + ({step_expr}))", index_token, variables)
+                    out.append("    " * (indent + 1) + f"{index_expr} = {increment}")
+            else:
+                out.append("    " * indent + "# PERFORM VARYING no traducido: cabecera no reconocida")
         elif node.kind == "perform_until_inline":
             match = re.match(
                 r"^PERFORM(?:\s+WITH\s+TEST\s+(BEFORE|AFTER))?\s+UNTIL\s+(.+)$",
