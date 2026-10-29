@@ -70,6 +70,34 @@ STOP RUN.
         output = cobol2native.emit_native(program, "c")
         self.assertIn('printf("%lld%g\\n", (long long)(123), (double)(1.5));', output)
 
+    def test_perform_until_and_varying_are_emitted_for_c_and_rust(self):
+        import cobol2py
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. PERFORM-UNTIL-DEMO.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-IDX PIC 9 VALUE 0.
+01 WS-COUNT PIC 9 VALUE 0.
+PROCEDURE DIVISION.
+MAIN.
+PERFORM VARYING WS-IDX FROM 1 BY 1 UNTIL WS-IDX > 3
+ADD 1 TO WS-COUNT
+END-PERFORM.
+PERFORM UNTIL WS-COUNT >= 5
+ADD 1 TO WS-COUNT
+END-PERFORM.
+STOP RUN.
+"""
+        program = cobol2py.parse_cobol(source, source_format="free")
+        c_output = cobol2native.emit_native(program, "c")
+        rust_output = cobol2native.emit_native(program, "rust")
+        self.assertIn("while (!(ws_idx > 3)) {", c_output)
+        self.assertIn("ws_idx += 1;", c_output)
+        self.assertIn("while (!(ws_count >= 5)) {", c_output)
+        self.assertIn("while !(ws_idx > 3) {", rust_output)
+        self.assertIn("ws_idx += 1;", rust_output)
+        self.assertIn("while !(ws_count >= 5) {", rust_output)
+
     def test_perform_times_inline_is_emitted_for_c_and_rust(self):
         import cobol2py
         source = """IDENTIFICATION DIVISION.
