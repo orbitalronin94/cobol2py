@@ -2642,6 +2642,35 @@ class GroupMoveFillRegressionTests(unittest.TestCase):
         with redirect_stdout(output):
             namespace["main"]()
         self.assertEqual(output.getvalue(), "PASS                \n")
+    def test_move_alphanumeric_literal_to_group_preserves_nested_storage(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. GROUPLITERAL.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 TEST-RESULTS.",
+            "   02 FEATURE PIC X(4).",
+            "   02 P-OR-F PIC X.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            '   MOVE "AB" TO TEST-RESULTS.',
+            "   DISPLAY FEATURE OF TEST-RESULTS.",
+            "   STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        self.assertNotIn('test_results = "AB"', generated)
+        self.assertIn("test_results['feature'] = 'AB  '", generated)
+        self.assertIn("test_results['p_or_f'] = ' '", generated)
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<group-move-literal>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "AB  \\n")
+
     def test_move_space_to_occurs_group_fills_each_row_without_replacing_table(self):
         variables = {
             "TEST-RESULTS": cobol2py.CobolVar(
