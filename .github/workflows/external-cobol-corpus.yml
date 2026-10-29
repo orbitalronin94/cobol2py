@@ -33,7 +33,7 @@ permissions:
 # GitHub keeps only the newest pending run for a concurrency group, avoiding repeated
 # cancellation of the benchmark before it can publish a report.
 concurrency:
-  group: external-cobol-corpus-${{ github.event.pull_request.number || github.ref }}
+  group: external-cobol-corpus-v2-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
