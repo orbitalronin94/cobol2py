@@ -2147,6 +2147,12 @@ class DisplayOperandSplittingRegressionTests(unittest.TestCase):
             ["WS-DAY", "'/'", "WS-MONTH", "'/'", "WS-YEAR"],
         )
 
+    def test_prefixed_literals_are_not_split_from_their_prefix(self):
+        self.assertEqual(
+            cobol2py.split_cobol_items("""N'ABC' G"DEF" X'4142' WS-A"""),
+            ["N'ABC'", 'G"DEF"', "X'4142'", "WS-A"],
+        )
+
     def test_display_adjacent_quoted_operands_generates_valid_python(self):
         variables = {
             "WS-DAY": cobol2py.CobolVar(level=1, name="WS-DAY", pic="99"),
