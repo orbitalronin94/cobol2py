@@ -1,6 +1,6 @@
 # Documentación de ingeniería
 
-Esta carpeta documenta el diseño actual, las decisiones técnicas, el alcance semántico y el proceso para validar cambios de `cobol2py`.
+Esta carpeta documenta el diseño actual, las decisiones técnicas, el alcance semántico y el proceso para validar cambios de `cobol2py`. El único roadmap de producto vigente hacia v1.0 está en el README raíz; los documentos de hitos anteriores se conservan solo como registro histórico.
 
 ## Documentos
 
@@ -10,7 +10,7 @@ Esta carpeta documenta el diseño actual, las decisiones técnicas, el alcance s
 - [Registro de decisiones](decisions.md): decisiones tomadas, motivación, consecuencias y estado.
 - [Compatibilidad COBOL](compatibility.md): comportamientos implementados, verificación y limitaciones conocidas.
 - [Proceso de cambios](change-process.md): cómo proponer, medir y documentar mejoras.
-- [Roadmap y fases siguientes](roadmap-two-weeks.md): plan inicial de diez días, evidencia de entregables y roadmap ampliado para precisión del inventario, validación diferencial, experiencia del agente y semántica del traductor.
+- [Plan técnico del benchmark externo](EXTERNAL_BENCHMARK_FAILURE_ANALYSIS.md): medición de referencia, distribución de fallos y prioridades para recuperar casos sin alterar la métrica.
 - [Notas de versión 0.1.0-rc1](release-notes-0.1.0-rc1.md): alcance, resultados medidos y limitaciones del candidato.
 - [Notas de hito 0.8 (borrador de ingeniería)](release-notes-0.8.0.md): esquema de informe v2, clasificación de diagnósticos, artefacto de CI y límites del hito; no representa una publicación etiquetada.
 - [Triage de diagnósticos de samples](pilot-diagnostics-baseline.md): clasificación por fuente de los 35 archivos que mantienen avisos en el piloto, con el falso positivo corregido y las limitaciones pendientes.

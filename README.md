@@ -8,7 +8,7 @@ La traducción busca **leerse** y, para el subconjunto cubierto por regresiones 
 
 ## Roadmap único de versiones hacia v1.0
 
-Este es el roadmap de producto completo: el hito histórico **v0.2 no es el final**. Los números son hitos de desarrollo previstos, no versiones publicadas automáticamente. La v1.0 permanece bloqueada hasta que se cumplan las puertas de aceptación medibles que se indican aquí.
+Este es el roadmap de producto canónico: **el objetivo vigente es v1.0**. Los hitos anteriores, incluido v0.2, son contexto histórico y no planes alternativos ni versiones publicadas automáticamente. La v1.0 permanece bloqueada hasta cumplir las puertas de aceptación medibles que se indican aquí.
 
 ### Métrica de aceptación de v1.0
 
@@ -43,7 +43,7 @@ Este es el roadmap de producto completo: el hito histórico **v0.2 no es el fina
 5. **Validar generalización:** congelar un candidato y comprobar el umbral en la muestra disjunta sin usarla para ajustar las correcciones.
 6. **Autorizar v1.0:** exigir ambas metas, CI completa verde, informes reproducibles, limitaciones documentadas y revisión final de release.
 
-El 75 % es una **puerta de aceptación pendiente**, no una capacidad actual ni una promesa de compatibilidad universal. El calendario operativo y el registro detallado de tareas están en [`docs/roadmap-two-weeks.md`](docs/roadmap-two-weeks.md).
+El 75 % es una **puerta de aceptación pendiente**, no una capacidad actual ni una promesa de compatibilidad universal. El análisis técnico de los fallos y las prioridades de la siguiente iteración se mantiene en [`docs/EXTERNAL_BENCHMARK_FAILURE_ANALYSIS.md`](docs/EXTERNAL_BENCHMARK_FAILURE_ANALYSIS.md).
 ---
 
 ## Por qué existe
@@ -376,7 +376,7 @@ Genera inventario Markdown/JSON, archivos Python traducidos y un informe por pro
 
 ## Documentación de ingeniería
 
-La documentación de arquitectura, decisiones de diseño, alcance de compatibilidad, proceso de cambios y ejecución por fases está en [`docs/`](docs/README.md). Consulta el [roadmap de modernización de dos semanas](docs/roadmap-two-weeks.md) para el calendario, los criterios de aceptación y el registro de progreso. Los cambios semánticos deben incluir pruebas y, cuando sea posible, una comparación diferencial con GnuCOBOL. El porcentaje del benchmark mide únicamente los casos versionados; no demuestra equivalencia general.
+La documentación de arquitectura, decisiones de diseño, compatibilidad y proceso de cambios está en [`docs/`](docs/README.md). El README contiene el único roadmap de producto hacia v1.0; el [análisis del benchmark externo](docs/EXTERNAL_BENCHMARK_FAILURE_ANALYSIS.md) mantiene el diagnóstico técnico y las prioridades de corrección. Los cambios semánticos deben incluir pruebas y, cuando sea posible, una comparación diferencial con GnuCOBOL. El porcentaje del benchmark mide únicamente los casos versionados; no demuestra equivalencia general.
 
 ## Pruebas
 
