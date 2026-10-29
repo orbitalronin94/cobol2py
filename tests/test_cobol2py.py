@@ -1749,14 +1749,14 @@ class DataReferenceResolutionTests(unittest.TestCase):
         self.assertIn("group", translated)
 
 class ImpliedDecimalDisplayRegressionTests(unittest.TestCase):
-    def test_unsigned_implied_decimal_displays_digits_without_decimal_point(self):
+    def test_unsigned_implied_decimal_displays_decimal_point_like_gnucobol(self):
         variable = cobol2py.CobolVar(
             level=1, name="WS-RATE", pic="9(3)V99"
         )
         expression = cobol2py.translate_display_item(
             "WS-RATE", {"WS-RATE": variable}
         )
-        self.assertEqual(eval(expression, {"ws_rate": 234.56}), "23456")
+        self.assertEqual(eval(expression, {"ws_rate": 234.56}), "234.56")
         self.assertNotIn(".", eval(expression, {"ws_rate": 234.56}))
 
 
