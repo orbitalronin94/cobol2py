@@ -246,3 +246,10 @@ El workflow dedicado `external-python-benchmark` terminó para el commit `ba56e5
 El programa de ese caso declara `FUNCTION RANDOM` y usa `ACCEPT CURRENT-TIME FROM TIME` antes de decidir el resultado. Por tanto, la diferencia de una sola ejecución puede ser una variación no determinista y **no prueba que el cambio de referencias cualificadas haya causado la subida**. La ejecución #17 sobre el SHA más reciente debe confirmar si el caso vuelve a pasar; incluso si vuelve a pasar, conviene repetir la prueba del caso de forma aislada para verificar estabilidad.
 
 El workflow multilenguaje #621 selecciona muestras de forma distinta: dio 362/1.000. No mezclar su score con el del workflow dedicado; para la serie histórica 37,5 % → 36,2 % → 36,3 %, usar solo scorecards del workflow dedicado y marcar la variabilidad del caso aleatorio. El objetivo de +5 puntos porcentuales sigue sin alcanzarse.
+
+
+## Iteración siguiente en curso: #41 — OCCURS tridimensional + REDEFINES
+
+El fixture mínimo ya confirmó un fallo real de semántica: después de escribir `ENTRY-3(2,1,2)` en la vista base, leer `ENTRY-3-1(2,1,2)` desde la vista redefinida devolvía espacios. El código emitido mostraba dos diccionarios independientes (`cobol_3_dimension_tbl` y `cobol_3_dem_tbl`), no almacenamiento compartido.
+
+La PR [#41](https://github.com/orbitalronin94/cobol2py/pull/41) incorpora un layout con strides por dimensión y acceso indexado a un buffer común. La prueba nueva y la suite de 292 tests pasan en Python 3.10, 3.11, 3.12 y 3.13; el workflow diferencial interno también pasa. El benchmark externo de 1.000 programas para este SHA sigue pendiente. La hipótesis de que esto resuelva todos los errores `list indices must be integers or slices, not str` no está demostrada; los resultados por caso determinarán si se mantiene o se revierte.
