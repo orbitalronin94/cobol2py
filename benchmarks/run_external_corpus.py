@@ -5,9 +5,13 @@ The source archive is an external input and is never copied into the repository.
 Run only in Dockerfile.external, with networking disabled and the checkout read-only.
 """
 from __future__ import annotations
-import argparse, hashlib, json, os, re, shutil, signal, subprocess, tempfile, zipfile
+import argparse, hashlib, json, os, re, shutil, signal, subprocess, tempfile, threading, zipfile
 from pathlib import Path, PurePosixPath
 from typing import Any
+
+# Bound captured output from untrusted corpus programs. Reader threads keep
+# draining pipes after the limit so children cannot block on a full pipe.
+MAX_CAPTURE_BYTES = 1_000_000
 
 ARCHIVE_MD5 = "cbd974caed72b0836777dc2305928ed3"
 ARCHIVE_URL = "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1"
@@ -15,26 +19,65 @@ SOURCE_EXTENSIONS = {".cbl", ".cob", ".cobol"}
 MAX_SOURCE_BYTES = 1_000_000
 
 def run_process(command: list[str], cwd: Path, timeout: int) -> dict[str, Any]:
-    """Run one untrusted program in its own process group and kill it on timeout."""
+    """Run one untrusted program in its own process group with bounded output."""
     try:
         process = subprocess.Popen(command, cwd=str(cwd), stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8",
-            errors="replace", start_new_session=True,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=False,
+            start_new_session=True,
             env={"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": str(cwd),
                  "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8", "TZ": "UTC",
                  "PYTHONDONTWRITEBYTECODE": "1"})
     except OSError as error:
-        return {"launched": False, "returncode": None, "stdout": "", "stderr": str(error), "timeout": False}
+        return {"launched": False, "returncode": None, "stdout": "", "stderr": str(error),
+                "timeout": False, "stdout_truncated": False, "stderr_truncated": False}
+
+    stdout_capture = bytearray()
+    stderr_capture = bytearray()
+    stdout_overflow = [False]
+    stderr_overflow = [False]
+
+    def drain(stream: Any, capture: bytearray, overflow: list[bool]) -> None:
+        try:
+            while True:
+                chunk = stream.read(65536)
+                if not chunk:
+                    break
+                remaining = MAX_CAPTURE_BYTES - len(capture)
+                if remaining > 0:
+                    capture.extend(chunk[:remaining])
+                if len(chunk) > max(remaining, 0):
+                    overflow[0] = True
+        finally:
+            stream.close()
+
+    readers = [
+        threading.Thread(target=drain, args=(process.stdout, stdout_capture, stdout_overflow), daemon=True),
+        threading.Thread(target=drain, args=(process.stderr, stderr_capture, stderr_overflow), daemon=True),
+    ]
+    for reader in readers:
+        reader.start()
+    timed_out = False
     try:
-        stdout, stderr = process.communicate(timeout=timeout)
-        return {"launched": True, "returncode": process.returncode, "stdout": stdout,
-                "stderr": stderr, "timeout": False}
+        process.wait(timeout=timeout)
     except subprocess.TimeoutExpired:
-        try: os.killpg(process.pid, signal.SIGKILL)
-        except ProcessLookupError: pass
-        stdout, stderr = process.communicate()
-        return {"launched": True, "returncode": process.returncode, "stdout": stdout or "",
-                "stderr": stderr or "", "timeout": True}
+        timed_out = True
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        process.wait()
+    for reader in readers:
+        reader.join(timeout=2)
+
+    return {
+        "launched": True,
+        "returncode": process.returncode,
+        "stdout": stdout_capture.decode("utf-8", errors="replace"),
+        "stderr": stderr_capture.decode("utf-8", errors="replace"),
+        "timeout": timed_out,
+        "stdout_truncated": stdout_overflow[0],
+        "stderr_truncated": stderr_overflow[0],
+    }
 
 def candidate_error_context(stderr: str, generated_source: str) -> dict[str, Any]:
     """Return a sanitized generated-code location without exposing string contents."""
@@ -169,9 +212,10 @@ def main() -> int:
                     continue
                 result["reference_compile"] = "passed"
                 reference = run_process([str(executable)], reference_work, args.run_timeout)
-                if not reference["launched"] or reference["timeout"]:
+                if not reference["launched"] or reference["timeout"] or reference["stdout_truncated"]:
                     report["reference_runtime_exclusions"] += 1
-                    result["reason"] = "reference execution timed out or could not launch"
+                    result["reason"] = ("reference stdout exceeded capture limit" if reference.get("stdout_truncated")
+                        else "reference execution timed out or could not launch")
                     continue
                 if eligible_seen < args.skip:
                     eligible_seen += 1
@@ -180,9 +224,12 @@ def main() -> int:
                 eligible_seen += 1
                 translated = run_process(["python3", "-I", str(translator), str(source), "--format", "auto"],
                                          candidate_work, args.translator_timeout)
-                if not translated["launched"] or translated["timeout"] or translated["returncode"] != 0:
-                    result.update({"status": "failed", "reason": "translator timeout" if translated["timeout"] else
-                        (translated["stderr"] or f"translator exited {translated['returncode']}")[-400:]})
+                if (not translated["launched"] or translated["timeout"] or translated["stdout_truncated"]
+                        or translated["returncode"] != 0):
+                    reason = ("translator timeout" if translated["timeout"] else
+                        "translator output exceeded capture limit" if translated.get("stdout_truncated") else
+                        (translated["stderr"] or f"translator exited {translated['returncode']}")[-400:])
+                    result.update({"status": "failed", "reason": reason})
                 else:
                     generated = candidate_work / "translated.py"
                     generated.write_text(translated["stdout"], encoding="utf-8")
@@ -229,11 +276,14 @@ def main() -> int:
                                 missing = _re.search(r"name ['\"]([^'\"]+)['\"] is not defined", tail)
                                 if missing:
                                     result["candidate_missing_name"] = missing.group(1)[:100]
-                        if candidate["launched"] and not candidate["timeout"] and result["stdout_match"] and result["returncode_match"]:
+                        if (candidate["launched"] and not candidate["timeout"] and not candidate.get("stdout_truncated")
+                                and result["stdout_match"] and result["returncode_match"]):
                             result.update({"status": "passed", "reason": None})
                         else:
-                            result.update({"status": "failed", "reason": "translated program timed out" if candidate["timeout"]
-                                else "stdout or return code differs from GnuCOBOL"})
+                            reason = ("translated program timed out" if candidate["timeout"] else
+                                "translated stdout exceeded capture limit" if candidate.get("stdout_truncated") else
+                                "stdout or return code differs from GnuCOBOL")
+                            result.update({"status": "failed", "reason": reason})
                 report["results"].append(result)
                 report["tested"] += 1
                 if result["status"] == "passed": report["passed"] += 1
