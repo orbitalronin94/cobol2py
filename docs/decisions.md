@@ -426,10 +426,10 @@ Añadir una sección con:
 ## D-045 — Extender la comparación pareada al corpus externo
 
 - **Fecha:** 2026-10-29.
-- **Estado:** aceptada; primera ejecución externa en curso.
+- **Estado:** aceptada; primera ejecución externa completada.
 - **Contexto:** el corpus versionado de 105 fixtures da 100 % a Python, así que no contiene fallos Python útiles para evaluar si los backends nativos ayudan a priorizar arreglos reales.
 - **Decisión:** ampliar el runner externo para evaluar Python, C y Rust sobre la misma selección determinista de programas ejecutables de X-COBOL v2, con el mismo binario de referencia GnuCOBOL, timeout y definición de coincidencia. Mantener separadas las muestras primaria y holdout de 500 programas.
 - **Privacidad y seguridad:** el corpus externo se descarga durante CI, se verifica por checksum, se ejecuta en Docker sin red y con el checkout de solo lectura. Los artefactos contienen hashes, rutas relativas y diagnósticos agregados, nunca el texto fuente ni stdout completo de terceros.
 - **Consecuencias:** los tres porcentajes serán comparables dentro de cada muestra. Las construcciones no soportadas por C/Rust contarán como fallos del backend, mientras que fuentes que no compilen o no terminen bajo GnuCOBOL se excluyen del denominador y se informan por separado.
-- **Validación:** workflow external-cobol-corpus con el nuevo benchmarks/run_external_multilang.py; resultados pendientes de completar en CI.
+- **Validación:** workflow [#40861606573](https://github.com/orbitalronin94/cobol2py/actions/runs/40861606573) completado correctamente. Muestra principal: Python 136/500 (27,20 %), C 17/500 (3,40 %), Rust 16/500 (3,20 %). Holdout: Python 160/500 (32,00 %), C 20/500 (4,00 %), Rust 19/500 (3,80 %). Los tres backends comparten la selección y el oráculo dentro de cada muestra; los resultados confirman que Python tiene hoy mucha más cobertura que los prototipos nativos. No comparar estos porcentajes con el corpus interno de 105 casos como si fueran el mismo conjunto.
 - **Revisión:** si el tiempo de ejecución excede el presupuesto, optimizar la reutilización de referencias/compilación sin cambiar la selección, los timeouts ni el criterio de coincidencia.
