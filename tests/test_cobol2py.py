@@ -2141,6 +2141,25 @@ class DisplayOperandSplittingRegressionTests(unittest.TestCase):
             ['"HELLO WORLD"', "WS-TEXT(1, 2)", "ERASE"],
         )
 
+    def test_quoted_operand_adjacent_to_data_names_is_split(self):
+        self.assertEqual(
+            cobol2py.split_cobol_items("WS-DAY'/'WS-MONTH'/'WS-YEAR"),
+            ["WS-DAY", "'/'", "WS-MONTH", "'/'", "WS-YEAR"],
+        )
+
+    def test_display_adjacent_quoted_operands_generates_valid_python(self):
+        variables = {
+            "WS-DAY": cobol2py.CobolVar(level=1, name="WS-DAY", pic="99"),
+            "WS-MONTH": cobol2py.CobolVar(level=1, name="WS-MONTH", pic="99"),
+            "WS-YEAR": cobol2py.CobolVar(level=1, name="WS-YEAR", pic="9999"),
+        }
+        translated = cobol2py.translate_statement(
+            "DISPLAY WS-DAY'/'WS-MONTH'/'WS-YEAR", set(), variables
+        )
+        generated = "\\n".join(translated or [])
+        self.assertIn('str("/")', generated)
+        compile(generated, "<display-adjacent-literals>", "exec")
+
     def test_parenthesized_numeric_display_generates_valid_python(self):
         translated = cobol2py.translate_statement("DISPLAY (01) (01) ERASE", set(), {})
         self.assertIsNotNone(translated)

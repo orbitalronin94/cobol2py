@@ -2778,7 +2778,30 @@ def split_cobol_items(s: str) -> list[str]:
             i += 1
             continue
         if char in ("'", '"'):
+            # A quote can begin a new DISPLAY operand without intervening
+            # whitespace (e.g. WS-DAY'/'WS-MONTH). Keep X'AB' hex literals
+            # intact, but split the preceding data-name from the quoted item.
+            current_token = "".join(current).strip()
+            if (
+                current_token
+                and not re.fullmatch(r"[Xx]", current_token)
+                and re.fullmatch(r"[A-Za-z0-9_-]+", current_token)
+            ):
+                tokens.append(current_token)
+                current = []
             quote = char
+            current.append(char)
+        elif (
+            current
+            and (char.isalnum() or char in "_-")
+            and re.fullmatch(
+                r"""(?:"(?:[^"]|"")*"|'(?:[^']|'')*')""",
+                "".join(current).strip(),
+            )
+        ):
+            # Likewise split a quoted operand from the following data-name.
+            tokens.append("".join(current).strip())
+            current = []
             current.append(char)
         elif char == "(":
             depth += 1
