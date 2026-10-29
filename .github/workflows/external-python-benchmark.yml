@@ -100,3 +100,52 @@ jobs:
           path: ${{ runner.temp }}/external-python-artifacts/${{ matrix.sample.name }}/
           if-no-files-found: warn
           retention-days: 90
+
+  aggregate-scorecard:
+    if: always()
+    needs: external-python
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download both sample reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: external-python-corpus-*-${{ github.run_number }}
+          path: ${{ runner.temp }}/python-scorecard
+      - name: Calculate the 1,000-program target
+        shell: python
+        env:
+          REPORT_ROOT: ${{ runner.temp }}/python-scorecard
+        run: |
+          import glob
+          import json
+          import os
+          import pathlib
+
+          root = pathlib.Path(os.environ["REPORT_ROOT"])
+          reports = []
+          for filename in root.rglob("external-corpus-report.json"):
+              with filename.open(encoding="utf-8") as handle:
+                  reports.append(json.load(handle))
+          tested = sum(int(report.get("tested", 0)) for report in reports)
+          passed = sum(int(report.get("passed", 0)) for report in reports)
+          percent = 100.0 * passed / tested if tested else 0.0
+          full_sample = tested == 1000
+          baseline = 37.5
+          target = baseline + 5.0
+          reached = full_sample and percent >= target
+          summary = [
+              "## External Python target",
+              "",
+              f"- Exact matches: **{passed}/{tested} ({percent:.2f}%)**",
+              f"- Reference baseline: **{baseline:.2f}%**",
+              f"- Required target: **{target:.2f}%** (+5.00 percentage points)",
+              f"- Improvement vs baseline: **{percent - baseline:+.2f} percentage points**",
+              f"- Full 1,000-program sample: **{full_sample}**",
+              f"- Target reached: **{reached}**",
+              "",
+          ]
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
+              handle.write("\\n".join(summary))
+          print("\\n".join(summary))
+          if not reports:
+              raise SystemExit("No benchmark reports found; inspect the sample jobs.")
