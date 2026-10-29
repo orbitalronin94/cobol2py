@@ -2103,7 +2103,7 @@ class MoveMultipleTargetsRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_statement('MOVE "ABCDE" TO WS-SHORT WS-LONG', set(), variables)
         self.assertEqual(len(translated or []), 2, translated)
         namespace = {}
-        exec("\\n".join(translated or []), namespace)
+        exec("\n".join(translated or []), namespace)
         self.assertEqual(namespace["ws_short"], "AB")
         self.assertEqual(namespace["ws_long"], "ABCDE")
 
@@ -2115,7 +2115,7 @@ class MoveMultipleTargetsRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_statement('MOVE "TO" TO WS-A WS-B', set(), variables)
         self.assertEqual(len(translated or []), 2, translated)
         namespace = {}
-        exec("\\n".join(translated or []), namespace)
+        exec("\n".join(translated or []), namespace)
         self.assertEqual(namespace["ws_a"], "TO")
         self.assertEqual(namespace["ws_b"], "TO  ")
 
@@ -2131,7 +2131,7 @@ class MoveCorrespondingRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_statement("MOVE CORRESPONDING SRC TO DST", set(), variables)
         self.assertEqual(translated, ["dst['code'] = str(src['code'])[:5].ljust(5)"])
         namespace = {"src": {"code": "ABC"}, "dst": {"code": "     "}}
-        exec("\\n".join(translated or []), namespace)
+        exec("\n".join(translated or []), namespace)
         self.assertEqual(namespace["dst"]["code"], "ABC  ")
 
 
