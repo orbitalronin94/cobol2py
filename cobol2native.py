@@ -216,7 +216,7 @@ def emit_native(program: core.Program, lang: str) -> str:
                 lines.append(f"    let mut {ident}: i64 = {initial};")
             else:
                 raise UnsupportedConstruct(f"unsupported PIC for {var.name}: {var.pic}")
-        lines += ["    " + line for line in statements]
+        lines += statements
         lines += ["    let _ = io::stdout().flush();", "}"]
     return "\n".join(lines) + "\n"
 
