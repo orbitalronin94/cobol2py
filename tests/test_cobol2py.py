@@ -2703,7 +2703,7 @@ class GroupToGroupMoveRegressionTests(unittest.TestCase):
         from contextlib import redirect_stdout
         from io import StringIO
 
-        source = "\\n".join([
+        source = "\n".join([
             "IDENTIFICATION DIVISION.",
             "PROGRAM-ID. GROUPCOPY.",
             "DATA DIVISION.",
@@ -2729,7 +2729,7 @@ class GroupToGroupMoveRegressionTests(unittest.TestCase):
         output = StringIO()
         with redirect_stdout(output):
             namespace["main"]()
-        self.assertEqual(output.getvalue(), "XYZ\\nDEF\\n")
+        self.assertEqual(output.getvalue(), "XYZ\nDEF\n")
 
 
 class ElementaryOccursMoveRegressionTests(unittest.TestCase):
