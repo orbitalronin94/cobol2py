@@ -2729,8 +2729,11 @@ class GroupToGroupMoveRegressionTests(unittest.TestCase):
         namespace = {"__name__": "not_main"}
         exec(compile(generated, "<group-to-group-move>", "exec"), namespace)
         output = StringIO()
-        with redirect_stdout(output):
-            namespace["main"]()
+        try:
+            with redirect_stdout(output):
+                namespace["main"]()
+        except Exception as error:
+            self.fail(f"{error}\nGenerated Python:\n{generated}")
         self.assertEqual(output.getvalue(), "XYZ\nDEF\n")
 
 
