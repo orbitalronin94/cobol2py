@@ -2560,6 +2560,16 @@ class TruncatedValueIsClauseRegressionTests(unittest.TestCase):
         self.assertIsNone(variables[0].value)
         self.assertEqual(variables[0].py_default(), repr(" "))
 
+    def test_value_is_keyword_is_not_mistaken_for_a_data_literal(self):
+        variables = cobol2py.parse_variables([
+            (1, '01 WS-CHAR PIC X(3) VALUE IS "ABC".'),
+            (2, "01 WS-NEXT PIC X VALUE IS"),
+        ])
+        self.assertEqual(variables[0].value, '"ABC"')
+        self.assertEqual(variables[0].py_default(), repr("ABC"))
+        self.assertIsNone(variables[1].value)
+        self.assertEqual(variables[1].py_default(), repr(" "))
+
 
 class InitializeStatementRegressionTests(unittest.TestCase):
     def test_initialize_elementary_item_uses_category_default_not_value_clause(self):
