@@ -949,7 +949,7 @@ def parse_cobol(
         file_section_start = None
         for i in range(idx_data, end_data):
             if file_section_start is None and re.search(
-                r"\\bFILE\\s+SECTION\\b", lines[i][1], re.IGNORECASE
+                r"\bFILE\s+SECTION\b", lines[i][1], re.IGNORECASE
             ):
                 file_section_start = i + 1
             if storage_start is None and RE_STORAGE_SECTION.search(lines[i][1]):
