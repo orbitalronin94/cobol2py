@@ -1723,6 +1723,52 @@ class DiagnosticTests(unittest.TestCase):
 
 
 
+class ThreeDimensionalOccursRedefinesTests(unittest.TestCase):
+    def test_three_dimensional_table_reference_and_redefines_share_storage(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. TABLE3DREDEFINES.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 3-DIMENSION-TBL.
+   02 GRP-ENTRY OCCURS 2 TIMES INDEXED BY IDX-1.
+      03 ENTRY-1 PIC X(5).
+      03 GRP2-ENTRY OCCURS 2 TIMES INDEXED BY IDX-2.
+         04 ENTRY-2 PIC X(11).
+         04 3-ENTRY OCCURS 2 TIMES INDEXED BY IDX-3.
+            05 ENTRY-3 PIC X(15).
+01 3-DEM-TBL REDEFINES 3-DIMENSION-TBL.
+   02 GRP-ENTRY-1 OCCURS 2 TIMES INDEXED BY IDX-1-1.
+      03 ENTRY-1-1 PIC X(5).
+      03 GRP2-ENTRY-1 OCCURS 2 TIMES INDEXED BY IDX-2-1.
+         04 ENTRY-2-1 PIC X(11).
+         04 GRP3-ENTRY-1 OCCURS 2 TIMES INDEXED BY IDX-3-1.
+            05 ENTRY-3-1 PIC X(15).
+01 ELEM-NAME PIC X(15) VALUE "ELEM (01,02,02)".
+PROCEDURE DIVISION.
+MAIN.
+    MOVE ELEM-NAME TO ENTRY-3(2, 1, 2).
+    DISPLAY ENTRY-3(2, 1, 2).
+    DISPLAY ENTRY-3-1(2, 1, 2).
+    STOP RUN.
+"""
+        program = cobol2py.parse_cobol(source, source_format="free")
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<three-dimensional-redefines>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(
+            output.getvalue(),
+            "ELEM (01,02,02)\nELEM (01,02,02)\n",
+            generated,
+        )
+
+
 class DataReferenceResolutionTests(unittest.TestCase):
     def test_three_level_qualified_reference_resolves_nearest_parent(self):
         variables = {
