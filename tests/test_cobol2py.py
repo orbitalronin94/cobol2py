@@ -3082,6 +3082,30 @@ class TestNumvalIntrinsicRegressionTests(unittest.TestCase):
         self.assertEqual(eval(translated, {}), 3)
 
 
+class NestedQualifiedOccursSubscriptRegressionTests(unittest.TestCase):
+    def test_each_qualified_occurs_level_keeps_its_own_subscript(self):
+        variables = {
+            "PARENT-TABLE": cobol2py.CobolVar(
+                level=1, name="PARENT-TABLE", is_group=True, is_array=True, occurs=4
+            ),
+            "CHILD-TABLE": cobol2py.CobolVar(
+                level=5, name="CHILD-TABLE", is_group=True, is_array=True,
+                occurs=5, parent_name="PARENT-TABLE",
+            ),
+            "FIELD": cobol2py.CobolVar(
+                level=10, name="FIELD", pic="X", parent_name="CHILD-TABLE"
+            ),
+        }
+        translated = cobol2py.normalize_data_reference(
+            "FIELD OF CHILD-TABLE(2) OF PARENT-TABLE(3)", variables
+        )
+        self.assertEqual(
+            translated,
+            "parent_table[2]['child_table'][1]['field']",
+        )
+        compile(translated, "<nested-qualified-occurs>", "eval")
+
+
 class QualifiedParentSubscriptRegressionTests(unittest.TestCase):
     def test_qualified_child_uses_subscript_on_parent_table(self):
         variables = {
