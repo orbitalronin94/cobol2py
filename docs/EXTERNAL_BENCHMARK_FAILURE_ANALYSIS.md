@@ -207,3 +207,29 @@ La categoría de diferencias de salida se redujo, pero aumentaron los timeouts y
 5. Mantener C/Rust como métricas separadas y usar los rechazos para priorizar cobertura, no para sustituir el benchmark externo Python.
 
 El procedimiento de aceptación, las puertas de cierre y el registro de iteraciones están en [`docs/EXTERNAL_BENCHMARK_ITERATION_ROADMAP.md`](EXTERNAL_BENCHMARK_ITERATION_ROADMAP.md).
+
+
+## Reevaluación experimental: ejecución multilenguaje #621 (commit `e0863d1`)
+
+Se completaron las muestras primaria y holdout de 500 programas cada una para el mismo SHA que sincroniza el traductor de navegador. El criterio sigue siendo stdout exacto + código de retorno exacto.
+
+| Muestra | Python | C | Rust |
+|---|---:|---:|---:|
+| Primaria (500) | 168/500 (33,6 %) | 20/500 (4,0 %) | 19/500 (3,8 %) |
+| Holdout (500) | 194/500 (38,8 %) | 22/500 (4,4 %) | 21/500 (4,2 %) |
+| Total Python | **362/1.000 (36,2 %)** | — | — |
+
+La comparación por ID de caso contra los artefactos anteriores de las mismas muestras encontró **cero casos ganados y cero casos perdidos** en primaria y holdout. La corrección de referencias cualificadas anidadas de la PR #40 no cambia el resultado externo; no debe contabilizarse como subida del porcentaje. El benchmark dedicado `external-python-benchmark` sigue siendo la ejecución de scorecard oficial pendiente, pero el experimento multilenguaje completo ya confirma que esta modificación no altera las 1.000 decisiones pass/fail.
+
+### Priorización a partir de los informes #621
+
+Los fallos Python se distribuyen así entre ambas muestras:
+- 471 diferencias de stdout o código de retorno;
+- 81 timeouts de programa traducido;
+- 75 errores de sintaxis Python generado;
+- 6 salidas de traducción que superan el límite de captura;
+- 3 timeouts del traductor y 2 salidas no exitosas del traductor.
+
+El nombre `file_cobol_record_information_rec` aparece en 23 casos de primaria y 18 de holdout (41 en total), con `NameError` en las líneas generadas que lo indexan. La inspección del backend muestra que `emit_python` omite las variables raíz incluidas en `overlay_buffers`, mientras que `normalize_data_reference` solo usa `_cobol_get` para campos de overlay sin subíndices; los grupos de overlay no tienen una representación de acceso completa. Esta es una **hipótesis de causa raíz que aún necesita un fixture mínimo**: antes de cambiar el backend, reproducir un grupo de FILE SECTION con REDEFINES y subíndices, verificar el árbol de declaraciones y demostrar que la variable queda omitida. No crear una variable por defecto ni cambiar la representación de overlay sin preservar la semántica de almacenamiento compartido.
+
+Siguiente experimento recomendado: reproducir uno de esos casos de registro de archivo y añadir una prueba que falle en la ruta actual; luego corregir solo el recorrido de símbolos/layout implicado y volver a ejecutar las dos muestras completas. Si no se puede reproducir, priorizar las 471 diferencias de salida por familia y las 75 salidas sintácticamente inválidas.
