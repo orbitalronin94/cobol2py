@@ -410,91 +410,43 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
             hierarchy.append(variable)
     return variables
 
-def _simple_storage_width(variable: CobolVar, variables: dict[str, CobolVar]) -> Optional[int]:
-    """Return width for the deliberately small DISPLAY-storage subset."""
-    if variable.is_array:
-        return None
-    if variable.is_group:
-        children = [item for item in (variables or {}).values()
-                    if item.parent_name and item.parent_name.upper() == variable.name.upper()]
-        widths = [_simple_storage_width(child, variables) for child in children]
-        return sum(widths) if widths and all(width is not None for width in widths) else None
-    if not variable.pic:
-        return None
-    pic = variable.pic.upper()
-    if any(char in pic for char in "SVP"):
-        return None
-    if "X" in pic or "A" in pic:
-        return pic_character_count(pic)
-    if "9" in pic:
-        return pic_digit_count(pic)
-    return None
-
-
-def build_overlay_layout(
+def _simple_storage_width(
+    variable: CobolVar,
     variables: dict[str, CobolVar],
-) -> tuple[dict[str, dict[str, object]], dict[str, int]]:
-    """Map supported REDEFINES views onto a shared buffer with offsets.
+    include_occurs: bool = True,
+) -> Optional[int]:
+    """Return byte width for the supported DISPLAY subset, including OCCURS."""
+    if variable.is_group:
+        children = [
+            item for item in variables.values()
+            if item.parent_name and item.parent_name.upper() == variable.name.upper()
+        ]
+        widths = [_simple_storage_width(child, variables) for child in children]
+        if not widths or any(width is None for width in widths):
+            return None
+        element_width = sum(width for width in widths if width is not None)
+    else:
+        if not variable.pic:
+            return None
+        pic = variable.pic.upper()
+        if any(char in pic for char in "SVP"):
+            return None
+        if "X" in pic or "A" in pic:
+            element_width = pic_character_count(pic)
+        elif "9" in pic:
+            element_width = pic_digit_count(pic)
+        else:
+            return None
 
-    The base item and its redefining views may be children of a WORKING-STORAGE
-    group; COBOL's storage overlay is independent of the Python nesting used to
-    represent that group.
-    """
-    fields: dict[str, dict[str, object]] = {}
-    buffers: dict[str, int] = {}
-    for overlay in variables.values():
-        if not overlay.redefines:
-            continue
-        base = variables.get(overlay.redefines.upper())
-        if (
-            base is None
-            or base.parent_name != overlay.parent_name
-            or base.is_array
-        ):
-            continue
-        base_width = _simple_storage_width(base, variables)
-        overlay_width = _simple_storage_width(overlay, variables)
-        if base_width is None or overlay_width is None:
-            continue
-        buffer_width = max(base_width, overlay_width)
-        buffers[base.name.upper()] = max(buffers.get(base.name.upper(), 0), buffer_width)
-        if not base.is_group and base.pic:
-            base_kind = "alpha" if any(char in base.pic.upper() for char in "XA") else "numeric"
-            fields[base.name.upper()] = {
-                "base": base.name.upper(), "offset": 0, "width": base_width, "kind": base_kind,
-            }
-
-        def add_view(variable: CobolVar, offset: int) -> int:
-            width = _simple_storage_width(variable, variables)
-            if width is None:
-                raise ValueError("unsupported overlay view")
-            if variable.is_group:
-                cursor = offset
-                children = [item for item in variables.values()
-                            if item.parent_name and item.parent_name.upper() == variable.name.upper()]
-                if not children:
-                    raise ValueError("empty overlay group")
-                for child in children:
-                    cursor = add_view(child, cursor)
-                return cursor
-            kind = "alpha" if variable.pic and any(char in variable.pic.upper() for char in "XA") else "numeric"
-            fields[variable.name.upper()] = {
-                "base": base.name.upper(), "offset": offset, "width": width, "kind": kind,
-            }
-            return offset + width
-
-        try:
-            add_view(overlay, 0)
-        except ValueError:
-            for name, metadata in list(fields.items()):
-                if metadata.get("base") == base.name.upper():
-                    fields.pop(name, None)
-            buffers.pop(base.name.upper(), None)
-    return fields, buffers
+    if variable.is_array and include_occurs:
+        if variable.occurs is None or variable.occurs < 1:
+            return None
+        return element_width * variable.occurs
+    return element_width
 
 
-def overlay_storage_initial_value(variable: CobolVar, width: int) -> str:
-    """Create initial DISPLAY bytes for a supported root storage field."""
+def _overlay_leaf_initial_value(variable: CobolVar, width: int) -> str:
+    """Return one occurrence's initial DISPLAY bytes for an elementary item."""
     pic = (variable.pic or "").upper()
     if "X" in pic or "A" in pic:
         if variable.value is None:
@@ -516,6 +468,134 @@ def overlay_storage_initial_value(variable: CobolVar, width: int) -> str:
     if "9" in pic and variable.value and re.fullmatch(r"[+-]?\d+", variable.value.strip()):
         return str(abs(int(variable.value)) % (10 ** width)).zfill(width)
     return "0" * width
+
+
+def overlay_storage_initial_value(
+    variable: CobolVar,
+    width: int,
+    variables: Optional[dict[str, CobolVar]] = None,
+) -> str:
+    """Create initial DISPLAY bytes recursively, including nested OCCURS groups."""
+    variable_map = variables or {}
+    if variable.is_group:
+        children = [
+            item for item in variable_map.values()
+            if item.parent_name and item.parent_name.upper() == variable.name.upper()
+        ]
+        unit_width = _simple_storage_width(variable, variable_map, include_occurs=False)
+        if unit_width is None:
+            return " " * width
+        unit = "".join(
+            overlay_storage_initial_value(
+                child, _simple_storage_width(child, variable_map) or 0, variable_map
+            )
+            for child in children
+        )
+        if variable.is_array:
+            unit = unit * (variable.occurs or 0)
+        return unit[:width].ljust(width)
+
+    element_width = _simple_storage_width(variable, variable_map, include_occurs=False)
+    if element_width is None:
+        return " " * width
+    element = _overlay_leaf_initial_value(variable, element_width)
+    data = element * (variable.occurs or 0) if variable.is_array else element
+    return data[:width].ljust(width)
+
+
+def build_overlay_layout(
+    variables: dict[str, CobolVar],
+) -> tuple[dict[str, dict[str, object]], dict[str, int]]:
+    """Map supported REDEFINES views, including nested OCCURS, to one byte buffer.
+
+    Each elementary name records its byte offset and the stride for every
+    enclosing OCCURS dimension. References can then calculate the same storage
+    location through either the original declaration or its redefining view.
+    """
+    fields: dict[str, dict[str, object]] = {}
+    buffers: dict[str, int] = {}
+
+    def children_of(variable: CobolVar) -> list[CobolVar]:
+        return [
+            item for item in variables.values()
+            if item.parent_name and item.parent_name.upper() == variable.name.upper()
+        ]
+
+    for overlay in variables.values():
+        if not overlay.redefines:
+            continue
+        base = variables.get(overlay.redefines.upper())
+        if base is None or base.parent_name != overlay.parent_name:
+            continue
+        base_width = _simple_storage_width(base, variables)
+        overlay_width = _simple_storage_width(overlay, variables)
+        if base_width is None or overlay_width is None:
+            continue
+
+        buffer_width = max(base_width, overlay_width)
+        buffers[base.name.upper()] = max(buffers.get(base.name.upper(), 0), buffer_width)
+
+        def add_view(
+            variable: CobolVar,
+            offset: int,
+            dimensions: list[tuple[int, int]],
+        ) -> int:
+            local_dimensions = dimensions
+            if variable.is_array:
+                element_width = _simple_storage_width(
+                    variable, variables, include_occurs=False
+                )
+                if element_width is None or variable.occurs is None:
+                    raise ValueError("unsupported OCCURS layout")
+                local_dimensions = dimensions + [(element_width, variable.occurs)]
+
+            if variable.is_group:
+                children = children_of(variable)
+                if not children:
+                    raise ValueError("empty overlay group")
+                cursor = offset
+                for child in children:
+                    cursor = add_view(child, cursor, local_dimensions)
+                total_width = _simple_storage_width(variable, variables)
+                if total_width is None:
+                    raise ValueError("unsupported overlay group width")
+                return offset + total_width
+
+            element_width = _simple_storage_width(
+                variable, variables, include_occurs=False
+            )
+            if element_width is None:
+                raise ValueError("unsupported overlay field")
+            kind = (
+                "alpha"
+                if variable.pic and any(char in variable.pic.upper() for char in "XA")
+                else "numeric"
+            )
+            fields[variable.name.upper()] = {
+                "base": base.name.upper(),
+                "offset": offset,
+                "width": element_width,
+                "kind": kind,
+                "strides": [stride for stride, _occurs in local_dimensions],
+                "occurs": [occurs for _stride, occurs in local_dimensions],
+            }
+            total_width = _simple_storage_width(variable, variables)
+            if total_width is None:
+                raise ValueError("unsupported overlay field width")
+            return offset + total_width
+
+        try:
+            # Include the original declaration as well as the redefining view:
+            # both sets of elementary names must resolve to the shared bytes.
+            add_view(base, 0, [])
+            add_view(overlay, 0, [])
+        except ValueError:
+            for name, metadata in list(fields.items()):
+                if metadata.get("base") == base.name.upper():
+                    fields.pop(name, None)
+            buffers.pop(base.name.upper(), None)
+
+    return fields, buffers
 
 
 # Patch 3: verbos que abren sentencia. Se usan para partir buffers concatenados.
