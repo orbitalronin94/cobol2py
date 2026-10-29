@@ -1525,7 +1525,11 @@ def normalize_data_reference(
         ]
         if all(part_matches):
             # Some legacy sources place the table subscript after an enclosing
-            # qualifier even though the OCCURS item is the qualified field.
+            # qualifier even though the OCCURS item is the qualified field
+            # (for example, ITEM OF RECORD(1), where RECORD is not a table).
+            # If the indexed qualifier has no OCCURS declaration, attach its
+            # index to the nearest preceding OCCURS item instead of indexing a
+            # dictionary with an integer and raising KeyError.
             part_matches = [list(match.groups()) for match in part_matches]
             for indexed_pos in range(len(part_matches) - 1, 0, -1):
                 indexed_name, indexed_subscript = part_matches[indexed_pos]
