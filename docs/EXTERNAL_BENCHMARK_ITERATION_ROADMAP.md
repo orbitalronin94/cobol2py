@@ -80,3 +80,22 @@ Cada vuelta es una unidad pequeña, verificable y con salida registrada:
 ## Disciplina de ejecución
 
 No lanzar una nueva modificación mientras los benchmarks necesarios para evaluar la modificación anterior sigan ejecutándose, salvo que la ejecución anterior haya fallado por infraestructura y se documente. Agrupar cambios solo cuando compartan una causa raíz demostrada. Mantener un registro de hipótesis, SHA, resultado esperado, resultado real y decisión. El proceso puede continuar iterativamente mientras haya evidencia y herramientas disponibles; nunca afirmar que un trabajo sigue ejecutándose en segundo plano si no hay una ejecución activa confirmada.
+
+
+## Estado actualizado — 2026-10-29
+
+### Iteración A: referencias cualificadas anidadas (PR #40)
+
+- El workflow dedicado #16 dio 363/1000 (36,3 %) frente a 362/1000 en #14; la única ganancia fue `rock-paper-scissors-ad6321acf1`, que usa `FUNCTION RANDOM` y hora actual. No hubo regresiones, pero el cambio de pass/fail no es atribuible con seguridad al código.
+- La ejecución dedicada #17 sobre el SHA más reciente de la PR sigue en curso. No declarar mejora ni fusionar basándose en +1 caso hasta comprobar ese resultado y la estabilidad del caso aleatorio.
+- El workflow multilenguaje #621 da 362/1000 en una selección distinta; no mezclarlo con la serie del workflow dedicado.
+
+### Iteración B: OCCURS tridimensional + REDEFINES (PR #41)
+
+- El fixture reducido, inspirado en ProLeap NIST `NC234A.CBL`, fallaba antes del cambio: la escritura por la vista original no se veía en la vista `REDEFINES`.
+- La implementación candidata calcula strides de cada dimensión y enruta ambas vistas a un buffer común. La suite de 292 pruebas pasa en Python 3.10–3.13; los workflows diferencial y multilenguaje interno han terminado correctamente.
+- El workflow externo dedicado #21 está pendiente y el workflow de corpus externo #626 sigue en ejecución. **No hay todavía una puntuación externa que justifique conservar la modificación por el objetivo porcentual.**
+
+### Disciplina de ejecución
+
+Se inició la iteración B antes de que finalizara el workflow dedicado #17 de la iteración A, después de completar el corpus multilenguaje #621, que no mostró ningún cambio pass/fail para A. Esto es una desviación de la puerta de cierre original; no iniciar una tercera modificación hasta que los resultados oficiales de A y B estén completos y comparados por ID de caso.
