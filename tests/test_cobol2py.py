@@ -2569,6 +2569,9 @@ class TruncatedValueIsClauseRegressionTests(unittest.TestCase):
         self.assertEqual(variables[0].py_default(), repr("ABC"))
         self.assertIsNone(variables[1].value)
         self.assertEqual(variables[1].py_default(), repr(" "))
+        # If punctuation or a following clause follows IS, regex backtracking
+        # must not reinterpret the clause keyword as a literal data-name.
+        self.assertIsNone(cobol2py.RE_VALUE.search("VALUE IS, OCCURS 3 TIMES"))
 
 
 class InitializeStatementRegressionTests(unittest.TestCase):
