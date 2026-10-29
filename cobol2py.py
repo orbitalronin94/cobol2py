@@ -946,16 +946,30 @@ def parse_cobol(
     if idx_data >= 0:
         end_data = idx_proc if idx_proc > 0 else len(lines)
         storage_start = None
+        file_section_start = None
         for i in range(idx_data, end_data):
-            if RE_STORAGE_SECTION.search(lines[i][1]):
+            if file_section_start is None and re.search(
+                r"\\bFILE\\s+SECTION\\b", lines[i][1], re.IGNORECASE
+            ):
+                file_section_start = i + 1
+            if storage_start is None and RE_STORAGE_SECTION.search(lines[i][1]):
                 storage_start = i + 1
-                break
-        if storage_start is not None:
-            # Some small programs declare storage only in LOCAL-STORAGE or
-            # LINKAGE. Start at the first supported storage section and parse
-            # all subsequent declarations through PROCEDURE DIVISION.
-            prog.variables = parse_variables(lines[storage_start:end_data])
-            prog.condition_names = parse_condition_names(lines[storage_start:end_data])
+        # File records are data declarations too: FD/SD names themselves are
+        # not level-numbered items, but their 01/05 record fields are. Include
+        # FILE SECTION when it precedes the ordinary storage sections so those
+        # records can be initialized and resolved by later READ/WRITE logic.
+        declaration_start = storage_start
+        if file_section_start is not None and (
+            declaration_start is None or file_section_start < declaration_start
+        ):
+            declaration_start = file_section_start
+        if declaration_start is not None:
+            # Parse declarations from the earliest supported data section to
+            # PROCEDURE DIVISION. parse_variables ignores section headers and
+            # FD/SD entries while retaining level-numbered record descriptions.
+            declaration_lines = lines[declaration_start:end_data]
+            prog.variables = parse_variables(declaration_lines)
+            prog.condition_names = parse_condition_names(declaration_lines)
 
     if idx_proc >= 0:
         proc_lines = lines[idx_proc + 1:]
