@@ -3220,6 +3220,19 @@ class ExternalBenchmarkConditionRegressionTests(unittest.TestCase):
         self.assertIn("'B'", translated)
         self.assertIn("'C'", translated)
 
+    def test_four_abbreviated_string_alternatives_keep_every_value(self):
+        variables = {
+            "WS-FLAG": cobol2py.CobolVar(level=77, name="WS-FLAG", pic="X(1)")
+        }
+        translated = cobol2py.translate_condition(
+            'WS-FLAG = "A" OR "B" OR "C" OR "D"', variables
+        )
+        ast.parse(translated, mode="eval")
+        for value in ("A", "B", "C", "D"):
+            with self.subTest(value=value):
+                self.assertTrue(eval(translated, {"ws_flag": value}))
+        self.assertFalse(eval(translated, {"ws_flag": "Z"}))
+
     def test_abbreviated_negated_string_alternatives_remain_valid_python(self):
         variables = {
             "WS-OPCAO": cobol2py.CobolVar(level=77, name="WS-OPCAO", pic="X(1)")

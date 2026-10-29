@@ -2227,7 +2227,6 @@ def translate_condition(
             return inverse.get(compact[3:], compact[3:])
         return {"=": "==", "<>": "!="}.get(compact, compact)
 
-    expanded_string_alternatives = False
     for _ in range(max(1, len(cond.split()))):
         expanded = string_alternatives.sub(
             lambda match: (
@@ -2240,7 +2239,6 @@ def translate_condition(
         if expanded == cond:
             break
         cond = expanded
-        expanded_string_alternatives = True
 
     # Expand level-88 condition names into comparisons against their parent item.
     if condition_names:
@@ -2500,7 +2498,7 @@ def translate_condition(
     # A condition may abbreviate more than one successive alternative
     # (A = 1 OR 2 OR 3 OR 4). Expand one adjacent pair per pass until stable;
     # a single re.sub pass leaves the trailing alternatives bare.
-    for _ in range(0 if expanded_string_alternatives else max(1, len(translated.split()))):
+    for _ in range(max(1, len(translated.split()))):
         expanded = abbreviated.sub(
             lambda match: (
                 f"{match.group('lhs')} {match.group('op')} {match.group('first')} "
