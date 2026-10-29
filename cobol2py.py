@@ -1215,7 +1215,10 @@ def normalize_data_reference(
             return f"{translate_expr(subscript, variable_map)} - 1"
         return f"{normalize_name(subscript)} - 1"
 
-    if has_indexed_qualifier and qualified_parts:
+    if qualified_chain and qualified_parts:
+        # Preserve every explicit qualifier, not only the nearest one. The
+        # name-keyed compatibility map can collapse duplicate data-names, so
+        # the source's full qualification is the reliable path disambiguator.
         part_matches = [
             re.fullmatch(r"([A-Za-z0-9-]+)(?:\s*\(([^()]*)\))?", part.strip())
             for part in qualified_parts
