@@ -107,3 +107,64 @@ No reescribir el proyecto de golpe. Mantener el parser actual y construir una fr
 ## Límites de la investigación actual
 
 Esta nota se basa en README, documentación de arquitectura, gramática y archivos fuente seleccionados de los repositorios enlazados. No afirma que se haya compilado o ejecutado cada proyecto, ni que se haya completado una auditoría de sus repositorios. Antes de adoptar una técnica concreta, inspeccionar su implementación y tests relevantes. Revisar licencias antes de reutilizar cualquier código; la intención aquí es aprender patrones, no copiar implementaciones.
+
+
+## Segunda pasada: detalles de implementación contrastados
+
+Esta sección amplía la lectura de fuentes más allá de los README. Sigue siendo investigación estática; no se ha portado código de terceros ni ejecutado sus suites completas.
+
+### GnuCOBOL: REDEFINES es una relación estructural, no un alias nominal
+
+En `cobc/field.c`, `cb_resolve_redefines`:
+- rechaza un destino `REDEFINES` cualificado o con subíndices;
+- busca una definición previa con ese nombre;
+- exige que el destino esté bajo el mismo padre y tenga el mismo nivel;
+- por defecto rechaza redefinir una entrada que ya es una redefinición indirecta, y recorre la cadena hasta la definición original.
+
+En la validación de campos se comprueba además que la cláusula aparezca en el orden permitido y se rechazan definiciones redefinidas u originales de longitud variable en los casos correspondientes. La validación de `OCCURS DEPENDING ON` también impone restricciones sobre dónde puede estar la tabla en la jerarquía, según las opciones de dialecto.
+
+**Consecuencia para Cobol2Py:** no incorporar un arreglo general que convierta todo `REDEFINES` en dos atributos Python que apuntan al mismo objeto. Hay que resolver el nombre de la definición original, validar padre/nivel/orden y representar el almacenamiento compartido con offsets y longitudes. Si la representación actual no conserva esos datos, primero añadirlos al modelo; si no se puede demostrar equivalencia para un caso, emitir un diagnóstico en vez de generar una traducción aparentemente correcta.
+
+Fuente inspeccionada: [`cobc/field.c`](https://github.com/OCamlPro/gnucobol/blob/master/cobc/field.c), especialmente `cb_resolve_redefines`, `validate_occurs` y la validación de REDEFINES.
+
+### ProLeap: el grammar reconoce ODO, pero el parser no sustituye la resolución semántica
+
+En `Cobol.g4`, la entrada de datos permite `OCCURS`, un límite opcional `TO`, `DEPENDING ON` con un `qualifiedDataName`, y cláusulas de ordenación e índices. Esto permite reconocer una estructura más rica que un simple `OCCURS n`.
+
+**Consecuencia para Cobol2Py:** no basta con extraer el primer número de `OCCURS`. El modelo debe distinguir mínimo/máximo, campo controlador, índice y ruta de datos; el paso semántico debe resolver el controlador a un símbolo. La gramática es una referencia útil para construir fixtures, pero no se adopta automáticamente la gramática completa de ProLeap.
+
+Fuente inspeccionada: [`Cobol.g4`](https://github.com/uwol/proleap-cobol-parser/blob/master/src/main/antlr4/io/proleap/cobol/Cobol.g4), reglas `dataOccursClause` y `dataOccursDepending`.
+
+### opensource COBOL 4J: las tablas dinámicas afectan más que la declaración
+
+La revisión de `cobj/codegen.c` muestra que el generador consulta `occurs_depending` al calcular tamaños/offsets y al generar el límite usado por `SEARCH`; si no hay campo controlador, utiliza el máximo declarado. Su changelog registra correcciones independientes para `OCCURS DEPENDING ON`, `SEARCH` sobre tablas dinámicas, `COMPUTE`, `ADD/SUBTRACT`, comparaciones numéricas y `INSPECT`.
+
+**Consecuencia para Cobol2Py:** si abordamos ODO, la prueba debe cubrir declaración, inicialización, límites de iteración, referencias con índice y `SEARCH`, no solo la sintaxis. Para operaciones aritméticas conviene aislar operandos, truncamiento/escala y salida en fixtures mínimos, no modificar varias familias de verbos en una sola iteración.
+
+Fuentes inspeccionadas: [`cobj/codegen.c`](https://github.com/opensourcecobol/opensourcecobol4j/blob/develop/cobj/codegen.c) y [`CHANGELOG.md`](https://github.com/opensourcecobol/opensourcecobol4j/blob/develop/CHANGELOG.md).
+
+### PythonBol-Translator: útil como comparación, no como oráculo de semántica
+
+La implementación consultada preescanea nombres elementales repetidos y crea un mapa `(nombre, grupo padre) → nombre Python`; también recorre los niveles `OCCURS` para generar estructuras anidadas. Para `REDEFINES`, genera adaptadores/alias y deja un comentario TODO si no encuentra el destino original. El parser consultado extrae `OCCURS` y `OCCURS DEPENDING ON` con regex.
+
+Esto aporta dos ideas concretas que podemos evaluar: detectar colisiones de nombres antes de generar código y conservar la ruta del grupo padre en el mapa de símbolos. Pero el propio README caracteriza el resultado como *skeleton* y sus métricas de parseo/compilación sintáctica no prueban equivalencia de stdout y return code. Un campo dinámico reducido a una cantidad fija o un destino `REDEFINES` ausente no debe considerarse resuelto por generar Python válido.
+
+Fuentes inspeccionadas: [`mapper_codegen.py`](https://github.com/IronAdamant/PythonBol-Translator/blob/main/src/cobol_safe_translator/mapper_codegen.py), [`parser.py`](https://github.com/IronAdamant/PythonBol-Translator/blob/main/src/cobol_safe_translator/parser.py) y [README](https://github.com/IronAdamant/PythonBol-Translator/blob/main/README.md).
+
+### CobGo y Koopa: adoptar fronteras, no asumir cobertura equivalente
+
+El conversor AST→IR de CobGo acumula errores de conversión y devuelve un error agregado si existen; esta frontera explícita evita confundir un nodo no convertido con una traducción completa. Sin embargo, el repositorio se orienta a una ruta de modernización COBOL/DSL hacia Go, así que su IR no debe tratarse como una implementación de toda la semántica COBOL.
+
+Koopa enfatiza formatos de fuente fixed/free/variable, gramática extensible y preprocesamiento COPY/REPLACING. Para Cobol2Py, el principio aplicable es mantener separados normalización/preprocesamiento, análisis de declaraciones y generación. No hace falta reemplazar el parser actual hasta demostrar con el corpus que esa sustitución arreglaría más casos de los que rompe.
+
+Fuentes: [CobGo converter](https://github.com/CoreBankLang/CobGo_community/blob/main/pkg/ir/converter.go) y [Koopa README](https://github.com/krisds/koopa).
+
+## Decisión técnica provisional tras la segunda pasada
+
+1. **No portar código de terceros ni reemplazar el parser todavía.**
+2. Antes de ampliar el cambio de referencias cualificadas, comparar los resultados externos completos y revisar ganados/perdidos del mismo SHA.
+3. El siguiente candidato de arquitectura es una resolución de símbolos basada en jerarquía y ruta (nombre + ancestros + índices), con detección explícita de ambiguos/no resueltos. Debe poder probarse aislada contra los casos reales del corpus.
+4. Dejar REDEFINES para una iteración separada: requiere layout/offsets y reglas de validación; no es seguro añadirlo como un parche de alias.
+5. Tratar ODO como una familia transversal que afecta tamaño, referencias y control de iteración; diseñar una batería pequeña de pruebas diferenciales antes de tocarla.
+
+No se afirma aún ninguna mejora porcentual derivada de esta investigación. El benchmark externo completo, en el mismo SHA, es el criterio para aceptar una optimización.
