@@ -335,6 +335,13 @@ def main() -> int:
         for reason, count in list(report["languages"][language]["failures_by_reason"].items())[:12]:
             lines.append("- **" + str(count) + "** — " + reason)
         lines.append("")
+    lines.extend(["## Native rejection codes", ""])
+    for language in ("c", "rust"):
+        lines.append("### " + language)
+        lines.append("")
+        for code, count in list(report["native_rejection_codes"].get(language, {}).items())[:12]:
+            lines.append("- **" + str(count) + "** — " + code)
+        lines.append("")
     diagnostics = report["cross_backend_diagnostics"]
     lines.extend(["## Cross-backend diagnostic signals", "",
         "- Cases where C passes but Python fails: " + str(len(diagnostics["c_passes_python_fails"])),
