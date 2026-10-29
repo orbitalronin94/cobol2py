@@ -1737,6 +1737,28 @@ class DataReferenceResolutionTests(unittest.TestCase):
 
         self.assertEqual(translated, "cobol_record['group']['field']")
 
+    def test_outer_qualifier_disambiguates_duplicate_group_name(self):
+        # The legacy name-keyed map can retain only one GROUP declaration.
+        # A full COBOL qualification must still preserve the explicitly named
+        # outer record rather than silently following that map's parent.
+        variables = {
+            "RECORD-A": cobol2py.CobolVar(level=1, name="RECORD-A", is_group=True),
+            "RECORD-B": cobol2py.CobolVar(level=1, name="RECORD-B", is_group=True),
+            "GROUP": cobol2py.CobolVar(
+                level=5, name="GROUP", is_group=True, parent_name="RECORD-A"
+            ),
+            "FIELD": cobol2py.CobolVar(
+                level=10, name="FIELD", pic="X", parent_name="GROUP"
+            ),
+        }
+
+        translated = cobol2py.normalize_data_reference(
+            "FIELD OF GROUP OF RECORD-B", variables
+        )
+
+        self.assertEqual(translated, "record_b['group']['field']")
+        compile(translated, "<qualified-duplicate-group>", "eval")
+
     def test_cyclic_group_metadata_does_not_recurse_forever(self):
         variables = {
             "GROUP-A": cobol2py.CobolVar(level=1, name="GROUP-A", is_group=True, parent_name="GROUP-B"),
@@ -3080,6 +3102,30 @@ class TestNumvalIntrinsicRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_expr("FUNCTION TEST-NUMVAL('12X45')")
         compile(translated, "<test-numval-invalid>", "eval")
         self.assertEqual(eval(translated, {}), 3)
+
+
+class NestedQualifiedOccursSubscriptRegressionTests(unittest.TestCase):
+    def test_each_qualified_occurs_level_keeps_its_own_subscript(self):
+        variables = {
+            "PARENT-TABLE": cobol2py.CobolVar(
+                level=1, name="PARENT-TABLE", is_group=True, is_array=True, occurs=4
+            ),
+            "CHILD-TABLE": cobol2py.CobolVar(
+                level=5, name="CHILD-TABLE", is_group=True, is_array=True,
+                occurs=5, parent_name="PARENT-TABLE",
+            ),
+            "FIELD": cobol2py.CobolVar(
+                level=10, name="FIELD", pic="X", parent_name="CHILD-TABLE"
+            ),
+        }
+        translated = cobol2py.normalize_data_reference(
+            "FIELD OF CHILD-TABLE(2) OF PARENT-TABLE(3)", variables
+        )
+        self.assertEqual(
+            translated,
+            "parent_table[2]['child_table'][1]['field']",
+        )
+        compile(translated, "<nested-qualified-occurs>", "eval")
 
 
 class QualifiedParentSubscriptRegressionTests(unittest.TestCase):
