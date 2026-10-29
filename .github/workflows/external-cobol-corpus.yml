@@ -33,12 +33,12 @@ on:
 permissions:
   contents: read
 
-# This 500-program benchmark is intentionally expensive. Let an active run finish;
-# GitHub keeps only the newest pending run for a concurrency group, avoiding repeated
-# cancellation of the benchmark before it can publish a report.
+# The benchmark is expensive, but a stale run can otherwise block validation
+# of a newer translator revision for most of the 90-minute job timeout.
+# Keep only the newest revision's external measurement active.
 concurrency:
   group: external-cobol-corpus-v2-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   external-corpus:
