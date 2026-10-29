@@ -348,8 +348,8 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
         elif declarations and (
             continuation.match(source_line)
             or (
-                re.search(r"\\bVALUE(?:\\s+IS)?\\s*$", declarations[-1][1], re.IGNORECASE)
-                and source_line.strip().startswith(("\\'", '"'))
+                re.search(r"\bVALUE(?:\s+IS)?\s*$", declarations[-1][1], re.IGNORECASE)
+                and source_line.strip().startswith(("'", '"'))
             )
         ):
             # A VALUE literal may start on the next physical line after a
