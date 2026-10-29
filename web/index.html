@@ -1269,9 +1269,9 @@ def normalize_data_reference(
     # Collapse redundant outer qualifiers while preserving the nearest
     # qualifier, e.g. FIELD OF GROUP OF RECORD -> FIELD OF GROUP.
     qualified_chain = re.fullmatch(
-        r"([A-Za-z0-9-]+(?:\\s*\\([^()]*\\))?)\\s+(?:OF|IN)\\s+"
-        r"([A-Za-z0-9-]+(?:\\s*\\([^()]*\\))?)"
-        r"(?:\\s+(?:OF|IN)\\s+[A-Za-z0-9-]+(?:\\s*\\([^()]*\\))?)+",
+        r"([A-Za-z0-9-]+(?:\s*\([^()]*\))?)\s+(?:OF|IN)\s+"
+        r"([A-Za-z0-9-]+(?:\s*\([^()]*\))?)"
+        r"(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+(?:\s*\([^()]*\))?)+",
         text,
         re.IGNORECASE,
     )
@@ -1296,7 +1296,7 @@ def normalize_data_reference(
             re.search(r"(?<![A-Za-z0-9-])IS(?![A-Za-z0-9-])", text, re.IGNORECASE)
         )
         is_data_clause = bool(
-            re.match(r"^\\s*(?:PIC(?:TURE)?|VALUE)\\b", text, re.IGNORECASE)
+            re.match(r"^\s*(?:PIC(?:TURE)?|VALUE)\b", text, re.IGNORECASE)
         )
         if has_relation_is and not is_data_clause:
             return translate_condition(text, variables)
