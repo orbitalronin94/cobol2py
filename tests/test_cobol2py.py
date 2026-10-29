@@ -3277,6 +3277,27 @@ class NestedQualifiedDataReferenceRegressionTests(unittest.TestCase):
         compile(translated, "<nested-qualified-condition>", "eval")
         self.assertIn("cobol_record['group']['field']", translated)
 
+    def test_nested_qualification_survives_class_condition_rewrite(self):
+        variables = {
+            "RECORD": cobol2py.CobolVar(level=1, name="RECORD", is_group=True),
+            "GROUP": cobol2py.CobolVar(level=5, name="GROUP", is_group=True, parent_name="RECORD"),
+            "FIELD": cobol2py.CobolVar(level=10, name="FIELD", pic="X", parent_name="GROUP"),
+        }
+        translated = cobol2py.translate_condition("FIELD IN GROUP IN RECORD IS ALPHABETIC", variables)
+        compile(translated, "<nested-qualified-class-condition>", "eval")
+        self.assertIn("cobol_record['group']['field']", translated)
+        self.assertNotIn("cobol_in", translated)
+
+    def test_nested_qualification_survives_sign_condition_rewrite(self):
+        variables = {
+            "RECORD": cobol2py.CobolVar(level=1, name="RECORD", is_group=True),
+            "GROUP": cobol2py.CobolVar(level=5, name="GROUP", is_group=True, parent_name="RECORD"),
+            "FIELD": cobol2py.CobolVar(level=10, name="FIELD", pic="9", parent_name="GROUP"),
+        }
+        translated = cobol2py.translate_condition("FIELD IN GROUP IN RECORD IS ZERO", variables)
+        compile(translated, "<nested-qualified-sign-condition>", "eval")
+        self.assertIn("cobol_record['group']['field']", translated)
+        self.assertNotIn("cobol_in", translated)
 
 
 class SearchAllNextSentenceRegressionTests(unittest.TestCase):

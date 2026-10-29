@@ -2252,6 +2252,27 @@ def translate_condition(
 
         return re.sub(pattern, replacement, chunk, flags=re.IGNORECASE)
 
+    # Sign/class-condition recognizers below intentionally accept one qualifier,
+    # but COBOL data-names may have several (FIELD OF GROUP OF RECORD).
+    # Protect deeper chains first so those recognizers cannot consume only a
+    # prefix and leave a dangling OF/IN token to become a Python variable.
+    qualified_condition_replacements: dict[str, str] = {}
+    qualified_condition_pattern = re.compile(
+        r"\\b[A-Za-z][A-Za-z0-9-]*(?:\\s*\\([^()]*\\))?"
+        r"(?:\\s+(?:OF|IN)\\s+[A-Za-z][A-Za-z0-9-]*(?:\\s*\\([^()]*\\))?){2,}",
+        re.IGNORECASE,
+    )
+
+    def protect_nested_qualified_condition_reference(match: re.Match[str]) -> str:
+        token = f"ZZCOBOLNESTEDQUALIFIED{len(qualified_condition_replacements)}ZZ"
+        qualified_condition_replacements[token.lower()] = normalize_data_reference(match.group(0), variables)
+        return token
+
+    cond = rewrite_outside_literals(
+        cond,
+        lambda chunk: qualified_condition_pattern.sub(protect_nested_qualified_condition_reference, chunk),
+    )
+
     cond = rewrite_outside_literals(cond, rewrite_sign_conditions)
 
     def rewrite_class_conditions(chunk: str) -> str:
@@ -2353,6 +2374,8 @@ def translate_condition(
     translated = translate_expr(c, variables)
     for token, expression in class_condition_replacements.items():
         translated = translated.replace(json.dumps(token), expression)
+    for token, expression in qualified_condition_replacements.items():
+        translated = re.sub(rf"\\b{re.escape(token)}\\b", lambda _: expression, translated, flags=re.IGNORECASE)
 
     # COBOL pads the shorter operand with spaces for alphanumeric comparisons.
     # Match a translated data-name (including a table element) against a literal.
