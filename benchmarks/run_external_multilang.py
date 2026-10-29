@@ -221,6 +221,13 @@ def main() -> int:
             "percent": round(100 * passed / len(results), 2) if results else 0.0,
             "failures_by_reason": dict(sorted(failures.items(), key=lambda pair: (-pair[1], pair[0]))),
         }
+    evaluated = [item for item in report["results"] if item.get("status")]
+    report["cross_backend_diagnostics"] = {
+        "c_passes_python_fails": [item["id"] for item in evaluated if item["status"]["c"].get("matched") and not item["status"]["python"].get("matched")],
+        "rust_passes_python_fails": [item["id"] for item in evaluated if item["status"]["rust"].get("matched") and not item["status"]["python"].get("matched")],
+        "python_passes_native_fails": [item["id"] for item in evaluated if item["status"]["python"].get("matched") and (not item["status"]["c"].get("matched") or not item["status"]["rust"].get("matched"))],
+        "all_three_fail": [item["id"] for item in evaluated if not any(item["status"][lang].get("matched") for lang in languages)],
+    }
     report["source_code_republished"] = False
     report["notes"] = [
         "Only sources that compile and terminate under GnuCOBOL enter the denominator.",
@@ -253,7 +260,15 @@ def main() -> int:
         for reason, count in list(report["languages"][language]["failures_by_reason"].items())[:12]:
             lines.append("- **" + str(count) + "** — " + reason)
         lines.append("")
-    lines.extend(["## Per-program results", "", "| Case | Python | C | Rust |", "|---|---:|---:|---:|"])
+    diagnostics = report["cross_backend_diagnostics"]
+    lines.extend(["## Cross-backend diagnostic signals", "",
+        "- Cases where C passes but Python fails: " + str(len(diagnostics["c_passes_python_fails"])),
+        "- Cases where Rust passes but Python fails: " + str(len(diagnostics["rust_passes_python_fails"])),
+        "- Cases where Python passes but at least one native backend fails: " + str(len(diagnostics["python_passes_native_fails"])),
+        "- Cases where all three backends fail: " + str(len(diagnostics["all_three_fail"])),
+        "- C-only candidates for Python regression analysis: " + (", ".join(diagnostics["c_passes_python_fails"][:30]) or "none"),
+        "- Rust-only candidates for Python regression analysis: " + (", ".join(diagnostics["rust_passes_python_fails"][:30]) or "none"),
+        "", "| Case | Python | C | Rust |", "|---|---:|---:|---:|"])
     for item in report["results"]:
         if "status" not in item or not item["status"]:
             continue
