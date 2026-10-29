@@ -2292,6 +2292,106 @@ def fit_numeric_expression(expression: str, target: str, variables: dict[str, Co
     return f"int({expression}) % (10 ** {digits})"
 
 
+
+def translate_group_to_group_move(
+    source: str,
+    target: str,
+    variables: dict[str, CobolVar],
+) -> Optional[list[str]]:
+    """Copy COBOL group storage byte-wise without replacing nested dictionaries."""
+    source_match = re.match(r"([A-Za-z0-9-]+)", source.strip())
+    target_match = re.match(r"([A-Za-z0-9-]+)", target.strip())
+    if source_match is None or target_match is None:
+        return None
+    variable_map = variables or {}
+    source_root = variable_map.get(source_match.group(1).upper())
+    target_root = variable_map.get(target_match.group(1).upper())
+    if source_root is None or target_root is None or not source_root.is_group or not target_root.is_group:
+        return None
+    if source.strip().upper() == target.strip().upper():
+        return []
+
+    source_expr = normalize_data_reference(source, variable_map)
+    target_expr = normalize_data_reference(target, variable_map)
+    source_has_subscript = bool(re.search(r"\\(\\s*[^)]*\\)", source.strip()))
+    target_has_subscript = bool(re.search(r"\\(\\s*[^)]*\\)", target.strip()))
+
+    def field_width(variable: CobolVar) -> int:
+        if variable.pic:
+            width = pic_character_count(variable.pic)
+            if width:
+                return width
+            digits = pic_digit_count(variable.pic)
+            if digits:
+                return digits
+        return 1
+
+    def collect_leaves(
+        group: CobolVar,
+        group_expr: str,
+        ancestors: set[str],
+        output: list[tuple[str, CobolVar, int]],
+    ) -> None:
+        if group.name.upper() in ancestors:
+            return
+        next_ancestors = ancestors | {group.name.upper()}
+        children = [
+            child for child in variable_map.values()
+            if (child.parent_name or "").upper() == group.name.upper()
+        ]
+        for child in children:
+            child_expr = f"{group_expr}[{normalize_name(child.name)!r}]"
+            if child.is_group and child.is_array:
+                for index in range(child.occurs or 0):
+                    collect_leaves(child, f"{child_expr}[{index}]", next_ancestors, output)
+            elif child.is_group:
+                collect_leaves(child, child_expr, next_ancestors, output)
+            elif child.is_array:
+                for index in range(child.occurs or 0):
+                    output.append((f"{child_expr}[{index}]", child, field_width(child)))
+            else:
+                output.append((child_expr, child, field_width(child)))
+
+    source_leaves: list[tuple[str, CobolVar, int]] = []
+    if source_root.is_array and not source_has_subscript:
+        for index in range(source_root.occurs or 0):
+            collect_leaves(source_root, f"{source_expr}[{index}]", set(), source_leaves)
+    else:
+        collect_leaves(source_root, source_expr, set(), source_leaves)
+
+    target_leaves: list[tuple[str, CobolVar, int]] = []
+    if target_root.is_array and not target_has_subscript:
+        for index in range(target_root.occurs or 0):
+            collect_leaves(target_root, f"{target_expr}[{index}]", set(), target_leaves)
+    else:
+        collect_leaves(target_root, target_expr, set(), target_leaves)
+
+    if not source_leaves or not target_leaves:
+        return None
+
+    source_parts: list[str] = []
+    for expression, variable, width in source_leaves:
+        if variable.pic and any(char in variable.pic.upper() for char in ("X", "A")):
+            source_parts.append(f"str({expression})[:{width}].ljust({width})")
+        elif variable.pic and "9" in variable.pic.upper():
+            source_parts.append(f"str(abs(int({expression})) % (10 ** {width})).zfill({width})")
+        else:
+            source_parts.append(f"str({expression})[:{width}].ljust({width})")
+
+    assignments = ["_cobol_group_move_buffer = ''.join([" + ", ".join(source_parts) + "])"]
+    offset = 0
+    for expression, variable, width in target_leaves:
+        chunk = f"_cobol_group_move_buffer[{offset}:{offset + width}]"
+        if variable.pic and any(char in variable.pic.upper() for char in ("X", "A")):
+            assignments.append(f"{expression} = {chunk}.ljust({width})")
+        elif variable.pic and "9" in variable.pic.upper():
+            stripped = f"{chunk}.strip()"
+            assignments.append(f"{expression} = int({stripped}) if {stripped}.isdigit() else 0")
+        else:
+            assignments.append(f"{expression} = {chunk}.ljust({width})")
+        offset += width
+    return assignments
+
 def translate_group_fill_move(source: str, target: str, variables: dict[str, CobolVar]) -> Optional[list[str]]:
     """Translate a group MOVE without replacing the group's nested storage."""
     figuratives = {
@@ -2813,6 +2913,9 @@ def translate_statement(
         group_fill = translate_group_fill_move(source, target, variable_map)
         if group_fill is not None:
             return group_fill
+        group_move = translate_group_to_group_move(source, target, variable_map)
+        if group_move is not None:
+            return group_move
         value = translate_move_value(source, target, variable_map)
         return [emit_assignment(target, value, variables)]
 
