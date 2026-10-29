@@ -94,7 +94,7 @@ STOP RUN.
         self.assertIn("while (!((ws_idx > 3))) {", c_output)
         self.assertIn("ws_idx += 1;", c_output)
         self.assertIn("while (!(ws_count >= 5)) {", c_output)
-        self.assertIn("while !(ws_idx > 3) {", rust_output)
+        self.assertIn("while !((ws_idx > 3)) {", rust_output)
         self.assertIn("ws_idx += 1;", rust_output)
         self.assertIn("while !(ws_count >= 5) {", rust_output)
 
