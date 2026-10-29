@@ -75,6 +75,7 @@ jobs:
             --workdir /workspace \
             cobol2py-external-benchmark \
             benchmarks/run_external_corpus.py \
+            --translator /workspace/cobol2py.py \
             --archive /input.zip \
             --output "/output/$SAMPLE_NAME" \
             --target "$TARGET" \
