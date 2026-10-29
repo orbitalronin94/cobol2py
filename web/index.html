@@ -1565,6 +1565,18 @@ def normalize_data_reference(
             return expression
 
     variable = variable_map.get(field_name.upper())
+    # In legacy COBOL85 sources the subscript can follow a non-table
+    # qualifier (RECORD2 OF TABLE1 (1)) even though RECORD2 is the OCCURS item.
+    # Move that subscript to the qualified array field; otherwise the emitted
+    # access indexes the containing group dict and raises KeyError: 0.
+    qualifier_variable = variable_map.get(qualifier.upper()) if qualifier else None
+    if (
+        qualifier and qualifier_subscript and variable is not None and variable.is_array
+        and qualifier_variable is not None and not qualifier_variable.is_array
+    ):
+        subscripts = [qualifier_subscript] + subscripts
+        subscript_text = qualifier_subscript
+        qualifier_subscript = None
     if qualifier:
         parent_reference = qualifier + (f"({qualifier_subscript})" if qualifier_subscript else "")
         parent_expr = normalize_data_reference(parent_reference, variable_map, seen)
