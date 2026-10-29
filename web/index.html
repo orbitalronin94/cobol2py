@@ -2983,7 +2983,7 @@ def split_cobol_items(s: str) -> list[str]:
             current_token = "".join(current).strip()
             if (
                 current_token
-                and not re.fullmatch(r"[Xx]", current_token)
+                and not re.fullmatch(r"[XxNnGgDdZz]", current_token)
                 and re.fullmatch(r"[A-Za-z0-9_-]+", current_token)
             ):
                 tokens.append(current_token)
