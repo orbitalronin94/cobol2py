@@ -3094,3 +3094,35 @@ class DebugNameSpecialRegisterRegressionTests(unittest.TestCase):
         self.assertEqual(variables["DEBUG-NAME"].pic, "X(30)")
         generated = cobol2py.emit_python(program)
         compile(generated, "<debug-name-special-register>", "exec")
+
+
+class ExternalBenchmarkConditionRegressionTests(unittest.TestCase):
+    def test_multiple_abbreviated_relations_remain_valid_python(self):
+        variables = {
+            "WS-YEAR": cobol2py.CobolVar(level=77, name="WS-YEAR", pic="9(4)"),
+            "WS-MONTH": cobol2py.CobolVar(level=77, name="WS-MONTH", pic="99"),
+            "WS-DAY": cobol2py.CobolVar(level=77, name="WS-DAY", pic="99"),
+        }
+        condition = (
+            "WS-YEAR >= 1990 AND <= 9999 AND "
+            "WS-MONTH >= 1 AND <= 12 AND WS-DAY >= 1 AND <= 31"
+        )
+        translated = cobol2py.translate_condition(condition, variables)
+        ast.parse(translated, mode="eval")
+        self.assertIn("ws_year >= 1990", translated)
+        self.assertIn("ws_year <= 9999", translated)
+        self.assertIn("ws_month <= 12", translated)
+        self.assertIn("ws_day <= 31", translated)
+
+    def test_abbreviated_string_alternatives_keep_all_values(self):
+        variables = {
+            "WS-FLAG": cobol2py.CobolVar(level=77, name="WS-FLAG", pic="X(1)")
+        }
+        translated = cobol2py.translate_condition(
+            'WS-FLAG = "A" OR "B" OR "C"', variables
+        )
+        ast.parse(translated, mode="eval")
+        namespace = {"ws_flag": "C"}
+        self.assertTrue(eval(translated, namespace))
+        self.assertIn("'B'", translated)
+        self.assertIn("'C'", translated)
