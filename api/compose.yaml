@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: cobol2py
+      POSTGRES_USER: cobol2py
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-dev-only}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cobol2py -d cobol2py"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  api:
+    build:
+      context: ..
+      dockerfile: api/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://cobol2py:${POSTGRES_PASSWORD:-local-dev-only}@db:5432/cobol2py
+      OIDC_ISSUER: ${OIDC_ISSUER:-}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-}
+      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-}
+      COBOL2PY_API_ALLOW_ANONYMOUS: ${COBOL2PY_API_ALLOW_ANONYMOUS:-false}
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+  worker:
+    build:
+      context: ..
+      dockerfile: api/Dockerfile
+    command: ["python", "-m", "api.worker"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://cobol2py:${POSTGRES_PASSWORD:-local-dev-only}@db:5432/cobol2py
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  postgres_data:
