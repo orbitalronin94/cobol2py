@@ -1143,19 +1143,19 @@ def normalize_data_reference(
     # path when names are unique in the simplified symbol table; discard only
     # the redundant outer qualifiers before applying the normal resolver.
     qualified_chain = re.fullmatch(
-        r"([A-Za-z0-9-]+(?:\\s*\\([^()]*\\))?)\\s+(?:OF|IN)\\s+"
-        r"([A-Za-z0-9-]+(?:\\s*\\([^()]*\\))?)"
-        r"(?:\\s+(?:OF|IN)\\s+[A-Za-z0-9-]+(?:\\s*\\([^()]*\\))?)+",
+        r"([A-Za-z0-9-]+(?:\s*\([^()]*\))?)\s+(?:OF|IN)\s+"
+        r"([A-Za-z0-9-]+(?:\s*\([^()]*\))?)"
+        r"(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+(?:\s*\([^()]*\))?)+",
         text,
         re.IGNORECASE,
     )
     qualified_parts = (
-        re.split(r"\\s+(?:OF|IN)\\s+", text, flags=re.IGNORECASE)
+        re.split(r"\s+(?:OF|IN)\s+", text, flags=re.IGNORECASE)
         if qualified_chain else None
     )
     has_indexed_qualifier = bool(
         qualified_parts
-        and any(re.search(r"\\([^()]*\\)", part) for part in qualified_parts[1:])
+        and any(re.search(r"\([^()]*\)", part) for part in qualified_parts[1:])
     )
     if qualified_chain and not has_indexed_qualifier:
         text = f"{qualified_chain.group(1)} OF {qualified_chain.group(2)}"
@@ -1181,7 +1181,7 @@ def normalize_data_reference(
             re.search(r"(?<![A-Za-z0-9-])IS(?![A-Za-z0-9-])", text, re.IGNORECASE)
         )
         is_data_clause = bool(
-            re.match(r"^\\s*(?:PIC(?:TURE)?|VALUE)\\b", text, re.IGNORECASE)
+            re.match(r"^\s*(?:PIC(?:TURE)?|VALUE)\b", text, re.IGNORECASE)
         )
         if has_relation_is and not is_data_clause:
             return translate_condition(text, variables)
@@ -1217,7 +1217,7 @@ def normalize_data_reference(
 
     if has_indexed_qualifier and qualified_parts:
         part_matches = [
-            re.fullmatch(r"([A-Za-z0-9-]+)(?:\\s*\\(([^()]*)\\))?", part.strip())
+            re.fullmatch(r"([A-Za-z0-9-]+)(?:\s*\(([^()]*)\))?", part.strip())
             for part in qualified_parts
         ]
         if all(part_matches):
@@ -1234,9 +1234,9 @@ def normalize_data_reference(
                     child_subscripts = [
                         part.strip() for part in re.split(r"[,;]", child_subscript_text)
                     ]
-                    if len(child_subscripts) == 1 and re.search(r"\\s", child_subscript_text.strip()):
+                    if len(child_subscripts) == 1 and re.search(r"\s", child_subscript_text.strip()):
                         candidates = re.split(
-                            r"(?<![+\\-*/])\\s+(?=[A-Za-z0-9][A-Za-z0-9_-]*(?:\\s|$))",
+                            r"(?<![+\-*/])\s+(?=[A-Za-z0-9][A-Za-z0-9_-]*(?:\s|$))",
                             child_subscript_text.strip(),
                         )
                         if len(candidates) > 1:
