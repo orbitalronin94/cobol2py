@@ -1811,6 +1811,23 @@ class DataReferenceResolutionTests(unittest.TestCase):
         self.assertEqual(translated, "record_b['group']['field']")
         compile(translated, "<qualified-duplicate-group>", "eval")
 
+    def test_two_part_qualifier_subscript_targets_occurs_field(self):
+        variables = {
+            "TABLE1": cobol2py.CobolVar(level=1, name="TABLE1", is_group=True),
+            "RECORD2": cobol2py.CobolVar(
+                level=2, name="RECORD2", pic="9(2)", is_array=True,
+                occurs=2, parent_name="TABLE1"
+            ),
+        }
+
+        translated = cobol2py.normalize_data_reference("RECORD2 OF TABLE1(1)", variables)
+        self.assertEqual(translated, "table1['record2'][0]")
+        compile(translated, "<two-part-qualified-occurs>", "eval")
+        self.assertEqual(
+            eval(translated, {"table1": {"record2": [11, 22]}}),
+            11,
+        )
+
     def test_subscript_on_non_table_qualifier_targets_occurs_field(self):
         variables = {
             "TABLE1": cobol2py.CobolVar(level=1, name="TABLE1", is_group=True),
