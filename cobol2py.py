@@ -1143,20 +1143,28 @@ def normalize_data_reference(
     # path when names are unique in the simplified symbol table; discard only
     # the redundant outer qualifiers before applying the normal resolver.
     qualified_chain = re.fullmatch(
-        r"([A-Za-z0-9-]+(?:\s*\([^()]*\))?)\s+(?:OF|IN)\s+"
-        r"([A-Za-z0-9-]+(?:\s*\([^()]*\))?)"
-        r"(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+(?:\s*\([^()]*\))?)+",
+        r"([A-Za-z0-9-]+(?:\\s*\\([^()]*\\))?)\\s+(?:OF|IN)\\s+"
+        r"([A-Za-z0-9-]+(?:\\s*\\([^()]*\\))?)"
+        r"(?:\\s+(?:OF|IN)\\s+[A-Za-z0-9-]+(?:\\s*\\([^()]*\\))?)+",
         text,
         re.IGNORECASE,
     )
-    if qualified_chain:
+    qualified_parts = (
+        re.split(r"\\s+(?:OF|IN)\\s+", text, flags=re.IGNORECASE)
+        if qualified_chain else None
+    )
+    has_indexed_qualifier = bool(
+        qualified_parts
+        and any(re.search(r"\\([^()]*\\)", part) for part in qualified_parts[1:])
+    )
+    if qualified_chain and not has_indexed_qualifier:
+        text = f"{qualified_chain.group(1)} OF {qualified_chain.group(2)}"
+    elif has_indexed_qualifier:
+        # Keep all containing groups: each OCCURS qualifier owns its own index.
         text = f"{qualified_chain.group(1)} OF {qualified_chain.group(2)}"
     seen = set() if _seen is None else _seen
     reference_key = text.upper()
     if reference_key in seen:
-        # Malformed/ambiguous data hierarchies can cycle when names are
-        # duplicated in the simplified name map. Stop recursion rather than
-        # hanging the translator on a single source file.
         return normalize_name(text)
     seen.add(reference_key)
     match = re.fullmatch(
