@@ -2689,8 +2689,12 @@ class GroupMoveFillRegressionTests(unittest.TestCase):
         ])
         generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
         self.assertNotIn('test_results = "AB"', generated)
-        self.assertIn("test_results['feature'] = 'AB  '", generated)
-        self.assertIn("test_results['p_or_f'] = ' '", generated)
+        # Group MOVE is emitted as one padded byte sequence and distributed
+        # into the elementary fields; assert the storage-preserving path rather
+        # than requiring a particular direct-assignment implementation.
+        self.assertIn('_cobol_group_move_value = (str("AB"))[:5].ljust(5)', generated)
+        self.assertIn("test_results['feature'] = _cobol_group_move_value[0:4].ljust(4)", generated)
+        self.assertIn("test_results['p_or_f'] = _cobol_group_move_value[4:5].ljust(1)", generated)
         namespace = {"__name__": "not_main"}
         exec(compile(generated, "<group-move-literal>", "exec"), namespace)
         output = StringIO()
