@@ -70,6 +70,26 @@ STOP RUN.
         output = cobol2native.emit_native(program, "c")
         self.assertIn('printf("%lld%g\\n", (long long)(123), (double)(1.5));', output)
 
+    def test_perform_times_inline_is_emitted_for_c_and_rust(self):
+        import cobol2py
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. PERFORM-DEMO.
+PROCEDURE DIVISION.
+MAIN.
+PERFORM 3 TIMES
+DISPLAY "X"
+END-PERFORM.
+STOP RUN.
+"""
+        program = cobol2py.parse_cobol(source, source_format="free")
+        c_output = cobol2native.emit_native(program, "c")
+        rust_output = cobol2native.emit_native(program, "rust")
+        self.assertIn("for (int _cobol_perform_", c_output)
+        self.assertIn("< 3;", c_output)
+        self.assertIn('printf("%s\\\\n", "X");', c_output)
+        self.assertIn("in 0..3 {", rust_output)
+        self.assertIn('print!("{}\\\\n", "X");', rust_output)
+
     def test_if_control_flow_is_emitted_for_c_and_rust(self):
         import cobol2py
         source = SOURCE.replace(
