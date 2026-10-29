@@ -1555,6 +1555,35 @@ def translate_expr(
     variables: Optional[dict[str, CobolVar]] = None,
 ) -> str:
     expr = expr.strip()
+    # Protect sliced alphanumeric date intrinsics before the generic reference-
+    # modification matcher mistakes CURRENT-DATE(1:16) for a data-name slice.
+    # These functions return strings; COBOL's (start:length) is 1-based.
+    sliced_date_intrinsics: dict[str, str] = {}
+
+    def protect_sliced_date_intrinsic(match: re.Match[str]) -> str:
+        intrinsic, start_text, length_text = match.groups()
+        date_expression = (
+            "(lambda _dt: _dt.strftime('%Y%m%d%H%M%S') + "
+            "f'{_dt.microsecond // 10000:02d}' + _dt.strftime('%z'))"
+            "(__import__('datetime').datetime.now().astimezone())"
+            if intrinsic.upper() == "CURRENT-DATE"
+            else "(lambda _dt: _dt.strftime('%Y%m%d%H%M%S') + "
+            "f'{_dt.microsecond // 10000:02d}')(__import__('datetime').datetime.now())"
+        )
+        start_index = int(start_text) - 1
+        end_index = start_index + int(length_text)
+        token = f"ZZCOBOLDATEINTRINSIC{len(sliced_date_intrinsics)}ZZ"
+        sliced_date_intrinsics[token.lower()] = f"({date_expression})[{start_index}:{end_index}]"
+        return token
+
+    expr = re.sub(
+        r"\bFUNCTION\s+(CURRENT-DATE|WHEN-COMPILED)\s*\(\s*(\d+)\s*:\s*(\d+)\s*\)",
+        protect_sliced_date_intrinsic,
+        expr,
+        flags=re.IGNORECASE,
+    )
+
+
     # Resolve a whole qualified identifier before the expression tokenizer sees
     # OF/IN as independent words (which would otherwise become invalid Python).
     if re.fullmatch(
@@ -2265,6 +2294,11 @@ def translate_expr(
         chained_reference_modification,
         translated,
     )
+    # Restore protected date-intrinsic slices after tokenization so their
+    # generated Python cannot be reinterpreted as COBOL identifiers.
+    for token, replacement in sliced_date_intrinsics.items():
+        translated = translated.replace(token, replacement)
+
     # Restore protected qualified references only after all COBOL tokens and
     # intrinsic names have been normalized.
     for token, replacement in qualified_reference_replacements.items():

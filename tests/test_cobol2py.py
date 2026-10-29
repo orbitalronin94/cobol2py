@@ -3090,6 +3090,22 @@ class AlternateStorageSectionRegressionTests(unittest.TestCase):
         compile(cobol2py.emit_python(program), "<linkage-only>", "exec")
 
 
+class SlicedDateIntrinsicRegressionTests(unittest.TestCase):
+    def test_current_date_reference_modification_is_translated_as_string_slice(self):
+        translated = cobol2py.translate_expr("FUNCTION CURRENT-DATE(1:16)")
+        compile(translated, "<current-date-slice>", "eval")
+        value = eval(translated, {"__name__": "not_main"})
+        self.assertEqual(len(value), 16)
+        self.assertTrue(value.isdigit())
+
+    def test_when_compiled_reference_modification_is_translated_as_string_slice(self):
+        translated = cobol2py.translate_expr("FUNCTION WHEN-COMPILED(1:16)")
+        compile(translated, "<when-compiled-slice>", "eval")
+        value = eval(translated, {"__name__": "not_main"})
+        self.assertEqual(len(value), 16)
+        self.assertTrue(value.isdigit())
+
+
 class AnnuityIntrinsicRegressionTests(unittest.TestCase):
     def test_annuity_intrinsic_generates_valid_formula(self):
         translated = cobol2py.translate_expr("FUNCTION ANNUITY(0.05, 10)")
