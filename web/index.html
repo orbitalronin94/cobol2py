@@ -2321,8 +2321,8 @@ def translate_group_to_group_move(
 
     source_expr = normalize_data_reference(source, variable_map)
     target_expr = normalize_data_reference(target, variable_map)
-    source_has_subscript = bool(re.search(r"\\(\\s*[^)]*\\)", source.strip()))
-    target_has_subscript = bool(re.search(r"\\(\\s*[^)]*\\)", target.strip()))
+    source_has_subscript = bool(re.search(r"\(\s*[^)]*\)", source.strip()))
+    target_has_subscript = bool(re.search(r"\(\s*[^)]*\)", target.strip()))
 
     def field_width(variable: CobolVar) -> int:
         if variable.pic:
@@ -2425,7 +2425,7 @@ def translate_group_fill_move(source: str, target: str, variables: dict[str, Cob
         return None
 
     target_expr = normalize_data_reference(target, variables)
-    has_explicit_subscript = bool(re.search(r"\\(\\s*[^)]*\\)", target.strip()))
+    has_explicit_subscript = bool(re.search(r"\(\s*[^)]*\)", target.strip()))
     if root.is_array and not has_explicit_subscript and not root.occurs:
         return None
 
