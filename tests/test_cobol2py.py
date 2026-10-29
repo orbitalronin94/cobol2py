@@ -3075,3 +3075,22 @@ class ScreenSectionParsingRegressionTests(unittest.TestCase):
         self.assertEqual(variables["MENU-OPTION"].parent_name, "MENU-SCREEN")
         generated = cobol2py.emit_python(program)
         compile(generated, "<screen-section>", "exec")
+
+
+class DebugNameSpecialRegisterRegressionTests(unittest.TestCase):
+    def test_referenced_debug_name_is_added_as_implicit_storage(self):
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. DEBUGNAME.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "PROCEDURE DIVISION.",
+            "DISPLAY DEBUG-NAME.",
+            "STOP RUN.",
+        ])
+        program = cobol2py.parse_cobol(source, source_format="free")
+        variables = {item.name: item for item in program.variables}
+        self.assertIn("DEBUG-NAME", variables)
+        self.assertEqual(variables["DEBUG-NAME"].pic, "X(30)")
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<debug-name-special-register>", "exec")
