@@ -1325,14 +1325,30 @@ def normalize_data_reference(
             for part in qualified_parts
         ]
         if all(part_matches):
-            root_match = part_matches[-1]
-            root_reference = root_match.group(1)
-            if root_match.group(2) is not None:
-                root_reference += f"({root_match.group(2)})"
+            # Some legacy sources place the table subscript after an enclosing
+            # qualifier even though the OCCURS item is the qualified field
+            # (for example, ITEM OF RECORD(1), where RECORD is not a table).
+            # If the indexed qualifier has no OCCURS declaration, attach its
+            # index to the nearest preceding OCCURS item instead of indexing a
+            # dictionary with an integer and raising KeyError.
+            part_matches = [list(match.groups()) for match in part_matches]
+            for indexed_pos in range(len(part_matches) - 1, 0, -1):
+                indexed_name, indexed_subscript = part_matches[indexed_pos]
+                indexed_variable = variable_map.get(indexed_name.upper())
+                if indexed_subscript is None or (indexed_variable and indexed_variable.is_array):
+                    continue
+                for candidate_pos in range(indexed_pos - 1, -1, -1):
+                    candidate_name, candidate_subscript = part_matches[candidate_pos]
+                    candidate_variable = variable_map.get(candidate_name.upper())
+                    if candidate_subscript is None and candidate_variable and candidate_variable.is_array:
+                        part_matches[candidate_pos][1] = indexed_subscript
+                        part_matches[indexed_pos][1] = None
+                        break
+            root_name, root_subscript = part_matches[-1]
+            root_reference = root_name + (f"({root_subscript})" if root_subscript is not None else "")
             expression = normalize_data_reference(root_reference, variable_map, seen)
             # Build the storage path from the outermost group toward the field.
-            for part_match in reversed(part_matches[:-1]):
-                child_name, child_subscript_text = part_match.groups()
+            for child_name, child_subscript_text in reversed(part_matches[:-1]):
                 expression += f"[{normalize_name(child_name)!r}]"
                 if child_subscript_text:
                     child_subscripts = [
