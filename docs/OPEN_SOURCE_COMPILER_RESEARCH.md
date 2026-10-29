@@ -186,3 +186,12 @@ La suite de pruebas de ProLeap incluye [`NC234A.CBL`](https://github.com/uwol/pr
 Los fallos del corpus externo `nc2344-2-5f8e49c5ac`, `nc241a-681f02a7ce` y `nc2414-2-2f38ed7c87` son coherentes con esta familia: el Python generado falla al indexar estructuras anidadas, y la prueba de referencia contiene tablas de tres dimensiones y REDEFINES. No se debe asumir que el error sea solo una conversión de índice a entero: hay que comprobar conjuntamente la ruta jerárquica, el número/orden de subíndices y la vista de almacenamiento redefinida.
 
 **Siguiente fixture mínimo:** reducir la estructura a una tabla con tres niveles `OCCURS`, una segunda definición `REDEFINES`, escritura y lectura en las dos vistas, y una búsqueda indexada. Comparar salida y código de retorno con GnuCOBOL. La corrección de calificadores anidados de la PR #40 no alteró esos casos del informe multilenguaje; la siguiente iteración debe aislar la interacción entre la jerarquía de tablas y REDEFINES, no repetir el mismo parche de regex.
+
+
+### Experimento aplicado: vista REDEFINES sobre OCCURS de tres dimensiones
+
+La PR [#41](https://github.com/orbitalronin94/cobol2py/pull/41) ya contiene un fixture reducido derivado de `NC234A.CBL`: escribir en `ENTRY-3(2, 1, 2)` de la tabla original y leer `ENTRY-3-1(2, 1, 2)` desde la vista `REDEFINES`. Antes del cambio, la primera lectura devolvía el texto correcto y la segunda espacios; el traductor generaba dos diccionarios independientes en vez de almacenamiento compartido.
+
+La implementación candidata calcula el ancho de los grupos incluyendo `OCCURS`, conserva el stride de cada dimensión y enruta lecturas/escrituras indexadas de campos redefinidos por el buffer común. La nueva prueba y la suite completa pasan en Python 3.10–3.13; también ha pasado el workflow diferencial interno. El benchmark externo de primaria/holdout para este SHA sigue pendiente, por lo que todavía no se atribuye ninguna subida porcentual a esta corrección.
+
+Límite conocido: es el subconjunto de almacenamiento DISPLAY que el backend ya soporta. No demuestra aún equivalencia para todos los usos de `REDEFINES`, datos numéricos con escala implícita, redefiniciones de longitud variable ni referencias a grupos completos sin subíndices.
