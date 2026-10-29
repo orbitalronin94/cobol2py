@@ -2094,6 +2094,34 @@ class FigurativeConstantIdentifierBoundaryTests(unittest.TestCase):
         self.assertEqual(cobol2py.translate_expr("SPACE-C"), "space_c")
 
 
+class MoveMultipleTargetsRegressionTests(unittest.TestCase):
+    def test_move_literal_to_multiple_receivers_applies_each_pic_width(self):
+        variables = {
+            "WS-SHORT": cobol2py.CobolVar(level=1, name="WS-SHORT", pic="X(2)"),
+            "WS-LONG": cobol2py.CobolVar(level=1, name="WS-LONG", pic="X(5)"),
+        }
+        translated = cobol2py.translate_statement('MOVE "ABCDE" TO WS-SHORT WS-LONG', set(), variables)
+        self.assertEqual(
+            translated,
+            ["ws_short = str('ABCDE')[:2].ljust(2)", "ws_long = str('ABCDE')[:5].ljust(5)"],
+        )
+        namespace = {}
+        exec("\\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_short"], "AB")
+        self.assertEqual(namespace["ws_long"], "ABCDE")
+
+    def test_to_inside_quoted_source_is_not_mistaken_for_clause_separator(self):
+        variables = {
+            "WS-A": cobol2py.CobolVar(level=1, name="WS-A", pic="X(2)"),
+            "WS-B": cobol2py.CobolVar(level=1, name="WS-B", pic="X(4)"),
+        }
+        translated = cobol2py.translate_statement('MOVE "TO" TO WS-A WS-B', set(), variables)
+        self.assertEqual(
+            translated,
+            ["ws_a = str('TO')[:2].ljust(2)", "ws_b = str('TO')[:4].ljust(4)"],
+        )
+
+
 class MoveCorrespondingRegressionTests(unittest.TestCase):
     def test_matching_group_fields_are_copied_with_target_width(self):
         variables = {
