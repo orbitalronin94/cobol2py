@@ -387,3 +387,35 @@ Añadir una sección con:
 - **Decisión:** representar tablas `OCCURS` de registros como listas de diccionarios, conservar la longitud máxima y limitar `SEARCH ALL` por `DEPENDING ON`; requerir `ASCENDING KEY` y `INDEXED BY` y traducir la búsqueda como búsqueda binaria con conversión del índice base 1.
 - **Contexto:** la fixture inicial no declaraba una clave ascendente y sus claves no estaban ordenadas, por lo que no constituía un caso válido para `SEARCH ALL`. También omitía los efectos de salida al desenrollar el `PERFORM` recursivo.
 - **Consecuencias:** se añadió una fixture corregida y una prueba unitaria; no se anuncia coincidencia diferencial hasta ejecutar la fixture con GnuCOBOL.
+
+
+## D-042 — Añadir backends experimentales C y Rust con núcleo de análisis compartido
+
+- **Fecha:** 2026-10-29.
+- **Estado:** aceptada como experimento; no implica soporte de producción.
+- **Contexto:** comparar varios lenguajes destino puede exponer qué errores son del análisis COBOL compartido y cuáles pertenecen a la generación/ejecución específica de Python.
+- **Decisión:** mantener Python como backend principal y añadir prototipos C y Rust en `cobol2native.py`, reutilizando `cobol2py.py` para analizar el fuente y obtener el modelo de programa. Los backends nativos deben rechazar explícitamente los nodos fuera del subconjunto implementado.
+- **Alternativas:** implementar dos parsers COBOL independientes (duplica errores y trabajo); migrar ya el núcleo a una arquitectura de plugins (demasiado cambio antes de medir el prototipo); traducir todo el corpus nativo fingiendo soporte (rechazado por falsear equivalencia).
+- **Consecuencias:** permite comparar representaciones y semántica de salida en C/Rust, pero las diferencias de capacidades y los rechazos del prototipo deben permanecer visibles. Compartir parser también comparte sus limitaciones; no convierte los backends en traductores COBOL generales.
+- **Validación:** `tests/test_native_backends.py` y el benchmark pareado de tres lenguajes; la generación aislada no sustituye compilación ni ejecución real.
+- **Revisión:** ampliar el soporte solo después de que cada nueva familia tenga pruebas de compilación y comparación diferencial con GnuCOBOL.
+
+## D-043 — Medir Python, C y Rust sobre el mismo corpus y oráculo
+
+- **Fecha:** 2026-10-29.
+- **Estado:** aceptada.
+- **Contexto:** los porcentajes calculados sobre corpus, denominadores o reglas de éxito diferentes no permiten atribuir mejoras a un backend.
+- **Decisión:** añadir `benchmarks/run_multilang_benchmark.py` y el workflow `multilang-benchmark.yml`. Los tres lenguajes procesan los mismos casos de `benchmarks/cases.json`; cada salida se compara con la misma referencia compilada por GnuCOBOL. Un acierto exige igualdad byte a byte de stdout y el mismo código de retorno.
+- **Regla de puntuación:** traducción rechazada/no soportada, error de compilación, timeout, fallo de ejecución o salida diferente cuentan como fallo para el backend evaluado. Los errores al compilar/ejecutar la propia referencia se identifican por separado en el informe, no se deben interpretar como defectos de un traductor.
+- **Consecuencias:** la primera medición comparable usa el corpus versionado de 102 casos y publica JSON/Markdown como artefacto de CI. El porcentaje es cobertura de ese corpus, no una estimación universal de compatibilidad COBOL. El benchmark es exploratorio y no bloquea CI por una puntuación inferior al 100 %.
+- **Revisión:** ampliar a muestras externas solo cuando el runner, los límites de recursos y la selección del corpus sean idénticos entre lenguajes; conservar por separado la puntuación de cada conjunto.
+
+## D-044 — Usar C y Rust como instrumentos de diagnóstico, no como autoridad semántica
+
+- **Fecha:** 2026-10-29.
+- **Estado:** aceptada.
+- **Contexto:** el mismo caso puede fallar en un backend y pasar en otro, pero una diferencia aislada no demuestra que el backend que pasa sea correcto fuera de esa fixture.
+- **Decisión:** cruzar los resultados por caso y familia COBOL. Priorizar: (1) casos que pasan en C/Rust y fallan en Python; (2) fallos comunes a los tres, que pueden señalar parsing, normalización o supuestos semánticos compartidos; (3) fallos exclusivos de C/Rust, que revelan bugs de generación, compilación, tipos, formato de salida o límites del subconjunto.
+- **Proceso de transferencia:** para cada caso diferencial, minimizar el fuente, verificar el resultado COBOL con GnuCOBOL, añadir una regresión y solo entonces portar la regla al backend Python. No copiar automáticamente código C/Rust ni tratar el comportamiento de otro traductor como especificación.
+- **Consecuencias:** el informe por caso sirve como mapa de causas probables y puede aumentar la calidad de Python, pero no autoriza extrapolaciones desde una muestra pequeña ni cambios semánticos sin oráculo.
+- **Revisión:** reevaluar la estrategia tras varias rondas de benchmark y al crecer la cobertura nativa más allá del subconjunto inicial.
