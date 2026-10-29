@@ -2566,7 +2566,7 @@ class TruncatedValueIsClauseRegressionTests(unittest.TestCase):
             (2, "01 WS-NEXT PIC X VALUE IS"),
         ])
         self.assertEqual(variables[0].value, '"ABC"')
-        self.assertEqual(variables[0].py_default(), "str('ABC')[:3].ljust(3)")
+        self.assertEqual(variables[0].py_default(), 'str("ABC")[:3].ljust(3)')
         self.assertIsNone(variables[1].value)
         self.assertEqual(variables[1].py_default(), repr(" "))
         # If punctuation or a following clause follows IS, regex backtracking
