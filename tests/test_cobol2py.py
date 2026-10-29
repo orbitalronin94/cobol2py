@@ -2726,6 +2726,34 @@ class NistGroupStorageRegressionTests(unittest.TestCase):
         self.assertEqual(output.getvalue(), "PASS                \n")
 
 
+    def test_nist_move_sequence_never_assigns_test_results_as_a_scalar(self):
+        fixture = Path(__file__).parent / "fixtures" / "IC222A-working-storage.cbl"
+        data_source = fixture.read_text(encoding="utf-8").split("025600 PROCEDURE DIVISION.")[0]
+        procedure = "\n".join([
+            "025600 PROCEDURE DIVISION.",
+            "025700 CCVS1 SECTION.",
+            "025800 OPEN-FILES.",
+            "025900 MOVE CCVS-PGM-ID TO TEST-ID. MOVE CCVS-PGM-ID TO ID-AGAIN.",
+            "026000 MOVE SPACE TO TEST-RESULTS.",
+            "026100 GO TO CCVS1-EXIT.",
+            "026200 PASS.",
+            '026300 MOVE "PASS " TO P-OR-F.',
+            "026400 PRINT-DETAIL.",
+            "026500 MOVE TEST-RESULTS TO PRINT-REC. PERFORM WRITE-LINE.",
+            "026600 MOVE SPACE TO P-OR-F. MOVE SPACE TO COMPUTED-X.",
+            "026700 CCVS1-EXIT.",
+            "026800 STOP RUN.",
+        ])
+        source = data_source + procedure
+        program = cobol2py.parse_cobol(source, source_format="auto")
+        generated = cobol2py.emit_python(program)
+        scalar_assignments = [
+            line for line in generated.splitlines()
+            if line.lstrip().startswith("test_results =")
+        ]
+        self.assertEqual(scalar_assignments, [])
+
+
 class GroupToGroupMoveRegressionTests(unittest.TestCase):
     def test_move_group_to_occurs_record_preserves_target_record_shape(self):
         from contextlib import redirect_stdout
