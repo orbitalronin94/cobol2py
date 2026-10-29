@@ -198,7 +198,7 @@ def _emit_nodes(nodes: list[core.Node], variables: dict[str, core.CobolVar], lan
                 output.extend(body or ["    " * (indent + 1) + (";" if lang == "c" else "() ;")])
                 output.append("    " * (indent + 1) + f"if ({condition}) {{ break; }}" if lang == "c" else "    " * (indent + 1) + f"if {condition} {{ break; }}")
             else:
-                output.append(pad + (f"while (!({condition})) {{" if lang == "c" else f"while !({condition}) {{"))
+                output.append(pad + (f"while (!{condition}) {{" if lang == "c" else f"while !{condition} {{"))
                 body = _emit_nodes(node.body, variables, lang, indent + 1)
                 output.extend(body or ["    " * (indent + 1) + (";" if lang == "c" else "() ;")])
             output.append(pad + "}")
