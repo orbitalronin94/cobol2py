@@ -1131,7 +1131,7 @@ def normalize_data_reference(
     variable = variable_map.get(field_name.upper())
     if qualifier:
         parent_reference = qualifier + (f"({qualifier_subscript})" if qualifier_subscript else "")
-        parent_expr = normalize_data_reference(parent_reference, variable_map, seen)
+        parent_expr = normalize_data_reference(parent_reference, variable_map, seen.copy())
         parent_variable = variable_map.get(qualifier.upper())
         if qualifier_subscript:
             # A table subscript may qualify the parent item (CHILD OF TABLE(1)).
@@ -1168,7 +1168,7 @@ def normalize_data_reference(
             if has_array_ancestor and array_positions:
                 root_array_pos = array_positions[0]
                 root_array = root_to_leaf[root_array_pos]
-                expr = normalize_data_reference(root_array.name, variable_map, seen)
+                expr = normalize_data_reference(root_array.name, variable_map, seen.copy())
                 subscript_index = 0
                 if subscripts:
                     expr += f"[{index_expression(subscripts[subscript_index])}]"
@@ -1182,7 +1182,7 @@ def normalize_data_reference(
                     expr += f"[{index_expression(subscripts[subscript_index])}]"
                     subscript_index += 1
                 return expr
-        parent_expr = normalize_data_reference(variable.parent_name, variable_map, seen)
+        parent_expr = normalize_data_reference(variable.parent_name, variable_map, seen.copy())
         parent_variable = variable_map.get(variable.parent_name.upper())
         if parent_variable is not None and parent_variable.is_array and parent_variable.is_group and subscripts:
             expr = f"{parent_expr}[{index_expression(subscripts[0])}][{normalize_name(field_name)!r}]"
