@@ -3175,6 +3175,22 @@ class NestedQualifiedDataReferenceRegressionTests(unittest.TestCase):
             expected,
         )
 
+    def test_statement_parser_accepts_multiple_data_qualifiers(self):
+        variables = {
+            "RECORD": cobol2py.CobolVar(level=1, name="RECORD", is_group=True),
+            "GROUP": cobol2py.CobolVar(level=5, name="GROUP", is_group=True, parent_name="RECORD"),
+            "FIELD": cobol2py.CobolVar(level=10, name="FIELD", pic="X", parent_name="GROUP"),
+            "TARGET": cobol2py.CobolVar(level=1, name="TARGET", pic="X"),
+        }
+        translated = cobol2py.translate_statement(
+            "MOVE FIELD OF GROUP OF RECORD TO TARGET", set(), variables
+        )
+        self.assertIsNotNone(translated)
+        generated = "\\n".join(translated or [])
+        self.assertNotIn("MOVE no traducido", generated)
+        compile(generated, "<nested-qualified-move>", "exec")
+
+
     def test_nested_qualification_inside_condition_is_not_split_into_in_keyword(self):
         variables = {
             "RECORD": cobol2py.CobolVar(level=1, name="RECORD", is_group=True),
