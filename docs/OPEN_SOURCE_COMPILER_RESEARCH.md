@@ -21,8 +21,14 @@ El README del parser describe una gramática ANTLR4 que produce AST y ASG. El AS
 ### 2. GnuCOBOL: definir semántica observable
 
 Fuentes:
+- Código fuente (espejo mantenido por OCamlPro): https://github.com/OCamlPro/gnucobol
+- Parser: https://github.com/OCamlPro/gnucobol/blob/master/cobc/parser.y
+- Chequeo semántico/tipos: https://github.com/OCamlPro/gnucobol/blob/master/cobc/typeck.c
+- Generación de código: https://github.com/OCamlPro/gnucobol/blob/master/cobc/codegen.c
+- Modelo y almacenamiento de campos: https://github.com/OCamlPro/gnucobol/blob/master/cobc/field.c
 - Manual: https://gnucobol.sourceforge.io/doc/gnucobol.html
-- El manual documenta que `cobc -E` preprocesa directivas y expande COPY; `cobc -C` traduce COBOL a C; `cobc -S` compila a ensamblador.
+
+Se inspeccionaron los archivos fuente indicados y se confirmó la separación por componentes `cobc` y `libcob` que documenta el README del espejo. El manual documenta que `cobc -E` preprocesa directivas y expande COPY; `cobc -C` traduce COBOL a C; `cobc -S` compila a ensamblador.
 
 GnuCOBOL debe seguir siendo el oráculo de ejecución. El código C emitido es una herramienta de investigación para casos concretos: comparar cómo se representa una operación, qué llamadas de runtime genera y cómo se materializan registros, archivos y control de flujo. No conviene intentar reimplementar todo el runtime de una vez.
 
