@@ -240,7 +240,9 @@ def emit_native(program: core.Program, lang: str) -> str:
     else:
         lines += ["use std::io::{self, Write};", "", "fn main() {"]
         for var in program.variables:
-            ident = core.normalize_name(var.name)
+            if var.is_group:
+                continue
+            ident = _native_ident(var, variables)
             pic = (var.pic or "").upper()
             if any(c in pic for c in "XA"):
                 width = max(1, core.pic_character_count(pic))
