@@ -2209,7 +2209,7 @@ def translate_condition(
     # lhs (for example, ws_flag.ljust(1)) for the next abbreviated literal.
     string_alternatives = re.compile(
         r"""(?P<lhs>[A-Za-z][A-Za-z0-9-]*(?:\s*\([^()]*\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*)*)"""
-        r"""\s*(?P<op>=|<>|!=|<=|>=|<|>)\s*"""
+        r"""\s*(?P<op>NOT\s*=|=|<>|!=|<=|>=|<|>)\s*"""
         r"""(?P<first>"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')"""
         r"""\s+(?P<logic>OR|AND)\s+"""
         r"""(?P<second>"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')""",
@@ -2219,8 +2219,8 @@ def translate_condition(
     for _ in range(max(1, len(cond.split()))):
         expanded = string_alternatives.sub(
             lambda match: (
-                f"{match.group('lhs')} {match.group('op')} {match.group('first')} "
-                f"{match.group('logic')} {match.group('lhs')} {match.group('op')} {match.group('second')}"
+                f"{match.group('lhs')} {('!=' if re.fullmatch(r'NOT\\s*=', match.group('op'), re.IGNORECASE) else match.group('op'))} {match.group('first')} "
+                f"{match.group('logic')} {match.group('lhs')} {('!=' if re.fullmatch(r'NOT\\s*=', match.group('op'), re.IGNORECASE) else match.group('op'))} {match.group('second')}"
             ),
             cond,
         )
