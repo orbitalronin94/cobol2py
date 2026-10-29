@@ -154,7 +154,7 @@ class PreprocessTests(unittest.TestCase):
         compile(generated, "<continued-numeric>", "exec")
 
     def test_file_section_record_descriptions_are_parsed(self):
-        source = "\\n".join([
+        source = "\n".join([
             "IDENTIFICATION DIVISION.",
             "PROGRAM-ID. FILERECORD.",
             "DATA DIVISION.",
