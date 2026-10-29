@@ -6,6 +6,8 @@ on:
     paths:
       - ".github/workflows/external-cobol-corpus.yml"
       - "cobol2py.py"
+      - "cobol2native.py"
+      - "tests/test_native_backends.py"
       - "tests/test_cobol2py.py"
       - "web/index.html"
       - "benchmarks/Dockerfile.external"
