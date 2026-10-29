@@ -2222,7 +2222,13 @@ def translate_expr(
         flags=re.IGNORECASE,
     )
     translated = re.sub(
-        r"\b(?:function\s+)?numval(?:_c)?\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
+        r"\b(?:function\s+)?numval_c\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
+        lambda match: "_cobol_numval_c(" + intrinsic_argument(match) + ")",
+        translated,
+        flags=re.IGNORECASE,
+    )
+    translated = re.sub(
+        r"\b(?:function\s+)?numval\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
         lambda match: "float(" + intrinsic_argument(match) + ")",
         translated,
         flags=re.IGNORECASE,
@@ -4893,6 +4899,27 @@ def emit_python(prog: Program) -> str:
     lines.append("        return input()")
     lines.append("    except EOFError:")
     lines.append("        return default")
+    lines.append("")
+    lines.append("def _cobol_numval_c(value):")
+    lines.append("    text = str(value).strip()")
+    lines.append("    if not text:")
+    lines.append("        return 0.0")
+    lines.append("    negative = text.startswith('(') and text.endswith(')')")
+    lines.append("    if negative:")
+    lines.append("        text = text[1:-1].strip()")
+    lines.append("    text = ''.join(char for char in text if char in '0123456789,.+-')")
+    lines.append("    if text.endswith(('+', '-')):")
+    lines.append("        sign = text[-1]")
+    lines.append("        text = text[:-1]")
+    lines.append("        if sign == '-':")
+    lines.append("            negative = not negative")
+    lines.append("    if text.startswith(('+', '-')):")
+    lines.append("        if text[0] == '-':")
+    lines.append("            negative = not negative")
+    lines.append("        text = text[1:]")
+    lines.append("    text = text.replace(',', '')")
+    lines.append("    number = float(text or '0')")
+    lines.append("    return -number if negative else number")
     lines.append("")
     lines.append("def _cobol_test_after(condition, action):")
     lines.append("    action()")
