@@ -2724,7 +2724,326 @@ def translate_group_to_group_move(
     else:
         collect_leaves(source_root, source_expr, set(), source_leaves)
 
-    target_leaves: list[tuple[str, CobolVar, int]] = def translate_statement(
+    target_leaves: list[tuple[str, CobolVar, int]] = []
+    if target_root.is_array and not target_has_subscript:
+        for index in range(target_root.occurs or 0):
+            collect_leaves(target_root, f"{target_expr}[{index}]", set(), target_leaves)
+    else:
+        collect_leaves(target_root, target_expr, set(), target_leaves)
+
+    if not source_leaves or not target_leaves:
+        return None
+
+    source_parts: list[str] = []
+    for expression, variable, width in source_leaves:
+        if variable.pic and any(char in variable.pic.upper() for char in ("X", "A")):
+            source_parts.append(f"str({expression})[:{width}].ljust({width})")
+        elif variable.pic and "9" in variable.pic.upper():
+            source_parts.append(f"str(abs(int({expression})) % (10 ** {width})).zfill({width})")
+        else:
+            source_parts.append(f"str({expression})[:{width}].ljust({width})")
+
+    assignments = ["_cobol_group_move_buffer = ''.join([" + ", ".join(source_parts) + "])"]
+    offset = 0
+    for expression, variable, width in target_leaves:
+        chunk = f"_cobol_group_move_buffer[{offset}:{offset + width}]"
+        if variable.pic and any(char in variable.pic.upper() for char in ("X", "A")):
+            assignments.append(f"{expression} = {chunk}.ljust({width})")
+        elif variable.pic and "9" in variable.pic.upper():
+            stripped = f"{chunk}.strip()"
+            assignments.append(f"{expression} = int({stripped}) if {stripped}.isdigit() else 0")
+        else:
+            assignments.append(f"{expression} = {chunk}.ljust({width})")
+        offset += width
+    return assignments
+
+def translate_group_fill_move(source: str, target: str, variables: dict[str, CobolVar]) -> Optional[list[str]]:
+    """Translate a group MOVE without replacing the group's nested storage."""
+    figuratives = {
+        "SPACE": " ",
+        "SPACES": " ",
+        "LOW-VALUE": "\\x00",
+        "LOW-VALUES": "\\x00",
+        "HIGH-VALUE": "\\xff",
+        "HIGH-VALUES": "\\xff",
+    }
+    source_text = source.strip()
+    fill_char = figuratives.get(source_text.upper())
+    all_literal = decode_cobol_all_literal(source_text)
+    quoted_literal = decode_cobol_quoted_literal(source_text)
+    repeat_payload = fill_char is not None or all_literal is not None
+    payload = fill_char if fill_char is not None else all_literal if all_literal is not None else quoted_literal
+
+    target_match = re.match(r"([A-Za-z0-9-]+)", target.strip())
+    if target_match is None:
+        return None
+    root = variables.get(target_match.group(1).upper())
+    if root is None or not root.is_group:
+        return None
+
+    target_expr = normalize_data_reference(target, variables)
+    has_explicit_subscript = bool(re.search(r"\(\s*[^)]*\)", target.strip()))
+    if root.is_array and not has_explicit_subscript and not root.occurs:
+        return None
+
+    def field_width(variable: CobolVar) -> int:
+        if variable.pic:
+            width = pic_character_count(variable.pic)
+            if width:
+                return width
+            digits = pic_digit_count(variable.pic)
+            if digits:
+                return digits
+        return 1
+
+    # A literal MOVE to a group is a byte-wise alphanumeric move: pad/truncate
+    # the complete receiving group, then distribute those bytes across leaves.
+    # Assigning the literal to the root would replace its dictionary with a
+    # string and make later qualified references fail with TypeError.
+    if payload is not None and (fill_char is not None or all_literal is not None or quoted_literal is not None):
+        leaves: list[tuple[str, CobolVar, int]] = []
+
+        def collect_leaves(group: CobolVar, group_expr: str, ancestors: set[str]) -> None:
+            if group.name.upper() in ancestors:
+                return
+            next_ancestors = ancestors | {group.name.upper()}
+            children = [
+                child for child in variables.values()
+                if (child.parent_name or "").upper() == group.name.upper()
+            ]
+            for child in children:
+                child_expr = f"{group_expr}[{normalize_name(child.name)!r}]"
+                if child.is_group and child.is_array:
+                    for index in range(child.occurs or 0):
+                        collect_leaves(child, f"{child_expr}[{index}]", next_ancestors)
+                elif child.is_group:
+                    collect_leaves(child, child_expr, next_ancestors)
+                elif child.is_array:
+                    for index in range(child.occurs or 0):
+                        leaves.append((f"{child_expr}[{index}]", child, field_width(child)))
+                else:
+                    leaves.append((child_expr, child, field_width(child)))
+
+        if root.is_array and not has_explicit_subscript:
+            for index in range(root.occurs or 0):
+                collect_leaves(root, f"{target_expr}[{index}]", set())
+        else:
+            collect_leaves(root, target_expr, set())
+
+        if leaves and all(
+            variable.pic and any(char in variable.pic.upper() for char in ("X", "A"))
+            for _, variable, _ in leaves
+        ):
+            total_width = sum(width for _, _, width in leaves)
+            if repeat_payload:
+                if payload:
+                    complete = (payload * ((total_width + len(payload) - 1) // len(payload)))[:total_width]
+                else:
+                    complete = " " * total_width
+            else:
+                complete = (payload or "")[:total_width].ljust(total_width)
+            assignments: list[str] = []
+            offset = 0
+            for expression, _, width in leaves:
+                assignments.append(f"{expression} = {complete[offset:offset + width]!r}")
+                offset += width
+            return assignments or None
+
+    # Preserve the established fieldwise handling for figurative constants
+    # when numeric elementary fields prevent a byte-wise string representation.
+    if fill_char is None:
+        return None
+    assignments = []
+
+    def visit(group: CobolVar, group_expr: str, ancestors: set[str]) -> None:
+        if group.name.upper() in ancestors:
+            return
+        next_ancestors = ancestors | {group.name.upper()}
+        children = [
+            child for child in variables.values()
+            if (child.parent_name or "").upper() == group.name.upper()
+        ]
+        for child in children:
+            child_expr = f"{group_expr}[{normalize_name(child.name)!r}]"
+            if child.is_group and not child.is_array:
+                visit(child, child_expr, next_ancestors)
+                continue
+            if child.is_group and child.is_array:
+                for index in range(child.occurs or 0):
+                    visit(child, f"{child_expr}[{index}]", next_ancestors)
+                continue
+            value = repr(fill_char * field_width(child))
+            if child.is_array:
+                value = f"[{value}] * {child.occurs}" if child.occurs else "[]"
+            assignments.append(f"{child_expr} = {value}")
+
+    if root.is_array and not has_explicit_subscript:
+        for index in range(root.occurs or 0):
+            visit(root, f"{target_expr}[{index}]", set())
+    else:
+        visit(root, target_expr, set())
+    return assignments or None
+
+def translate_move_value(source: str, target: str, variables: dict[str, CobolVar]) -> str:
+    """Translate MOVE with basic receiving-field size semantics.
+
+    For alphanumeric PICs, COBOL right-pads short values with spaces and
+    truncates values that exceed the receiving field. Other PIC categories
+    retain the existing simple assignment behavior.
+    """
+    value = translate_literal(source, variables)
+    target_base = re.match(r"([A-Za-z0-9-]+)", target)
+    variable = variables.get(target_base.group(1).upper()) if target_base else None
+    whole_array = bool(
+        variable is not None and variable.is_array and not variable.is_group
+        and variable.occurs and "(" not in target
+    )
+
+    def fit_array(expression: str) -> str:
+        if whole_array and variable is not None and variable.occurs:
+            return f"[{expression}] * {variable.occurs}"
+        return expression
+
+    if variable is not None and variable.pic:
+        pic = variable.pic.upper()
+        if "X" in pic or "A" in pic:
+            width = pic_character_count(pic)
+            if width:
+                all_literal = decode_cobol_all_literal(source.strip())
+                if all_literal is not None:
+                    return fit_array(repr((all_literal * width)[:width]))
+                if source.strip().upper() in ("SPACE", "SPACES"):
+                    return fit_array(repr(" " * width))
+                if source.strip().upper() in ("LOW-VALUE", "LOW-VALUES"):
+                    return fit_array(repr("\x00" * width))
+                if source.strip().upper() in ("HIGH-VALUE", "HIGH-VALUES"):
+                    return fit_array(repr("\xff" * width))
+                return fit_array(f"str({value})[:{width}].ljust({width})")
+        # Numeric MOVE keeps the low-order receiving digits. For implied
+        # decimal pictures, scale first, truncate excess fractional digits,
+        # then retain the receiving picture's total digit capacity.
+        if "9" in pic and "P" not in pic:
+            digits = pic_digit_count(pic)
+            if "V" in pic:
+                scale = pic_digit_count(pic.split("V", 1)[1])
+                if digits:
+                    factor = 10 ** scale
+                    magnitude = f"int(abs(float({value})) * {factor}) % (10 ** {digits})"
+                    sign = f"(-1 if float({value}) < 0 else 1)"
+                    return fit_array(f"{sign} * ({magnitude} / {factor})")
+            elif digits:
+                if "S" in pic:
+                    return fit_array(f"(-1 if int({value}) < 0 else 1) * (abs(int({value})) % (10 ** {digits}))")
+                return fit_array(f"int({value}) % (10 ** {digits})")
+    return fit_array(value)
+
+
+COBOL_TOKEN_RE = re.compile(
+    r'"(?:[^"]|"")*"|\'(?:[^\']|\'\')*\'|[A-Za-z][A-Za-z0-9-]*(?:\s*\([A-Za-z0-9_-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*)?|,?\s*|(?:\S+)',
+    re.IGNORECASE,
+)
+
+
+def split_cobol_items(s: str) -> list[str]:
+    """Split DISPLAY operands at top-level whitespace/commas, preserving groups."""
+    tokens: list[str] = []
+    current: list[str] = []
+    depth = 0
+    quote: Optional[str] = None
+    i = 0
+    while i < len(s):
+        char = s[i]
+        if quote is not None:
+            current.append(char)
+            if char == quote:
+                if i + 1 < len(s) and s[i + 1] == quote:
+                    current.append(s[i + 1])
+                    i += 2
+                    continue
+                quote = None
+            i += 1
+            continue
+        if char in ("'", '"'):
+            quote = char
+            current.append(char)
+        elif char == "(":
+            depth += 1
+            current.append(char)
+        elif char == ")":
+            depth = max(0, depth - 1)
+            current.append(char)
+        elif depth == 0 and (char.isspace() or char == ","):
+            token = "".join(current).strip()
+            if token:
+                tokens.append(token)
+            current = []
+        else:
+            current.append(char)
+        i += 1
+    token = "".join(current).strip()
+    if token:
+        tokens.append(token)
+
+    # Qualification is part of a COBOL data reference, not a separate DISPLAY
+    # operand. Rejoin tokens such as FIELD OF GROUP after top-level splitting.
+    combined: list[str] = []
+    i = 0
+    while i < len(tokens):
+        token = tokens[i]
+        while i + 2 < len(tokens) and tokens[i + 1].upper() in ("OF", "IN"):
+            token = f"{token} {tokens[i + 1]} {tokens[i + 2]}"
+            i += 2
+        combined.append(token)
+        i += 1
+
+    # Some source files wrap a comma-separated DISPLAY operand list in an
+    # extra pair of parentheses. Treat that as adjacent DISPLAY operands,
+    # not as a Python tuple containing COBOL numeric literals.
+    expanded: list[str] = []
+    for token in combined:
+        wrapped = re.fullmatch(r"\(\s*(.+?)\s*\)", token)
+        if wrapped and "," in wrapped.group(1):
+            inner_items = split_cobol_items(wrapped.group(1))
+            if len(inner_items) > 1:
+                expanded.extend(inner_items)
+                continue
+        expanded.append(token)
+    return expanded
+
+
+DATA_REF_PATTERN = r"[A-Za-z0-9-]+(?:\s*\([A-Za-z0-9_,;:+*/\s-]+\)){0,2}(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?"
+
+
+def emit_reference_modification_move(
+    source: str,
+    target: str,
+    variables: dict[str, CobolVar],
+) -> Optional[str]:
+    """Translate MOVE into a COBOL reference-modification target.
+
+    COBOL strings are immutable in Python, so replace the receiving field with
+    a prefix + padded replacement + suffix instead of assigning to a string
+    character/slice. This also works for a table element such as FIELD(1)(2:3).
+    """
+    match = re.fullmatch(r"(.+?)\s*\(\s*([^():]+)\s*:\s*([^()]*)\)", target.strip())
+    if not match:
+        return None
+    base, start, length = (part.strip() for part in match.groups())
+    base_expr = normalize_data_reference(base, variables)
+    start_expr = f"(int({translate_expr(start, variables)}) - 1)"
+    if length:
+        length_expr = f"int({translate_expr(length, variables)})"
+    else:
+        length_expr = f"(len(str({base_expr})) - {start_expr})"
+    value_expr = translate_move_value(source, base, variables)
+    return (
+        f"{base_expr} = str({base_expr})[:{start_expr}] + "
+        f"str({value_expr})[:{length_expr}].ljust({length_expr}) + "
+        f"str({base_expr})[({start_expr}) + ({length_expr}):]"
+    )
+
+
+def translate_statement(
     stmt: str,
     paragraphs: set[str],
     variables: Optional[dict[str, CobolVar]] = None,
@@ -3261,284 +3580,6 @@ def translate_group_to_group_move(
     )
     if m and m.group(1).upper() in paragraphs and m.group(2).upper() in paragraphs:
         return [f"_cobol_perform_range({m.group(1).upper()!r}, {m.group(2).upper()!r})"]
-
-    m = re.match(r"PERFORM\s+([A-Za-z0-9\-]+)\s+(\d+)\s+TIMES", s, re.IGNORECASE)
-    if m and m.group(1).upper() in paragraphs:
-        return [f"for _ in range({int(m.group(2))}):", f"{normalize_name(m.group(1))}()"]
-
-    m = re.match(r"PERFORM\s+([A-Za-z0-9\-]+)\s+UNTIL\s+(.+)", s, re.IGNORECASE)
-    if m and m.group(1).upper() in paragraphs:
-        return [
-            f"while not ({translate_condition(m.group(2), variables or {}, condition_names)}):",
-            f"{normalize_name(m.group(1))}()",
-        ]
-
-    m = re.match(r"PERFORM\s+([A-Za-z0-9\-]+)", s, re.IGNORECASE)
-    if m and m.group(1).upper() in paragraphs:
-        return [f"{normalize_name(m.group(1))}()"]
-
-    if upper.startswith("PERFORM"):
-        return [f"# PERFORM no traducido: {s}"]
-
-    return [f"# COBOL no traducido: {s}"]
-
-
-r: str, ancestors: set[str]) -> None:
-                if group.name.upper() in ancestors:
-                    return
-                next_ancestors = ancestors | {group.name.upper()}
-                children = [
-                    child for child in variable_map.values()
-                    if child.parent_name and child.parent_name.upper() == group.name.upper()
-                ]
-                for child in children:
-                    child_expr = f"{group_expr}[{normalize_name(child.name)!r}]"
-                    if child.is_group:
-                        if child.is_array:
-                            for index in range(child.occurs or 0):
-                                initialize_group(child, f"{child_expr}[{index}]", next_ancestors)
-                        else:
-                            initialize_group(child, child_expr, next_ancestors)
-                        continue
-                    value = initial_storage_value(child)
-                    if child.is_array:
-                        value = f"[{value}] * {child.occurs}" if child.occurs else "[]"
-                    assignments.append(f"{child_expr} = {value}")
-
-            if root.is_array:
-                if has_explicit_subscript:
-                    initialize_group(root, target_expr, set())
-                else:
-                    for index in range(root.occurs or 0):
-                        initialize_group(root, f"{target_expr}[{index}]", set())
-            else:
-                initialize_group(root, target_expr, set())
-        return assignments or [f"# INITIALIZE sin campos traducibles: {s}"]
-    # ALTER changes the destination of a later GO TO to the altered paragraph.
-    m = re.fullmatch(r"ALTER\s+([A-Za-z0-9-]+)\s+TO\s+PROCEED\s+TO\s+([A-Za-z0-9-]+)", s, re.IGNORECASE)
-    if m:
-        altered, target = (part.upper() for part in m.groups())
-        if altered in paragraphs and target in paragraphs:
-            return [f"_cobol_alter_targets[{altered!r}] = {target!r}"]
-        return [f"# COBOL no traducido: {s}"]
-
-    # GO TO ... DEPENDING ON uses ordinal (1-based) selection. An out-of-range
-    # selector performs no transfer and execution continues with the next statement.
-    m = re.fullmatch(
-        r"GO\s+TO\s+([A-Za-z0-9-]+(?:\s+[A-Za-z0-9-]+)*)\s+DEPENDING\s+ON\s+([A-Za-z0-9-]+)",
-        s, re.IGNORECASE,
-    )
-    if m:
-        targets = [item.upper() for item in m.group(1).split()]
-        selector = normalize_data_reference(m.group(2), variables)
-        if targets and all(target in paragraphs for target in targets):
-            choices = ", ".join(repr(target) for target in targets)
-            return [
-                f"if 1 <= int({selector}) <= {len(targets)}:",
-                f"raise _CobolGoTo(({choices})[int({selector}) - 1])",
-            ]
-        return [f"# COBOL no traducido: {s}"]
-
-    m = re.fullmatch(r"GO\s+TO\s+([A-Za-z0-9-]+)", s, re.IGNORECASE)
-    if m:
-        target = m.group(1).upper()
-        if target in paragraphs:
-            # ALTER redirects the unconditional GO TO inside the altered
-            # paragraph, not every GO TO whose target happens to be that paragraph.
-            source = current_paragraph.upper() if current_paragraph else ""
-            return [f"raise _CobolGoTo(_cobol_alter_targets.get({source!r}, {target!r}))"]
-        return [f"# COBOL no traducido: {s}"]
-    if upper.startswith("EXIT PROGRAM") or upper == "GOBACK":
-        return ["return"]
-    if upper in ("CONTINUE", "EXIT"):
-        return ["pass"]
-
-    m = re.match(r"DISPLAY\s+(.+)", s, re.IGNORECASE)
-    if m:
-        display_operands = m.group(1).strip()
-        no_advancing = bool(
-            re.search(r"\s+WITH\s+NO\s+ADVANCING\s*$", display_operands, re.IGNORECASE)
-        )
-        if no_advancing:
-            display_operands = re.sub(
-                r"\s+WITH\s+NO\s+ADVANCING\s*$", "", display_operands, flags=re.IGNORECASE
-            ).rstrip()
-        args = split_cobol_items(display_operands)
-        # COBOL DISPLAY concatenates operands. Numeric DISPLAY items also
-        # retain the zero-filled width specified by their PIC clause.
-        items = ", ".join(
-            translate_display_item(a, variables or {}) for a in args
-        )
-        if no_advancing:
-            return [f'print("".join([{items}]), end="")']
-        return [f'print("".join([{items}]))']
-
-    m = re.match(rf"ACCEPT\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
-    if m:
-        target = m.group(1)
-        target_expr = normalize_data_reference(target, variables)
-        base = re.match(r"[A-Za-z0-9-]+", target)
-        variable = variables.get(base.group(0).upper()) if base and variables else None
-        if variable is None or not variable.pic:
-            return [emit_assignment(target, "_cobol_input()", variables)]
-        pic = variable.pic.upper()
-        if any(char in pic for char in ("X", "A")):
-            width = pic_character_count(pic)
-            if width:
-                return [emit_assignment(target, f"str(_cobol_input())[:{width}].ljust({width})", variables)]
-            return [f"{target_expr} = _cobol_input()"]
-        if "9" in pic:
-            digits = pic_digit_count(pic)
-            if "V" in pic:
-                scale = pic_digit_count(pic.split("V", 1)[1])
-                factor = 10 ** scale
-                value = (
-                    f"(-1 if float(_cobol_accept_value) < 0 else 1) * "
-                    f"((int(abs(float(_cobol_accept_value)) * {factor}) % (10 ** {digits})) / {factor})"
-                )
-            elif "S" in pic:
-                value = (
-                    f"(-1 if int(_cobol_accept_value) < 0 else 1) * "
-                    f"(abs(int(_cobol_accept_value)) % (10 ** {digits}))"
-                )
-            else:
-                value = f"int(_cobol_accept_value) % (10 ** {digits})"
-            return ["_cobol_accept_value = _cobol_input('0')", emit_assignment(target, value, variables)]
-        return [f"{target_expr} = _cobol_input()"]
-
-    m = re.fullmatch(r"SET\s+([A-Za-z0-9-]+)\s+TO\s+TRUE", s, re.IGNORECASE)
-    if m and condition_names:
-        condition = condition_names.get(m.group(1).upper())
-        if condition and condition[1]:
-            parent_name, allowed_values = condition
-            return [emit_assignment(parent_name, translate_literal(allowed_values[0][0], variables), variables)]
-
-    m = re.fullmatch(rf"SET\s+({DATA_REF_PATTERN})\s+TO\s+(.+)", s, re.IGNORECASE)
-    if m:
-        target, source = m.groups()
-        return [emit_assignment(target, translate_literal(source, variables), variables)]
-
-    m = re.match(
-        rf"MOVE\s+(?:CORRESPONDING|CORR)\s+({DATA_REF_PATTERN})\s+TO\s+({DATA_REF_PATTERN})$",
-        s,
-        re.IGNORECASE,
-    )
-    if m:
-        source_group, target_group = m.groups()
-        source_root = re.match(r"[A-Za-z0-9-]+", source_group).group(0)
-        target_root = re.match(r"[A-Za-z0-9-]+", target_group).group(0)
-        variable_map = variables or {}
-
-        def leaf_paths(group_name: str, group_expr: str, ancestors: set[str]) -> dict[str, list[tuple[str, CobolVar]]]:
-            paths: dict[str, list[tuple[str, CobolVar]]] = {}
-            if group_name.upper() in ancestors:
-                return paths
-            next_ancestors = ancestors | {group_name.upper()}
-            for item in variable_map.values():
-                if (item.parent_name or "").upper() != group_name.upper():
-                    continue
-                child_expr = f"{group_expr}[{normalize_name(item.name)!r}]"
-                if item.is_group:
-                    nested = leaf_paths(item.name, child_expr, next_ancestors)
-                    for leaf_name, matches in nested.items():
-                        paths.setdefault(leaf_name, []).extend(matches)
-                else:
-                    paths.setdefault(item.name.upper(), []).append((child_expr, item))
-            return paths
-
-        source_paths = leaf_paths(source_root, normalize_data_reference(source_root, variable_map), set())
-        target_paths = leaf_paths(target_root, normalize_data_reference(target_root, variable_map), set())
-        assignments: list[str] = []
-        for leaf_name in sorted(source_paths.keys() & target_paths.keys()):
-            if len(source_paths[leaf_name]) != 1 or len(target_paths[leaf_name]) != 1:
-                continue
-            source_expr, _source_var = source_paths[leaf_name][0]
-            target_expr, target_var = target_paths[leaf_name][0]
-            value_expr = source_expr
-            if target_var.pic and any(char in target_var.pic.upper() for char in ("X", "A")):
-                width = pic_character_count(target_var.pic)
-                if width:
-                    value_expr = f"str({source_expr})[:{width}].ljust({width})"
-            else:
-                value_expr = fit_numeric_expression(source_expr, target_var.name, variable_map)
-            assignments.append(f"{target_expr} = {value_expr}")
-        return assignments or [f"# MOVE CORRESPONDING sin campos comunes traducibles: {source_root} TO {target_root}"]
-
-    m = re.match(rf"MOVE\s+(.+?)\s+TO\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
-    if m:
-        source, target = m.groups()
-        variable_map = variables or {}
-        reference_modification = emit_reference_modification_move(source, target, variable_map)
-        if reference_modification is not None:
-            return [reference_modification]
-        group_fill = translate_group_fill_move(source, target, variable_map)
-        if group_fill is not None:
-            return group_fill
-        group_move = translate_group_to_group_move(source, target, variable_map)
-        if group_move is not None:
-            return group_move
-        value = translate_move_value(source, target, variable_map)
-        return [emit_assignment(target, value, variables)]
-
-    m = re.match(rf"COMPUTE\s+({DATA_REF_PATTERN})\s*=\s*(.+)", s, re.IGNORECASE)
-    if m:
-        target = m.group(1)
-        target_expr = normalize_data_reference(target, variables)
-        expression_source = re.split(
-            r"\s+(?:NOT\s+)?ON\s+SIZE\s+ERROR\b",
-            m.group(2),
-            maxsplit=1,
-            flags=re.IGNORECASE,
-        )[0]
-        expression_source = re.sub(r"\s+END-COMPUTE\s*$", "", expression_source, flags=re.IGNORECASE)
-        expression = translate_expr(expression_source, variables)
-        return [emit_assignment(target, fit_numeric_expression(expression, target, variables or {}), variables)]
-
-    # Patch 4: ADD con múltiples operandos
-    # ADD ... TO ... GIVING stores the sum in a separate receiving item.
-    m = re.match(
-        rf"ADD\s+(.+?)\s+TO\s+({DATA_REF_PATTERN})\s+GIVING\s+({DATA_REF_PATTERN})$",
-        s, re.IGNORECASE,
-    )
-    if m:
-        operands = split_cobol_items(m.group(1))
-        sum_expr = " + ".join(translate_literal(o, variables) for o in operands)
-        receiver = normalize_data_reference(m.group(2), variables)
-        target = m.group(3)
-        expression = f"{receiver} + ({sum_expr})"
-        return [emit_assignment(target, fit_numeric_expression(expression, target, variables or {}), variables)]
-
-    m = re.match(rf"ADD\s+(.+?)\s+TO\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
-    if m:
-        operands = split_cobol_items(m.group(1))
-        sum_expr = " + ".join(translate_literal(o, variables) for o in operands)
-        target = m.group(2)
-        target_expr = normalize_data_reference(target, variables)
-        expression = f"{target_expr} + ({sum_expr})"
-        return [emit_assignment(target, fit_numeric_expression(expression, target, variables or {}), variables)]
-
-    m = re.match(rf"SUBTRACT\s+(.+?)\s+FROM\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
-    if m:
-        operands = split_cobol_items(m.group(1))
-        sum_expr = " + ".join(translate_literal(o, variables) for o in operands)
-        target = m.group(2)
-        target_expr = normalize_data_reference(target, variables)
-        expression = f"{target_expr} - ({sum_expr})"
-        return [emit_assignment(target, fit_numeric_expression(expression, target, variables or {}), variables)]
-
-    m = re.match(rf"MULTIPLY\s+(.+?)\s+BY\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
-    if m:
-        target = m.group(2)
-        target_expr = normalize_data_reference(target, variables)
-        expression = f"{target_expr} * ({translate_literal(m.group(1), variables)})"
-        return [emit_assignment(target, fit_numeric_expression(expression, target, variables or {}), variables)]
-
-    m = re.match(rf"DIVIDE\s+(.+?)\s+INTO\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
-    if m:
-        target = m.group(2)
-        target_expr = normalize_data_reference(target, variables)
-        expression = f"{target_expr} / ({translate_literal(m.group(1), variables)})"
-        return [emit_assignment(target, fit_numeric_expression(expression, target, variables or {}), variables)]
 
     m = re.match(r"PERFORM\s+([A-Za-z0-9\-]+)\s+(\d+)\s+TIMES", s, re.IGNORECASE)
     if m and m.group(1).upper() in paragraphs:
