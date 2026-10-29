@@ -168,3 +168,12 @@ Fuentes: [CobGo converter](https://github.com/CoreBankLang/CobGo_community/blob/
 5. Tratar ODO como una familia transversal que afecta tamaño, referencias y control de iteración; diseñar una batería pequeña de pruebas diferenciales antes de tocarla.
 
 No se afirma aún ninguna mejora porcentual derivada de esta investigación. El benchmark externo completo, en el mismo SHA, es el criterio para aceptar una optimización.
+
+
+### GnuCOBOL: subíndices y ODO se comprueban semánticamente antes del codegen
+
+En `cobc/typeck.c`, la resolución de referencias compara el número de subíndices suministrados con las dimensiones declaradas (`f->indexes`), rechaza accesos a campos sin `OCCURS`, y puede emitir comprobaciones de límites y de la longitud activa de una tabla `OCCURS DEPENDING ON`. La validación ODO también comprueba que el controlador sea numérico y aplica reglas sobre su posición, campos posteriores y anidamiento según el dialecto.
+
+**Implicación concreta para los errores de Cobol2Py:** los casos en que una lista se indexa por una clave de texto o se omite una dimensión no se arreglan solo convirtiendo el índice a entero. El resolver debe saber cuántas dimensiones espera cada símbolo, qué nivel de tabla corresponde a cada subíndice y si el acceso está dentro del rango activo de ODO. Crear fixtures diferenciales para: número correcto/incorrecto de subíndices, tabla de una y varias dimensiones, índice literal y variable, y lectura/escritura dentro y fuera del rango ODO.
+
+Fuente inspeccionada: [`cobc/typeck.c`](https://github.com/OCamlPro/gnucobol/blob/master/cobc/typeck.c), comprobación de subíndices y validación de `OCCURS DEPENDING`.
