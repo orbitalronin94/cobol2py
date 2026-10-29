@@ -58,8 +58,8 @@ def main() -> int:
             row["reference_returncode"] = reference["returncode"]
             commands = {
                 "python": ["python3", "-I", str(ROOT / "cobol2py.py"), str(source), "--format", "auto"],
-                "c": ["python3", "-I", str(ROOT / "cobol2native.py"), str(source), "--lang", "c", "--source-format", "auto"],
-                "rust": ["python3", "-I", str(ROOT / "cobol2native.py"), str(source), "--lang", "rust", "--source-format", "auto"]}
+                "c": ["python3", str(ROOT / "cobol2native.py"), str(source), "--lang", "c", "--source-format", "auto"],
+                "rust": ["python3", str(ROOT / "cobol2native.py"), str(source), "--lang", "rust", "--source-format", "auto"]}
             for lang, command in commands.items():
                 work = case_dir / lang
                 work.mkdir()
