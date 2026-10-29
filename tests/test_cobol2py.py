@@ -422,9 +422,18 @@ class TranslationTests(unittest.TestCase):
             "\n".join(cobol2py.translate_java_statement("ACCEPT WS-TEXT", set(), variables)),
         )
 
-    def test_display_of_implied_decimal_pic_preserves_decimal_point(self):
+    def test_display_of_implied_decimal_pic_omits_decimal_point(self):
         variables = {
             "WS-RATE": cobol2py.CobolVar(level=1, name="WS-RATE", pic="9(3)V99")
+        }
+        self.assertEqual(
+            cobol2py.translate_display_item("WS-RATE", variables),
+            "str(int(round(abs(float(ws_rate)) * 100))).zfill(5)",
+        )
+
+    def test_display_of_explicit_decimal_pic_preserves_decimal_point(self):
+        variables = {
+            "WS-RATE": cobol2py.CobolVar(level=1, name="WS-RATE", pic="999.99")
         }
         self.assertEqual(
             cobol2py.translate_display_item("WS-RATE", variables),
