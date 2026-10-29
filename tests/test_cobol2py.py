@@ -2646,7 +2646,7 @@ class GroupMoveFillRegressionTests(unittest.TestCase):
         from contextlib import redirect_stdout
         from io import StringIO
 
-        source = "\\n".join([
+        source = "\n".join([
             "IDENTIFICATION DIVISION.",
             "PROGRAM-ID. GROUPLITERAL.",
             "DATA DIVISION.",
@@ -2669,7 +2669,7 @@ class GroupMoveFillRegressionTests(unittest.TestCase):
         output = StringIO()
         with redirect_stdout(output):
             namespace["main"]()
-        self.assertEqual(output.getvalue(), "AB  \\n")
+        self.assertEqual(output.getvalue(), "AB  \n")
 
     def test_move_space_to_occurs_group_fills_each_row_without_replacing_table(self):
         variables = {
