@@ -1751,6 +1751,48 @@ class ImpliedDecimalDisplayRegressionTests(unittest.TestCase):
         self.assertNotIn(".", eval(expression, {"ws_rate": 234.56}))
 
 
+class InlinePerformUntilRegressionTests(unittest.TestCase):
+    def _run_program(self, perform_header):
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. PERFORMUNTIL.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-COUNT PIC 9 VALUE 0.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            perform_header,
+            "ADD 1 TO WS-COUNT",
+            "END-PERFORM.",
+            "DISPLAY WS-COUNT.",
+            "STOP RUN.",
+        ])
+        generated = cobol2py.emit_python(
+            cobol2py.parse_cobol(source, source_format="free")
+        )
+        compile(generated, "<perform-until>", "exec")
+        namespace = {"__name__": "not_main"}
+        exec(generated, namespace)
+        try:
+            namespace["main"]()
+        except namespace["_CobolStopRun"]:
+            pass
+        return namespace["ws_count"], generated
+
+    def test_perform_until_checks_condition_before_body(self):
+        count, generated = self._run_program("PERFORM UNTIL WS-COUNT >= 3")
+        self.assertEqual(count, 3)
+        self.assertIn("while not (", generated)
+
+    def test_perform_test_after_executes_body_before_check(self):
+        count, generated = self._run_program(
+            "PERFORM WITH TEST AFTER UNTIL WS-COUNT >= 3"
+        )
+        self.assertEqual(count, 3)
+        self.assertIn("while True:", generated)
+        self.assertIn("break", generated)
+
+
 if __name__ == "__main__":
     unittest.main()
 
