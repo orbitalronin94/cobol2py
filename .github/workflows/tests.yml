@@ -40,7 +40,7 @@ jobs:
       - name: Run regression tests
         run: python -m unittest discover -s tests -v
       - name: Compile translator and external benchmark runner
-        run: python -m py_compile cobol2py.py benchmarks/run_external_corpus.py
+        run: python -m py_compile cobol2py.py cobol2native.py benchmarks/run_external_corpus.py benchmarks/run_external_multilang.py benchmarks/run_multilang_benchmark.py
 
   gnucobol-reference:
     runs-on: ubuntu-latest
