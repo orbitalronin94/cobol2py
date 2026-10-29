@@ -2219,8 +2219,8 @@ def translate_condition(
     for _ in range(max(1, len(cond.split()))):
         expanded = string_alternatives.sub(
             lambda match: (
-                f"{match.group('lhs')} {('!=' if re.fullmatch(r'NOT\\s*=', match.group('op'), re.IGNORECASE) else match.group('op'))} {match.group('first')} "
-                f"{match.group('logic')} {match.group('lhs')} {('!=' if re.fullmatch(r'NOT\\s*=', match.group('op'), re.IGNORECASE) else match.group('op'))} {match.group('second')}"
+                f"{match.group('lhs')} {('!=' if match.group('op').upper().startswith('NOT') else match.group('op'))} {match.group('first')} "
+                f"{match.group('logic')} {match.group('lhs')} {('!=' if match.group('op').upper().startswith('NOT') else match.group('op'))} {match.group('second')}"
             ),
             cond,
         )
