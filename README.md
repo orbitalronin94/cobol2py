@@ -80,6 +80,18 @@ rustc programa.rs -o programa-rust
 
 La cobertura inicial se limita a almacenamiento elemental de nivel superior con PIC alfanumérico o entero simple, DISPLAY, MOVE literal/referencia simple, ADD básico y terminación. Grupos, OCCURS, REDEFINES, control de flujo estructurado, decimales y muchas otras construcciones todavía no están soportadas. Consulta [alcance y arquitectura prevista](docs/native-backends.md).
 
+#### Benchmark pareado de Python, C y Rust
+
+El workflow [multilang-benchmark](.github/workflows/multilang-benchmark.yml) compila y ejecuta las salidas C y Rust y las compara, junto con Python, contra la misma referencia GnuCOBOL en las fixtures de `benchmarks/cases.json`. Una coincidencia exige stdout idéntico byte a byte y el mismo código de retorno. Las construcciones no soportadas, errores de traducción/compilación y diferencias de salida cuentan como fallos; los casos cuya referencia GnuCOBOL no compile o no termine se identifican aparte y no entran en el denominador. Los informes Markdown y JSON se publican como artefacto de CI.
+
+Ejecuta localmente con Python, GnuCOBOL, un compilador C y Rust instalados:
+
+```bash
+python3 benchmarks/run_multilang_benchmark.py --output-dir /tmp/cobol2py-multilang
+```
+
+El primer benchmark usa el corpus versionado (102 casos), no el corpus externo de 500 programas. Los porcentajes se documentan cuando termine el workflow; hasta entonces no se deben inferir resultados. Consulta las decisiones [D-042 a D-044](docs/decisions.md) para la motivación de los dos backends nuevos y el método para convertir discrepancias en regresiones de Python.
+
 Los resultados de C, Rust y Python deberán medirse contra GnuCOBOL con las mismas muestras congeladas, sin comparar porcentajes de corpus distintos ni asumir que un lenguaje es más fiel por diseño.
 
 ### Usar solo el traductor
