@@ -2602,13 +2602,20 @@ def translate_condition(
         r"\s+(?P<logic>and|or)\s+(?P<op2>==|!=|<=|>=|<|>)?\s*(?P<second>" + atom_pattern + r")(?![a-z0-9_])(?!\s*(?:==|!=|<=|>=|<|>))",
         re.IGNORECASE,
     )
-    translated = abbreviated.sub(
-        lambda match: (
-            f"{match.group('lhs')} {match.group('op')} {match.group('first')} "
-            f"{match.group('logic')} {match.group('lhs')} {match.group('op2') or match.group('op')} {match.group('second')}"
-        ),
-        translated,
-    )
+    # A condition may abbreviate more than one successive alternative
+    # (A = 1 OR 2 OR 3 OR 4). Expand one adjacent pair per pass until stable;
+    # a single re.sub pass leaves the trailing alternatives bare.
+    for _ in range(max(1, len(translated.split()))):
+        expanded = abbreviated.sub(
+            lambda match: (
+                f"{match.group('lhs')} {match.group('op')} {match.group('first')} "
+                f"{match.group('logic')} {match.group('lhs')} {match.group('op2') or match.group('op')} {match.group('second')}"
+            ),
+            translated,
+        )
+        if expanded == translated:
+            break
+        translated = expanded
     return translated
 
 def pic_digit_count(pic: str) -> int:

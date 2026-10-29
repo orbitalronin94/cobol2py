@@ -2073,6 +2073,15 @@ class AbbreviatedCombinedConditionRegressionTests(unittest.TestCase):
         self.assertTrue(eval(translated, {"ws_num": 2}))
         self.assertFalse(eval(translated, {"ws_num": 3}))
 
+    def test_three_or_more_abbreviated_values_repeat_subject_and_operator(self):
+        translated = cobol2py.translate_condition("WS-NUM = 1 OR 2 OR 3 OR 4")
+        self.assertEqual(
+            translated,
+            "ws_num == 1 or ws_num == 2 or ws_num == 3 or ws_num == 4",
+        )
+        self.assertTrue(eval(translated, {"ws_num": 4}))
+        self.assertFalse(eval(translated, {"ws_num": 5}))
+
     def test_two_complete_conditions_are_not_treated_as_abbreviated(self):
         translated = cobol2py.translate_condition("WS-A > 1 AND WS-B > 2")
         self.assertEqual(translated, "ws_a > 1 and ws_b > 2")
