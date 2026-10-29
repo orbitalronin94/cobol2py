@@ -3024,6 +3024,37 @@ def emit_corresponding_arithmetic(
     return assignments
 
 
+def split_move_clause(text: str) -> Optional[tuple[str, str]]:
+    """Split a MOVE body at its TO keyword, ignoring quoted literals and subscripts."""
+    quote: Optional[str] = None
+    depth = 0
+    i = 0
+    while i < len(text):
+        char = text[i]
+        if quote is not None:
+            if char == quote:
+                if i + 1 < len(text) and text[i + 1] == quote:
+                    i += 2
+                    continue
+                quote = None
+        elif char in ("'", '"'):
+            quote = char
+        elif char == "(":
+            depth += 1
+        elif char == ")":
+            depth = max(0, depth - 1)
+        elif depth == 0 and text[i:i + 2].upper() == "TO":
+            before_ok = i > 0 and text[i - 1].isspace()
+            after_ok = i + 2 < len(text) and text[i + 2].isspace()
+            if before_ok and after_ok:
+                source = text[:i].strip()
+                targets = text[i + 2:].strip()
+                if source and targets:
+                    return source, targets
+        i += 1
+    return None
+
+
 def translate_statement(
     stmt: str,
     paragraphs: set[str],
@@ -3426,6 +3457,37 @@ def translate_statement(
                 value_expr = fit_numeric_expression(source_expr, target_var.name, variable_map)
             assignments.append(f"{target_expr} = {value_expr}")
         return assignments or [f"# MOVE CORRESPONDING sin campos comunes traducibles: {source_root} TO {target_root}"]
+
+    # COBOL MOVE permits several receiving identifiers: MOVE A TO B C.
+    # Expand each receiver independently so PIC-width and group-storage rules
+    # are applied exactly as they are for the existing single-target path.
+    if upper.startswith("MOVE ") and not re.match(r"^MOVE\s+(?:CORRESPONDING|CORR)\b", s, re.IGNORECASE):
+        split_clause = split_move_clause(s[5:].strip())
+        if split_clause:
+            source, target_text = split_clause
+            targets = split_cobol_items(target_text)
+            if len(targets) > 1 and all(
+                re.fullmatch(DATA_REF_PATTERN, target, re.IGNORECASE)
+                for target in targets
+            ):
+                variable_map = variables or {}
+                assignments: list[str] = []
+                for target in targets:
+                    reference_modification = emit_reference_modification_move(source, target, variable_map)
+                    if reference_modification is not None:
+                        assignments.append(reference_modification)
+                        continue
+                    group_fill = translate_group_fill_move(source, target, variable_map)
+                    if group_fill is not None:
+                        assignments.extend(group_fill)
+                        continue
+                    group_move = translate_group_move(source, target, variable_map)
+                    if group_move is not None:
+                        assignments.extend(group_move)
+                        continue
+                    value = translate_move_value(source, target, variable_map)
+                    assignments.append(emit_assignment(target, value, variable_map))
+                return assignments
 
     m = re.match(rf"MOVE\s+(.+?)\s+TO\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
