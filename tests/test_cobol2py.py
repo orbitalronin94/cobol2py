@@ -428,7 +428,7 @@ class TranslationTests(unittest.TestCase):
         }
         self.assertEqual(
             cobol2py.translate_display_item("WS-RATE", variables),
-            "str(int(round(abs(float(ws_rate)) * 100))).zfill(5)",
+            "format(float(ws_rate), '06.2f')",
         )
 
     def test_display_of_explicit_decimal_pic_preserves_decimal_point(self):

@@ -183,7 +183,7 @@ No se ha confirmado todavía una subida del benchmark comparable de Python; los 
 - Añadida clasificación estable de rechazos C/Rust en el reporte del benchmark, sin publicar texto fuente externo.
 - Añadidos tests para las categorías de diagnóstico.
 - Añadido soporte para `PERFORM` inline, `PERFORM n TIMES`, `PERFORM UNTIL` y `PERFORM VARYING` en Python/C/Rust, con regresiones de generación y semántica.
-- Corregida la representación de `DISPLAY` para campos numéricos sin signo con decimal implícito (`PIC 9(...)V...`): el punto decimal no debe aparecer en la salida.
+- Corregida una regresión de `DISPLAY`: GnuCOBOL muestra la escala implícita de `PIC 9(...)V...` en la salida (por ejemplo, `234.56`), por lo que se restaura el formato decimal y se mantiene una regresión diferencial.
 - Añadido un smoke workflow externo de 50 programas para iterar más rápido.
 - Añadido un workflow Python que usa `run_external_corpus.py`, divide la muestra en primaria/holdout y calcula explícitamente el progreso hacia 42,5 % sobre 1.000 casos.
 

@@ -2518,15 +2518,10 @@ def translate_display_item(token: str, variables: dict[str, CobolVar]) -> str:
             digits = pic_digit_count(pic)
             name = normalize_data_reference(token, variables)
             if "V" in pic:
+                # GnuCOBOL DISPLAY renders the implied decimal position for
+                # numeric items (PIC 9(3)V99 with 234.56 displays "234.56").
                 scale = pic_digit_count(pic.split("V", 1)[1])
-                if scale and "S" not in pic:
-                    # V is implied: DISPLAY emits the stored digit positions with
-                    # no decimal point (PIC 9(3)V99 displays 23456, not 234.56).
-                    factor = 10 ** scale
-                    return f"str(int(round(abs(float({name})) * {factor}))).zfill({digits})"
                 if scale:
-                    # Keep the legacy signed path until sign representation is
-                    # modeled explicitly (separate sign versus overpunch).
                     return f"format(float({name}), '0{digits + 1}.{scale}f')"
             if "." in pic:
                 # An explicit decimal point in a numeric-edited PIC is printed.
