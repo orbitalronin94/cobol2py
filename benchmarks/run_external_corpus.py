@@ -149,6 +149,9 @@ def main() -> int:
             relative = source.relative_to(extracted_root).as_posix()
             result: dict[str, Any] = {"id": case_id(relative, content_hash), "source": relative,
                 "source_sha256": content_hash, "reference_compile": "pending", "status": "excluded", "reason": None}
+            # Flush a compact case marker so a killed isolated process can be
+            # localized from Actions logs without publishing corpus source text.
+            print(f"CASE START screened={report['screened']} id={result['id']}", flush=True)
             with tempfile.TemporaryDirectory(dir=temp_root, prefix="case-") as case_dir:
                 case_root = Path(case_dir)
                 reference_work = case_root / "reference-work"
