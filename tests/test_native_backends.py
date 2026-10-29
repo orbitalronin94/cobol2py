@@ -91,7 +91,7 @@ STOP RUN.
         program = cobol2py.parse_cobol(source, source_format="free")
         c_output = cobol2native.emit_native(program, "c")
         rust_output = cobol2native.emit_native(program, "rust")
-        self.assertIn("while (!(ws_idx > 3)) {", c_output)
+        self.assertIn("while (!((ws_idx > 3))) {", c_output)
         self.assertIn("ws_idx += 1;", c_output)
         self.assertIn("while (!(ws_count >= 5)) {", c_output)
         self.assertIn("while !(ws_idx > 3) {", rust_output)
