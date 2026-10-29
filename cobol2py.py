@@ -1215,6 +1215,36 @@ def normalize_data_reference(
             return f"{translate_expr(subscript, variable_map)} - 1"
         return f"{normalize_name(subscript)} - 1"
 
+    if has_indexed_qualifier and qualified_parts:
+        part_matches = [
+            re.fullmatch(r"([A-Za-z0-9-]+)(?:\\s*\\(([^()]*)\\))?", part.strip())
+            for part in qualified_parts
+        ]
+        if all(part_matches):
+            root_match = part_matches[-1]
+            root_reference = root_match.group(1)
+            if root_match.group(2) is not None:
+                root_reference += f"({root_match.group(2)})"
+            expression = normalize_data_reference(root_reference, variable_map, seen)
+            # Build the storage path from the outermost group toward the field.
+            for part_match in reversed(part_matches[:-1]):
+                child_name, child_subscript_text = part_match.groups()
+                expression += f"[{normalize_name(child_name)!r}]"
+                if child_subscript_text:
+                    child_subscripts = [
+                        part.strip() for part in re.split(r"[,;]", child_subscript_text)
+                    ]
+                    if len(child_subscripts) == 1 and re.search(r"\\s", child_subscript_text.strip()):
+                        candidates = re.split(
+                            r"(?<![+\\-*/])\\s+(?=[A-Za-z0-9][A-Za-z0-9_-]*(?:\\s|$))",
+                            child_subscript_text.strip(),
+                        )
+                        if len(candidates) > 1:
+                            child_subscripts = candidates
+                    for child_subscript in child_subscripts:
+                        expression += f"[{index_expression(child_subscript)}]"
+            return expression
+
     variable = variable_map.get(field_name.upper())
     if qualifier:
         parent_reference = qualifier + (f"({qualifier_subscript})" if qualifier_subscript else "")
