@@ -7,7 +7,7 @@ Run only in Dockerfile.external, with networking disabled and the checkout read-
 from __future__ import annotations
 import argparse, hashlib, json, os, re, shutil, signal, subprocess, tempfile, threading, zipfile
 from pathlib import Path, PurePosixPath
-from typing import Any
+from typing import Any, Optional
 
 # Bound captured output from untrusted corpus programs. Reader threads keep
 # draining pipes after the limit so children cannot block on a full pipe.
@@ -103,6 +103,14 @@ def run_process(command: list[str], cwd: Path, timeout: int) -> dict[str, Any]:
         "stdout_sha256": stdout_digest.hexdigest(),
         "stdout_length": stdout_length[0],
     }
+
+
+def stdout_matches(candidate: dict[str, Any], reference: dict[str, Any]) -> bool:
+    """Compare complete stdout streams without retaining unbounded output."""
+    return (
+        candidate.get("stdout_length") == reference.get("stdout_length")
+        and candidate.get("stdout_sha256") == reference.get("stdout_sha256")
+    )
 
 def candidate_error_context(stderr: str, generated_source: str) -> dict[str, Any]:
     """Return a sanitized generated-code location without exposing string contents."""
@@ -271,10 +279,7 @@ def main() -> int:
                         candidate = run_process(["python3", "-I", str(generated)], candidate_work, args.translator_timeout)
                         result["candidate_returncode"] = candidate["returncode"]
                         result["reference_returncode"] = reference["returncode"]
-                        result["stdout_match"] = (
-                            candidate["stdout_length"] == reference["stdout_length"]
-                            and candidate["stdout_sha256"] == reference["stdout_sha256"]
-                        )
+                        result["stdout_match"] = stdout_matches(candidate, reference)
                         result["returncode_match"] = candidate["returncode"] == reference["returncode"]
                         # Store bounded diagnostics rather than program output. Compare
                         # the complete streams by digest + byte length even when the
