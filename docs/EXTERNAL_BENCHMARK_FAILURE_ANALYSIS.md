@@ -164,35 +164,46 @@ La prioridad inmediata es corregir una causa compartida que recupere varios caso
 
 ## 7. Estado actual y trabajo en curso (2026-10-29)
 
-### Mediciones externas
+### Medición externa comparable más reciente
 
-La ejecución de referencia compartida por el usuario es [#511](https://github.com/orbitalronin94/cobol2py/actions/runs/40839194532): 178/500 en primaria, 197/500 en holdout y **375/1000 = 37,5 %** combinado. El objetivo solicitado es superar esa referencia en al menos cinco puntos porcentuales: **42,5 % o más (mínimo 425/1000)** usando la misma métrica de salida exacta y código de retorno.
+La referencia conservadora continúa siendo [#511](https://github.com/orbitalronin94/cobol2py/actions/runs/40839194532), SHA `2307c7b`: 178/500 en primaria, 197/500 en holdout y **375/1000 = 37,5 %**.
 
-La ejecución multilenguaje posterior [#581](https://github.com/orbitalronin94/cobol2py/actions/runs/40889090638) mide una selección distinta y por eso es diagnóstica, no un sustituto exacto de #511:
+El benchmark externo Python #14 [primaria](https://github.com/orbitalronin94/cobol2py/actions/runs/40925611062) se completó en SHA `9d81975` con 168/500 (33,6 %); el holdout asociado dio 194/500 (38,8 %). Total combinado: **362/1000 = 36,2 %**, 13 programas por debajo del récord conservador. La marca aspiracional de la iteración sigue siendo 425/1000 (42,5 %), pero solo se declarará alcanzada con ambos bloques completos en el mismo SHA.
 
-| Backend | Primaria | Holdout | Combinado |
+| Revisión | Primaria | Holdout | Total |
 |---|---:|---:|---:|
-| Python | 168/500 (33,6 %) | 193/500 (38,6 %) | 361/1000 (36,1 %) |
-| C | 19/500 (3,8 %) | 21/500 (4,2 %) | 40/1000 (4,0 %) |
-| Rust | 18/500 (3,6 %) | 20/500 (4,0 %) | 38/1000 (3,8 %) |
+| Referencia #511, SHA `2307c7b` | 178/500 (35,6 %) | 197/500 (39,4 %) | 375/1000 (37,5 %) |
+| Python #7, SHA `13d359c` | 165/500 (33,0 %) | 191/500 (38,2 %) | 356/1000 (35,6 %) |
+| Python #12, SHA `8e5e2ec` | 168/500 (33,6 %) | 193/500 (38,6 %) | 361/1000 (36,1 %) |
+| Python #14, SHA `9d81975` | 168/500 (33,6 %) | 194/500 (38,8 %) | 362/1000 (36,2 %) |
 
-No se ha confirmado todavía una subida del benchmark comparable de Python; los cambios enumerados abajo necesitan superar CI y una ejecución externa completa. La mejora interna de la suite no cuenta como porcentaje externo.
+### Regresiones entre la referencia y el último candidato
 
-### Cambios ya comprometidos en `main`
+La comparación por ID entre los mismos bloques de 500 encontró **8 casos nuevos aprobados y 21 regresiones**, un delta neto de -13 programas (375 → 362). En primaria: 4 ganancias y 14 regresiones; en holdout: 4 ganancias y 7 regresiones.
 
-- Añadida clasificación estable de rechazos C/Rust en el reporte del benchmark, sin publicar texto fuente externo.
-- Añadidos tests para las categorías de diagnóstico.
-- Añadido soporte para `PERFORM` inline, `PERFORM n TIMES`, `PERFORM UNTIL` y `PERFORM VARYING` en Python/C/Rust, con regresiones de generación y semántica.
-- Corregida una regresión de `DISPLAY`: GnuCOBOL muestra la escala implícita de `PIC 9(...)V...` en la salida (por ejemplo, `234.56`), por lo que se restaura el formato decimal y se mantiene una regresión diferencial.
-- Añadido un smoke workflow externo de 50 programas para iterar más rápido.
-- Añadido un workflow Python que usa `run_external_corpus.py`, divide la muestra en primaria/holdout y calcula explícitamente el progreso hacia 42,5 % sobre 1.000 casos.
+| Categoría de fallo | Referencia #511 | Python #14 | Delta |
+|---|---:|---:|---:|
+| Salida o código de retorno diferente | 490 | 472 | -18 |
+| Programa traducido agotó el tiempo | 56 | 80 | +24 |
+| Error de sintaxis Python | 74 | 75 | +1 |
+| Timeout del traductor | 3 | 3 | 0 |
+| Límite de captura de salida | 0 | 6 | +6 |
+| Aciertos exactos | 375 | 362 | -13 |
 
-### Próximas prioridades basadas en el reporte multilenguaje actual
+La categoría de diferencias de salida se redujo, pero aumentaron los timeouts y los límites de captura. Es una correlación entre ejecuciones; todavía no demuestra que una única modificación sea la causa. Evitar más cambios generales hasta reproducir al menos una familia concreta.
 
-1. **Python — referencias ausentes:** `file_cobol_record_information_rec` fue el nombre ausente más repetido (39 casos en los artefactos analizados). Hay que rastrear declaración, COPY/FILE SECTION y resolución de símbolos antes de introducir valores por defecto.
-2. **Python — salida/código de retorno:** 485 casos del reporte multilenguaje actual caen en esta categoría. Agruparlos por causa semántica y corregir reglas compartidas; no modificar el criterio de coincidencia.
-3. **Python — sintaxis generada:** 75 casos; cada corrección debe añadir fixture y compilar el Python generado.
-4. **Python — terminación:** 68 timeouts de programas traducidos; distinguir bucles no terminantes de diferencias de datos/control.
-5. **C/Rust — cobertura:** 949 rechazos de traducción por backend en la selección actual. Los códigos de rechazo recién añadidos deben revelar qué familias conviene implementar primero.
+### Casos de regresión a reproducir primero
 
-El siguiente hito de puntuación es una ejecución completa comparable con #511 en el mismo SHA, con primaria y holdout juntas. Solo si el resultado combinado alcanza al menos 425/1000 se considerará logrado el objetivo de +5 puntos porcentuales.
+- **Terminación / salida excesiva:** `fp201612-3-ae4424744f`, `p20161b-4871fdaff9`, `smp002-508ab1c516`, `conta-corrente-55f5a45a05`, `progr02t-ebdd706b74`, `colors-3cb74b9dc4`, `smp001-ccd7110609`, `bds1003-12491860f2`, `gpa-calculator-bcfb8405ce`.
+- **Índices multidimensionales:** `nc241a-681f02a7ce`, `nc2344-2-5f8e49c5ac` y `nc2414-2-2f38ed7c87` fallan con `TypeError: list indices must be integers or slices, not str`.
+- **Token/nombre ausente:** `clie-ea6fe390da` y `clic-f5b1f6c97a` generan `NameError` para `at`. Hay que inspeccionar el contexto original antes de decidir si comparten causa.
+
+### Prioridades revisadas
+
+1. Reproducir una regresión de timeout con una fuente COBOL mínima y comprobar la condición de avance del bucle; no aumentar límites ni ignorar la salida excesiva.
+2. Rastrear la construcción y la resolución de tablas multidimensionales, con fixtures para cada dimensión e índice.
+3. Revisar el símbolo `file_cobol_record_information_rec`, presente en 41 resultados de fallo del informe actual (23 primaria, 18 holdout), frente a 41 en la referencia. No introducir globals ficticios para ocultar `NameError`.
+4. Clasificar diferencias de salida por patrón semántico y corregir una causa raíz por iteración.
+5. Mantener C/Rust como métricas separadas y usar los rechazos para priorizar cobertura, no para sustituir el benchmark externo Python.
+
+El procedimiento de aceptación, las puertas de cierre y el registro de iteraciones están en [`docs/EXTERNAL_BENCHMARK_ITERATION_ROADMAP.md`](EXTERNAL_BENCHMARK_ITERATION_ROADMAP.md).
