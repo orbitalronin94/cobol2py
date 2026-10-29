@@ -486,9 +486,21 @@ La ejecución completa posterior [#40871496864](https://github.com/orbitalronin9
 
 Esta medición es notablemente inferior y pertenece a una revisión que había perdido varias rutas de traducción ya probadas. No debe sustituir el máximo histórico ni atribuirse al código restaurado después de ella.
 
+### Medición multilenguaje completada más reciente
+
+La ejecución [#40873543595](https://github.com/orbitalronin94/cobol2py/actions/runs/40873543595), SHA `1af11a00`, es posterior a las primeras mediciones y obtuvo:
+
+| Muestra | Python | C experimental | Rust experimental |
+|---|---:|---:|---:|
+| Principal (500) | **176/500 (35,20 %)** | 17/500 (3,40 %) | 16/500 (3,20 %) |
+| Holdout (500) | **198/500 (39,60 %)** | 20/500 (4,00 %) | 19/500 (3,80 %) |
+| **Combinado (1.000)** | **374/1.000 (37,40 %)** | **37/1.000 (3,70 %)** | **35/1.000 (3,50 %)** |
+
+Esta ejecución mejora notablemente la primera medición pareada de Python (27,20 %/32,00 %). Su holdout de 39,60 % es el mayor entre las ejecuciones multilenguaje aquí registradas, aunque el combinado de 37,40 % queda un acierto por debajo del mejor candidato Python-only de 37,50 %. Los resultados corresponden a SHA distintos y no deben mezclarse.
+
 ### Mejor candidato Python-only y estado de la rama principal
 
 - **Mejor referencia conservadora validada:** workflow [#40839194532](https://github.com/orbitalronin94/cobol2py/actions/runs/40839194532), rama `work/semantic-fixes-benchmark-v2`, SHA `2307c7beed973cefd7ffe8d17b2a9f6af7154083`: primaria **178/500 (35,60 %)**, holdout **197/500 (39,40 %)**, combinado **375/1.000 (37,50 %)**. Una repetición del mismo SHA dio 198/500 (39,60 %) en holdout y 376/1.000 (37,60 %) combinado, pero un caso variable impide tratar esa subida como estable. La referencia prudente sigue siendo 37,50 %.
 - **Última medición externa completa de `main` antes de restaurar esas rutas:** workflow [#40873169721](https://github.com/orbitalronin94/cobol2py/actions/runs/40873169721), SHA `0de8ffe5`: primaria **172/500 (34,40 %)**, holdout **196/500 (39,20 %)**, combinado **368/1.000 (36,80 %)**.
-- **Código actual:** se restauraron las rutas del candidato de 37,50 % y se mantuvo la corrección de la cláusula `VALUE IS`. La suite de tests ha pasado en Python 3.10–3.13; la nueva medición externa de ese código, SHA `3d5264454475d81308850e93e18163dbee59f13a`, está pendiente en [workflow #40876064632](https://github.com/orbitalronin94/cobol2py/actions/runs/40876064632). Hasta que termine, no se debe atribuir al HEAD actual ni 37,50 % ni una cifra inferior.
+- **Código actual:** se restauraron las rutas del candidato de 37,50 % y se mantuvo la corrección de la cláusula `VALUE IS`. La ejecución externa del SHA `3d526445` quedó cancelada porque llevaba demasiado tiempo bloqueando revisiones nuevas. Se ajustó la concurrencia para que las mediciones obsoletas no bloqueen iteraciones recientes; el benchmark de la revisión con soporte de `MOVE` a varios receptores está en curso en [workflow #40879506626](https://github.com/orbitalronin94/cobol2py/actions/runs/40879506626). No atribuir al HEAD actual ni 37,50 % ni una cifra inferior hasta que esa medición termine.
 - Los informes no incluyen el texto fuente del corpus externo. Las exclusiones de referencia y los denominadores se mantienen visibles; el éxito de una ejecución significa que el benchmark terminó, no que todos los casos pasaron.
