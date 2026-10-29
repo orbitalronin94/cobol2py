@@ -433,3 +433,14 @@ Añadir una sección con:
 - **Consecuencias:** los tres porcentajes serán comparables dentro de cada muestra. Las construcciones no soportadas por C/Rust contarán como fallos del backend, mientras que fuentes que no compilen o no terminen bajo GnuCOBOL se excluyen del denominador y se informan por separado.
 - **Validación:** workflow [#40861606573](https://github.com/orbitalronin94/cobol2py/actions/runs/40861606573) completado correctamente. Muestra principal: Python 136/500 (27,20 %), C 17/500 (3,40 %), Rust 16/500 (3,20 %). Holdout: Python 160/500 (32,00 %), C 20/500 (4,00 %), Rust 19/500 (3,80 %). Los tres backends comparten la selección y el oráculo dentro de cada muestra; los resultados confirman que Python tiene hoy mucha más cobertura que los prototipos nativos. No comparar estos porcentajes con el corpus interno de 105 casos como si fueran el mismo conjunto.
 - **Revisión:** si el tiempo de ejecución excede el presupuesto, optimizar la reutilización de referencias/compilación sin cambiar la selección, los timeouts ni el criterio de coincidencia.
+
+
+## D-046 — Registrar por separado el mejor candidato, la rama medida y el runner
+
+- **Fecha:** 2026-10-29.
+- **Estado:** aceptada.
+- **Contexto:** el benchmark multilenguaje reciente mostró porcentajes inferiores a los de una rama de trabajo ya medida. Mezclar ambas cifras sin indicar SHA, rama y runner hizo parecer que la puntuación histórica más alta no existía.
+- **Decisión:** todo resumen externo debe identificar como mínimo el SHA medido, la rama, el runner/versión del benchmark, los resultados de primaria y holdout y el total combinado. Una medición nueva de otro candidato no reemplaza la mejor referencia histórica; se muestran ambas con su procedencia. Las repeticiones variables se registran, pero no se promocionan como mejora estable.
+- **Evidencia registrada:** candidato `2307c7be` en la rama de trabajo: 178/500 (35,60 %) primaria y 197/500 (39,40 %) holdout, 37,50 % combinado; una repetición observó 37,60 % por un caso variable. Última medición externa completa de `main` anterior a la restauración: SHA `0de8ffe5`, 172/500 (34,40 %) primaria y 196/500 (39,20 %) holdout, 36,80 % combinado. La ejecución multilenguaje `752692ef` obtuvo 24,90 % combinado para Python y queda como medición específica de esa revisión, no como máximo histórico.
+- **Consecuencias:** el README y el registro de decisiones deben evitar comparaciones entre corpus distintos y distinguir siempre un resultado histórico de la puntuación aún no medida del HEAD actual.
+- **Revisión:** actualizar esta decisión cuando finalice el benchmark externo del SHA `3d526445` y comprobar que el informe final y el README coinciden.

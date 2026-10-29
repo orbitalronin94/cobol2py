@@ -463,12 +463,32 @@ La interfaz del navegador es una ayuda rápida con heurísticas reducidas, no un
 
 ## Benchmark externo de tres backends (2026-10-29)
 
-Se ejecutó el benchmark pareado sobre X-COBOL v2 con GnuCOBOL como oráculo en el SHA `92b401ca18d4ba1fb9062faf3b13ca6108f2c4e8`. Cada backend se evalúa sobre los mismos 500 programas elegibles por muestra; un acierto requiere coincidencia exacta de stdout y código de retorno. Esta ejecución multilenguaje es una medición específica de ese candidato y **no sustituye la mejor referencia Python-only del 37,50 % combinado**; no atribuir estos porcentajes al HEAD actual sin repetir el benchmark. Los fuentes externos no se publican en los artefactos.
+### Primera medición pareada
+
+La primera ejecución midió Python, C y Rust sobre X-COBOL v2 con GnuCOBOL como oráculo, en el SHA `92b401ca18d4ba1fb9062faf3b13ca6108f2c4e8`. Cada backend procesó los mismos 500 programas elegibles por muestra; un acierto exige stdout idéntico byte a byte y el mismo código de retorno.
 
 | Muestra | Python | C experimental | Rust experimental |
 |---|---:|---:|---:|
 | Principal (500) | 136/500 (27,20 %) | 17/500 (3,40 %) | 16/500 (3,20 %) |
 | Holdout (500) | 160/500 (32,00 %) | 20/500 (4,00 %) | 19/500 (3,80 %) |
 
-Ejecución: [workflow external multilang #40861606573](https://github.com/orbitalronin94/cobol2py/actions/runs/40861606573). En la muestra principal se cribaron 1.244 candidatos, con 731 fallos de compilación de referencia y 13 exclusiones de ejecución; en holdout se cribaron 2.434, con 1.403 fallos de compilación y 31 exclusiones. Los denominadores de cada backend son los 500 programas elegibles de su muestra. Python supera ampliamente a los backends nativos experimentales; estos resultados sirven como línea base, no como estimación de compatibilidad universal ni comparación de rendimiento. Los backends C/Rust soportan un subconjunto mucho menor y rechazan muchas construcciones.
-**Contexto histórico importante:** el 27,20 % / 32,00 % del benchmark multilenguaje corresponde a una revisión anterior de `main`, no al mejor resultado externo del proyecto. El máximo externo verificado sigue siendo el workflow [#40760502862](https://github.com/orbitalronin94/cobol2py/actions/runs/40760502862): **173/500 (34,60 %) en primaria y 196/500 (39,20 %) en holdout, 369/1.000 (36,90 %) combinado**. El candidato posterior [#40761767797](https://github.com/orbitalronin94/cobol2py/actions/runs/40761767797) obtuvo 169/500 (33,80 %) y 195/500 (39,00 %). No se deben sustituir estas referencias por una medición inferior de otra revisión sin señalar explícitamente el SHA y el estado del traductor.
+Ejecución: [workflow multilenguaje #40861606573](https://github.com/orbitalronin94/cobol2py/actions/runs/40861606573). Esta fue la primera medición pareada, no la mejor puntuación histórica de Python ni una medición del código actual. Los backends C/Rust siguen siendo prototipos con un subconjunto mucho menor.
+
+### Reejecución multilenguaje posterior
+
+La ejecución completa posterior [#40871496864](https://github.com/orbitalronin94/cobol2py/actions/runs/40871496864), SHA `752692efea10051dfc4117bb631f99cfed24b0ea`, dio estos resultados:
+
+| Muestra | Python | C experimental | Rust experimental |
+|---|---:|---:|---:|
+| Principal (500) | 114/500 (22,80 %) | 17/500 (3,40 %) | 16/500 (3,20 %) |
+| Holdout (500) | 135/500 (27,00 %) | 20/500 (4,00 %) | 19/500 (3,80 %) |
+| **Combinado (1.000)** | **249/1.000 (24,90 %)** | **37/1.000 (3,70 %)** | **35/1.000 (3,50 %)** |
+
+Esta medición es notablemente inferior y pertenece a una revisión que había perdido varias rutas de traducción ya probadas. No debe sustituir el máximo histórico ni atribuirse al código restaurado después de ella.
+
+### Mejor candidato Python-only y estado de la rama principal
+
+- **Mejor referencia conservadora validada:** workflow [#40839194532](https://github.com/orbitalronin94/cobol2py/actions/runs/40839194532), rama `work/semantic-fixes-benchmark-v2`, SHA `2307c7beed973cefd7ffe8d17b2a9f6af7154083`: primaria **178/500 (35,60 %)**, holdout **197/500 (39,40 %)**, combinado **375/1.000 (37,50 %)**. Una repetición del mismo SHA dio 198/500 (39,60 %) en holdout y 376/1.000 (37,60 %) combinado, pero un caso variable impide tratar esa subida como estable. La referencia prudente sigue siendo 37,50 %.
+- **Última medición externa completa de `main` antes de restaurar esas rutas:** workflow [#40873169721](https://github.com/orbitalronin94/cobol2py/actions/runs/40873169721), SHA `0de8ffe5`: primaria **172/500 (34,40 %)**, holdout **196/500 (39,20 %)**, combinado **368/1.000 (36,80 %)**.
+- **Código actual:** se restauraron las rutas del candidato de 37,50 % y se mantuvo la corrección de la cláusula `VALUE IS`. La suite de tests ha pasado en Python 3.10–3.13; la nueva medición externa de ese código, SHA `3d5264454475d81308850e93e18163dbee59f13a`, está pendiente en [workflow #40876064632](https://github.com/orbitalronin94/cobol2py/actions/runs/40876064632). Hasta que termine, no se debe atribuir al HEAD actual ni 37,50 % ni una cifra inferior.
+- Los informes no incluyen el texto fuente del corpus externo. Las exclusiones de referencia y los denominadores se mantienen visibles; el éxito de una ejecución significa que el benchmark terminó, no que todos los casos pasaron.
