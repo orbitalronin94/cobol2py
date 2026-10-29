@@ -1749,9 +1749,15 @@ WORKING-STORAGE SECTION.
 01 ELEM-NAME PIC X(15) VALUE "ELEM (01,02,02)".
 PROCEDURE DIVISION.
 MAIN.
-    MOVE ELEM-NAME TO ENTRY-3(2, 1, 2).
-    DISPLAY ENTRY-3(2, 1, 2).
-    DISPLAY ENTRY-3-1(2, 1, 2).
+    SET IDX-1 TO 2.
+    SET IDX-2 TO 1.
+    SET IDX-3 TO 2.
+    SET IDX-1-1 TO 2.
+    SET IDX-2-1 TO 1.
+    SET IDX-3-1 TO 2.
+    MOVE ELEM-NAME TO ENTRY-3(IDX-1, IDX-2, IDX-3).
+    DISPLAY ENTRY-3(IDX-1, IDX-2, IDX-3).
+    DISPLAY ENTRY-3-1(IDX-1-1, IDX-2-1, IDX-3-1).
     STOP RUN.
 """
         program = cobol2py.parse_cobol(source, source_format="free")
