@@ -4708,7 +4708,7 @@ def emit_python(prog: Program) -> str:
     lines.append("    negative = text.startswith('(') and text.endswith(')')")
     lines.append("    if negative:")
     lines.append("        text = text[1:-1].strip()")
-    lines.append("    text = re.sub(r'[^0-9,.+\\-]', '', text)")
+    lines.append("    text = ''.join(char for char in text if char in '0123456789,.+-')")
     lines.append("    if text.endswith(('+', '-')):")
     lines.append("        sign = text[-1]")
     lines.append("        text = text[:-1]")
