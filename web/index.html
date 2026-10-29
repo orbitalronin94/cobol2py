@@ -784,6 +784,11 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
             continue
         upper = text.upper().rstrip(".")
 
+        if re.match(r"^PERFORM(?:\s+WITH\s+TEST\s+(?:BEFORE|AFTER))?\s+(?:UNTIL|VARYING)\b", upper):
+            flush()
+            units.append((num, text.strip()))
+            continue
+
         if upper == "ELSE":
             flush()
             units.append((num, "ELSE"))
@@ -896,6 +901,30 @@ def build_tree(units: list[tuple[int, str]]) -> list[Node]:
             current_list.append(node)
             stack.append(("if", node, current_list))
             current_list = node.then_branch
+            continue
+
+        inline_varying = re.match(
+            r"^PERFORM(?:\s+WITH\s+TEST\s+(BEFORE|AFTER))?\s+VARYING\s+([A-Za-z0-9-]+)\s+FROM\s+(.+?)\s+BY\s+(.+?)\s+UNTIL\s+(.+)$",
+            normalized,
+            re.IGNORECASE,
+        )
+        if inline_varying:
+            node = Node(kind="perform_varying_inline", text=normalized, line=line)
+            current_list.append(node)
+            stack.append(("perform", node, current_list))
+            current_list = node.body
+            continue
+
+        inline_until = re.match(
+            r"^PERFORM(?:\s+WITH\s+TEST\s+(BEFORE|AFTER))?\s+UNTIL\s+(.+)$",
+            normalized,
+            re.IGNORECASE,
+        )
+        if inline_until:
+            node = Node(kind="perform_until_inline", text=normalized, line=line)
+            current_list.append(node)
+            stack.append(("perform", node, current_list))
+            current_list = node.body
             continue
 
         inline_times = re.match(r"^PERFORM\s+(\d+)\s+TIMES$", upper)
@@ -2374,6 +2403,31 @@ def translate_condition(
     variables: Optional[dict[str, CobolVar]] = None,
     condition_names: Optional[dict[str, tuple[str, list[tuple[str, Optional[str]]]]]] = None,
 ) -> str:
+    # Expand COBOL's abbreviated string alternatives before tokenization. Doing
+    # this on COBOL tokens avoids the post-translation regex mistaking a padded
+    # lhs (for example, ws_flag.ljust(1)) for the next abbreviated literal.
+    string_alternatives = re.compile(
+        r"""(?P<lhs>[A-Za-z][A-Za-z0-9-]*(?:\s*\([^()]*\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*)*)"""
+        r"""\s*(?P<op>=|<>|!=|<=|>=|<|>)\s*"""
+        r"""(?P<first>"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')"""
+        r"""\s+(?P<logic>OR|AND)\s+"""
+        r"""(?P<second>"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')""",
+        re.IGNORECASE,
+    )
+    expanded_string_alternatives = False
+    for _ in range(max(1, len(cond.split()))):
+        expanded = string_alternatives.sub(
+            lambda match: (
+                f"{match.group('lhs')} {match.group('op')} {match.group('first')} "
+                f"{match.group('logic')} {match.group('lhs')} {match.group('op')} {match.group('second')}"
+            ),
+            cond,
+        )
+        if expanded == cond:
+            break
+        cond = expanded
+        expanded_string_alternatives = True
+
     # Expand level-88 condition names into comparisons against their parent item.
     if condition_names:
         def expand_condition_names(chunk: str) -> str:
@@ -2632,7 +2686,7 @@ def translate_condition(
     # A condition may abbreviate more than one successive alternative
     # (A = 1 OR 2 OR 3 OR 4). Expand one adjacent pair per pass until stable;
     # a single re.sub pass leaves the trailing alternatives bare.
-    for _ in range(max(1, len(translated.split()))):
+    for _ in range(0 if expanded_string_alternatives else max(1, len(translated.split()))):
         expanded = abbreviated.sub(
             lambda match: (
                 f"{match.group('lhs')} {match.group('op')} {match.group('first')} "
@@ -2661,11 +2715,21 @@ def translate_display_item(token: str, variables: dict[str, CobolVar]) -> str:
         pic = variable.pic.upper()
         if "9" in pic:
             digits = pic_digit_count(pic)
-            scale = pic_digit_count(pic.split("V", 1)[1]) if "V" in pic else 0
             name = normalize_data_reference(token, variables)
-            if scale:
-                # V is an implied decimal point in COBOL storage; DISPLAY emits
-                # the digit positions, not a visible decimal separator.
+            if "V" in pic:
+                scale = pic_digit_count(pic.split("V", 1)[1])
+                if scale and "S" not in pic:
+                    # V is implied: DISPLAY emits the stored digit positions with
+                    # no decimal point (PIC 9(3)V99 displays 23456, not 234.56).
+                    factor = 10 ** scale
+                    return f"str(int(round(abs(float({name})) * {factor}))).zfill({digits})"
+                if scale:
+                    # Keep the legacy signed path until sign representation is
+                    # modeled explicitly (separate sign versus overpunch).
+                    return f"format(float({name}), '0{digits + 1}.{scale}f')"
+            if "." in pic:
+                # An explicit decimal point in a numeric-edited PIC is printed.
+                scale = pic_digit_count(pic.split(".", 1)[1])
                 return f"format(float({name}), '0{digits + 1}.{scale}f')"
             return f"str(int(float({name}))).zfill({digits})"
     return f"str({translate_literal(token, variables)})"
@@ -3884,6 +3948,65 @@ def translate_nodes(
                 elif all(not line.strip() or line.strip().startswith("#") for line in else_body):
                     else_body.append("    " * (indent + 1) + "pass")
                 out.extend(else_body)
+
+        elif node.kind == "perform_varying_inline":
+            match = re.match(
+                r"^PERFORM(?:\s+WITH\s+TEST\s+(BEFORE|AFTER))?\s+VARYING\s+([A-Za-z0-9-]+)\s+FROM\s+(.+?)\s+BY\s+(.+?)\s+UNTIL\s+(.+)$",
+                node.text,
+                re.IGNORECASE,
+            )
+            if match:
+                test_mode = match.group(1).upper() if match.group(1) else "BEFORE"
+                index_token, start_text, step_text, condition_text = match.group(2, 3, 4, 5)
+                index_expr = normalize_data_reference(index_token, variables)
+                start_expr = translate_expr(start_text, variables)
+                step_expr = translate_expr(step_text, variables)
+                condition = translate_condition(condition_text, variables, condition_names)
+                prefix = "    " * indent
+                out.append(prefix + f"{index_expr} = {start_expr}")
+                if test_mode == "AFTER":
+                    out.append(prefix + "while True:")
+                    body = translate_nodes(node.body, paragraphs, indent + 1, variables, current_paragraph, condition_names)
+                    if not body or all(not line.strip() or line.strip().startswith("#") for line in body):
+                        body = ["    " * (indent + 1) + "pass"]
+                    out.extend(body)
+                    increment = fit_numeric_expression(f"({index_expr} + ({step_expr}))", index_token, variables)
+                    out.append("    " * (indent + 1) + f"{index_expr} = {increment}")
+                    out.append("    " * (indent + 1) + f"if {condition}:")
+                    out.append("    " * (indent + 2) + "break")
+                else:
+                    out.append(prefix + f"while not ({condition}):")
+                    body = translate_nodes(node.body, paragraphs, indent + 1, variables, current_paragraph, condition_names)
+                    if not body or all(not line.strip() or line.strip().startswith("#") for line in body):
+                        body = ["    " * (indent + 1) + "pass"]
+                    out.extend(body)
+                    increment = fit_numeric_expression(f"({index_expr} + ({step_expr}))", index_token, variables)
+                    out.append("    " * (indent + 1) + f"{index_expr} = {increment}")
+            else:
+                out.append("    " * indent + "# PERFORM VARYING no traducido: cabecera no reconocida")
+        elif node.kind == "perform_until_inline":
+            match = re.match(
+                r"^PERFORM(?:\s+WITH\s+TEST\s+(BEFORE|AFTER))?\s+UNTIL\s+(.+)$",
+                node.text,
+                re.IGNORECASE,
+            )
+            test_mode = match.group(1).upper() if match and match.group(1) else "BEFORE"
+            condition = translate_condition(match.group(2), variables, condition_names) if match else "True"
+            prefix = "    " * indent
+            if test_mode == "AFTER":
+                out.append(prefix + "while True:")
+                body = translate_nodes(node.body, paragraphs, indent + 1, variables, current_paragraph, condition_names)
+                if not body or all(not line.strip() or line.strip().startswith("#") for line in body):
+                    body = ["    " * (indent + 1) + "pass"]
+                out.extend(body)
+                out.append("    " * (indent + 1) + f"if {condition}:")
+                out.append("    " * (indent + 2) + "break")
+            else:
+                out.append(prefix + f"while not ({condition}):")
+                body = translate_nodes(node.body, paragraphs, indent + 1, variables, current_paragraph, condition_names)
+                if not body or all(not line.strip() or line.strip().startswith("#") for line in body):
+                    body = ["    " * (indent + 1) + "pass"]
+                out.extend(body)
 
         elif node.kind == "perform_inline":
             out.append("    " * indent + f"# PERFORM inline: {node.text}")
