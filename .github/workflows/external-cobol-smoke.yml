@@ -1,0 +1,68 @@
+name: external-cobol-smoke
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "cobol2py.py"
+      - "cobol2native.py"
+      - "benchmarks/**"
+      - "tests/**"
+      - ".github/workflows/external-cobol-smoke.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: external-cobol-smoke-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download pinned X-COBOL v2 archive
+        run: |
+          curl --fail --location --retry 3 --retry-delay 2 \
+            "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" \
+            --output /tmp/COBOL_Files.zip
+      - name: Build isolated benchmark image
+        run: docker build -f benchmarks/Dockerfile.external -t cobol2py-external-benchmark .
+      - name: Run deterministic 50-program differential smoke test
+        run: |
+          mkdir -p "${{ runner.temp }}/external-smoke"
+          chmod 0777 "${{ runner.temp }}/external-smoke"
+          docker run --rm \
+            --network none \
+            --cap-drop=ALL \
+            --security-opt=no-new-privileges \
+            --pids-limit=128 \
+            --memory=4g \
+            --cpus=2 \
+            --read-only \
+            --tmpfs /tmp:rw,exec,nosuid,nodev,size=3g \
+            --mount "type=bind,source=$GITHUB_WORKSPACE,target=/workspace,readonly" \
+            --mount "type=bind,source=/tmp/COBOL_Files.zip,target=/input.zip,readonly" \
+            --mount "type=bind,source=${{ runner.temp }}/external-smoke,target=/output" \
+            --workdir /workspace \
+            cobol2py-external-benchmark \
+            benchmarks/run_external_multilang.py \
+            --archive /input.zip --output /output --target 50 --skip 0
+      - name: Publish smoke scorecard
+        if: always()
+        run: |
+          if [ -f "${{ runner.temp }}/external-smoke/external-multilang-report.md" ]; then
+            cat "${{ runner.temp }}/external-smoke/external-multilang-report.md" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No report produced; inspect benchmark logs." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload scorecard without source corpus
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: external-cobol-smoke-${{ github.run_number }}
+          path: ${{ runner.temp }}/external-smoke/
+          if-no-files-found: warn
+          retention-days: 30
