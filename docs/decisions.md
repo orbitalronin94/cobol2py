@@ -444,3 +444,14 @@ Añadir una sección con:
 - **Evidencia registrada:** candidato `2307c7be` en la rama de trabajo: 178/500 (35,60 %) primaria y 197/500 (39,40 %) holdout, 37,50 % combinado; una repetición observó 37,60 % por un caso variable. Última medición externa completa de `main` anterior a la restauración: SHA `0de8ffe5`, 172/500 (34,40 %) primaria y 196/500 (39,20 %) holdout, 36,80 % combinado. La ejecución multilenguaje `752692ef` obtuvo 24,90 % combinado para Python y queda como medición específica de esa revisión, no como máximo histórico.
 - **Consecuencias:** el README y el registro de decisiones deben evitar comparaciones entre corpus distintos y distinguir siempre un resultado histórico de la puntuación aún no medida del HEAD actual.
 - **Revisión:** actualizar esta decisión cuando finalice el benchmark externo del SHA `3d526445` y comprobar que el informe final y el README coinciden.
+
+
+## D-047 — Traducir MOVE con varios receptores y evitar bloqueos de benchmarks obsoletos
+
+- **Fecha:** 2026-10-29.
+- **Estado:** implementada; validación de CI en curso.
+- **Contexto:** COBOL permite asignar un mismo valor a varios receptores en una sola sentencia `MOVE A TO B C`. El patrón de un único receptor dejaba estas sentencias fuera de la traducción normal. Además, una ejecución externa atascada podía bloquear la validación de revisiones nuevas.
+- **Decisión:** separar la cláusula `TO` fuera de literales y paréntesis, dividir los receptores de nivel superior y aplicar individualmente la lógica existente de ajuste por `PIC`, movimientos de grupo y modificaciones de referencia. Añadir regresiones para varios receptores con anchos diferentes y para el texto `TO` dentro del literal fuente. Mantener sincronizado el traductor embebido en `web/index.html`. Configurar el workflow externo para cancelar mediciones obsoletas cuando llega una revisión nueva.
+- **Consecuencias:** se amplía el subconjunto traducido sin cambiar el oráculo ni el criterio del benchmark. La cancelación de una ejecución antigua no equivale a un resultado válido; el nuevo SHA debe completar sus pruebas y benchmark para confirmar cualquier mejora.
+- **Validación:** las pruebas unitarias de Python 3.10, 3.11, 3.12 y 3.13 pasan en el commit `b2cdbeac`; el workflow externo debe confirmar la revisión final después de los cambios de código y CI.
+- **Revisión:** confirmar la medición externa del candidato actual y revisar casos de MOVE múltiple con campos numéricos, grupos y subíndices antes de ampliar el soporte a más formas COBOL.
