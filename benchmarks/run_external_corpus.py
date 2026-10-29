@@ -19,7 +19,7 @@ SOURCE_EXTENSIONS = {".cbl", ".cob", ".cobol"}
 MAX_SOURCE_BYTES = 1_000_000
 
 def run_process(command: list[str], cwd: Path, timeout: int) -> dict[str, Any]:
-    """Run one untrusted program in its own process group with bounded output."""
+    """Run one untrusted program in its own process group with bounded output capture."""
     try:
         process = subprocess.Popen(command, cwd=str(cwd), stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=False,
@@ -29,19 +29,32 @@ def run_process(command: list[str], cwd: Path, timeout: int) -> dict[str, Any]:
                  "PYTHONDONTWRITEBYTECODE": "1"})
     except OSError as error:
         return {"launched": False, "returncode": None, "stdout": "", "stderr": str(error),
-                "timeout": False, "stdout_truncated": False, "stderr_truncated": False}
+                "timeout": False, "stdout_truncated": False, "stderr_truncated": False,
+                "stdout_sha256": hashlib.sha256(b"").hexdigest(), "stdout_length": 0}
 
     stdout_capture = bytearray()
     stderr_capture = bytearray()
     stdout_overflow = [False]
     stderr_overflow = [False]
+    stdout_digest = hashlib.sha256()
+    stdout_length = [0]
 
-    def drain(stream: Any, capture: bytearray, overflow: list[bool]) -> None:
+    def drain(
+        stream: Any,
+        capture: bytearray,
+        overflow: list[bool],
+        digest: Any = None,
+        total_length: Optional[list[int]] = None,
+    ) -> None:
         try:
             while True:
                 chunk = stream.read(65536)
                 if not chunk:
                     break
+                if digest is not None:
+                    digest.update(chunk)
+                if total_length is not None:
+                    total_length[0] += len(chunk)
                 remaining = MAX_CAPTURE_BYTES - len(capture)
                 if remaining > 0:
                     capture.extend(chunk[:remaining])
@@ -51,8 +64,16 @@ def run_process(command: list[str], cwd: Path, timeout: int) -> dict[str, Any]:
             stream.close()
 
     readers = [
-        threading.Thread(target=drain, args=(process.stdout, stdout_capture, stdout_overflow), daemon=True),
-        threading.Thread(target=drain, args=(process.stderr, stderr_capture, stderr_overflow), daemon=True),
+        threading.Thread(
+            target=drain,
+            args=(process.stdout, stdout_capture, stdout_overflow, stdout_digest, stdout_length),
+            daemon=True,
+        ),
+        threading.Thread(
+            target=drain,
+            args=(process.stderr, stderr_capture, stderr_overflow),
+            daemon=True,
+        ),
     ]
     for reader in readers:
         reader.start()
@@ -77,6 +98,10 @@ def run_process(command: list[str], cwd: Path, timeout: int) -> dict[str, Any]:
         "timeout": timed_out,
         "stdout_truncated": stdout_overflow[0],
         "stderr_truncated": stderr_overflow[0],
+        # Hash and byte length cover the complete stream, including discarded
+        # diagnostic bytes, so large output is still compared exactly.
+        "stdout_sha256": stdout_digest.hexdigest(),
+        "stdout_length": stdout_length[0],
     }
 
 def candidate_error_context(stderr: str, generated_source: str) -> dict[str, Any]:
@@ -212,10 +237,9 @@ def main() -> int:
                     continue
                 result["reference_compile"] = "passed"
                 reference = run_process([str(executable)], reference_work, args.run_timeout)
-                if not reference["launched"] or reference["timeout"] or reference["stdout_truncated"]:
+                if not reference["launched"] or reference["timeout"]:
                     report["reference_runtime_exclusions"] += 1
-                    result["reason"] = ("reference stdout exceeded capture limit" if reference.get("stdout_truncated")
-                        else "reference execution timed out or could not launch")
+                    result["reason"] = "reference execution timed out or could not launch"
                     continue
                 if eligible_seen < args.skip:
                     eligible_seen += 1
@@ -247,15 +271,21 @@ def main() -> int:
                         candidate = run_process(["python3", "-I", str(generated)], candidate_work, args.translator_timeout)
                         result["candidate_returncode"] = candidate["returncode"]
                         result["reference_returncode"] = reference["returncode"]
-                        result["stdout_match"] = candidate["stdout"] == reference["stdout"]
+                        result["stdout_match"] = (
+                            candidate["stdout_length"] == reference["stdout_length"]
+                            and candidate["stdout_sha256"] == reference["stdout_sha256"]
+                        )
                         result["returncode_match"] = candidate["returncode"] == reference["returncode"]
-                        # Store bounded diagnostics rather than program output so mismatches
-                        # can be grouped without republishing corpus data.
+                        # Store bounded diagnostics rather than program output. Compare
+                        # the complete streams by digest + byte length even when the
+                        # retained prefixes exceed the capture limit.
                         candidate_stdout = candidate["stdout"]
                         reference_stdout = reference["stdout"]
-                        result["candidate_stdout_length"] = len(candidate_stdout)
-                        result["reference_stdout_length"] = len(reference_stdout)
-                        if candidate_stdout != reference_stdout:
+                        result["candidate_stdout_length"] = candidate["stdout_length"]
+                        result["reference_stdout_length"] = reference["stdout_length"]
+                        result["candidate_stdout_truncated"] = candidate["stdout_truncated"]
+                        result["reference_stdout_truncated"] = reference["stdout_truncated"]
+                        if not result["stdout_match"]:
                             result["stdout_first_difference"] = next(
                                 (index for index, (left, right) in enumerate(zip(candidate_stdout, reference_stdout))
                                  if left != right),
@@ -276,13 +306,12 @@ def main() -> int:
                                 missing = _re.search(r"name ['\"]([^'\"]+)['\"] is not defined", tail)
                                 if missing:
                                     result["candidate_missing_name"] = missing.group(1)[:100]
-                        if (candidate["launched"] and not candidate["timeout"] and not candidate.get("stdout_truncated")
+                        if (candidate["launched"] and not candidate["timeout"]
                                 and result["stdout_match"] and result["returncode_match"]):
                             result.update({"status": "passed", "reason": None})
                         else:
-                            reason = ("translated program timed out" if candidate["timeout"] else
-                                "translated stdout exceeded capture limit" if candidate.get("stdout_truncated") else
-                                "stdout or return code differs from GnuCOBOL")
+                            reason = ("translated program timed out" if candidate["timeout"]
+                                else "stdout or return code differs from GnuCOBOL")
                             result.update({"status": "failed", "reason": reason})
                 report["results"].append(result)
                 report["tested"] += 1
