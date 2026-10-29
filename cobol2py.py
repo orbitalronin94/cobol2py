@@ -2258,8 +2258,8 @@ def translate_condition(
     # prefix and leave a dangling OF/IN token to become a Python variable.
     qualified_condition_replacements: dict[str, str] = {}
     qualified_condition_pattern = re.compile(
-        r"\\b[A-Za-z][A-Za-z0-9-]*(?:\\s*\\([^()]*\\))?"
-        r"(?:\\s+(?:OF|IN)\\s+[A-Za-z][A-Za-z0-9-]*(?:\\s*\\([^()]*\\))?){2,}",
+        r"\b[A-Za-z][A-Za-z0-9-]*(?:\s*\([^()]*\))?"
+        r"(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*(?:\s*\([^()]*\))?){2,}",
         re.IGNORECASE,
     )
 
@@ -2375,7 +2375,7 @@ def translate_condition(
     for token, expression in class_condition_replacements.items():
         translated = translated.replace(json.dumps(token), expression)
     for token, expression in qualified_condition_replacements.items():
-        translated = re.sub(rf"\\b{re.escape(token)}\\b", lambda _: expression, translated, flags=re.IGNORECASE)
+        translated = re.sub(rf"\b{re.escape(token)}\b", lambda _: expression, translated, flags=re.IGNORECASE)
 
     # COBOL pads the shorter operand with spaces for alphanumeric comparisons.
     # Match a translated data-name (including a table element) against a literal.
