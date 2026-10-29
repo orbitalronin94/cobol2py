@@ -195,3 +195,25 @@ La PR [#41](https://github.com/orbitalronin94/cobol2py/pull/41) ya contiene un f
 La implementación candidata calcula el ancho de los grupos incluyendo `OCCURS`, conserva el stride de cada dimensión y enruta lecturas/escrituras indexadas de campos redefinidos por el buffer común. La nueva prueba y la suite completa pasan en Python 3.10–3.13; también ha pasado el workflow diferencial interno. El benchmark externo de primaria/holdout para este SHA sigue pendiente, por lo que todavía no se atribuye ninguna subida porcentual a esta corrección.
 
 Límite conocido: es el subconjunto de almacenamiento DISPLAY que el backend ya soporta. No demuestra aún equivalencia para todos los usos de `REDEFINES`, datos numéricos con escala implícita, redefiniciones de longitud variable ni referencias a grupos completos sin subíndices.
+
+
+### Investigación adicional: `infinityabundance/gnucobol-rs` como referencia de oráculo y runtime
+
+Este proyecto es un **runtime/interprete Rust**, no un generador de COBOL→Rust ni un backend que emita código nativo. Su README distingue explícitamente tres métricas que no se deben mezclar: cobertura del runtime `libcob`, archivos del árbol de GnuCOBOL portados y subconjunto del lenguaje que ejecuta su front-end. El propio README declara que el front-end rechaza con error explícito `OCCURS/REDEFINES` y otros constructos fuera del subconjunto; por tanto, no es una solución directa para nuestros fallos de tablas anidadas.
+
+Lo que sí merece incorporar como **metodología**, no como código copiado:
+- fijar versión y configuración del oráculo (el proyecto usa GnuCOBOL 3.2.0 construido desde fuente fijada);
+- mantener un registro auditable por caso con fuente, oráculo, stdout, código de salida, artefactos y límites;
+- exigir repetibilidad en contenedores limpios y distinguir salida de programa de archivos generados;
+- registrar explícitamente lo no soportado y fallar cerrado, en lugar de generar una traducción que parece válida pero tiene semántica inventada;
+- separar afirmaciones de cobertura de runtime de cobertura real del lenguaje.
+
+El README informa para su corpus NIST CCVS85 512 unidades, con 304 ejecuciones de referencia que llegan a ejecutarse y 27 coincidencias byte a byte, además de divergencias clasificadas. Son cifras del proyecto y su protocolo, no comparables directamente con nuestro corpus X-COBOL de 1.000 programas.
+
+**Licencia y alcance:** el proyecto declara ser una derivación fiel de `libcob`, no clean-room, bajo LGPL-3.0-or-later. No portar código desde él como si fuera una implementación independiente; estudiar su estructura de evidencia y las pruebas de semántica, respetando la licencia.
+
+Fuente: [README de gnucobol-rs](https://github.com/infinityabundance/gnucobol-rs/blob/main/README.md), secciones NIST CCVS85 differential, scope y admitted oracle.
+
+### Consecuencia para nuestro benchmark: aleatoriedad como diagnóstico, no como mejora de código
+
+El mismo README clasifica `FUNCTION RANDOM` como una frontera deliberada, porque su comportamiento depende del generador Mersenne-Twister interno de GMP. Esto refuerza la cautela con `rock-paper-scissors-ad6321acf1`: el caso usa `FUNCTION RANDOM` y hora actual, y su pass/fail cambió entre ejecuciones. No cambiar el protocolo histórico ni excluir el caso silenciosamente; añadir una comprobación de estabilidad diagnóstica (ejecutar la referencia repetidamente en entorno limpio) y marcar el caso como potencialmente no determinista. Para el porcentaje histórico se deben conservar el denominador y el criterio actuales hasta que se decida y se vuelva a medir una política común para todas las versiones.
