@@ -2204,6 +2204,31 @@ def translate_condition(
     variables: Optional[dict[str, CobolVar]] = None,
     condition_names: Optional[dict[str, tuple[str, list[tuple[str, Optional[str]]]]]] = None,
 ) -> str:
+    # Expand COBOL's abbreviated string alternatives before tokenization. Doing
+    # this on COBOL tokens avoids the post-translation regex mistaking a padded
+    # lhs (for example, ws_flag.ljust(1)) for the next abbreviated literal.
+    string_alternatives = re.compile(
+        r"""(?P<lhs>[A-Za-z][A-Za-z0-9-]*(?:\s*\([^()]*\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*)*)"""
+        r"""\s*(?P<op>=|<>|!=|<=|>=|<|>)\s*"""
+        r"""(?P<first>"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')"""
+        r"""\s+(?P<logic>OR|AND)\s+"""
+        r"""(?P<second>"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')""",
+        re.IGNORECASE,
+    )
+    expanded_string_alternatives = False
+    for _ in range(max(1, len(cond.split()))):
+        expanded = string_alternatives.sub(
+            lambda match: (
+                f"{match.group('lhs')} {match.group('op')} {match.group('first')} "
+                f"{match.group('logic')} {match.group('lhs')} {match.group('op')} {match.group('second')}"
+            ),
+            cond,
+        )
+        if expanded == cond:
+            break
+        cond = expanded
+        expanded_string_alternatives = True
+
     # Expand level-88 condition names into comparisons against their parent item.
     if condition_names:
         def expand_condition_names(chunk: str) -> str:
@@ -2462,7 +2487,7 @@ def translate_condition(
     # A condition may abbreviate more than one successive alternative
     # (A = 1 OR 2 OR 3 OR 4). Expand one adjacent pair per pass until stable;
     # a single re.sub pass leaves the trailing alternatives bare.
-    for _ in range(max(1, len(translated.split()))):
+    for _ in range(0 if expanded_string_alternatives else max(1, len(translated.split()))):
         expanded = abbreviated.sub(
             lambda match: (
                 f"{match.group('lhs')} {match.group('op')} {match.group('first')} "
@@ -2491,16 +2516,21 @@ def translate_display_item(token: str, variables: dict[str, CobolVar]) -> str:
         pic = variable.pic.upper()
         if "9" in pic:
             digits = pic_digit_count(pic)
-            scale = pic_digit_count(pic.split("V", 1)[1]) if "V" in pic else 0
             name = normalize_data_reference(token, variables)
-            if scale and "S" not in pic:
-                # V is implied: DISPLAY emits the stored digit positions with
-                # no decimal point (PIC 9(3)V99 displays 23456, not 234.56).
-                factor = 10 ** scale
-                return f"str(int(round(abs(float({name})) * {factor}))).zfill({digits})"
-            if scale:
-                # Keep the legacy signed path until sign representation is
-                # modeled explicitly (separate sign versus overpunch).
+            if "V" in pic:
+                scale = pic_digit_count(pic.split("V", 1)[1])
+                if scale and "S" not in pic:
+                    # V is implied: DISPLAY emits the stored digit positions with
+                    # no decimal point (PIC 9(3)V99 displays 23456, not 234.56).
+                    factor = 10 ** scale
+                    return f"str(int(round(abs(float({name})) * {factor}))).zfill({digits})"
+                if scale:
+                    # Keep the legacy signed path until sign representation is
+                    # modeled explicitly (separate sign versus overpunch).
+                    return f"format(float({name}), '0{digits + 1}.{scale}f')"
+            if "." in pic:
+                # An explicit decimal point in a numeric-edited PIC is printed.
+                scale = pic_digit_count(pic.split(".", 1)[1])
                 return f"format(float({name}), '0{digits + 1}.{scale}f')"
             return f"str(int(float({name}))).zfill({digits})"
     return f"str({translate_literal(token, variables)})"
