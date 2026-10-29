@@ -233,3 +233,16 @@ Los fallos Python se distribuyen así entre ambas muestras:
 El nombre `file_cobol_record_information_rec` aparece en 23 casos de primaria y 18 de holdout (41 en total), con `NameError` en las líneas generadas que lo indexan. La inspección del backend revela dos rutas que hay que discriminar: (a) `emit_python` omite variables raíz incluidas en `overlay_buffers`, y `normalize_data_reference` solo usa `_cobol_get` para campos de overlay sin subíndices; los grupos de overlay no tienen una representación de acceso completa; (b) un `COPY` no resuelto o una declaración FILE SECTION que no llega al modelo puede dejar referencias a un nombre ausente. Ambas son **hipótesis**, no causas confirmadas: el informe externo no publica el COBOL original ni el modelo parseado. Antes de cambiar el backend, reproducir uno de los casos reales y registrar `prog.unresolved_copybooks`, las declaraciones parseadas, `build_overlay_layout` y los nombres emitidos. No crear una variable por defecto ni cambiar la representación de overlay sin preservar la semántica de almacenamiento compartido.
 
 Siguiente experimento recomendado: reproducir uno de esos casos de registro de archivo y añadir una prueba que falle en la ruta actual; luego corregir solo el recorrido de símbolos/layout implicado y volver a ejecutar las dos muestras completas. Si no se puede reproducir, priorizar las 471 diferencias de salida por familia y las 75 salidas sintácticamente inválidas.
+
+
+## Scorecard oficial Python #16: subida bruta no atribuible todavía
+
+El workflow dedicado `external-python-benchmark` terminó para el commit `ba56e5d`:
+- Primaria: 168/500 (33,6 %).
+- Holdout: 195/500 (39,0 %).
+- Total: **363/1.000 (36,3 %)**, frente a 362/1.000 en la ejecución #14.
+- Comparación por caso: 0 ganancias en primaria; en holdout, 1 ganancia y 0 regresiones. El caso es `rock-paper-scissors-ad6321acf1`.
+
+El programa de ese caso declara `FUNCTION RANDOM` y usa `ACCEPT CURRENT-TIME FROM TIME` antes de decidir el resultado. Por tanto, la diferencia de una sola ejecución puede ser una variación no determinista y **no prueba que el cambio de referencias cualificadas haya causado la subida**. La ejecución #17 sobre el SHA más reciente debe confirmar si el caso vuelve a pasar; incluso si vuelve a pasar, conviene repetir la prueba del caso de forma aislada para verificar estabilidad.
+
+El workflow multilenguaje #621 selecciona muestras de forma distinta: dio 362/1.000. No mezclar su score con el del workflow dedicado; para la serie histórica 37,5 % → 36,2 % → 36,3 %, usar solo scorecards del workflow dedicado y marcar la variabilidad del caso aleatorio. El objetivo de +5 puntos porcentuales sigue sin alcanzarse.
