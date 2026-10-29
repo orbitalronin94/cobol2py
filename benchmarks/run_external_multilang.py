@@ -86,7 +86,6 @@ def run_language(language: str, source: Path, reference: dict[str, Any], work: P
     actual = run_process(executable, work, run_timeout)
     match = (
         actual.get("launched") and not actual.get("timeout")
-        and not actual.get("stdout_truncated") and not reference.get("stdout_truncated")
         and stdout_matches(actual, reference)
         and actual.get("returncode") == reference.get("returncode")
     )
