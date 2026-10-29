@@ -153,6 +153,31 @@ class PreprocessTests(unittest.TestCase):
         self.assertIn("45678", generated)
         compile(generated, "<continued-numeric>", "exec")
 
+    def test_file_section_record_descriptions_are_parsed(self):
+        source = "\\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. FILERECORD.",
+            "DATA DIVISION.",
+            "FILE SECTION.",
+            "FD INPUT-FILE.",
+            "01 INPUT-RECORD.",
+            "05 INPUT-CODE PIC X(4).",
+            "05 INPUT-AMOUNT PIC 9(5).",
+            "WORKING-STORAGE SECTION.",
+            "01 WS-COUNT PIC 9(2) VALUE 0.",
+            "PROCEDURE DIVISION.",
+            "STOP RUN.",
+        ])
+        program = cobol2py.parse_cobol(source, source_format="free")
+        variables = {item.name: item for item in program.variables}
+
+        self.assertIn("INPUT-RECORD", variables)
+        self.assertIn("INPUT-CODE", variables)
+        self.assertIn("INPUT-AMOUNT", variables)
+        self.assertIn("WS-COUNT", variables)
+        self.assertEqual(variables["INPUT-CODE"].parent_name, "INPUT-RECORD")
+        self.assertEqual(variables["INPUT-AMOUNT"].parent_name, "INPUT-RECORD")
+
 
 class TranslationTests(unittest.TestCase):
     def test_sign_conditions_handle_positive_negative_and_not(self):
