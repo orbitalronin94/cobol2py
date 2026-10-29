@@ -1994,7 +1994,7 @@ class CobolIntrinsicFunctionRegressionTests(unittest.TestCase):
         self.assertEqual(translated, "_cobol_numval_c(ws_amount)")
         compile(translated, "<numval-c-intrinsic>", "eval")
 
-        source = "\\n".join([
+        source = "\n".join([
             "IDENTIFICATION DIVISION.",
             "PROGRAM-ID. NUMVALCTEST.",
             "PROCEDURE DIVISION.",
