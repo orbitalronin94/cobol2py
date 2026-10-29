@@ -177,3 +177,12 @@ En `cobc/typeck.c`, la resolución de referencias compara el número de subíndi
 **Implicación concreta para los errores de Cobol2Py:** los casos en que una lista se indexa por una clave de texto o se omite una dimensión no se arreglan solo convirtiendo el índice a entero. El resolver debe saber cuántas dimensiones espera cada símbolo, qué nivel de tabla corresponde a cada subíndice y si el acceso está dentro del rango activo de ODO. Crear fixtures diferenciales para: número correcto/incorrecto de subíndices, tabla de una y varias dimensiones, índice literal y variable, y lectura/escritura dentro y fuera del rango ODO.
 
 Fuente inspeccionada: [`cobc/typeck.c`](https://github.com/OCamlPro/gnucobol/blob/master/cobc/typeck.c), comprobación de subíndices y validación de `OCCURS DEPENDING`.
+
+
+### Caso de estudio reproducible: tablas NIST de tres dimensiones
+
+La suite de pruebas de ProLeap incluye [`NC234A.CBL`](https://github.com/uwol/proleap-cobol-parser/blob/main/src/test/resources/gov/nist/NC234A.CBL). La declaración `3-DIMENSION-TBL` contiene tres niveles de tablas anidadas `OCCURS 10 TIMES`; una segunda vista `3-DEM-TBL REDEFINES 3-DIMENSION-TBL` declara otra jerarquía de tres dimensiones. El procedimiento usa referencias como `ENTRY-3-1 (SUB-1, SUB-2, SUB-3)` y `SEARCH GRP3-ENTRY-1 VARYING IDX-3-1`.
+
+Los fallos del corpus externo `nc2344-2-5f8e49c5ac`, `nc241a-681f02a7ce` y `nc2414-2-2f38ed7c87` son coherentes con esta familia: el Python generado falla al indexar estructuras anidadas, y la prueba de referencia contiene tablas de tres dimensiones y REDEFINES. No se debe asumir que el error sea solo una conversión de índice a entero: hay que comprobar conjuntamente la ruta jerárquica, el número/orden de subíndices y la vista de almacenamiento redefinida.
+
+**Siguiente fixture mínimo:** reducir la estructura a una tabla con tres niveles `OCCURS`, una segunda definición `REDEFINES`, escritura y lectura en las dos vistas, y una búsqueda indexada. Comparar salida y código de retorno con GnuCOBOL. La corrección de calificadores anidados de la PR #40 no alteró esos casos del informe multilenguaje; la siguiente iteración debe aislar la interacción entre la jerarquía de tablas y REDEFINES, no repetir el mismo parche de regex.
