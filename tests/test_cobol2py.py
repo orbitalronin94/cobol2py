@@ -1,6 +1,7 @@
 """Regression tests for cobol2py. Run with: python -m unittest discover -s tests -v."""
 import ast
 import unittest
+from pathlib import Path
 
 import cobol2py
 
@@ -2696,6 +2697,33 @@ class GroupMoveFillRegressionTests(unittest.TestCase):
             "test_results['result_row'][1]['feature'] = '    '",
             "test_results['result_row'][1]['p_or_f'] = ' '",
         ])
+
+
+class NistGroupStorageRegressionTests(unittest.TestCase):
+    def test_fixed_format_nist_test_results_remains_a_group(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        fixture = Path(__file__).parent / "fixtures" / "IC222A-working-storage.cbl"
+        source = fixture.read_text(encoding="utf-8")
+        program = cobol2py.parse_cobol(source, source_format="auto")
+        variables = {variable.name.upper(): variable for variable in program.variables}
+        self.assertIn("TEST-RESULTS", variables)
+        self.assertTrue(variables["TEST-RESULTS"].is_group)
+        self.assertIsNone(variables["TEST-RESULTS"].parent_name)
+        self.assertTrue(any(
+            (variable.parent_name or "").upper() == "TEST-RESULTS"
+            for variable in program.variables
+        ))
+
+        generated = cobol2py.emit_python(program)
+        self.assertIn("test_results: dict", generated)
+        namespace = {"__name__": "not_main"}
+        exec(compile(generated, "<nist-group-storage>", "exec"), namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "PASS                \\n")
 
 
 class GroupToGroupMoveRegressionTests(unittest.TestCase):
