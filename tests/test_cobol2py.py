@@ -3054,7 +3054,7 @@ class OrdinalIntrinsicRegressionTests(unittest.TestCase):
 
 class ScreenSectionParsingRegressionTests(unittest.TestCase):
     def test_screen_section_items_are_parsed_without_leaking_hierarchy(self):
-        source = "\\n".join([
+        source = "\n".join([
             "IDENTIFICATION DIVISION.",
             "PROGRAM-ID. SCREENDECL.",
             "DATA DIVISION.",
