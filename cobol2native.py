@@ -103,6 +103,69 @@ def _translate_statement(statement: str, variables: dict[str, core.CobolVar], la
     raise UnsupportedConstruct(f"statement not supported by experimental {lang} backend: {s}")
 
 
+
+def _native_condition(condition: str, variables: dict[str, core.CobolVar], lang: str) -> str:
+    """Translate a conservative subset of scalar COBOL conditions."""
+    text = condition.strip().rstrip(".").strip()
+    for word, symbol in ((" AND ", " && "), (" OR ", " || ")):
+        if word in text.upper():
+            parts = re.split(re.escape(word), text, maxsplit=1, flags=re.IGNORECASE)
+            return "(" + _native_condition(parts[0], variables, lang) + symbol + _native_condition(parts[1], variables, lang) + ")"
+    if text.upper().startswith("NOT "):
+        return "!(" + _native_condition(text[4:], variables, lang) + ")"
+    match = re.fullmatch(r"(.+?)\s+(?:(?:IS)\s+)?(?:(NOT)\s+)?(EQUAL(?:\s+TO)?|GREATER(?:\s+THAN)?|LESS(?:\s+THAN)?|<>|!=|<=|>=|=|<|>)\s+(.+)", text, re.I)
+    if not match:
+        raise UnsupportedConstruct("IF condition outside native subset: " + text)
+    left_text, negated, op_text, right_text = match.groups()
+    left = _literal(left_text, variables, lang)
+    right = _literal(right_text, variables, lang)
+    op_upper = re.sub(r"\s+", " ", op_text.upper())
+    if op_upper.startswith("EQUAL"):
+        op = "=="
+    elif op_upper.startswith("GREATER"):
+        op = ">"
+    elif op_upper.startswith("LESS"):
+        op = "<"
+    else:
+        op = {"=": "==", "<>": "!=", "!=": "!=", "<": "<", ">": ">", "<=": "<=", ">=": ">="}[op_text]
+    if negated:
+        op = {"==": "!=", "!=": "==", "<": ">=", ">": "<=", "<=": ">", ">=": "<"}.get(op, op)
+    if lang == "c":
+        def is_text(token: str) -> bool:
+            name = re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", token.strip())
+            if name and name.group(0).upper() in variables:
+                pic = (variables[name.group(0).upper()].pic or "").upper()
+                return "X" in pic or "A" in pic
+            return core.decode_cobol_quoted_literal(token.strip()) is not None or token.strip().upper() in ("SPACE", "SPACES")
+        if is_text(left_text) or is_text(right_text):
+            return f"(strcmp({left}, {right}) {op} 0)"
+    return f"({left} {op} {right})"
+
+
+def _emit_nodes(nodes: list[core.Node], variables: dict[str, core.CobolVar], lang: str, indent: int = 1) -> list[str]:
+    output: list[str] = []
+    pad = "    " * indent
+    for node in nodes:
+        if node.kind == "stmt":
+            output.extend(pad + line for line in _translate_statement(node.text, variables, lang))
+        elif node.kind == "if":
+            match = core.RE_IF_OPEN.match(node.text)
+            if not match:
+                raise UnsupportedConstruct("malformed IF node: " + node.text)
+            condition = _native_condition(match.group(1), variables, lang)
+            output.append(pad + (f"if ({condition}) {{" if lang == "c" else f"if {condition} {{"))
+            body = _emit_nodes(node.then_branch, variables, lang, indent + 1)
+            output.extend(body or ["    " * (indent + 1) + (";" if lang == "c" else "() ;")])
+            if node.else_branch:
+                output.append(pad + "} else {")
+                body = _emit_nodes(node.else_branch, variables, lang, indent + 1)
+                output.extend(body or ["    " * (indent + 1) + (";" if lang == "c" else "() ;")])
+            output.append(pad + "}")
+        else:
+            raise UnsupportedConstruct(f"control-flow node '{node.kind}' is not yet supported by experimental {lang} backend")
+    return output
+
+
 def emit_native(program: core.Program, lang: str) -> str:
     if lang not in ("c", "rust"):
         raise ValueError("lang must be c or rust")
@@ -114,10 +177,7 @@ def emit_native(program: core.Program, lang: str) -> str:
             )
     statements: list[str] = []
     for paragraph in program.paragraph_order:
-        for node in program.paragraphs.get(paragraph, []):
-            if node.kind != "stmt":
-                raise UnsupportedConstruct(f"control-flow node '{node.kind}' is not yet supported by the experimental {lang} backend")
-            statements.extend(_translate_statement(node.text, variables, lang))
+        statements.extend(_emit_nodes(program.paragraphs.get(paragraph, []), variables, lang))
     lines: list[str] = [
         f"/* Experimental COBOL -> {lang.upper()} translation for {program.program_id}. */"
     ]
@@ -137,7 +197,7 @@ def emit_native(program: core.Program, lang: str) -> str:
                 lines.append(f"    long long {ident} = {initial};")
             else:
                 raise UnsupportedConstruct(f"unsupported PIC for {var.name}: {var.pic}")
-        lines += ["    " + line for line in statements]
+        lines += statements
         if not any(line.strip() == "return 0;" for line in statements):
             lines.append("    return 0;")
         lines += ["}"]
