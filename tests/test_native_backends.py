@@ -45,12 +45,21 @@ class NativeBackendTests(unittest.TestCase):
         output = cobol2native.emit_native(program, "c")
         self.assertIn('printf("%lld%g\\n", (long long)(123), (double)(1.5));', output)
 
-    def test_unsupported_control_flow_fails_closed(self):
+    def test_if_control_flow_is_emitted_for_c_and_rust(self):
         import cobol2py
-        source = SOURCE.replace("ADD 1 TO WS-COUNT.", 'IF WS-COUNT = 1 DISPLAY "YES" END-IF.')
+        source = SOURCE.replace(
+            "ADD 1 TO WS-COUNT.",
+            'IF WS-COUNT = 1 DISPLAY "YES" ELSE DISPLAY "NO" END-IF.',
+        )
         program = cobol2py.parse_cobol(source, source_format="free")
-        with self.assertRaises(cobol2native.UnsupportedConstruct):
-            cobol2native.emit_native(program, "c")
+        c_output = cobol2native.emit_native(program, "c")
+        rust_output = cobol2native.emit_native(program, "rust")
+        self.assertIn("if ((ws_count == 1)) {", c_output)
+        self.assertIn('printf("%s\\n", "YES");', c_output)
+        self.assertIn("} else {", c_output)
+        self.assertIn("if (ws_count == 1) {", rust_output)
+        self.assertIn('print!("{}\\n", "YES");', rust_output)
+        self.assertIn("} else {", rust_output)
 
 
 if __name__ == "__main__":
