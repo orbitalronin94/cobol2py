@@ -182,6 +182,56 @@ def _emit_nodes(nodes: list[core.Node], variables: dict[str, core.CobolVar], lan
     for node in nodes:
         if node.kind == "stmt":
             output.extend(pad + line for line in _translate_statement(node.text, variables, lang))
+        elif node.kind == "perform_until_inline":
+            match = re.match(
+                r"^PERFORM(?:\s+WITH\s+TEST\s+(BEFORE|AFTER))?\s+UNTIL\s+(.+)$",
+                node.text,
+                re.IGNORECASE,
+            )
+            if not match:
+                raise UnsupportedConstruct("malformed inline PERFORM UNTIL: " + node.text)
+            test_mode = match.group(1).upper() if match.group(1) else "BEFORE"
+            condition = _native_condition(match.group(2), variables, lang)
+            if test_mode == "AFTER":
+                output.append(pad + ("while (1) {" if lang == "c" else "loop {"))
+                body = _emit_nodes(node.body, variables, lang, indent + 1)
+                output.extend(body or ["    " * (indent + 1) + (";" if lang == "c" else "() ;")])
+                output.append("    " * (indent + 1) + f"if ({condition}) {{ break; }}" if lang == "c" else "    " * (indent + 1) + f"if {condition} {{ break; }}")
+            else:
+                output.append(pad + (f"while (!({condition})) {{" if lang == "c" else f"while !({condition}) {{"))
+                body = _emit_nodes(node.body, variables, lang, indent + 1)
+                output.extend(body or ["    " * (indent + 1) + (";" if lang == "c" else "() ;")])
+            output.append(pad + "}")
+        elif node.kind == "perform_varying_inline":
+            match = re.match(
+                r"^PERFORM(?:\s+WITH\s+TEST\s+(BEFORE|AFTER))?\s+VARYING\s+([A-Za-z0-9-]+)\s+FROM\s+(.+?)\s+BY\s+(.+?)\s+UNTIL\s+(.+)$",
+                node.text,
+                re.IGNORECASE,
+            )
+            if not match:
+                raise UnsupportedConstruct("malformed inline PERFORM VARYING: " + node.text)
+            test_mode = match.group(1).upper() if match.group(1) else "BEFORE"
+            index_token, start_text, step_text, condition_text = match.group(2, 3, 4, 5)
+            variable = _resolve_native_variable(index_token, variables)
+            if variable is None or variable.is_group or variable.is_array:
+                raise UnsupportedConstruct("unsupported PERFORM VARYING index: " + index_token)
+            index_expr = _native_ident(variable, variables)
+            start_expr = _literal(start_text, variables, lang)
+            step_expr = _literal(step_text, variables, lang)
+            condition = _native_condition(condition_text, variables, lang)
+            output.append(pad + f"{index_expr} = {start_expr};")
+            if test_mode == "AFTER":
+                output.append(pad + ("while (1) {" if lang == "c" else "loop {"))
+                body = _emit_nodes(node.body, variables, lang, indent + 1)
+                output.extend(body or ["    " * (indent + 1) + (";" if lang == "c" else "() ;")])
+                output.append("    " * (indent + 1) + f"{index_expr} += {step_expr};")
+                output.append("    " * (indent + 1) + (f"if ({condition}) {{ break; }}" if lang == "c" else f"if {condition} {{ break; }}"))
+            else:
+                output.append(pad + (f"while (!({condition})) {{" if lang == "c" else f"while !({condition}) {{"))
+                body = _emit_nodes(node.body, variables, lang, indent + 1)
+                output.extend(body or ["    " * (indent + 1) + (";" if lang == "c" else "() ;")])
+                output.append("    " * (indent + 1) + f"{index_expr} += {step_expr};")
+            output.append(pad + "}")
         elif node.kind == "perform_inline":
             output.append(pad + "{")
             body = _emit_nodes(node.body, variables, lang, indent + 1)
