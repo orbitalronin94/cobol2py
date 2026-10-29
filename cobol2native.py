@@ -46,7 +46,7 @@ def _display_expr(token: str, variables: dict[str, core.CobolVar], lang: str) ->
         var = variables[name_match.group(0).upper()]
         ident = core.normalize_name(var.name)
         if var.pic and any(c in var.pic.upper() for c in "XA"):
-            return ("str", ident) if lang == "rust" else ("%s", ident)
+            return ("{}", ident) if lang == "rust" else ("%s", ident)
         width = core.pic_digit_count(var.pic or "")
         return (f"{{:0{width}}}", ident) if lang == "rust" else (f"%0{width}lld", ident)
     literal = _literal(token, variables, lang)
