@@ -1348,14 +1348,22 @@ def normalize_data_reference(
         text,
         re.IGNORECASE,
     )
-    if qualified_chain:
+    qualified_parts = (
+        re.split(r"\s+(?:OF|IN)\s+", text, flags=re.IGNORECASE)
+        if qualified_chain else None
+    )
+    has_indexed_qualifier = bool(
+        qualified_parts
+        and any(re.search(r"\([^()]*\)", part) for part in qualified_parts[1:])
+    )
+    if qualified_chain and not has_indexed_qualifier:
+        text = f"{qualified_chain.group(1)} OF {qualified_chain.group(2)}"
+    elif has_indexed_qualifier:
+        # Keep all containing groups: each OCCURS qualifier owns its own index.
         text = f"{qualified_chain.group(1)} OF {qualified_chain.group(2)}"
     seen = set() if _seen is None else _seen
     reference_key = text.upper()
     if reference_key in seen:
-        # Malformed/ambiguous data hierarchies can cycle when names are
-        # duplicated in the simplified name map. Stop recursion rather than
-        # hanging the translator on a single source file.
         return normalize_name(text)
     seen.add(reference_key)
     match = re.fullmatch(
@@ -1372,7 +1380,7 @@ def normalize_data_reference(
             re.search(r"(?<![A-Za-z0-9-])IS(?![A-Za-z0-9-])", text, re.IGNORECASE)
         )
         is_data_clause = bool(
-            re.match(r"^\\s*(?:PIC(?:TURE)?|VALUE)\\b", text, re.IGNORECASE)
+            re.match(r"^\s*(?:PIC(?:TURE)?|VALUE)\b", text, re.IGNORECASE)
         )
         if has_relation_is and not is_data_clause:
             return translate_condition(text, variables)
@@ -1405,6 +1413,36 @@ def normalize_data_reference(
         if re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*\s*[+*/-]\s*[A-Za-z0-9_-]+(?:\s*[+*/-]\s*[A-Za-z0-9_-]+)*", subscript):
             return f"{translate_expr(subscript, variable_map)} - 1"
         return f"{normalize_name(subscript)} - 1"
+
+    if has_indexed_qualifier and qualified_parts:
+        part_matches = [
+            re.fullmatch(r"([A-Za-z0-9-]+)(?:\s*\(([^()]*)\))?", part.strip())
+            for part in qualified_parts
+        ]
+        if all(part_matches):
+            root_match = part_matches[-1]
+            root_reference = root_match.group(1)
+            if root_match.group(2) is not None:
+                root_reference += f"({root_match.group(2)})"
+            expression = normalize_data_reference(root_reference, variable_map, seen)
+            # Build the storage path from the outermost group toward the field.
+            for part_match in reversed(part_matches[:-1]):
+                child_name, child_subscript_text = part_match.groups()
+                expression += f"[{normalize_name(child_name)!r}]"
+                if child_subscript_text:
+                    child_subscripts = [
+                        part.strip() for part in re.split(r"[,;]", child_subscript_text)
+                    ]
+                    if len(child_subscripts) == 1 and re.search(r"\s", child_subscript_text.strip()):
+                        candidates = re.split(
+                            r"(?<![+\-*/])\s+(?=[A-Za-z0-9][A-Za-z0-9_-]*(?:\s|$))",
+                            child_subscript_text.strip(),
+                        )
+                        if len(candidates) > 1:
+                            child_subscripts = candidates
+                    for child_subscript in child_subscripts:
+                        expression += f"[{index_expression(child_subscript)}]"
+            return expression
 
     variable = variable_map.get(field_name.upper())
     if qualifier:
