@@ -2408,18 +2408,31 @@ def translate_condition(
     # lhs (for example, ws_flag.ljust(1)) for the next abbreviated literal.
     string_alternatives = re.compile(
         r"""(?P<lhs>[A-Za-z][A-Za-z0-9-]*(?:\s*\([^()]*\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*)*)"""
-        r"""\s*(?P<op>NOT\s*=|=|<>|!=|<=|>=|<|>)\s*"""
+        r"""\s*(?P<op>NOT\s*=|NOT\s*<>|NOT\s*!=|NOT\s*<=|NOT\s*>=|NOT\s*<|NOT\s*>|=|<>|!=|<=|>=|<|>)\s*"""
         r"""(?P<first>"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')"""
         r"""\s+(?P<logic>OR|AND)\s+"""
+        r"""(?:(?P<op2>NOT\s*=|NOT\s*<>|NOT\s*!=|NOT\s*<=|NOT\s*>=|NOT\s*<|NOT\s*>|=|<>|!=|<=|>=|<|>)\s*)?"""
         r"""(?P<second>"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')""",
         re.IGNORECASE,
     )
+
+    def normalize_abbreviated_operator(operator: Optional[str], fallback: str) -> str:
+        if not operator:
+            operator = fallback
+        compact = re.sub(r"\s+", "", operator).upper()
+        if compact.startswith("NOT"):
+            inverse = {"=": "!=", "==": "!=", "<>": "==", "!=": "==",
+                       "<": ">=", ">": "<=", "<=": ">", ">=": "<"}
+            return inverse.get(compact[3:], compact[3:])
+        return {"=": "==", "<>": "!="}.get(compact, compact)
+
     expanded_string_alternatives = False
     for _ in range(max(1, len(cond.split()))):
         expanded = string_alternatives.sub(
             lambda match: (
-                f"{match.group('lhs')} {('!=' if match.group('op').upper().startswith('NOT') else match.group('op'))} {match.group('first')} "
-                f"{match.group('logic')} {match.group('lhs')} {('!=' if match.group('op').upper().startswith('NOT') else match.group('op'))} {match.group('second')}"
+                f"{match.group('lhs')} {normalize_abbreviated_operator(match.group('op'), match.group('op'))} {match.group('first')} "
+                f"{match.group('logic')} {match.group('lhs')} "
+                f"{normalize_abbreviated_operator(match.group('op2'), match.group('op'))} {match.group('second')}"
             ),
             cond,
         )
