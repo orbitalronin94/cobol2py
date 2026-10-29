@@ -43,7 +43,7 @@ class NativeBackendTests(unittest.TestCase):
         source = SOURCE.replace('DISPLAY WS-NAME.', 'DISPLAY 123 1.5.')
         program = cobol2py.parse_cobol(source, source_format="free")
         output = cobol2native.emit_native(program, "c")
-        self.assertIn('printf("%lld%g\\\\n", (long long)(123), (double)(1.5));', output)
+        self.assertIn('printf("%lld%g\\n", (long long)(123), (double)(1.5));', output)
 
     def test_unsupported_control_flow_fails_closed(self):
         import cobol2py
