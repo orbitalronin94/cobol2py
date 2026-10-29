@@ -54,7 +54,7 @@ def _display_expr(token: str, variables: dict[str, core.CobolVar], lang: str) ->
         return ("{}", literal)
     if literal.startswith('"'):
         return ("%s", literal)
-    if re.fullmatch(r"[+-]?\\d+", token.strip()):
+    if re.fullmatch(r"[+-]?\d+", token.strip()):
         return ("%lld", f"(long long)({literal})")
     return ("%g", f"(double)({literal})")
 
