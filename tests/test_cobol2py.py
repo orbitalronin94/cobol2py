@@ -1757,7 +1757,7 @@ class ImpliedDecimalDisplayRegressionTests(unittest.TestCase):
             "WS-RATE", {"WS-RATE": variable}
         )
         self.assertEqual(eval(expression, {"ws_rate": 234.56}), "234.56")
-        self.assertNotIn(".", eval(expression, {"ws_rate": 234.56}))
+        self.assertIn(".", eval(expression, {"ws_rate": 234.56}))
 
 
 class InlinePerformUntilRegressionTests(unittest.TestCase):
