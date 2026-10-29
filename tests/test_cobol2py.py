@@ -1726,7 +1726,7 @@ class DataReferenceResolutionTests(unittest.TestCase):
             "FIELD OF GROUP OF RECORD", variables
         )
 
-        self.assertEqual(translated, "record['group']['field']")
+        self.assertEqual(translated, "cobol_record['group']['field']")
 
     def test_cyclic_group_metadata_does_not_recurse_forever(self):
         variables = {
