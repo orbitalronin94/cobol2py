@@ -2464,9 +2464,14 @@ def translate_display_item(token: str, variables: dict[str, CobolVar]) -> str:
             digits = pic_digit_count(pic)
             scale = pic_digit_count(pic.split("V", 1)[1]) if "V" in pic else 0
             name = normalize_data_reference(token, variables)
+            if scale and "S" not in pic:
+                # V is implied: DISPLAY emits the stored digit positions with
+                # no decimal point (PIC 9(3)V99 displays 23456, not 234.56).
+                factor = 10 ** scale
+                return f"str(int(round(abs(float({name})) * {factor}))).zfill({digits})"
             if scale:
-                # V is an implied decimal point in COBOL storage; DISPLAY emits
-                # the digit positions, not a visible decimal separator.
+                # Keep the legacy signed path until sign representation is
+                # modeled explicitly (separate sign versus overpunch).
                 return f"format(float({name}), '0{digits + 1}.{scale}f')"
             return f"str(int(float({name}))).zfill({digits})"
     return f"str({translate_literal(token, variables)})"
