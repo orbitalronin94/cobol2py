@@ -459,3 +459,15 @@ Los nombres de datos o párrafos que coinciden con palabras reservadas de Python
 Además del traductor web de [`web/index.html`](web/index.html), hay una interfaz independiente para inventariar sistemas en [`web/agent.html`](web/agent.html). Permite seleccionar múltiples archivos COBOL, copybooks, JCL y SQL, revisar dependencias detectadas, referencias sin resolver o ambiguas y exportar informes Markdown/JSON. La demo analiza los archivos localmente en el navegador y no los sube a un servidor.
 
 La interfaz del navegador es una ayuda rápida con heurísticas reducidas, no un reemplazo del agente Python. Para análisis reproducibles y más completos, usa `python cobol2py_agent.py /ruta/al/sistema --out reports/plan.md --json-out reports/plan.json`; para enlazar inventario, traducción y comprobación sintáctica, consulta `tools/modernize_pilot.py`. Ninguno de estos informes prueba por sí solo equivalencia semántica.
+
+
+## Benchmark externo de tres backends (2026-10-29)
+
+Se ejecutó el benchmark pareado sobre X-COBOL v2 con GnuCOBOL como oráculo. Cada backend se evalúa sobre los mismos 500 programas elegibles por muestra; un acierto requiere coincidencia exacta de stdout y código de retorno. Los fuentes externos no se publican en los artefactos.
+
+| Muestra | Python | C experimental | Rust experimental |
+|---|---:|---:|---:|
+| Principal (500) | 136/500 (27,20 %) | 17/500 (3,40 %) | 16/500 (3,20 %) |
+| Holdout (500) | 160/500 (32,00 %) | 20/500 (4,00 %) | 19/500 (3,80 %) |
+
+Ejecución: [workflow external multilang #40861606573](https://github.com/orbitalronin94/cobol2py/actions/runs/40861606573). En la muestra principal se cribaron 1.244 candidatos, con 731 fallos de compilación de referencia y 13 exclusiones de ejecución; en holdout se cribaron 2.434, con 1.403 fallos de compilación y 31 exclusiones. Los denominadores de cada backend son los 500 programas elegibles de su muestra. Python supera ampliamente a los backends nativos experimentales; estos resultados sirven como línea base, no como estimación de compatibilidad universal ni comparación de rendimiento. Los backends C/Rust soportan un subconjunto mucho menor y rechazan muchas construcciones.
