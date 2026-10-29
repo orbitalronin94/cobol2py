@@ -135,5 +135,40 @@ STOP RUN.
         self.assertIn("} else {", rust_output)
 
 
+    def test_add_multiple_operands_and_move_multiple_targets(self):
+        import cobol2py
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. MULTI-OPERAND-DEMO.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-A PIC 9 VALUE 1.
+01 WS-B PIC 9 VALUE 2.
+01 WS-C PIC 9 VALUE 0.
+01 WS-D PIC 9 VALUE 0.
+01 WS-TEXT-A PIC X(4) VALUE SPACES.
+01 WS-TEXT-B PIC X(4) VALUE SPACES.
+PROCEDURE DIVISION.
+MAIN.
+ADD WS-A WS-B TO WS-C.
+MOVE 7 TO WS-C WS-D.
+MOVE "OK" TO WS-TEXT-A WS-TEXT-B.
+DISPLAY WS-C WS-D WS-TEXT-A WS-TEXT-B.
+STOP RUN.
+"""
+        program = cobol2py.parse_cobol(source, source_format="free")
+        c_output = cobol2native.emit_native(program, "c")
+        rust_output = cobol2native.emit_native(program, "rust")
+        self.assertIn("ws_c += ws_a + ws_b;", c_output)
+        self.assertIn("ws_c = 7;", c_output)
+        self.assertIn("ws_d = 7;", c_output)
+        self.assertIn('snprintf(ws_text_a, sizeof(ws_text_a), "%-4.4s", "OK");', c_output)
+        self.assertIn('snprintf(ws_text_b, sizeof(ws_text_b), "%-4.4s", "OK");', c_output)
+        self.assertIn("ws_c += ws_a + ws_b;", rust_output)
+        self.assertIn("ws_c = 7;", rust_output)
+        self.assertIn("ws_d = 7;", rust_output)
+        self.assertIn('ws_text_a = format!("{:<4}", "OK");', rust_output)
+        self.assertIn('ws_text_b = format!("{:<4}", "OK");', rust_output)
+
+
 if __name__ == "__main__":
     unittest.main()
