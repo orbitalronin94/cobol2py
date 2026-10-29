@@ -8,6 +8,7 @@ The parser and COBOL data model are shared with cobol2py.py.
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from pathlib import Path
@@ -26,7 +27,7 @@ def _literal(token: str, variables: dict[str, core.CobolVar], lang: str) -> str:
         if lang == "c":
             escaped = quoted.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
             return '"' + escaped + '"'
-        return repr(quoted)
+        return json.dumps(quoted, ensure_ascii=False)
     if re.fullmatch(r"[+-]?\d+(?:\.\d+)?", text):
         return text
     if text.upper() in ("ZERO", "ZEROS", "ZEROES"):
@@ -47,7 +48,7 @@ def _display_expr(token: str, variables: dict[str, core.CobolVar], lang: str) ->
         if var.pic and any(c in var.pic.upper() for c in "XA"):
             return ("str", ident) if lang == "rust" else ("%s", ident)
         width = core.pic_digit_count(var.pic or "")
-        return (f"{{:0{width}}}", ident) if lang == "rust" else (f"%0{width}d", ident)
+        return (f"{{:0{width}}}", ident) if lang == "rust" else (f"%0{width}lld", ident)
     literal = _literal(token, variables, lang)
     if lang == "rust":
         return ("{}", literal)
@@ -147,7 +148,7 @@ def emit_native(program: core.Program, lang: str) -> str:
                 width = max(1, core.pic_character_count(pic))
                 initial = core.decode_cobol_quoted_literal(var.value or "") or ""
                 initial = initial[:width].ljust(width)
-                lines.append(f"    let mut {ident}: String = {initial!r}.to_string();")
+                lines.append(f"    let mut {ident}: String = {json.dumps(initial, ensure_ascii=False)}.to_string();")
             elif "9" in pic:
                 initial = int(var.value) if var.value and re.fullmatch(r"[+-]?\d+", var.value.strip()) else 0
                 lines.append(f"    let mut {ident}: i64 = {initial};")
