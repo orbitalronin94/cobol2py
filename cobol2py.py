@@ -2094,18 +2094,22 @@ def fit_numeric_expression(expression: str, target: str, variables: dict[str, Co
 
 
 def translate_group_fill_move(source: str, target: str, variables: dict[str, CobolVar]) -> Optional[list[str]]:
-    """Translate MOVE of a figurative constant to a group without replacing its structure."""
+    """Translate a group MOVE without replacing the group's nested storage."""
     figuratives = {
         "SPACE": " ",
         "SPACES": " ",
-        "LOW-VALUE": "\x00",
-        "LOW-VALUES": "\x00",
-        "HIGH-VALUE": "\xff",
-        "HIGH-VALUES": "\xff",
+        "LOW-VALUE": "\\x00",
+        "LOW-VALUES": "\\x00",
+        "HIGH-VALUE": "\\xff",
+        "HIGH-VALUES": "\\xff",
     }
-    fill_char = figuratives.get(source.strip().upper())
-    if fill_char is None:
-        return None
+    source_text = source.strip()
+    fill_char = figuratives.get(source_text.upper())
+    all_literal = decode_cobol_all_literal(source_text)
+    quoted_literal = decode_cobol_quoted_literal(source_text)
+    repeat_payload = fill_char is not None or all_literal is not None
+    payload = fill_char if fill_char is not None else all_literal if all_literal is not None else quoted_literal
+
     target_match = re.match(r"([A-Za-z0-9-]+)", target.strip())
     if target_match is None:
         return None
@@ -2113,12 +2117,8 @@ def translate_group_fill_move(source: str, target: str, variables: dict[str, Cob
     if root is None or not root.is_group:
         return None
 
-    assignments: list[str] = []
     target_expr = normalize_data_reference(target, variables)
-    # A subscripted group reference names one occurrence. An unsubscripted
-    # OCCURS group names the whole table, so fill each row without replacing
-    # the list-of-dictionaries storage with a scalar string.
-    has_explicit_subscript = bool(re.search(r"\(\s*[^)]*\)", target.strip()))
+    has_explicit_subscript = bool(re.search(r"\\(\\s*[^)]*\\)", target.strip()))
     if root.is_array and not has_explicit_subscript and not root.occurs:
         return None
 
@@ -2131,6 +2131,65 @@ def translate_group_fill_move(source: str, target: str, variables: dict[str, Cob
             if digits:
                 return digits
         return 1
+
+    # A literal MOVE to a group is a byte-wise alphanumeric move: pad/truncate
+    # the complete receiving group, then distribute those bytes across leaves.
+    # Assigning the literal to the root would replace its dictionary with a
+    # string and make later qualified references fail with TypeError.
+    if payload is not None and (fill_char is not None or all_literal is not None or quoted_literal is not None):
+        leaves: list[tuple[str, CobolVar, int]] = []
+
+        def collect_leaves(group: CobolVar, group_expr: str, ancestors: set[str]) -> None:
+            if group.name.upper() in ancestors:
+                return
+            next_ancestors = ancestors | {group.name.upper()}
+            children = [
+                child for child in variables.values()
+                if (child.parent_name or "").upper() == group.name.upper()
+            ]
+            for child in children:
+                child_expr = f"{group_expr}[{normalize_name(child.name)!r}]"
+                if child.is_group and child.is_array:
+                    for index in range(child.occurs or 0):
+                        collect_leaves(child, f"{child_expr}[{index}]", next_ancestors)
+                elif child.is_group:
+                    collect_leaves(child, child_expr, next_ancestors)
+                elif child.is_array:
+                    for index in range(child.occurs or 0):
+                        leaves.append((f"{child_expr}[{index}]", child, field_width(child)))
+                else:
+                    leaves.append((child_expr, child, field_width(child)))
+
+        if root.is_array and not has_explicit_subscript:
+            for index in range(root.occurs or 0):
+                collect_leaves(root, f"{target_expr}[{index}]", set())
+        else:
+            collect_leaves(root, target_expr, set())
+
+        if leaves and all(
+            variable.pic and any(char in variable.pic.upper() for char in ("X", "A"))
+            for _, variable, _ in leaves
+        ):
+            total_width = sum(width for _, _, width in leaves)
+            if repeat_payload:
+                if payload:
+                    complete = (payload * ((total_width + len(payload) - 1) // len(payload)))[:total_width]
+                else:
+                    complete = " " * total_width
+            else:
+                complete = (payload or "")[:total_width].ljust(total_width)
+            assignments: list[str] = []
+            offset = 0
+            for expression, _, width in leaves:
+                assignments.append(f"{expression} = {complete[offset:offset + width]!r}")
+                offset += width
+            return assignments or None
+
+    # Preserve the established fieldwise handling for figurative constants
+    # when numeric elementary fields prevent a byte-wise string representation.
+    if fill_char is None:
+        return None
+    assignments = []
 
     def visit(group: CobolVar, group_expr: str, ancestors: set[str]) -> None:
         if group.name.upper() in ancestors:
@@ -2160,7 +2219,6 @@ def translate_group_fill_move(source: str, target: str, variables: dict[str, Cob
     else:
         visit(root, target_expr, set())
     return assignments or None
-
 
 def translate_move_value(source: str, target: str, variables: dict[str, CobolVar]) -> str:
     """Translate MOVE with basic receiving-field size semantics.
