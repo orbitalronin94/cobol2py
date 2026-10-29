@@ -11,7 +11,6 @@ on:
       - "benchmarks/Dockerfile.external"
       - "benchmarks/run_external_corpus.py"
       - "benchmarks/run_external_multilang.py"
-      - "benchmarks/run_external_multilang.py"
   pull_request:
     paths:
       - ".github/workflows/external-cobol-corpus.yml"
