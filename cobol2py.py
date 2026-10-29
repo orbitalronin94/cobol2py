@@ -1200,14 +1200,27 @@ def emit_assignment(target: str, value: str, variables: Optional[dict[str, Cobol
     """Route supported REDEFINES assignments through the shared storage buffer."""
     variable_map = variables or {}
     match = re.fullmatch(
-        r"([A-Za-z0-9-]+)(?:\s*\([A-Za-z0-9_-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?",
+        r"([A-Za-z0-9-]+)(?:\s*\(([^()]*)\))?(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?",
         target.strip(), re.IGNORECASE,
     )
     if match:
-        field_name = match.group(1).upper()
+        field_name, subscript_text = match.groups()
+        field_name = field_name.upper()
         overlay_fields, _ = build_overlay_layout(variable_map)
-        if field_name in overlay_fields and "(" not in target:
-            return f"_cobol_set({field_name!r}, {value})"
+        if field_name in overlay_fields:
+            if not subscript_text:
+                return f"_cobol_set({field_name!r}, {value})"
+            if ":" not in subscript_text:
+                index_args = []
+                for subscript in re.split(r"[,;]", subscript_text):
+                    subscript = subscript.strip()
+                    if subscript.isdigit():
+                        index_args.append(str(int(subscript) - 1))
+                    elif re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*", subscript):
+                        index_args.append(f"int({normalize_name(subscript)}) - 1")
+                    else:
+                        index_args.append(f"({translate_expr(subscript, variable_map)}) - 1")
+                return f"_cobol_set({field_name!r}, {value}, {', '.join(index_args)})"
     return f"{normalize_data_reference(target, variable_map)} = {value}"
 
 
@@ -1286,6 +1299,14 @@ def normalize_data_reference(
         if re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*\s*[+*/-]\s*[A-Za-z0-9_-]+(?:\s*[+*/-]\s*[A-Za-z0-9_-]+)*", subscript):
             return f"{translate_expr(subscript, variable_map)} - 1"
         return f"{normalize_name(subscript)} - 1"
+
+    if (
+        field_name.upper() in overlay_fields
+        and subscript_text
+        and ":" not in subscript_text
+    ):
+        indices = ", ".join(index_expression(part) for part in subscripts)
+        return f"_cobol_get({field_name.upper()!r}, {indices})"
 
     variable = variable_map.get(field_name.upper())
     if qualifier:
@@ -4704,21 +4725,28 @@ def emit_python(prog: Program) -> str:
     lines.append("_cobol_stopped = False")
     lines.append("")
     initial_buffers = {
-        base_name: overlay_storage_initial_value(variables_by_name[base_name], width)
+        base_name: overlay_storage_initial_value(variables_by_name[base_name], width, variables_by_name)
         for base_name, width in overlay_buffers.items()
     }
     lines.append("_cobol_storage = " + repr(initial_buffers))
     lines.append("_cobol_overlay_fields = " + repr(overlay_fields))
     lines.append("")
-    lines.append("def _cobol_get(name):")
+    lines.append("def _cobol_field_offset(field, subscripts):")
+    lines.append("    strides = field.get('strides', [])")
+    lines.append("    if len(subscripts) != len(strides):")
+    lines.append("        raise ValueError(f'Wrong number of subscripts for overlay field: expected {len(strides)}, got {len(subscripts)}')")
+    lines.append("    return field['offset'] + sum(int(index) * stride for index, stride in zip(subscripts, strides))")
+    lines.append("")
+    lines.append("def _cobol_get(name, *subscripts):")
     lines.append("    field = _cobol_overlay_fields[name]")
-    lines.append("    raw = _cobol_storage[field['base']][field['offset']:field['offset'] + field['width']]")
+    lines.append("    offset = _cobol_field_offset(field, subscripts)")
+    lines.append("    raw = _cobol_storage[field['base']][offset:offset + field['width']]")
     lines.append("    return raw if field['kind'] == 'alpha' else int(raw or '0')")
     lines.append("")
-    lines.append("def _cobol_set(name, value):")
+    lines.append("def _cobol_set(name, value, *subscripts):")
     lines.append("    field = _cobol_overlay_fields[name]")
     lines.append("    base = field['base']")
-    lines.append("    offset = field['offset']")
+    lines.append("    offset = _cobol_field_offset(field, subscripts)")
     lines.append("    width = field['width']")
     lines.append("    if field['kind'] == 'alpha':")
     lines.append("        text = str(value)[:width].ljust(width)")
