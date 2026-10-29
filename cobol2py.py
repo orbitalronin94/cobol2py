@@ -585,6 +585,11 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
             continue
         upper = text.upper().rstrip(".")
 
+        if re.match(r"^PERFORM(?:\s+WITH\s+TEST\s+(?:BEFORE|AFTER))?\s+UNTIL\b", upper):
+            flush()
+            units.append((num, text.strip()))
+            continue
+
         if upper == "ELSE":
             flush()
             units.append((num, "ELSE"))
@@ -697,6 +702,18 @@ def build_tree(units: list[tuple[int, str]]) -> list[Node]:
             current_list.append(node)
             stack.append(("if", node, current_list))
             current_list = node.then_branch
+            continue
+
+        inline_until = re.match(
+            r"^PERFORM(?:\s+WITH\s+TEST\s+(BEFORE|AFTER))?\s+UNTIL\s+(.+)$",
+            normalized,
+            re.IGNORECASE,
+        )
+        if inline_until:
+            node = Node(kind="perform_until_inline", text=normalized, line=line)
+            current_list.append(node)
+            stack.append(("perform", node, current_list))
+            current_list = node.body
             continue
 
         inline_times = re.match(r"^PERFORM\s+(\d+)\s+TIMES$", upper)
@@ -3690,6 +3707,30 @@ def translate_nodes(
                 elif all(not line.strip() or line.strip().startswith("#") for line in else_body):
                     else_body.append("    " * (indent + 1) + "pass")
                 out.extend(else_body)
+
+        elif node.kind == "perform_until_inline":
+            match = re.match(
+                r"^PERFORM(?:\s+WITH\s+TEST\s+(BEFORE|AFTER))?\s+UNTIL\s+(.+)$",
+                node.text,
+                re.IGNORECASE,
+            )
+            test_mode = match.group(1).upper() if match and match.group(1) else "BEFORE"
+            condition = translate_condition(match.group(2), variables, condition_names) if match else "True"
+            prefix = "    " * indent
+            if test_mode == "AFTER":
+                out.append(prefix + "while True:")
+                body = translate_nodes(node.body, paragraphs, indent + 1, variables, current_paragraph, condition_names)
+                if not body or all(not line.strip() or line.strip().startswith("#") for line in body):
+                    body = ["    " * (indent + 1) + "pass"]
+                out.extend(body)
+                out.append("    " * (indent + 1) + f"if {condition}:")
+                out.append("    " * (indent + 2) + "break")
+            else:
+                out.append(prefix + f"while not ({condition}):")
+                body = translate_nodes(node.body, paragraphs, indent + 1, variables, current_paragraph, condition_names)
+                if not body or all(not line.strip() or line.strip().startswith("#") for line in body):
+                    body = ["    " * (indent + 1) + "pass"]
+                out.extend(body)
 
         elif node.kind == "perform_inline":
             out.append("    " * indent + f"# PERFORM inline: {node.text}")
