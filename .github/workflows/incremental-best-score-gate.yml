@@ -127,6 +127,7 @@ jobs:
       primary: ${{ steps.score.outputs.primary }}
       holdout: ${{ steps.score.outputs.holdout }}
       candidate_sha: ${{ steps.score.outputs.candidate_sha }}
+      target_reached: ${{ steps.score.outputs.target_reached }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -192,7 +193,11 @@ jobs:
               raise SystemExit("Tests and both benchmark jobs must succeed")
           primary, holdout = samples["primary"]["passed"], samples["holdout"]["passed"]
           total = primary + holdout
-          better = total > baseline["score"]
+          target = 375
+          target_reached = primary >= target and holdout >= target
+          better = (total > baseline["score"] and primary >= baseline["primary"]
+                    and holdout >= baseline["holdout"]
+                    and baseline["primary"] < target and baseline["holdout"] < target)
           print(f"Current best: {baseline['score']}/1000 ({baseline['primary']}/500 + {baseline['holdout']}/500)")
           print(f"Candidate: {total}/1000 ({primary}/500 + {holdout}/500)")
           print(f"Strict improvement: {better}")
