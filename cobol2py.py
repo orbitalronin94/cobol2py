@@ -1171,7 +1171,6 @@ def normalize_identifier(name: str) -> str:
         normalized = "cobol_" + normalized
     if (
         keyword.iskeyword(normalized)
-        or normalized in JAVA_RESERVED_WORDS
         or normalized in PYTHON_BUILTINS_USED
     ):
         return "cobol_" + normalized
