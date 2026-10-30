@@ -28,6 +28,12 @@ def run_process(command: list[str], cwd: Path, timeout: int, stdout_path: Option
                  "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8", "TZ": "UTC",
                  "PYTHONDONTWRITEBYTECODE": "1"})
     except OSError as error:
+        # Keep the diagnostic file contract even when the child never starts.
+        # Downstream byte-diff code can then safely compare an empty stream.
+        for output_path in (stdout_path, stderr_path):
+            if output_path is not None:
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                output_path.write_bytes(b"")
         return {"launched": False, "returncode": None, "stdout": "", "stderr": str(error),
                 "timeout": False, "stdout_truncated": False, "stderr_truncated": False,
                 "stdout_sha256": hashlib.sha256(b"").hexdigest(), "stdout_length": 0}
