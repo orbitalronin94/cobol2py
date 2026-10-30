@@ -481,6 +481,13 @@ class TranslationTests(unittest.TestCase):
         self.assertEqual(cobol2py.translate_expr("WS-NUM - 1"), "ws_num - 1")
         self.assertEqual(cobol2py.translate_expr("WS-NUM + WS-TOTAL"), "ws_num + ws_total")
 
+    def test_generated_integer_coercion_is_restored_outside_list_subscripts(self):
+        translated = cobol2py.translate_expr("int(CTR) - 1")
+        self.assertIn("int(", translated)
+        self.assertNotIn("cobol_int(", translated)
+        # A data item named INT is still a bare COBOL identifier.
+        self.assertEqual(cobol2py.normalize_name("WS-ITEM(INT)"), "ws_item[cobol_int - 1]")
+
     def test_java_compound_string_comparisons_use_value_equality(self):
         variables = {
             "WS-A": cobol2py.CobolVar(level=1, name="WS-A", pic="X(3)"),
