@@ -4,6 +4,7 @@ run-name: Seven-candidate COBOL equivalence tournament
 
 on:
   pull_request:
+    types: [opened, reopened]
     branches: [main]
     paths:
       - "cobol2py.py"
@@ -18,7 +19,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: cobol2py-seven-candidate-tournament
+  group: cobol2py-seven-candidate-tournament-v2
   cancel-in-progress: false
 
 # This is a one-shot frozen-baseline tournament. The coordinator is PR #57;
