@@ -333,7 +333,7 @@ RE_PARAGRAPH = re.compile(r"^(?!END-)([A-Za-z][A-Za-z0-9\-]*)\.\s*$")
 
 def _indexed_by_names(rest: str) -> list[str]:
     """Return every index-name in an INDEXED BY clause, including line folds."""
-    match = re.search(r"\bINDEXED\s+BY\b(.*)$", rest, re.IGNORECASE)
+    match = re.search(r"\bINDEXED(?:\s+BY)?\b(.*)$", rest, re.IGNORECASE)
     if not match:
         return []
     clause_words = {
@@ -384,7 +384,7 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
             declarations[-1] = (prior_number, prior_text.rstrip() + " " + source_line.strip())
         elif (
             declarations
-            and re.search(r"\bINDEXED\s+BY\b", declarations[-1][1], re.IGNORECASE)
+            and re.search(r"\bINDEXED(?:\s+BY)?\b", declarations[-1][1], re.IGNORECASE)
             and bare_index_continuation.match(source_line)
         ):
             # Additional INDEXED BY names may continue as bare identifiers.
