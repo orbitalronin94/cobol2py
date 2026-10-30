@@ -3640,7 +3640,12 @@ def translate_statement(
             return [f'print("".join([{items}]), end="")']
         return [f'print("".join([{items}]))']
 
-    m = re.match(rf"ACCEPT\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
+    accept_text = re.sub(
+        r"\s+AT\s+\d+(?:\s+\d+)?(?=\s|$)", "", s, flags=re.IGNORECASE
+    )
+    accept_text = re.sub(r"\s+WITH\s+PROMPT\s+AUTO\b", "", accept_text, flags=re.IGNORECASE)
+    accept_text = re.sub(r"\s+WITH\s+NO\s+ECHO\b", "", accept_text, flags=re.IGNORECASE)
+    m = re.match(rf"ACCEPT\s+({DATA_REF_PATTERN})$", accept_text, re.IGNORECASE)
     if m:
         target = m.group(1)
         target_expr = normalize_data_reference(target, variables)
