@@ -722,8 +722,8 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
             upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH")
             or upper in SCOPE_END_NOOPS
             or upper.startswith("AT END")
-            or re.match(r"^SEARCH\s+ALL\\b", upper)
-            or re.match(r"^SEARCH\s+(?!ALL\\b)", upper)
+            or re.match(r"^SEARCH\s+ALL\b", upper)
+            or re.match(r"^SEARCH\s+(?!ALL\b)", upper)
         ):
             flush()
             units.append((num, upper if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH") or upper in SCOPE_END_NOOPS else text.strip()))
