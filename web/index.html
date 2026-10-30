@@ -3372,11 +3372,16 @@ def emit_reference_modification_move(
     else:
         length_expr = f"(len(str({base_expr})) - {start_expr})"
     value_expr = translate_move_value(source, base, variables)
-    return (
-        f"{base_expr} = str({base_expr})[:{start_expr}] + "
+    replacement_expr = (
+        f"str({base_expr})[:{start_expr}] + "
         f"str({value_expr})[:{length_expr}].ljust({length_expr}) + "
         f"str({base_expr})[({start_expr}) + ({length_expr}):]"
     )
+    # Route through the common assignment emitter. For a REDEFINES view,
+    # normalize_data_reference(base) is a _cobol_get(...) expression and
+    # cannot be a Python assignment target; emit_assignment writes the
+    # replacement back through _cobol_set while preserving the table indices.
+    return emit_assignment(base, replacement_expr, variables)
 
 
 def emit_corresponding_arithmetic(
