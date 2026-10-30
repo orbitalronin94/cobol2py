@@ -173,6 +173,32 @@ def sha256_file(path: Path) -> str:
         for block in iter(lambda: handle.read(1024 * 1024), b""): digest.update(block)
     return digest.hexdigest()
 
+def preserve_exclusion_diagnostics(
+    output_root: Path, case_root: Path, source: Path,
+    result: dict[str, Any], compiled: dict[str, Any],
+) -> None:
+    """Persist source and reference-process evidence for an excluded case."""
+    diagnostic_dir = output_root / "diagnostics" / result["id"]
+    diagnostic_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, diagnostic_dir / ("source" + source.suffix.lower()))
+    for artifact_name in (
+        "reference-compile.stdout.bin", "reference-compile.stderr.bin",
+        "reference.stdout.bin", "reference.stderr.bin",
+    ):
+        artifact = case_root / artifact_name
+        if artifact.is_file():
+            shutil.copy2(artifact, diagnostic_dir / artifact_name)
+    metadata = {
+        "case": result,
+        "reference_compile_returncode": compiled.get("returncode"),
+        "reference_returncode": result.get("reference_returncode"),
+        "stdin": "DEVNULL; interactive input is not currently supplied.",
+        "classification": "reference exclusion; not counted as a translator failure or in the tested denominator",
+    }
+    (diagnostic_dir / "metadata.json").write_text(
+        json.dumps(metadata, indent=2, ensure_ascii=False) + "\\n", encoding="utf-8"
+    )
+
 def extract_archive(archive: Path, destination: Path) -> list[Path]:
     """Verify the published checksum and extract only safe ordinary ZIP files."""
     md5 = hashlib.md5()
@@ -267,6 +293,8 @@ def main() -> int:
                     result["reference_compile"] = "failed"
                     result["reason"] = "compile timeout" if compiled["timeout"] else (
                         compiled["stderr"] or "compiler did not produce an executable")[-400:]
+                    if args.diagnostics:
+                        preserve_exclusion_diagnostics(args.output, case_root, source, result, compiled)
                     continue
                 result["reference_compile"] = "passed"
                 reference = run_process([str(executable)], reference_work, args.run_timeout,
@@ -275,6 +303,9 @@ def main() -> int:
                 if not reference["launched"] or reference["timeout"]:
                     report["reference_runtime_exclusions"] += 1
                     result["reason"] = "reference execution timed out or could not launch"
+                    result["reference_returncode"] = reference.get("returncode")
+                    if args.diagnostics:
+                        preserve_exclusion_diagnostics(args.output, case_root, source, result, compiled)
                     continue
                 if eligible_seen < args.skip:
                     eligible_seen += 1
