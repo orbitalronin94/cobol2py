@@ -1993,6 +1993,9 @@ class CobolIntrinsicFunctionRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_expr("FUNCTION NUMVAL-C(WS-AMOUNT)")
         self.assertEqual(translated, "_cobol_numval_c(ws_amount)")
         compile(translated, "<numval-c-intrinsic>", "eval")
+        translated_with_currency = cobol2py.translate_expr('FUNCTION NUMVAL-C(WS-AMOUNT, "$")')
+        self.assertEqual(translated_with_currency, '_cobol_numval_c(ws_amount, "$")')
+        compile(translated_with_currency, "<numval-c-currency-argument>", "eval")
 
         source = "\n".join([
             "IDENTIFICATION DIVISION.",
