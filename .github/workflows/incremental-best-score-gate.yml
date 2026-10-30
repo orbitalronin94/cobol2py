@@ -267,6 +267,7 @@ jobs:
             "sample_size": 500,
             "holdout_size": 500,
             "exact_match": "stdout-byte-for-byte-and-exit-code",
+            "acceptance_target_each_sample": 375,
             "best": {
               "score": $SCORE,
               "primary": $PRIMARY,
