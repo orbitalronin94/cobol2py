@@ -734,7 +734,7 @@ MAIN.
         output = StringIO()
         with redirect_stdout(output):
             namespace["main"]()
-        self.assertEqual(output.getvalue(), "ABCDxy\\nDxy\\n", generated)
+        self.assertEqual(output.getvalue(), "ABCDxy\nDxy\n", generated)
         self.assertEqual(namespace["_cobol_storage"]["WS-RAW"], "ABCDxy")
 
 
