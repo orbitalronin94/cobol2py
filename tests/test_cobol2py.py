@@ -3666,3 +3666,44 @@ class ExternalBenchmarkConditionRegressionTests(unittest.TestCase):
         self.assertTrue(eval(translated, {"ws_opcao": "A"}))
         self.assertFalse(eval(translated, {"ws_opcao": "N"}))
         self.assertFalse(eval(translated, {"ws_opcao": "S"}))
+
+
+class SearchIndexResolutionRegressionTests(unittest.TestCase):
+    def test_search_falls_back_to_occurs_when_odo_controller_is_unresolved(self):
+        variables = {
+            "WS-TABLE": cobol2py.CobolVar(
+                level=1, name="WS-TABLE", pic="9", is_array=True,
+                occurs=12, depending_on="INDEXED", indexed_by="IDX-1",
+            )
+        }
+        node = cobol2py.Node(
+            kind="search",
+            text="SEARCH WS-TABLE",
+            line=42,
+            body=[cobol2py.Node(kind="when", text="WS-TABLE(IDX-1) = 7", line=43)],
+        )
+        generated = "\n".join(cobol2py.translate_nodes([node], set(), 0, variables))
+        compile(generated, "<search-unresolved-odo>", "exec")
+        self.assertIn("while idx_1 <= int(12):", generated)
+        self.assertNotIn("int(indexed)", generated)
+
+    def test_index_names_referenced_by_set_and_search_varying_are_scoped(self):
+        program = cobol2py.Program(
+            variables=[
+                cobol2py.CobolVar(
+                    level=1, name="WS-TABLE", is_array=True, occurs=5,
+                    indexed_by="IDX-1",
+                ),
+                cobol2py.CobolVar(level=1, name="WS-COUNT", pic="9"),
+            ],
+            raw_lines=[
+                (10, "SET IDX-7 TO 1"),
+                (11, "SEARCH WS-TABLE VARYING IDX-8"),
+                (12, "SET IDX-9 UP BY 1"),
+                (13, "SET WS-COUNT TO 2"),
+            ],
+        )
+        self.assertEqual(
+            cobol2py._program_index_names(program),
+            ["IDX-1", "IDX-7", "IDX-8", "IDX-9"],
+        )
