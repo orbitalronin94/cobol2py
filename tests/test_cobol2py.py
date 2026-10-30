@@ -3606,3 +3606,27 @@ class ExternalBenchmarkConditionRegressionTests(unittest.TestCase):
         self.assertTrue(eval(translated, {"ws_opcao": "A"}))
         self.assertFalse(eval(translated, {"ws_opcao": "N"}))
         self.assertFalse(eval(translated, {"ws_opcao": "S"}))
+
+
+class MultipleIndexedNamesCandidateTests(unittest.TestCase):
+    def test_legacy_indexed_clause_collects_every_name(self):
+        variables = cobol2py.parse_variables([
+            (1, "01 WS-TABLE OCCURS 50 INDEXED IDX-1 IDX-2 IDX-3 IDX-4.")
+        ])
+        self.assertEqual(variables[0].indexed_by, "IDX-1")
+        self.assertEqual(
+            variables[0].indexed_by_names,
+            ["IDX-1", "IDX-2", "IDX-3", "IDX-4"],
+        )
+
+    def test_by_spelling_and_clause_continuation_keep_all_indexes(self):
+        variables = cobol2py.parse_variables([
+            (1, "01 WS-TABLE OCCURS 10 INDEXED BY IDX-A IDX-B"),
+            (2, "   ASCENDING KEY IS WS-KEY."),
+        ])
+        self.assertEqual(variables[0].indexed_by_names, ["IDX-A", "IDX-B"])
+        program = cobol2py.Program(variables=variables)
+        generated = cobol2py.emit_python(program)
+        self.assertIn("idx_a = 1", generated)
+        self.assertIn("idx_b = 1", generated)
+        compile(generated, "<multiple-indexed-names>", "exec")
