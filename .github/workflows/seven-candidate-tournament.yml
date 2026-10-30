@@ -4,7 +4,7 @@ run-name: Seven-candidate COBOL equivalence tournament
 
 on:
   pull_request:
-    types: [opened, reopened]
+    types: [opened, reopened, synchronize]
     branches: [main]
     paths:
       - "cobol2py.py"
@@ -25,6 +25,7 @@ concurrency:
 # This is a one-shot frozen-baseline tournament. The coordinator is PR #57;
 # all other candidate PRs carry the same workflow but do not start duplicate runs.
 # Final coordinator refresh: all seven candidate branches now have their final patch and workflow SHA.
+# A synchronize event cancels stale benchmark runs so the matrix always uses one frozen set of candidate SHAs.
 
 jobs:
   candidate-tests:
