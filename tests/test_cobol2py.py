@@ -3365,6 +3365,30 @@ class IndexedByParsingRegressionTests(unittest.TestCase):
         self.assertEqual(by_name["WS-TABLE"].indexed_by_names, ["IDX-4", "IDX-5", "IDX-6"])
         self.assertEqual(by_name["WS-NESTED"].indexed_by_names, ["IDX-7", "IDX-8", "IDX-9"])
 
+    def test_sequential_search_uses_declared_index_and_executes_when_or_at_end(self):
+        variables = {
+            "WS-TABLE": cobol2py.CobolVar(
+                level=1, name="WS-TABLE", pic="9", is_array=True,
+                occurs=3, indexed_by="IDX-1",
+            ),
+            "FOUND": cobol2py.CobolVar(level=1, name="FOUND", pic="9"),
+        }
+        units = cobol2py.split_paragraph_into_units([
+            (1, "SEARCH WS-TABLE"),
+            (2, "    WHEN WS-TABLE (IDX-1) EQUAL TO 3"),
+            (3, "        MOVE 1 TO FOUND"),
+            (4, "    AT END MOVE 0 TO FOUND"),
+            (5, "END-SEARCH"),
+        ])
+        nodes = cobol2py.build_tree(units)
+        generated = "\n".join(
+            cobol2py.translate_nodes(nodes, set(), 0, variables)
+        )
+        self.assertIn("while idx_1 <= int(3):", generated)
+        self.assertIn("if ws_table[int(idx_1) - 1] == 3:", generated)
+        self.assertIn("found = 0", generated)
+        self.assertIn("break", generated)
+
     def test_set_multiple_index_names_and_move_indexes_up_or_down(self):
         variables = {
             "WS-TABLE": cobol2py.CobolVar(
