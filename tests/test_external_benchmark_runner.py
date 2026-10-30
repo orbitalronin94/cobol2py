@@ -205,7 +205,7 @@ class ExternalBenchmarkProcessTests(unittest.TestCase):
             self.assertFalse((syntax_dir / "candidate.stdout.bin").exists())
 
             translator_failure = next(item for item in report["results"]
-                                      if item.get("reason") == "translator failed")
+                                      if (item.get("reason") or "").strip() == "translator failed")
             translator_dir = output / "diagnostics" / translator_failure["id"]
             self.assertTrue((translator_dir / "source.cbl").is_file())
             self.assertTrue((translator_dir / "translator.stderr.bin").is_file())
