@@ -3606,3 +3606,21 @@ class ExternalBenchmarkConditionRegressionTests(unittest.TestCase):
         self.assertTrue(eval(translated, {"ws_opcao": "A"}))
         self.assertFalse(eval(translated, {"ws_opcao": "N"}))
         self.assertFalse(eval(translated, {"ws_opcao": "S"}))
+
+
+class AcceptFromSystemDateCandidateTests(unittest.TestCase):
+    def test_accept_from_date_yyyymmdd_emits_system_date(self):
+        variables = {"WS-DATE": cobol2py.CobolVar(level=77, name="WS-DATE", pic="X(8)")}
+        generated = "\\n".join(cobol2py.translate_statement(
+            "ACCEPT WS-DATE FROM DATE YYYYMMDD", set(), variables
+        ))
+        self.assertIn("strftime('%Y%m%d')", generated)
+        compile(generated, "<accept-date-yyyymmdd>", "exec")
+
+    def test_accept_from_day_of_week_emits_numeric_weekday(self):
+        variables = {"WS-DOW": cobol2py.CobolVar(level=77, name="WS-DOW", pic="9")}
+        generated = "\\n".join(cobol2py.translate_statement(
+            "ACCEPT WS-DOW FROM DAY-OF-WEEK", set(), variables
+        ))
+        self.assertIn("isoweekday()", generated)
+        compile(generated, "<accept-day-of-week>", "exec")
