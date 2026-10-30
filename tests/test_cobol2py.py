@@ -3606,3 +3606,15 @@ class ExternalBenchmarkConditionRegressionTests(unittest.TestCase):
         self.assertTrue(eval(translated, {"ws_opcao": "A"}))
         self.assertFalse(eval(translated, {"ws_opcao": "N"}))
         self.assertFalse(eval(translated, {"ws_opcao": "S"}))
+
+
+class AcceptScreenOptionsCandidateTests(unittest.TestCase):
+    def test_accept_ignores_screen_coordinates_and_prompt_auto(self):
+        variables = {"WS-OPTION": cobol2py.CobolVar(level=77, name="WS-OPTION", pic="X")}
+        generated = "\\n".join(cobol2py.translate_statement(
+            "ACCEPT WS-OPTION AT 1447 WITH PROMPT AUTO", set(), variables
+        ))
+        self.assertIn("_cobol_input()", generated)
+        self.assertNotIn("at", generated.lower())
+        self.assertNotIn("prompt", generated.lower())
+        compile(generated, "<accept-screen-options>", "exec")
