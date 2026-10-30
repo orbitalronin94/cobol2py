@@ -102,7 +102,7 @@ class ExternalBenchmarkProcessTests(unittest.TestCase):
                 sources = []
                 for name in source_names:
                     source = destination / name
-                    source.write_text("IDENTIFICATION DIVISION.\n", encoding="utf-8")
+                    source.write_text(f"IDENTIFICATION DIVISION. *> {name}\n", encoding="utf-8")
                     sources.append(source)
                 return sources
 
