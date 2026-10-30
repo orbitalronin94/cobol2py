@@ -1,13 +1,6 @@
 name: external-python-benchmark
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "cobol2py.py"
-      - "benchmarks/run_external_corpus.py"
-      - "benchmarks/Dockerfile.external"
-      - ".github/workflows/external-python-benchmark.yml"
   pull_request:
     paths:
       - "cobol2py.py"
@@ -79,7 +72,8 @@ jobs:
             --archive /input.zip \
             --output "/output/$SAMPLE_NAME" \
             --target "$TARGET" \
-            --skip "$SKIP"
+            --skip "$SKIP" \
+            --diagnostics
           status=$?
           docker rm "$CONTAINER_NAME" >/dev/null 2>&1
           exit "$status"
