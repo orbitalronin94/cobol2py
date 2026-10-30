@@ -1775,10 +1775,11 @@ def translate_expr(
     translated = "".join(out).strip()
     translated = translated.replace("zzcobolgeneratedlambdazz", "lambda")
     # The expression tokenizer normally renames Python built-ins that could
-    # collide with COBOL data-names. Restore only the generated integer-coercion
-    # call immediately inside a subscript; ordinary COBOL INT identifiers stay
-    # normalized as data references.
-    translated = re.sub(r"(?<=\[)cobol_int(?=\()", "int", translated)
+    # collide with COBOL data-names. A generated integer-coercion call is
+    # unambiguous by its following parenthesis, whether it is used in a normal
+    # list subscript or passed as an index to the shared REDEFINES buffer.
+    # A COBOL data item named INT remains a bare identifier and is untouched.
+    translated = re.sub(r"\bcobol_int(?=\()", "int", translated)
 
     # Resolve figurative-constant markers after tokenization so the generated
     # Python literal is not misread as a COBOL quoted literal a second time.
