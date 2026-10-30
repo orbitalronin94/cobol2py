@@ -1,0 +1,353 @@
+name: PR candidate equivalence tournament v2
+run-name: PR tournament — ${{ github.event.pull_request.title }}
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - "docs/pr-candidate-tournament-trigger.md"
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: cobol2py-pr-candidate-tournament-v2
+  cancel-in-progress: false
+
+jobs:
+  candidate-tests:
+    if: startsWith(github.event.pull_request.title, '[benchmark-tournament]')
+    name: Tests — ${{ matrix.candidate.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        candidate:
+          - { name: main-baseline, pr: 0, branch: "", base: "", head: "" }
+          - { name: pr58-fixed-data-name-continuations, pr: 58, branch: experiment/fixed-name-continuations, base: "6ba21280cb68848d14996c6d55f8ca64fcf40b09", head: "72432d699d426ffcac26dbee6e435e457176fdb8" }
+          - { name: pr59-inspect-tallying-before-initial, pr: 59, branch: experiment/string-delimited-by, base: "6ba21280cb68848d14996c6d55f8ca64fcf40b09", head: "25849bf3014106a6b822bbb4115486f381cc42d3" }
+          - { name: pr60-accept-screen-options, pr: 60, branch: experiment/accept-screen-options, base: "6ba21280cb68848d14996c6d55f8ca64fcf40b09", head: "0005bec0c726cbaf6ad62eeb08458d1782d11ea8" }
+          - { name: pr62-inspect-replacing-characters, pr: 62, branch: experiment/inspect-replacing, base: "6ba21280cb68848d14996c6d55f8ca64fcf40b09", head: "b59b322fe587c2b135a86a9afb220f815d1e4c35" }
+          - { name: pr63-accept-from-date-time, pr: 63, branch: experiment/accept-from-date, base: "6ba21280cb68848d14996c6d55f8ca64fcf40b09", head: "cbcf1bcee24d414df8b8ca153d64d605c1a18a97" }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+      - name: Apply candidate PR delta on current main
+        id: apply
+        env:
+          PATCH_BRANCH: ${{ matrix.candidate.branch }}
+          PATCH_BASE: ${{ matrix.candidate.base }}
+          PATCH_HEAD: ${{ matrix.candidate.head }}
+        run: |
+          set -euo pipefail
+          if [ -n "$PATCH_BRANCH" ]; then
+            git fetch --no-tags origin "refs/heads/$PATCH_BRANCH:refs/remotes/origin/$PATCH_BRANCH"
+            test "$(git rev-parse "refs/remotes/origin/$PATCH_BRANCH")" = "$PATCH_HEAD"
+            git diff --binary "$PATCH_BASE" "$PATCH_HEAD" -- cobol2py.py tests/test_cobol2py.py web/index.html > "$RUNNER_TEMP/candidate.patch"
+            test -s "$RUNNER_TEMP/candidate.patch"
+            git apply --3way --index "$RUNNER_TEMP/candidate.patch"
+          fi
+          echo "tree=$(git write-tree)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run full unit and regression suite
+        id: unit
+        run: python -m unittest discover -s tests -v
+      - name: Compile translator and benchmark runners
+        id: compile
+        run: python -m py_compile cobol2py.py cobol2native.py benchmarks/run_external_corpus.py benchmarks/run_external_multilang.py benchmarks/run_multilang_benchmark.py
+      - name: Record candidate test result
+        if: always()
+        env:
+          CANDIDATE: ${{ matrix.candidate.name }}
+          PR_NUMBER: ${{ matrix.candidate.pr }}
+          APPLY_OUTCOME: ${{ steps.apply.outcome }}
+          TREE: ${{ steps.apply.outputs.tree }}
+          UNIT_OUTCOME: ${{ steps.unit.outcome }}
+          COMPILE_OUTCOME: ${{ steps.compile.outcome }}
+        run: |
+          python - <<'PY'
+          import json, os
+          result = {
+              "candidate": os.environ["CANDIDATE"],
+              "pr": int(os.environ["PR_NUMBER"]),
+              "tree": os.environ.get("TREE", ""),
+              "patch_apply": os.environ.get("APPLY_OUTCOME"),
+              "unit_tests": os.environ.get("UNIT_OUTCOME"),
+              "compile": os.environ.get("COMPILE_OUTCOME"),
+              "tests_passed": all(os.environ.get(k) == "success" for k in
+                                  ("APPLY_OUTCOME", "UNIT_OUTCOME", "COMPILE_OUTCOME")),
+          }
+          with open(os.path.join(os.environ["RUNNER_TEMP"], "candidate-test-result.json"), "w") as f:
+              json.dump(result, f, indent=2)
+          print(json.dumps(result, indent=2))
+          PY
+      - name: Upload test result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-tests-${{ matrix.candidate.name }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/candidate-test-result.json
+          if-no-files-found: warn
+          retention-days: 90
+
+  exact-benchmark:
+    if: startsWith(github.event.pull_request.title, '[benchmark-tournament]')
+    name: Exact corpus — ${{ matrix.candidate.name }} / ${{ matrix.sample.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        candidate:
+          - { name: main-baseline, pr: 0, branch: "", base: "", head: "" }
+          - { name: pr58-fixed-data-name-continuations, pr: 58, branch: experiment/fixed-name-continuations, base: "6ba21280cb68848d14996c6d55f8ca64fcf40b09", head: "72432d699d426ffcac26dbee6e435e457176fdb8" }
+          - { name: pr59-inspect-tallying-before-initial, pr: 59, branch: experiment/string-delimited-by, base: "6ba21280cb68848d14996c6d55f8ca64fcf40b09", head: "25849bf3014106a6b822bbb4115486f381cc42d3" }
+          - { name: pr60-accept-screen-options, pr: 60, branch: experiment/accept-screen-options, base: "6ba21280cb68848d14996c6d55f8ca64fcf40b09", head: "0005bec0c726cbaf6ad62eeb08458d1782d11ea8" }
+          - { name: pr62-inspect-replacing-characters, pr: 62, branch: experiment/inspect-replacing, base: "6ba21280cb68848d14996c6d55f8ca64fcf40b09", head: "b59b322fe587c2b135a86a9afb220f815d1e4c35" }
+          - { name: pr63-accept-from-date-time, pr: 63, branch: experiment/accept-from-date, base: "6ba21280cb68848d14996c6d55f8ca64fcf40b09", head: "cbcf1bcee24d414df8b8ca153d64d605c1a18a97" }
+        sample:
+          - { name: primary, skip: 0 }
+          - { name: holdout, skip: 500 }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+      - name: Apply candidate PR delta on current main
+        id: apply
+        env:
+          PATCH_BRANCH: ${{ matrix.candidate.branch }}
+          PATCH_BASE: ${{ matrix.candidate.base }}
+          PATCH_HEAD: ${{ matrix.candidate.head }}
+        run: |
+          set -euo pipefail
+          if [ -n "$PATCH_BRANCH" ]; then
+            git fetch --no-tags origin "refs/heads/$PATCH_BRANCH:refs/remotes/origin/$PATCH_BRANCH"
+            test "$(git rev-parse "refs/remotes/origin/$PATCH_BRANCH")" = "$PATCH_HEAD"
+            git diff --binary "$PATCH_BASE" "$PATCH_HEAD" -- cobol2py.py tests/test_cobol2py.py web/index.html > "$RUNNER_TEMP/candidate.patch"
+            test -s "$RUNNER_TEMP/candidate.patch"
+            git apply --3way --index "$RUNNER_TEMP/candidate.patch"
+          fi
+          echo "tree=$(git write-tree)" >> "$GITHUB_OUTPUT"
+      - name: Download pinned X-COBOL v2 archive
+        run: |
+          curl --fail --location --retry 3 --retry-delay 2 "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" --output /tmp/COBOL_Files.zip
+          ls -lh /tmp/COBOL_Files.zip
+      - name: Build isolated benchmark image
+        run: docker build -f benchmarks/Dockerfile.external -t cobol2py-pr-tournament .
+      - name: Prepare exact sample metadata
+        env:
+          CANDIDATE: ${{ matrix.candidate.name }}
+          PR_NUMBER: ${{ matrix.candidate.pr }}
+          SAMPLE: ${{ matrix.sample.name }}
+          SKIP: ${{ matrix.sample.skip }}
+          TREE: ${{ steps.apply.outputs.tree }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/sample"
+          python - <<'PY'
+          import json, os, subprocess
+          item = {
+              "candidate": os.environ["CANDIDATE"],
+              "pr": int(os.environ["PR_NUMBER"]),
+              "sample": os.environ["SAMPLE"],
+              "skip": int(os.environ["SKIP"]),
+              "tree": os.environ["TREE"],
+              "main_sha": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+          }
+          with open(os.path.join(os.environ["RUNNER_TEMP"], "sample", "candidate-meta.json"), "w") as f:
+              json.dump(item, f, indent=2)
+          PY
+      - name: Run exact 500-program sample
+        id: benchmark
+        shell: bash
+        env:
+          SAMPLE: ${{ matrix.sample.name }}
+          SKIP: ${{ matrix.sample.skip }}
+          CONTAINER: cobol2py-${{ github.run_id }}-${{ matrix.candidate.name }}-${{ matrix.sample.name }}
+        run: |
+          set +e
+          docker run --name "$CONTAINER"             --network none --cap-drop=ALL --security-opt=no-new-privileges             --pids-limit=128 --memory=4g --cpus=2 --read-only             --tmpfs /tmp:rw,exec,nosuid,nodev,size=3g             --mount "type=bind,source=$GITHUB_WORKSPACE,target=/workspace,readonly"             --mount "type=bind,source=/tmp/COBOL_Files.zip,target=/input.zip,readonly"             --mount "type=bind,source=$RUNNER_TEMP/sample,target=/output"             --workdir /workspace cobol2py-pr-tournament             benchmarks/run_external_corpus.py --translator /workspace/cobol2py.py             --archive /input.zip --output /output --target 500 --skip "$SKIP" --diagnostics
+          status=$?
+          docker rm "$CONTAINER" >/dev/null 2>&1 || true
+          exit "$status"
+      - name: Record benchmark command outcome
+        if: always()
+        env:
+          OUTCOME: ${{ steps.benchmark.outcome }}
+        run: |
+          python - <<'PY'
+          import json, os
+          p = os.path.join(os.environ["RUNNER_TEMP"], "sample", "candidate-run-status.json")
+          with open(p, "w") as f:
+              json.dump({"outcome": os.environ.get("OUTCOME")}, f)
+          PY
+      - name: Upload scorecard and all failure diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-sample-${{ matrix.candidate.name }}-${{ matrix.sample.name }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/sample/
+          if-no-files-found: warn
+          retention-days: 90
+
+  aggregate:
+    name: Compare every PR with main and 414/1000
+    if: always() && startsWith(github.event.pull_request.title, '[benchmark-tournament]')
+    needs: [candidate-tests, exact-benchmark]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: candidate-*-${{ github.run_id }}
+          path: ${{ runner.temp }}/tournament
+          merge-multiple: false
+      - name: Validate samples and calculate per-ID deltas
+        env:
+          ROOT: ${{ runner.temp }}/tournament
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ["ROOT"])
+          historical = {"total": 414, "primary": 197, "holdout": 217}
+          tests = {}
+          for p in root.rglob("candidate-test-result.json"):
+              try:
+                  x = json.loads(p.read_text())
+                  tests[x["candidate"]] = x
+              except Exception as e:
+                  print(f"Invalid test result {p}: {e}")
+          samples = {}
+          for p in root.rglob("candidate-meta.json"):
+              try:
+                  meta = json.loads(p.read_text())
+                  folder = p.parent
+                  report_path = folder / "external-corpus-report.json"
+                  status_path = folder / "candidate-run-status.json"
+                  if not report_path.is_file() or not status_path.is_file():
+                      continue
+                  report = json.loads(report_path.read_text())
+                  status = json.loads(status_path.read_text())
+                  results = report.get("results", [])
+                  ids = [str(x.get("id")) for x in results]
+                  passed_ids = {str(x.get("id")) for x in results if x.get("status") == "passed"}
+                  valid = (
+                      status.get("outcome") == "success"
+                      and meta.get("sample") in ("primary", "holdout")
+                      and meta.get("skip") == (0 if meta.get("sample") == "primary" else 500)
+                      and report.get("tested") == 500 and report.get("target") == 500
+                      and report.get("skip") == meta.get("skip")
+                      and report.get("sample_complete") is True
+                      and report.get("archive_md5_verified") is True
+                      and len(results) == 500 and len(set(ids)) == 500
+                      and len(passed_ids) == report.get("passed")
+                  )
+                  if valid:
+                      samples.setdefault(meta["candidate"], {})[meta["sample"]] = {
+                          "passed": len(passed_ids), "ids": set(ids), "passed_ids": passed_ids,
+                          "tree": meta.get("tree"), "main_sha": meta.get("main_sha"), "pr": meta.get("pr")
+                      }
+                  else:
+                      print(f"Rejected incomplete sample: {p}")
+              except Exception as e:
+                  print(f"Invalid sample {p}: {e}")
+          baseline = samples.get("main-baseline", {})
+          if set(baseline) != {"primary", "holdout"}:
+              raise SystemExit("Main baseline incomplete: both exact 500-case samples are mandatory")
+          base_p, base_h = baseline["primary"], baseline["holdout"]
+          if not base_p["ids"].isdisjoint(base_h["ids"]):
+              raise SystemExit("Main baseline primary/holdout IDs overlap")
+          if base_p["ids"] != base_h["ids"] and False:
+              raise SystemExit("unreachable")
+          bt = tests.get("main-baseline", {})
+          if not bt.get("tests_passed") or bt.get("tree") != base_p["tree"] or bt.get("tree") != base_h["tree"]:
+              raise SystemExit("Main baseline test/tree validation failed")
+          rows = []
+          details = {}
+          for name in sorted(set(tests) | set(samples)):
+              if name == "main-baseline":
+                  continue
+              t = tests.get(name, {})
+              pair = samples.get(name, {})
+              if set(pair) != {"primary", "holdout"} or not t.get("tests_passed"):
+                  rows.append({"candidate": name, "valid": False, "reason": "missing sample or failed tests"})
+                  continue
+              p, h = pair["primary"], pair["holdout"]
+              valid = (
+                  p["tree"] == h["tree"] == t.get("tree")
+                  and p["main_sha"] == h["main_sha"] == base_p["main_sha"]
+                  and p["ids"] == base_p["ids"] and h["ids"] == base_h["ids"]
+                  and p["ids"].isdisjoint(h["ids"])
+              )
+              if not valid:
+                  rows.append({"candidate": name, "valid": False, "reason": "tree/SHA/ID set mismatch"})
+                  continue
+              primary, holdout = p["passed"], h["passed"]
+              total = primary + holdout
+              base_primary, base_holdout = base_p["passed"], base_h["passed"]
+              wins_p = sorted(p["passed_ids"] - base_p["passed_ids"])
+              losses_p = sorted(base_p["passed_ids"] - p["passed_ids"])
+              wins_h = sorted(h["passed_ids"] - base_h["passed_ids"])
+              losses_h = sorted(base_h["passed_ids"] - h["passed_ids"])
+              qualifies = (
+                  total > historical["total"] and primary >= historical["primary"]
+                  and holdout >= historical["holdout"]
+                  and primary >= base_primary and holdout >= base_holdout
+              )
+              row = {
+                  "candidate": name, "pr": p["pr"], "valid": True,
+                  "primary": primary, "holdout": holdout, "total": total,
+                  "delta_vs_main": total - (base_primary + base_holdout),
+                  "wins_primary": len(wins_p), "losses_primary": len(losses_p),
+                  "wins_holdout": len(wins_h), "losses_holdout": len(losses_h),
+                  "qualifies_vs_414": qualifies
+              }
+              rows.append(row)
+              details[name] = {
+                  "summary": row, "primary_gains": wins_p, "primary_regressions": losses_p,
+                  "holdout_gains": wins_h, "holdout_regressions": losses_h
+              }
+          summary = [
+              "# PR candidate tournament v2", "",
+              f"Historical best: **{historical['total']}/1000 (41.4%)** — {historical['primary']}/500 primary + {historical['holdout']}/500 holdout.",
+              f"Same-run main baseline: **{base_p['passed'] + base_h['passed']}/1000** ({base_p['passed']}/500 + {base_h['passed']}/500).",
+              "", "| Candidate | Status | Primary | Holdout | Total | Δ vs main | ID gains / losses (P+H) | Beats historical best? |",
+              "|---|---|---:|---:|---:|---:|---:|---|"
+          ]
+          for r in rows:
+              if not r.get("valid"):
+                  summary.append(f"| {r['candidate']} | INVALID | — | — | — | — | — | no ({r['reason']}) |")
+              else:
+                  summary.append(
+                      f"| PR #{r['pr']} — {r['candidate']} | valid | {r['primary']}/500 | {r['holdout']}/500 | "
+                      f"{r['total']}/1000 | {r['delta_vs_main']:+d} | "
+                      f"{r['wins_primary']}/{r['losses_primary']} + {r['wins_holdout']}/{r['losses_holdout']} | "
+                      f"{'YES' if r['qualifies_vs_414'] else 'no'} |"
+                  )
+          summary += ["", "No PR is merged automatically. Every sample's JSON report and diagnostics are retained as artifacts for manual failure-log analysis."]
+          text = "\n".join(summary) + "\n"
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+              f.write(text)
+          (root / "candidate-deltas.json").write_text(json.dumps({
+              "historical_best": historical,
+              "main_baseline": {"primary": base_p["passed"], "holdout": base_h["passed"]},
+              "candidates": details, "rows": rows
+          }, indent=2))
+          print(text)
+          PY
+      - name: Upload per-ID comparison
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-tournament-per-id-${{ github.run_id }}
+          path: ${{ runner.temp }}/tournament/candidate-deltas.json
+          if-no-files-found: warn
+          retention-days: 90
