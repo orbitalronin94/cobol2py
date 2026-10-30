@@ -706,6 +706,11 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
             units.append((num, "ELSE"))
             continue
 
+        if upper.startswith(("AND ", "OR ")):
+            flush()
+            units.append((num, text.strip()))
+            continue
+
         if upper.startswith("WHEN "):
             flush()
             # EVALUATE/SEARCH WHEN clauses may carry an inline imperative
@@ -718,8 +723,13 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
 
         # Scope terminators must be standalone parser units. Otherwise a
         # preceding DISPLAY without a period can absorb END-IF as an operand.
-        if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH") or upper in SCOPE_END_NOOPS or upper.startswith("AT END") or re.match(r"^SEARCH\s+ALL\b", upper)
-            or re.match(r"^SEARCH\s+(?!ALL\b)", upper):
+        if (
+            upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH")
+            or upper in SCOPE_END_NOOPS
+            or upper.startswith("AT END")
+            or re.match(r"^SEARCH\\s+ALL\\b", upper)
+            or re.match(r"^SEARCH\\s+(?!ALL\\b)", upper)
+        ):
             flush()
             units.append((num, upper if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH") or upper in SCOPE_END_NOOPS else text.strip()))
             continue
@@ -3991,53 +4001,6 @@ def translate_statement(
     return [f"# COBOL no traducido: {s}"]
 
 
-def _search_table_expression(
-    table_name: str,
-    table: CobolVar,
-    when_branch: Optional[Node],
-    varying_index: str,
-    variables: dict[str, CobolVar],
-) -> str:
-    """Build the nested list expression for a sequential SEARCH table."""
-    chain = [table]
-    current = table
-    while current.parent_name:
-        parent = variables.get(current.parent_name.upper())
-        if parent is None:
-            break
-        chain.append(parent)
-        current = parent
-    chain.reverse()
-    expression = normalize_data_reference(chain[0].name, variables)
-
-    parent_indexes: list[str] = []
-    if when_branch:
-        reference = re.search(r"[A-Za-z0-9-]+\s*\(([^()]*)\)", when_branch.text)
-        if reference:
-            parent_indexes = split_cobol_items(reference.group(1))
-            if parent_indexes:
-                parent_indexes.pop()
-
-    array_parent_position = 0
-    for position, child in enumerate(chain[1:], start=1):
-        parent = chain[position - 1]
-        if parent.is_array:
-            if array_parent_position < len(parent_indexes):
-                index_name = parent_indexes[array_parent_position]
-            else:
-                parent_names = parent.indexed_by_names or ([parent.indexed_by] if parent.indexed_by else [])
-                index_name = parent_names[0] if parent_names else "1"
-            index_expression = (
-                str(int(index_name) - 1)
-                if index_name.isdigit()
-                else f"int({normalize_data_reference(index_name, variables)}) - 1"
-            )
-            expression += f"[{index_expression}]"
-            array_parent_position += 1
-        expression += f"[{normalize_name(child.name)!r}]"
-    return expression
-
-
 def translate_nodes(
     nodes: list[Node],
     paragraphs: set[str],
@@ -4166,7 +4129,6 @@ def translate_nodes(
             if table is None or not table.is_array or not varying_name:
                 out.append("    " * indent + f"# SEARCH no traducido: {node.text} (tabla OCCURS/índice no resuelto)")
             else:
-                table_expr = _search_table_expression(table_name, table, branches[0] if branches else None, varying_name, variables or {})
                 size_expr = normalize_data_reference(table.depending_on, variables) if table.depending_on else str(table.occurs or 0)
                 index_expr = normalize_name(varying_name)
                 prefix = "    " * indent
