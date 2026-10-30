@@ -2078,6 +2078,9 @@ class CobolIntrinsicFunctionRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_expr("FUNCTION NUMVAL-C(WS-AMOUNT)")
         self.assertEqual(translated, "_cobol_numval_c(ws_amount)")
         compile(translated, "<numval-c-intrinsic>", "eval")
+        translated_with_currency = cobol2py.translate_expr('FUNCTION NUMVAL-C(WS-AMOUNT, "$")')
+        self.assertEqual(translated_with_currency, '_cobol_numval_c(ws_amount, "$")')
+        compile(translated_with_currency, "<numval-c-currency-argument>", "eval")
 
         source = "\n".join([
             "IDENTIFICATION DIVISION.",
@@ -2094,6 +2097,10 @@ class CobolIntrinsicFunctionRegressionTests(unittest.TestCase):
         self.assertAlmostEqual(convert("-$123.45"), -123.45)
         self.assertAlmostEqual(convert("(€9.50)"), -9.50)
         self.assertAlmostEqual(convert("  42.00 USD  "), 42.00)
+        self.assertAlmostEqual(convert("$1.234,56"), 1234.56)
+        self.assertAlmostEqual(convert("(€9,50)"), -9.50)
+        self.assertAlmostEqual(convert("1,234.56"), 1234.56)
+        self.assertAlmostEqual(convert("$1.234,56", "$"), 1234.56)
 
     def test_case_and_trim_intrinsics_are_valid_python_calls(self):
         cases = {
