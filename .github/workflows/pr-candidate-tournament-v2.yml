@@ -15,7 +15,7 @@ permissions:
 
 concurrency:
   group: cobol2py-pr-candidate-tournament-v2
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   candidate-tests:
