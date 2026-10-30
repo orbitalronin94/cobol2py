@@ -2369,7 +2369,7 @@ class CrossBackendIdentifierNormalizationTests(unittest.TestCase):
         self.assertEqual(cobol2py.normalize_name("FILE-RECORD-INFORMATION-REC"), "file_record_information_rec")
 
     def test_java_reserved_word_is_escaped_for_java(self):
-        self.assertEqual(cobol2py.normalize_java_identifier("record"), "cobol_record")
+        self.assertEqual(cobol2py.normalize_java_identifier("record"), "cobol_record")\n        self.assertEqual(cobol2py.normalize_java_name("record"), "cobol_record")
         self.assertEqual(cobol2py.normalize_java_name("FILE-RECORD-INFORMATION-REC"), "file_record_information_rec")
 
 
