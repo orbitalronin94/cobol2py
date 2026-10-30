@@ -105,6 +105,52 @@ class ExternalBenchmarkProcessTests(unittest.TestCase):
             self.assertIn("not counted", metadata["classification"])
             self.assertEqual(metadata["reference_compile_returncode"], 0)
 
+    def test_diagnostic_streams_and_first_difference(self):
+        from run_external_corpus import first_byte_difference
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            stdout_path, stderr_path = root / "stdout.bin", root / "stderr.bin"
+            payload = b"prefix-" + bytes(range(256)) * 5000
+            code = "import sys; sys.stdout.buffer.write(" + repr(payload) + "); sys.stderr.buffer.write(b'err\\\\x00')"
+            result = run_process([sys.executable, "-c", code], root, 5, stdout_path, stderr_path)
+            self.assertFalse(result["timeout"])
+            self.assertEqual(stdout_path.read_bytes(), payload)
+            self.assertEqual(stderr_path.read_bytes(), b"err\\x00")
+            same = root / "same.bin"
+            same.write_bytes(payload)
+            self.assertIsNone(first_byte_difference(stdout_path, same))
+            changed = root / "changed.bin"
+            changed.write_bytes(payload[:-1] + b"!")
+            self.assertEqual(first_byte_difference(stdout_path, changed), len(payload) - 1)
+
+    def test_reference_exclusion_diagnostic_bundle(self):
+        import json
+        from run_external_corpus import preserve_exclusion_diagnostics
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output_root, case_root = root / "output", root / "case"
+            case_root.mkdir()
+            source = root / "program.cbl"
+            source.write_text("IDENTIFICATION DIVISION.\\n", encoding="utf-8")
+            for name, data in {
+                "reference-compile.stdout.bin": b"compile out",
+                "reference-compile.stderr.bin": b"compile err",
+                "reference.stdout.bin": b"runtime out",
+                "reference.stderr.bin": b"runtime err",
+            }.items():
+                (case_root / name).write_bytes(data)
+            result = {"id": "fixture-123", "status": "excluded", "reason": "reference timeout"}
+            preserve_exclusion_diagnostics(output_root, case_root, source, result, {"returncode": 0})
+            bundle = output_root / "diagnostics" / "fixture-123"
+            self.assertEqual((bundle / "source.cbl").read_text(encoding="utf-8"), "IDENTIFICATION DIVISION.\\n")
+            self.assertEqual((bundle / "reference.stdout.bin").read_bytes(), b"runtime out")
+            metadata_text = (bundle / "metadata.json").read_text(encoding="utf-8")
+            self.assertTrue(metadata_text.endswith("\\n"))
+            metadata = json.loads(metadata_text)
+            self.assertIn("reference exclusion", metadata["classification"])
+            self.assertIn("not counted", metadata["classification"])
+            self.assertEqual(metadata["reference_compile_returncode"], 0)
+
     def test_timeout_still_kills_a_running_process(self):
         with tempfile.TemporaryDirectory() as directory:
             result = run_process(
