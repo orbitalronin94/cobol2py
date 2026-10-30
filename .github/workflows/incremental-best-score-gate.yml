@@ -1,0 +1,280 @@
+name: incremental-best-score-gate
+
+run-name: Exact X-COBOL benchmark — ${{ github.event.pull_request.head.ref }}
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+    branches: [main]
+    paths:
+      - "cobol2py.py"
+      - "tests/test_cobol2py.py"
+      - "web/index.html"
+      - "benchmarks/**"
+      - ".github/workflows/incremental-best-score-gate.yml"
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: cobol2py-incremental-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: Unit tests and compile — candidate SHA
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Unit and regression suite
+        run: python -m unittest discover -s tests -v
+      - name: Compile translator and benchmark runners
+        run: python -m py_compile cobol2py.py cobol2native.py benchmarks/run_external_corpus.py benchmarks/run_external_multilang.py benchmarks/run_multilang_benchmark.py
+
+  exact-benchmark:
+    name: Exact X-COBOL — ${{ matrix.sample.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        sample:
+          - { name: primary, skip: 0 }
+          - { name: holdout, skip: 500 }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Download pinned X-COBOL v2 archive
+        run: |
+          curl --fail --location --retry 3 --retry-delay 2 "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" --output /tmp/COBOL_Files.zip
+          ls -lh /tmp/COBOL_Files.zip
+      - name: Build isolated benchmark image
+        run: docker build -f benchmarks/Dockerfile.external -t cobol2py-incremental .
+      - name: Prepare sample metadata
+        env:
+          SAMPLE: ${{ matrix.sample.name }}
+          SKIP: ${{ matrix.sample.skip }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/sample"
+          python - <<'PY'
+          import json, os, subprocess
+          item = {
+              "sample": os.environ["SAMPLE"],
+              "skip": int(os.environ["SKIP"]),
+              "sha": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+          }
+          with open(os.path.join(os.environ["RUNNER_TEMP"], "sample", "candidate-meta.json"), "w") as f:
+              json.dump(item, f, indent=2)
+          PY
+      - name: Run exact 500-program sample
+        id: benchmark
+        shell: bash
+        env:
+          SAMPLE: ${{ matrix.sample.name }}
+          SKIP: ${{ matrix.sample.skip }}
+          CONTAINER: cobol2py-${{ github.run_id }}-${{ matrix.sample.name }}
+        run: |
+          set +e
+          docker run --name "$CONTAINER" \
+            --network none --cap-drop=ALL --security-opt=no-new-privileges \
+            --pids-limit=128 --memory=4g --cpus=2 --read-only \
+            --tmpfs /tmp:rw,exec,nosuid,nodev,size=3g \
+            --mount "type=bind,source=$GITHUB_WORKSPACE,target=/workspace,readonly" \
+            --mount "type=bind,source=/tmp/COBOL_Files.zip,target=/input.zip,readonly" \
+            --mount "type=bind,source=$RUNNER_TEMP/sample,target=/output" \
+            --workdir /workspace cobol2py-incremental \
+            benchmarks/run_external_corpus.py --translator /workspace/cobol2py.py \
+            --archive /input.zip --output /output --target 500 --skip "$SKIP" --diagnostics
+          status=$?
+          docker rm "$CONTAINER" >/dev/null 2>&1 || true
+          exit "$status"
+      - name: Record benchmark outcome
+        if: always()
+        env:
+          OUTCOME: ${{ steps.benchmark.outcome }}
+        run: |
+          python - <<'PY'
+          import json, os
+          p = os.path.join(os.environ["RUNNER_TEMP"], "sample", "candidate-run-status.json")
+          with open(p, "w") as f:
+              json.dump({"outcome": os.environ.get("OUTCOME")}, f)
+          PY
+      - name: Upload exact report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sample-${{ matrix.sample.name }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/sample/
+          if-no-files-found: error
+          retention-days: 90
+
+  compare:
+    name: Compare candidate with current best
+    if: always()
+    needs: [tests, exact-benchmark]
+    runs-on: ubuntu-latest
+    outputs:
+      eligible: ${{ steps.score.outputs.eligible }}
+      score: ${{ steps.score.outputs.score }}
+      primary: ${{ steps.score.outputs.primary }}
+      holdout: ${{ steps.score.outputs.holdout }}
+      candidate_sha: ${{ steps.score.outputs.candidate_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: sample-*-${{ github.run_id }}
+          path: ${{ runner.temp }}/reports
+          merge-multiple: false
+      - name: Validate both samples and strict improvement
+        id: score
+        env:
+          REPORT_ROOT: ${{ runner.temp }}/reports
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+          TESTS_RESULT: ${{ needs.tests.result }}
+          BENCHMARK_RESULT: ${{ needs.exact-benchmark.result }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ["REPORT_ROOT"])
+          baseline = json.loads(Path("benchmarks/best-score.json").read_text())["best"]
+          samples = {}
+          for meta_path in root.rglob("candidate-meta.json"):
+              folder = meta_path.parent
+              meta = json.loads(meta_path.read_text())
+              report_path = folder / "external-corpus-report.json"
+              status_path = folder / "candidate-run-status.json"
+              if not report_path.is_file() or not status_path.is_file():
+                  continue
+              report = json.loads(report_path.read_text())
+              status = json.loads(status_path.read_text())
+              results = report.get("results", [])
+              ids = [item.get("id") for item in results]
+              passed = sum(item.get("status") == "passed" for item in results)
+              sample = meta.get("sample")
+              expected_skip = 0 if sample == "primary" else 500
+              valid = (
+                  sample in ("primary", "holdout")
+                  and meta.get("sha") == os.environ["EXPECTED_SHA"]
+                  and meta.get("skip") == expected_skip
+                  and status.get("outcome") == "success"
+                  and report.get("tested") == 500
+                  and report.get("target") == 500
+                  and report.get("skip") == expected_skip
+                  and report.get("sample_complete") is True
+                  and report.get("archive_md5_verified") is True
+                  and len(results) == 500
+                  and len(set(ids)) == 500
+                  and passed == report.get("passed")
+              )
+              if valid:
+                  samples[sample] = {"passed": passed, "ids": set(ids), "sha": meta["sha"]}
+              else:
+                  raise SystemExit(f"Invalid/incomplete {sample} artifact")
+          if set(samples) != {"primary", "holdout"}:
+              raise SystemExit("Both complete 500-case samples are required")
+          if samples["primary"]["sha"] != samples["holdout"]["sha"]:
+              raise SystemExit("Primary and holdout SHA mismatch")
+          if not samples["primary"]["ids"].isdisjoint(samples["holdout"]["ids"]):
+              raise SystemExit("Primary and holdout IDs overlap")
+          if os.environ["TESTS_RESULT"] != "success" or os.environ["BENCHMARK_RESULT"] != "success":
+              raise SystemExit("Tests and both benchmark jobs must succeed")
+          primary, holdout = samples["primary"]["passed"], samples["holdout"]["passed"]
+          total = primary + holdout
+          better = total > baseline["score"]
+          print(f"Current best: {baseline['score']}/1000 ({baseline['primary']}/500 + {baseline['holdout']}/500)")
+          print(f"Candidate: {total}/1000 ({primary}/500 + {holdout}/500)")
+          print(f"Strict improvement: {better}")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"eligible={'true' if better else 'false'}\n")
+              f.write(f"score={total}\nprimary={primary}\nholdout={holdout}\n")
+              f.write(f"candidate_sha={samples['primary']['sha']}\n")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+              f.write(f"## Exact benchmark\n\n| Reference | Primary | Holdout | Total |\n|---|---:|---:|---:|\n")
+              f.write(f"| Current best | {baseline['primary']}/500 | {baseline['holdout']}/500 | {baseline['score']}/1000 |\n")
+              f.write(f"| Candidate | {primary}/500 | {holdout}/500 | {total}/1000 |\n\n")
+              f.write("Eligible for guarded merge: **" + ("yes" if better else "no") + "**\n")
+          PY
+
+  merge-record:
+    name: Merge verified record and advance best score
+    if: needs.compare.outputs.eligible == 'true'
+    needs: compare
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Verify branch and base have not moved
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_BASE: ${{ github.event.pull_request.base.sha }}
+          EXPECTED_HEAD: ${{ needs.compare.outputs.candidate_sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          main_sha=$(gh api "repos/$GITHUB_REPOSITORY/branches/main" --jq .commit.sha)
+          test "$main_sha" = "$EXPECTED_BASE"
+          pr=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER")
+          test "$(echo "$pr" | jq -r .head.sha)" = "$EXPECTED_HEAD"
+          test "$(echo "$pr" | jq -r .base.ref)" = "main"
+          test "$(echo "$pr" | jq -r .draft)" = "false"
+      - name: Squash merge exact benchmarked SHA
+        id: merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EXPECTED_HEAD: ${{ needs.compare.outputs.candidate_sha }}
+        run: |
+          set -euo pipefail
+          result=$(gh api --method PUT "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/merge" -f merge_method=squash -f sha="$EXPECTED_HEAD")
+          echo "$result" | jq -e '.merged == true'
+          echo "merge_sha=$(echo "$result" | jq -r .sha)" >> "$GITHUB_OUTPUT"
+      - name: Advance best score only after successful merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SCORE: ${{ needs.compare.outputs.score }}
+          PRIMARY: ${{ needs.compare.outputs.primary }}
+          HOLDOUT: ${{ needs.compare.outputs.holdout }}
+          MEASURED_SHA: ${{ needs.compare.outputs.candidate_sha }}
+          MERGE_SHA: ${{ steps.merge.outputs.merge_sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/contents/benchmarks/best-score.json" > /tmp/current.json
+          blob_sha=$(jq -r .sha /tmp/current.json)
+          cat > /tmp/best-score.json <<EOF
+          {
+            "schema_version": 1,
+            "corpus": "X-COBOL-v2",
+            "sample_size": 500,
+            "holdout_size": 500,
+            "exact_match": "stdout-byte-for-byte-and-exit-code",
+            "best": {
+              "score": $SCORE,
+              "primary": $PRIMARY,
+              "holdout": $HOLDOUT,
+              "percent": $(python -c "print(round($SCORE/10, 2))"),
+              "measured_sha": "$MEASURED_SHA",
+              "merged_commit": "$MERGE_SHA",
+              "source_pr": $PR_NUMBER,
+              "benchmark_run": $RUN_ID
+            }
+          }
+          EOF
+          content=$(base64 -w0 /tmp/best-score.json)
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/benchmarks/best-score.json" \
+            -f message="Advance exact benchmark best score to $SCORE/1000" \
+            -f content="$content" -f sha="$blob_sha"
