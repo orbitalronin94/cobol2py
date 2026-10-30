@@ -257,7 +257,7 @@ La PR [#41](https://github.com/orbitalronin94/cobol2py/pull/41) incorpora un lay
 
 ## Estado actualizado — 2026-10-30: iteraciones D/E integradas
 
-Las PR [#54](https://github.com/orbitalronin94/cobol2py/pull/54) y [#55](https://github.com/orbitalronin94/cobol2py/pull/55) se integraron en `main` mediante `b265e50` y `de7fddd`. El benchmark multilenguaje #697 sobre el SHA pre-merge de la iteración E obtuvo **408/1.000 (40,80 %) Python**: 196/500 primaria y 212/500 holdout. Comparado por ID con la scorecard dedicada #80: 8 ganancias y 0 pérdidas; siete ganancias atribuibles a la corrección `cobol_int`, y una variación temporal de `FunctionCall.cbl` no atribuible. La scorecard dedicada #81 estaba todavía `in_progress` al documentar este estado.
+Las PR [#54](https://github.com/orbitalronin94/cobol2py/pull/54) y [#55](https://github.com/orbitalronin94/cobol2py/pull/55) se integraron en `main` mediante `b265e50` y `de7fddd`. El benchmark multilenguaje #697 sobre el SHA pre-merge de la iteración E obtuvo **408/1.000 (40,80 %) Python**: 196/500 primaria y 212/500 holdout. Comparado por ID con la scorecard dedicada #80: 8 ganancias y 0 pérdidas; siete ganancias atribuibles a la corrección `cobol_int`, y una variación temporal de `FunctionCall.cbl` no atribuible. La scorecard dedicada #81 [terminó correctamente](https://github.com/orbitalronin94/cobol2py/actions/runs/41088604039) sobre el mismo SHA: 196/500 primaria, 212/500 holdout y **408/1.000 (40,80 %)**.
 
 ### Diagnósticos que deja la iteración E
 
