@@ -34,25 +34,10 @@ jobs:
           - { name: pr63-accept-from-date-time, pr: 63, branch: experiment/accept-from-date, base: "6ba21280cb68848d14996c6d55f8ca64fcf40b09", head: "cbcf1bcee24d414df8b8ca153d64d605c1a18a97" }
     steps:
       - uses: actions/checkout@v4
+        id: checkout
         with:
-          ref: ${{ github.event.pull_request.base.sha }}
+          ref: ${{ matrix.candidate.head || github.event.pull_request.base.sha }}
           fetch-depth: 0
-      - name: Apply candidate PR delta on current main
-        id: apply
-        env:
-          PATCH_BRANCH: ${{ matrix.candidate.branch }}
-          PATCH_BASE: ${{ matrix.candidate.base }}
-          PATCH_HEAD: ${{ matrix.candidate.head }}
-        run: |
-          set -euo pipefail
-          if [ -n "$PATCH_BRANCH" ]; then
-            git fetch --no-tags origin "refs/heads/$PATCH_BRANCH:refs/remotes/origin/$PATCH_BRANCH"
-            test "$(git rev-parse "refs/remotes/origin/$PATCH_BRANCH")" = "$PATCH_HEAD"
-            git diff --binary "$PATCH_BASE" "$PATCH_HEAD" -- cobol2py.py tests/test_cobol2py.py web/index.html > "$RUNNER_TEMP/candidate.patch"
-            test -s "$RUNNER_TEMP/candidate.patch"
-            git apply --3way --index "$RUNNER_TEMP/candidate.patch"
-          fi
-          echo "tree=$(git write-tree)" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -67,8 +52,8 @@ jobs:
         env:
           CANDIDATE: ${{ matrix.candidate.name }}
           PR_NUMBER: ${{ matrix.candidate.pr }}
-          APPLY_OUTCOME: ${{ steps.apply.outcome }}
-          TREE: ${{ steps.apply.outputs.tree }}
+          CHECKOUT_OUTCOME: ${{ steps.checkout.outcome }}
+          SOURCE_SHA: ${{ matrix.candidate.head || github.event.pull_request.base.sha }}
           UNIT_OUTCOME: ${{ steps.unit.outcome }}
           COMPILE_OUTCOME: ${{ steps.compile.outcome }}
         run: |
@@ -77,12 +62,12 @@ jobs:
           result = {
               "candidate": os.environ["CANDIDATE"],
               "pr": int(os.environ["PR_NUMBER"]),
-              "tree": os.environ.get("TREE", ""),
-              "patch_apply": os.environ.get("APPLY_OUTCOME"),
+              "source_sha": os.environ.get("SOURCE_SHA"),
+              "checkout": os.environ.get("CHECKOUT_OUTCOME"),
               "unit_tests": os.environ.get("UNIT_OUTCOME"),
               "compile": os.environ.get("COMPILE_OUTCOME"),
               "tests_passed": all(os.environ.get(k) == "success" for k in
-                                  ("APPLY_OUTCOME", "UNIT_OUTCOME", "COMPILE_OUTCOME")),
+                                  ("CHECKOUT_OUTCOME", "UNIT_OUTCOME", "COMPILE_OUTCOME")),
           }
           with open(os.path.join(os.environ["RUNNER_TEMP"], "candidate-test-result.json"), "w") as f:
               json.dump(result, f, indent=2)
@@ -132,11 +117,19 @@ jobs:
           if [ -n "$PATCH_BRANCH" ]; then
             git fetch --no-tags origin "refs/heads/$PATCH_BRANCH:refs/remotes/origin/$PATCH_BRANCH"
             test "$(git rev-parse "refs/remotes/origin/$PATCH_BRANCH")" = "$PATCH_HEAD"
-            git diff --binary "$PATCH_BASE" "$PATCH_HEAD" -- cobol2py.py tests/test_cobol2py.py web/index.html > "$RUNNER_TEMP/candidate.patch"
+            git diff --binary "$PATCH_BASE" "$PATCH_HEAD" -- cobol2py.py web/index.html > "$RUNNER_TEMP/candidate.patch"
             test -s "$RUNNER_TEMP/candidate.patch"
             git apply --3way --index "$RUNNER_TEMP/candidate.patch"
           fi
           echo "tree=$(git write-tree)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run full unit suite on candidate integrated with current main
+        id: integrated-tests
+        run: python -m unittest discover -s tests -v
+      - name: Compile integrated translator and benchmark runners
+        run: python -m py_compile cobol2py.py cobol2native.py benchmarks/run_external_corpus.py benchmarks/run_external_multilang.py benchmarks/run_multilang_benchmark.py
       - name: Download pinned X-COBOL v2 archive
         run: |
           curl --fail --location --retry 3 --retry-delay 2 "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" --output /tmp/COBOL_Files.zip
@@ -150,6 +143,7 @@ jobs:
           SAMPLE: ${{ matrix.sample.name }}
           SKIP: ${{ matrix.sample.skip }}
           TREE: ${{ steps.apply.outputs.tree }}
+          SOURCE_SHA: ${{ matrix.candidate.head || github.event.pull_request.base.sha }}
         run: |
           mkdir -p "$RUNNER_TEMP/sample"
           python - <<'PY'
@@ -160,6 +154,7 @@ jobs:
               "sample": os.environ["SAMPLE"],
               "skip": int(os.environ["SKIP"]),
               "tree": os.environ["TREE"],
+              "source_sha": os.environ["SOURCE_SHA"],
               "main_sha": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
           }
           with open(os.path.join(os.environ["RUNNER_TEMP"], "sample", "candidate-meta.json"), "w") as f:
@@ -268,7 +263,7 @@ jobs:
           if base_p["ids"] != base_h["ids"] and False:
               raise SystemExit("unreachable")
           bt = tests.get("main-baseline", {})
-          if not bt.get("tests_passed") or bt.get("tree") != base_p["tree"] or bt.get("tree") != base_h["tree"]:
+          if not bt.get("tests_passed") or bt.get("source_sha") != base_p["source_sha"] or bt.get("source_sha") != base_h["source_sha"]:
               raise SystemExit("Main baseline test/tree validation failed")
           rows = []
           details = {}
@@ -282,7 +277,8 @@ jobs:
                   continue
               p, h = pair["primary"], pair["holdout"]
               valid = (
-                  p["tree"] == h["tree"] == t.get("tree")
+                  p["tree"] == h["tree"]
+                  and p["source_sha"] == h["source_sha"] == t.get("source_sha")
                   and p["main_sha"] == h["main_sha"] == base_p["main_sha"]
                   and p["ids"] == base_p["ids"] and h["ids"] == base_h["ids"]
                   and p["ids"].isdisjoint(h["ids"])
