@@ -3351,6 +3351,43 @@ class TestNumvalIntrinsicRegressionTests(unittest.TestCase):
         self.assertEqual(eval(translated, {}), 3)
 
 
+class IndexedByParsingRegressionTests(unittest.TestCase):
+    def test_parse_all_indexed_by_names_across_bare_continuation_lines(self):
+        variables = cobol2py.parse_variables([
+            (1, "01 WS-TABLES."),
+            (2, "   05 WS-TABLE OCCURS 10 TIMES"),
+            (3, "      INDEXED BY IDX-4"),
+            (4, "         IDX-5 IDX-6."),
+            (5, "   05 WS-NESTED OCCURS 5 TIMES INDEXED BY IDX-7"),
+            (6, "      IDX-8 IDX-9."),
+        ])
+        by_name = {item.name: item for item in variables}
+        self.assertEqual(by_name["WS-TABLE"].indexed_by, "IDX-4")
+        self.assertEqual(by_name["WS-TABLE"].indexed_by_names, ["IDX-4", "IDX-5", "IDX-6"])
+        self.assertEqual(by_name["WS-NESTED"].indexed_by_names, ["IDX-7", "IDX-8", "IDX-9"])
+
+    def test_set_multiple_index_names_and_move_indexes_up_or_down(self):
+        variables = {
+            "WS-TABLE": cobol2py.CobolVar(
+                level=1, name="WS-TABLE", is_group=True, is_array=True,
+                occurs=10, indexed_by="IDX-1",
+                indexed_by_names=["IDX-1", "IDX-2", "IDX-3"],
+            )
+        }
+        self.assertEqual(
+            cobol2py.translate_statement("SET IDX-1 IDX-2 IDX-3 TO 01", set(), variables),
+            ["idx_1 = 1", "idx_2 = 1", "idx_3 = 1"],
+        )
+        self.assertEqual(
+            cobol2py.translate_statement("SET IDX-2 UP BY 1", set(), variables),
+            ["idx_2 = int(idx_2) + int(1)"],
+        )
+        self.assertEqual(
+            cobol2py.translate_statement("SET IDX-3 DOWN BY 2", set(), variables),
+            ["idx_3 = int(idx_3) - int(2)"],
+        )
+
+
 class NestedQualifiedOccursSubscriptRegressionTests(unittest.TestCase):
     def test_nested_group_fields_are_resolved_when_used_as_table_subscripts(self):
         variables = {
