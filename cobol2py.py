@@ -193,6 +193,7 @@ class CobolVar:
     occurs: Optional[int] = None
     depending_on: Optional[str] = None
     indexed_by: Optional[str] = None
+    indexed_by_names: list[str] = field(default_factory=list)
     ascending_key: Optional[str] = None
     parent_name: Optional[str] = None
     redefines: Optional[str] = None
@@ -330,6 +331,25 @@ RE_OCCURS = re.compile(
 RE_PARAGRAPH = re.compile(r"^(?!END-)([A-Za-z][A-Za-z0-9\-]*)\.\s*$")
 
 
+def _indexed_by_names(rest: str) -> list[str]:
+    """Return every index-name in an INDEXED BY clause, including line folds."""
+    match = re.search(r"\bINDEXED\s+BY\b(.*)$", rest, re.IGNORECASE)
+    if not match:
+        return []
+    clause_words = {
+        "ASCENDING", "DESCENDING", "DEPENDING", "PIC", "PICTURE",
+        "VALUE", "USAGE", "SIGN", "OCCURS", "REDEFINES", "INDEXED",
+    }
+    names: list[str] = []
+    for token in re.findall(r"[A-Za-z][A-Za-z0-9-]*", match.group(1)):
+        upper = token.upper()
+        if upper in clause_words:
+            break
+        if upper != "IS":
+            names.append(upper)
+    return names
+
+
 def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
     variables: list[CobolVar] = []
     hierarchy: list[CobolVar] = []
@@ -341,6 +361,9 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
     continuation = re.compile(
         r"^\s*(?:ASCENDING|DESCENDING|INDEXED|DEPENDING|PIC(?:TURE)?|VALUE|USAGE|SIGN|OCCURS|REDEFINES)\b",
         re.IGNORECASE,
+    )
+    bare_index_continuation = re.compile(
+        r"^\s*[A-Za-z][A-Za-z0-9-]*(?:\s+[A-Za-z][A-Za-z0-9-]*)*\s*\.?\s*$"
     )
     for line_number, source_line in lines:
         if RE_VAR.match(source_line):
@@ -357,6 +380,14 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
             prior_number, prior_text = declarations[-1]
             declarations[-1] = (prior_number, prior_text.rstrip() + " " + source_line.strip())
         elif declarations and continuation.match(source_line):
+            prior_number, prior_text = declarations[-1]
+            declarations[-1] = (prior_number, prior_text.rstrip() + " " + source_line.strip())
+        elif (
+            declarations
+            and re.search(r"\bINDEXED\s+BY\b", declarations[-1][1], re.IGNORECASE)
+            and bare_index_continuation.match(source_line)
+        ):
+            # Additional INDEXED BY names may continue as bare identifiers.
             prior_number, prior_text = declarations[-1]
             declarations[-1] = (prior_number, prior_text.rstrip() + " " + source_line.strip())
     for declaration_line, text in declarations:
@@ -397,8 +428,8 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
             is_array=occ_m is not None,
             occurs=int(occ_m.group(1)) if occ_m else None,
             depending_on=occ_m.group(2) if occ_m and occ_m.group(2) else None,
-            indexed_by=(re.search(r"\bINDEXED\s+BY\s+([A-Za-z0-9-]+)", rest, re.IGNORECASE).group(1).upper()
-                        if re.search(r"\bINDEXED\s+BY\s+([A-Za-z0-9-]+)", rest, re.IGNORECASE) else None),
+            indexed_by=(_indexed_by_names(rest)[0] if _indexed_by_names(rest) else None),
+            indexed_by_names=_indexed_by_names(rest),
             ascending_key=(re.search(r"\bASCENDING\s+KEY\s+(?:IS\s+)?([A-Za-z0-9-]+)", rest, re.IGNORECASE).group(1).upper()
                            if re.search(r"\bASCENDING\s+KEY\s+(?:IS\s+)?([A-Za-z0-9-]+)", rest, re.IGNORECASE) else None),
             parent_name=parent.name if parent else None,
@@ -3680,6 +3711,24 @@ def translate_statement(
             parent_name, allowed_values = condition
             return [emit_assignment(parent_name, translate_literal(allowed_values[0][0], variables), variables)]
 
+    indexed_names = {
+        index_name
+        for variable in (variables or {}).values()
+        for index_name in (variable.indexed_by_names or ([variable.indexed_by] if variable.indexed_by else []))
+    }
+    m = re.fullmatch(r"SET\s+([A-Za-z0-9-]+(?:\s+[A-Za-z0-9-]+)*)\s+TO\s+(.+)", s, re.IGNORECASE)
+    if m:
+        targets = m.group(1).upper().split()
+        if targets and all(target in indexed_names for target in targets):
+            value = translate_literal(m.group(2), variables)
+            return [f"{normalize_name(target)} = {value}" for target in targets]
+
+    m = re.fullmatch(r"SET\s+([A-Za-z0-9-]+)\s+(UP|DOWN)\s+BY\s+(.+)", s, re.IGNORECASE)
+    if m and m.group(1).upper() in indexed_names:
+        target, direction, step = m.groups()
+        operator = "+" if direction.upper() == "UP" else "-"
+        return [f"{normalize_name(target)} = int({normalize_name(target)}) {operator} int({translate_literal(step, variables)})"]
+
     m = re.fullmatch(rf"SET\s+({DATA_REF_PATTERN})\s+TO\s+(.+)", s, re.IGNORECASE)
     if m:
         target, source = m.groups()
@@ -4836,10 +4885,14 @@ def emit_python(prog: Program) -> str:
                 comment += f" VALUE {variable.value}"
             lines.append(f"{normalize_name(variable.name)}: {variable.py_type()} = {default}{comment}")
         lines.append("")
-        for variable in prog.variables:
-            if variable.indexed_by:
-                lines.append(f"{normalize_name(variable.indexed_by)} = 1  # INDEXED BY {variable.indexed_by}")
-        if any(variable.indexed_by for variable in prog.variables):
+        declared_indexes = list(dict.fromkeys(
+            index_name
+            for variable in prog.variables
+            for index_name in (variable.indexed_by_names or ([variable.indexed_by] if variable.indexed_by else []))
+        ))
+        for index_name in declared_indexes:
+            lines.append(f"{normalize_name(index_name)} = 1  # INDEXED BY {index_name}")
+        if declared_indexes:
             lines.append("")
 
     para_names = set(prog.paragraphs.keys())
@@ -4906,8 +4959,10 @@ def emit_python(prog: Program) -> str:
         # COBOL storage instead of creating Python locals.
         global_vars = [normalize_name(v.name) for v in prog.variables if not v.parent_name]
         global_vars.extend(
-            normalize_name(v.indexed_by) for v in prog.variables
-            if v.indexed_by and normalize_name(v.indexed_by) not in global_vars
+            normalize_name(index_name)
+            for v in prog.variables
+            for index_name in (v.indexed_by_names or ([v.indexed_by] if v.indexed_by else []))
+            if normalize_name(index_name) not in global_vars
         )
         if global_vars:
             lines.append("    global " + ", ".join(global_vars))
