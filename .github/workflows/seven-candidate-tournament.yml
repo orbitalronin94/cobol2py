@@ -127,6 +127,7 @@ jobs:
           OUTPUT_DIR: ${{ runner.temp }}/candidate-artifacts
         run: |
           mkdir -p "$OUTPUT_DIR/$SAMPLE_NAME"
+          chmod 0777 "$OUTPUT_DIR" "$OUTPUT_DIR/$SAMPLE_NAME"
           python - <<'PY'
           import json, os, subprocess
           meta = {
@@ -381,7 +382,8 @@ jobs:
             echo "Skip auto-merge: main moved from frozen baseline $EXPECTED_MAIN_SHA to $main_sha."
             exit 1
           fi
-          branch_sha=$(gh api "repos/$GITHUB_REPOSITORY/branches/$WINNER_BRANCH" --jq .commit.sha)
+          branch_encoded=$(python -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["WINNER_BRANCH"], safe=""))')
+          branch_sha=$(gh api "repos/$GITHUB_REPOSITORY/branches/$branch_encoded" --jq .commit.sha)
           if [ "$branch_sha" != "$WINNER_SHA" ]; then
             echo "Skip auto-merge: branch head changed after benchmark."
             exit 1
