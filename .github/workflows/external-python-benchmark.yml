@@ -24,6 +24,7 @@ concurrency:
 
 jobs:
   external-python:
+    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'experiment/')
     strategy:
       fail-fast: false
       matrix:
@@ -97,7 +98,7 @@ jobs:
           retention-days: 90
 
   aggregate-scorecard:
-    if: always()
+    if: always() && (github.event_name != 'pull_request' || !startsWith(github.head_ref, 'experiment/'))
     needs: external-python
     runs-on: ubuntu-latest
     steps:
