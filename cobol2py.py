@@ -559,6 +559,19 @@ def build_overlay_layout(
                 total_width = _simple_storage_width(variable, variables)
                 if total_width is None:
                     raise ValueError("unsupported overlay group width")
+                element_width = (
+                    total_width // variable.occurs
+                    if variable.is_array and variable.occurs
+                    else total_width
+                )
+                fields[variable.name.upper()] = {
+                    "base": base.name.upper(),
+                    "offset": offset,
+                    "width": element_width,
+                    "kind": "group",
+                    "strides": [stride for stride, _occurs in local_dimensions],
+                    "occurs": [occurs for _stride, occurs in local_dimensions],
+                }
                 return offset + total_width
 
             element_width = _simple_storage_width(
@@ -4836,14 +4849,14 @@ def emit_python(prog: Program) -> str:
     lines.append("    field = _cobol_overlay_fields[name]")
     lines.append("    offset = _cobol_field_offset(field, subscripts)")
     lines.append("    raw = _cobol_storage[field['base']][offset:offset + field['width']]")
-    lines.append("    return raw if field['kind'] == 'alpha' else int(raw or '0')")
+    lines.append("    return raw if field['kind'] in ('alpha', 'group') else int(raw or '0')")
     lines.append("")
     lines.append("def _cobol_set(name, value, *subscripts):")
     lines.append("    field = _cobol_overlay_fields[name]")
     lines.append("    base = field['base']")
     lines.append("    offset = _cobol_field_offset(field, subscripts)")
     lines.append("    width = field['width']")
-    lines.append("    if field['kind'] == 'alpha':")
+    lines.append("    if field['kind'] in ('alpha', 'group'):")
     lines.append("        text = str(value)[:width].ljust(width)")
     lines.append("    else:")
     lines.append("        text = str(abs(int(value)) % (10 ** width)).zfill(width)")
