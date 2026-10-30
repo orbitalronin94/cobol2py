@@ -3606,3 +3606,21 @@ class ExternalBenchmarkConditionRegressionTests(unittest.TestCase):
         self.assertTrue(eval(translated, {"ws_opcao": "A"}))
         self.assertFalse(eval(translated, {"ws_opcao": "N"}))
         self.assertFalse(eval(translated, {"ws_opcao": "S"}))
+
+
+class StringDelimitedOptionalByCandidateTests(unittest.TestCase):
+    def test_string_delimited_size_and_space_without_by(self):
+        variables = {
+            "WS-A": cobol2py.CobolVar(level=77, name="WS-A", pic="X(3)"),
+            "WS-B": cobol2py.CobolVar(level=77, name="WS-B", pic="X(4)"),
+            "WS-OUT": cobol2py.CobolVar(level=77, name="WS-OUT", pic="X(12)"),
+        }
+        generated = "\\n".join(cobol2py.translate_statement(
+            'STRING WS-A DELIMITED SIZE WS-B DELIMITED SPACE INTO WS-OUT',
+            set(), variables,
+        ))
+        compile(generated, "<string-delimited-optional-by>", "exec")
+        self.assertNotIn("delimited", generated.lower())
+        namespace = {"ws_a": "ABC", "ws_b": "D EF ", "ws_out": " " * 12}
+        exec(generated, namespace)
+        self.assertEqual(namespace["ws_out"], "ABCD" + " " * 8)
