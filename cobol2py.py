@@ -1240,7 +1240,8 @@ def emit_assignment(target: str, value: str, variables: Optional[dict[str, Cobol
                     if subscript.isdigit():
                         index_args.append(str(int(subscript) - 1))
                     elif re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*", subscript):
-                        index_args.append(f"int({normalize_name(subscript)}) - 1")
+                        index_value = normalize_data_reference(subscript, variable_map)
+                        index_args.append(f"int({index_value}) - 1")
                     else:
                         index_args.append(f"({translate_expr(subscript, variable_map)}) - 1")
                 return f"_cobol_set({field_name!r}, {value}, {', '.join(index_args)})"
@@ -1324,9 +1325,11 @@ def normalize_data_reference(
         if subscript.isdigit():
             return str(int(subscript) - 1)
         if re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*", subscript):
-            # COBOL subscripts are numeric even when the translator inferred
-            # their storage as text; coerce before using Python list indexing.
-            return f"int({normalize_name(subscript)}) - 1"
+            # A subscript is a COBOL data reference too: it may be nested in a
+            # group (e.g. S1 under GRP-SUB), so resolve its storage path before
+            # coercing it to an integer for Python's zero-based indexing.
+            index_value = normalize_data_reference(subscript, variable_map)
+            return f"int({index_value}) - 1"
         if re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*\s*[+*/-]\s*[A-Za-z0-9_-]+(?:\s*[+*/-]\s*[A-Za-z0-9_-]+)*", subscript):
             return f"{translate_expr(subscript, variable_map)} - 1"
         return f"{normalize_name(subscript)} - 1"
