@@ -194,9 +194,9 @@ class ExternalBenchmarkProcessTests(unittest.TestCase):
                 "--translator", str(translator), "--output", str(repeated_output),
                 "--target", "5", "--diagnostics",
             ]
-            with mock.patch.object(runner, "extract_archive", side_effect=fake_extract), \\
-                 mock.patch.object(runner, "run_process", side_effect=fake_run_process), \\
-                 mock.patch.object(sys, "argv", repeated_argv), \\
+            with mock.patch.object(runner, "extract_archive", side_effect=fake_extract), \
+                 mock.patch.object(runner, "run_process", side_effect=fake_run_process), \
+                 mock.patch.object(sys, "argv", repeated_argv), \
                  contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(runner.main(), 0)
             repeated_report = json.loads(
