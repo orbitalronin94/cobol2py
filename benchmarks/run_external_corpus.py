@@ -18,7 +18,7 @@ ARCHIVE_URL = "https://zenodo.org/records/14269462/files/COBOL_Files.zip?downloa
 SOURCE_EXTENSIONS = {".cbl", ".cob", ".cobol"}
 MAX_SOURCE_BYTES = 1_000_000
 
-def run_process(command: list[str], cwd: Path, timeout: int) -> dict[str, Any]:
+def run_process(command: list[str], cwd: Path, timeout: int, stdout_path: Optional[Path] = None, stderr_path: Optional[Path] = None) -> dict[str, Any]:
     """Run one untrusted program in its own process group with bounded output capture."""
     try:
         process = subprocess.Popen(command, cwd=str(cwd), stdin=subprocess.DEVNULL,
@@ -192,6 +192,7 @@ def main() -> int:
     parser.add_argument("--compile-timeout", type=int, default=8)
     parser.add_argument("--run-timeout", type=int, default=3)
     parser.add_argument("--translator-timeout", type=int, default=20)
+    parser.add_argument("--diagnostics", action="store_true", help="Preserve complete per-case stdout/stderr byte streams and source/generated code for failed cases")
     args = parser.parse_args()
     if args.target < 1: parser.error("--target must be positive")
     if args.skip < 0: parser.error("--skip must be non-negative")
