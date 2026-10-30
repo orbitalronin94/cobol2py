@@ -118,6 +118,22 @@ def stdout_matches(candidate: dict[str, Any], reference: dict[str, Any]) -> bool
         and candidate.get("stdout_sha256") == reference.get("stdout_sha256")
     )
 
+def first_byte_difference(left_path: Path, right_path: Path) -> Optional[int]:
+    """Return the first differing byte offset, or None when the complete files match."""
+    offset = 0
+    with left_path.open("rb") as left, right_path.open("rb") as right:
+        while True:
+            left_chunk = left.read(65536)
+            right_chunk = right.read(65536)
+            if left_chunk != right_chunk:
+                for index, (a, b) in enumerate(zip(left_chunk, right_chunk)):
+                    if a != b:
+                        return offset + index
+                return offset + min(len(left_chunk), len(right_chunk))
+            if not left_chunk:
+                return None
+            offset += len(left_chunk)
+
 def candidate_error_context(stderr: str, generated_source: str) -> dict[str, Any]:
     """Return a sanitized generated-code location without exposing string contents."""
     frames = re.findall(r'translated\.py["\']?, line (\d+)', stderr)
@@ -303,6 +319,11 @@ def main() -> int:
                         reference_stdout = reference["stdout"]
                         result["candidate_stdout_length"] = candidate["stdout_length"]
                         result["reference_stdout_length"] = reference["stdout_length"]
+                        result["candidate_stdout_sha256"] = candidate["stdout_sha256"]
+                        result["reference_stdout_sha256"] = reference["stdout_sha256"]
+                        if args.diagnostics and not result["stdout_match"]:
+                            result["stdout_first_difference_byte"] = first_byte_difference(
+                                case_root / "candidate.stdout.bin", case_root / "reference.stdout.bin")
                         result["candidate_stdout_truncated"] = candidate["stdout_truncated"]
                         result["reference_stdout_truncated"] = reference["stdout_truncated"]
                         if not result["stdout_match"]:
