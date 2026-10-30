@@ -3053,7 +3053,7 @@ def translate_group_move(source: str, target: str, variables: dict[str, CobolVar
         return 1
 
     def reference_indices(reference: str) -> tuple[str, ...]:
-        match = re.match(r"[A-Za-z0-9-]+\\s*\\(([^()]*)\\)", reference.strip())
+        match = re.match(r"[A-Za-z0-9-]+\s*\(([^()]*)\)", reference.strip())
         if match is None:
             return ()
         return tuple(part.strip() for part in re.split(r"[,;]", match.group(1)) if part.strip())
@@ -3159,7 +3159,7 @@ def translate_group_bytes(source: str, variables: dict[str, CobolVar]) -> Option
         return max(1, pic_digit_count(variable.pic)) if variable.pic else 1
 
     def reference_indices(reference: str) -> tuple[str, ...]:
-        match = re.match(r"[A-Za-z0-9-]+\\s*\\(([^()]*)\\)", reference.strip())
+        match = re.match(r"[A-Za-z0-9-]+\s*\(([^()]*)\)", reference.strip())
         if match is None:
             return ()
         return tuple(part.strip() for part in re.split(r"[,;]", match.group(1)) if part.strip())
