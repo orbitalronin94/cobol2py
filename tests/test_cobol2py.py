@@ -2367,9 +2367,13 @@ class CrossBackendIdentifierNormalizationTests(unittest.TestCase):
     def test_java_reserved_word_does_not_change_python_identifier(self):
         self.assertEqual(cobol2py.normalize_identifier("record"), "record")
         self.assertEqual(cobol2py.normalize_name("FILE-RECORD-INFORMATION-REC"), "file_record_information_rec")
+        self.assertEqual(cobol2py.translate_expr("RECORD"), "record")
 
     def test_java_reserved_word_is_escaped_for_java(self):
-        self.assertEqual(cobol2py.normalize_java_identifier("record"), "cobol_record")\n        self.assertEqual(cobol2py.normalize_java_name("record"), "cobol_record")
+        self.assertEqual(cobol2py.normalize_java_identifier("record"), "cobol_record")
+        self.assertEqual(cobol2py.normalize_java_name("record"), "cobol_record")
+        self.assertEqual(cobol2py.normalize_java_name("ITEM(IDX)"), "item[idx - 1]")
+        self.assertEqual(cobol2py.translate_java_expr("RECORD", {}), "cobol_record")
         self.assertEqual(cobol2py.normalize_java_name("FILE-RECORD-INFORMATION-REC"), "file_record_information_rec")
 
 
