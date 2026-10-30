@@ -21,6 +21,9 @@ concurrency:
   group: cobol2py-seven-candidate-tournament
   cancel-in-progress: false
 
+# This is a one-shot frozen-baseline tournament. The coordinator is PR #57;
+# all other candidate PRs carry the same workflow but do not start duplicate runs.
+
 jobs:
   candidate-tests:
     if: github.event_name != 'pull_request' || github.event.pull_request.number == 57
