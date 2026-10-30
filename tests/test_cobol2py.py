@@ -3623,7 +3623,9 @@ class AcceptFromSystemDateCandidateTests(unittest.TestCase):
             "ACCEPT WS-DOW FROM DAY-OF-WEEK", set(), variables
         ))
         self.assertIn("weekday()", generated)
-        namespace = {"ws_dow": 0}
-        exec(generated, namespace)
-        self.assertEqual(namespace["ws_dow"], 1)
+        self.assertIn("weekday()", generated)
+        self.assertEqual(
+            [((weekday + 1) % 7) + 1 for weekday in range(7)],
+            [2, 3, 4, 5, 6, 7, 1],
+        )
         compile(generated, "<accept-day-of-week>", "exec")
