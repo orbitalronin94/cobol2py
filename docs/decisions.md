@@ -455,3 +455,14 @@ Añadir una sección con:
 - **Consecuencias:** se amplía el subconjunto traducido sin cambiar el oráculo ni el criterio del benchmark. La cancelación de una ejecución antigua no equivale a un resultado válido; el nuevo SHA debe completar sus pruebas y benchmark para confirmar cualquier mejora.
 - **Validación:** las pruebas unitarias de Python 3.10, 3.11, 3.12 y 3.13 pasan en el commit `b2cdbeac`; el workflow externo debe confirmar la revisión final después de los cambios de código y CI.
 - **Revisión:** confirmar la medición externa del candidato actual y revisar casos de MOVE múltiple con campos numéricos, grupos y subíndices antes de ampliar el soporte a más formas COBOL.
+
+
+## D-050 — No aceptar depuración ciega ni conformarse con el porcentaje externo
+
+- **Fecha:** 2026-10-30.
+- **Estado:** aceptada.
+- **Contexto:** el mejor resultado histórico observado en X-COBOL v2 es 37,7 % (377/1.000). Los informes existentes no conservan toda la evidencia para reconstruir cada discrepancia.
+- **Decisión:** no volver a trabajar voluntariamente a ciegas. El 37,7 % es una referencia que hay que superar, no un resultado satisfactorio ni un techo. Cada fallo investigable debe poder rastrearse hasta la fuente COBOL, stdout/stderr y código de retorno de GnuCOBOL, stdout/stderr y código de retorno de Python, el código generado y una comparación reproducible byte a byte. Si alguna evidencia no puede conservarse por licencia o privacidad, se indicará expresamente.
+- **Consecuencias:** el runner debe producir artefactos diagnósticos por caso. Cualquier aceleración debe mantener idénticos el orden determinista, la selección de 500 primary y 500 holdout, el denominador, los timeouts y la comparación exacta de stdout y código de retorno. Los fallos de referencia, exclusiones, errores de traducción y discrepancias de ejecución se contabilizarán por separado.
+- **Validación:** comparar IDs, estados y resultados entre ejecución secuencial y optimizada con el mismo corpus; comprobar que cada fallo deja evidencia suficiente para reproducirlo y clasificarlo.
+- **Revisión:** no se cambiarán criterios de selección ni se reducirá evidencia diagnóstica sin documentar y justificar una nueva decisión.
