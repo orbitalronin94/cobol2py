@@ -530,6 +530,30 @@ RE_OCCURS = re.compile(
 RE_PARAGRAPH = re.compile(r"^(?!END-)([A-Za-z][A-Za-z0-9\-]*)\.\s*$")
 
 
+def _program_index_names(program: Program) -> list[str]:
+    """Collect declared and syntactically referenced index-names.
+
+    Some legacy sources omit INDEXED BY in continuation layouts that the
+    declaration parser cannot safely attach. SEARCH VARYING and SET index
+    operations still provide reliable evidence that these names are indexes.
+    """
+    names = {
+        index_name
+        for variable in program.variables
+        for index_name in (variable.indexed_by_names or ([variable.indexed_by] if variable.indexed_by else []))
+    }
+    for _, source_line in program.raw_lines:
+        for match in re.finditer(
+            r"\\b(?:SET\\s+([A-Za-z][A-Za-z0-9-]*)\\s+(?:TO|UP\\s+BY|DOWN\\s+BY)|SEARCH\\s+[A-Za-z][A-Za-z0-9-]*\\s+VARYING\\s+([A-Za-z][A-Za-z0-9-]*))",
+            source_line,
+            re.IGNORECASE,
+        ):
+            candidate = (match.group(1) or match.group(2)).upper()
+            if candidate not in {variable.name for variable in program.variables}:
+                names.add(candidate)
+    return sorted(names)
+
+
 def _indexed_by_names(rest: str) -> list[str]:
     """Return every index-name in an INDEXED BY clause, including line folds."""
     match = re.search(r"\bINDEXED(?:\s+BY)?\b(.*)$", rest, re.IGNORECASE)
@@ -4323,7 +4347,15 @@ def translate_nodes(
             if table is None or not table.is_array or not varying_name:
                 out.append("    " * indent + f"# SEARCH no traducido: {node.text} (tabla OCCURS/índice no resuelto)")
             else:
-                size_expr = normalize_data_reference(table.depending_on, variables) if table.depending_on else str(table.occurs or 0)
+                # OCCURS DEPENDING ON is usable only when its controller was parsed.
+                # A malformed continuation can otherwise turn a clause keyword
+                # into a Python name (e.g. int(indexed)) and crash at runtime.
+                depending_name = table.depending_on.upper() if table.depending_on else None
+                size_expr = (
+                    normalize_data_reference(depending_name, variables)
+                    if depending_name and depending_name in (variables or {})
+                    else str(table.occurs or 0)
+                )
                 index_expr = normalize_name(varying_name)
                 prefix = "    " * indent
                 out.append(prefix + f"while {index_expr} <= int({size_expr}):")
@@ -4362,7 +4394,15 @@ def translate_nodes(
                 table_expr = normalize_data_reference(table_name, variables)
                 key_expr = lambda index: f"{table_expr}[{index}][{normalize_name(key_name)!r}]"
                 target_expr = translate_literal(search_value, variables)
-                size_expr = normalize_data_reference(table.depending_on, variables) if table.depending_on else str(table.occurs or 0)
+                # OCCURS DEPENDING ON is usable only when its controller was parsed.
+                # A malformed continuation can otherwise turn a clause keyword
+                # into a Python name (e.g. int(indexed)) and crash at runtime.
+                depending_name = table.depending_on.upper() if table.depending_on else None
+                size_expr = (
+                    normalize_data_reference(depending_name, variables)
+                    if depending_name and depending_name in (variables or {})
+                    else str(table.occurs or 0)
+                )
                 prefix = "    " * indent
                 temp = f"_cobol_search_{node.line}"
                 out.append(prefix + f"{temp}_size = min(max(0, int({size_expr})), {table.occurs or 0})")
@@ -5135,11 +5175,7 @@ def emit_python(prog: Program) -> str:
                 comment += f" VALUE {variable.value}"
             lines.append(f"{normalize_name(variable.name)}: {variable.py_type()} = {default}{comment}")
         lines.append("")
-        declared_indexes = list(dict.fromkeys(
-            index_name
-            for variable in prog.variables
-            for index_name in (variable.indexed_by_names or ([variable.indexed_by] if variable.indexed_by else []))
-        ))
+        declared_indexes = _program_index_names(prog)
         for index_name in declared_indexes:
             lines.append(f"{normalize_name(index_name)} = 1  # INDEXED BY {index_name}")
         if declared_indexes:
@@ -5210,8 +5246,7 @@ def emit_python(prog: Program) -> str:
         global_vars = [normalize_name(v.name) for v in prog.variables if not v.parent_name]
         global_vars.extend(
             normalize_name(index_name)
-            for v in prog.variables
-            for index_name in (v.indexed_by_names or ([v.indexed_by] if v.indexed_by else []))
+            for index_name in _program_index_names(prog)
             if normalize_name(index_name) not in global_vars
         )
         if global_vars:
