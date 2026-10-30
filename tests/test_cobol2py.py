@@ -3611,7 +3611,7 @@ class ExternalBenchmarkConditionRegressionTests(unittest.TestCase):
 class InspectReplacingCharactersCandidateTests(unittest.TestCase):
     def test_inspect_replacing_after_initial_changes_only_suffix(self):
         variables = {"WS-TEXT": cobol2py.CobolVar(level=77, name="WS-TEXT", pic="X(8)")}
-        generated = "\\n".join(cobol2py.translate_statement(
+        generated = "\n".join(cobol2py.translate_statement(
             'INSPECT WS-TEXT REPLACING CHARACTERS BY "X" AFTER INITIAL "B"',
             set(), variables,
         ))
@@ -3619,3 +3619,12 @@ class InspectReplacingCharactersCandidateTests(unittest.TestCase):
         namespace = {"ws_text": "ABcd ef "}
         exec(generated, namespace)
         self.assertEqual(namespace["ws_text"], "ABXXXXXX")
+
+    def test_inspect_replacing_without_after_initial_replaces_all(self):
+        variables = {"WS-TEXT": cobol2py.CobolVar(level=77, name="WS-TEXT", pic="X(4)")}
+        generated = "\n".join(cobol2py.translate_statement(
+            'INSPECT WS-TEXT REPLACING CHARACTERS BY "Z"', set(), variables
+        ))
+        namespace = {"ws_text": "ABCD"}
+        exec(generated, namespace)
+        self.assertEqual(namespace["ws_text"], "ZZZZ")
