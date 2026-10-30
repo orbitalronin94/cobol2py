@@ -3640,6 +3640,8 @@ def translate_statement(
             return [f'print("".join([{items}]), end="")']
         return [f'print("".join([{items}]))']
 
+    # Terminal-only positioning and prompt clauses do not change the
+    # accepted data value in the batch translator.
     accept_text = re.sub(
         r"\s+AT\s+\d+(?:\s+\d+)?(?=\s|$)", "", s, flags=re.IGNORECASE
     )
