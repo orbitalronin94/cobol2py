@@ -2418,6 +2418,46 @@ MAIN.
         self.assertEqual(output.getvalue(), "AB12\n", generated)
 
 
+class NestedRedefinesGroupMoveTests(unittest.TestCase):
+    def test_group_move_reads_and_writes_base_fields_of_nested_redefines(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. NESTEDOVERLAYMOVE.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 SOURCE-GROUP.
+   02 SOURCE-BASE PIC X(20).
+   02 SOURCE-NUM REDEFINES SOURCE-BASE PIC 9(20).
+   02 SOURCE-TAIL PIC X(2).
+01 TARGET-RECORD.
+   02 TARGET-GROUP.
+      03 TARGET-BASE PIC X(20).
+      03 TARGET-NUM REDEFINES TARGET-BASE PIC 9(20).
+      03 TARGET-TAIL PIC X(2).
+PROCEDURE DIVISION.
+MAIN.
+    MOVE "ABCDEFGHIJKLMNOPQRST" TO SOURCE-BASE.
+    MOVE "UV" TO SOURCE-TAIL.
+    MOVE SOURCE-GROUP TO TARGET-GROUP.
+    DISPLAY TARGET-BASE.
+    DISPLAY TARGET-TAIL.
+    GOBACK.
+"""
+        program = cobol2py.parse_cobol(source, source_format="free")
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<nested-redefines-group-move>", "exec")
+        self.assertIn("_cobol_set('TARGET-BASE'", generated)
+        self.assertIn("_cobol_get('SOURCE-BASE')", generated)
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "ABCDEFGHIJKLMNOPQRST\\nUV\\n", generated)
+
+
 class SpaceSeparatedSubscriptRegressionTests(unittest.TestCase):
     def test_numeric_subscripts_separated_by_spaces(self):
         self.assertEqual(cobol2py.normalize_data_reference("TABLE(1 2)"), "table[0][1]")
