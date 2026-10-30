@@ -243,7 +243,9 @@ def main() -> int:
                 candidate_work.mkdir()
                 executable = reference_work / "reference"
                 compiled = run_process(["cobc", "-x", "-I", str(source.parent), "-o", str(executable), str(source)],
-                                       reference_work, args.compile_timeout)
+                                       reference_work, args.compile_timeout,
+                                       case_root / "reference-compile.stdout.bin" if args.diagnostics else None,
+                                       case_root / "reference-compile.stderr.bin" if args.diagnostics else None)
                 if not compiled["launched"] or compiled["timeout"] or compiled["returncode"] != 0:
                     report["reference_compile_failures"] += 1
                     result["reference_compile"] = "failed"
@@ -251,7 +253,9 @@ def main() -> int:
                         compiled["stderr"] or "compiler did not produce an executable")[-400:]
                     continue
                 result["reference_compile"] = "passed"
-                reference = run_process([str(executable)], reference_work, args.run_timeout)
+                reference = run_process([str(executable)], reference_work, args.run_timeout,
+                                        case_root / "reference.stdout.bin" if args.diagnostics else None,
+                                        case_root / "reference.stderr.bin" if args.diagnostics else None)
                 if not reference["launched"] or reference["timeout"]:
                     report["reference_runtime_exclusions"] += 1
                     result["reason"] = "reference execution timed out or could not launch"
@@ -262,7 +266,9 @@ def main() -> int:
                     continue
                 eligible_seen += 1
                 translated = run_process(["python3", "-I", str(translator), str(source), "--format", "auto"],
-                                         candidate_work, args.translator_timeout)
+                                         candidate_work, args.translator_timeout,
+                                         case_root / "translator.stdout.bin" if args.diagnostics else None,
+                                         case_root / "translator.stderr.bin" if args.diagnostics else None)
                 if (not translated["launched"] or translated["timeout"] or translated["stdout_truncated"]
                         or translated["returncode"] != 0):
                     reason = ("translator timeout" if translated["timeout"] else
@@ -283,7 +289,9 @@ def main() -> int:
                             diagnostic += f"; generated line: {excerpt}"
                         result.update({"status": "failed", "reason": diagnostic})
                     else:
-                        candidate = run_process(["python3", "-I", str(generated)], candidate_work, args.translator_timeout)
+                        candidate = run_process(["python3", "-I", str(generated)], candidate_work, args.translator_timeout,
+                                               case_root / "candidate.stdout.bin" if args.diagnostics else None,
+                                               case_root / "candidate.stderr.bin" if args.diagnostics else None)
                         result["candidate_returncode"] = candidate["returncode"]
                         result["reference_returncode"] = reference["returncode"]
                         result["stdout_match"] = stdout_matches(candidate, reference)
@@ -325,6 +333,27 @@ def main() -> int:
                             reason = ("translated program timed out" if candidate["timeout"]
                                 else "stdout or return code differs from GnuCOBOL")
                             result.update({"status": "failed", "reason": reason})
+                if args.diagnostics and result.get("status") == "failed":
+                    diagnostic_dir = args.output / "diagnostics" / result["id"]
+                    diagnostic_dir.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(source, diagnostic_dir / ("source" + source.suffix.lower()))
+                    generated_file = candidate_work / "translated.py"
+                    if generated_file.is_file():
+                        shutil.copy2(generated_file, diagnostic_dir / "translated.py")
+                    for artifact_name in ("reference-compile.stdout.bin", "reference-compile.stderr.bin",
+                                          "reference.stdout.bin", "reference.stderr.bin",
+                                          "translator.stdout.bin", "translator.stderr.bin",
+                                          "candidate.stdout.bin", "candidate.stderr.bin"):
+                        artifact = case_root / artifact_name
+                        if artifact.is_file():
+                            shutil.copy2(artifact, diagnostic_dir / artifact_name)
+                    metadata = {"case": result, "reference_compile_returncode": compiled.get("returncode"),
+                                "reference_returncode": reference.get("returncode"),
+                                "candidate_returncode": result.get("candidate_returncode"),
+                                "translator_returncode": translated.get("returncode"),
+                                "stdin": "DEVNULL; interactive input is not currently supplied.",
+                                "comparison": "Complete stdout byte streams are retained; exact score uses SHA-256, byte length, and return code."}
+                    (diagnostic_dir / "metadata.json").write_text(json.dumps(metadata, indent=2, ensure_ascii=False) + "\\n", encoding="utf-8")
                 report["results"].append(result)
                 report["tested"] += 1
                 if result["status"] == "passed": report["passed"] += 1
