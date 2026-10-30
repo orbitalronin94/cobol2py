@@ -3640,6 +3640,30 @@ def translate_statement(
             return [f'print("".join([{items}]), end="")']
         return [f'print("".join([{items}]))']
 
+    accept_from_match = re.fullmatch(
+        rf"ACCEPT\s+({DATA_REF_PATTERN})\s+FROM\s+(DATE(?:\s+YYYYMMDD)?|DAY(?:\s+YYYYDDD)?|DAY-OF-WEEK|TIME)",
+        s,
+        re.IGNORECASE,
+    )
+    if accept_from_match:
+        target, source_kind = accept_from_match.groups()
+        source_kind = re.sub(r"\s+", " ", source_kind.upper())
+        now = "__import__('datetime').datetime.now()"
+        source_values = {
+            "DATE": f"{now}.strftime('%y%m%d')",
+            "DATE YYYYMMDD": f"{now}.strftime('%Y%m%d')",
+            "DAY": f"{now}.strftime('%y%j')",
+            "DAY YYYYDDD": f"{now}.strftime('%Y%j')",
+            "DAY-OF-WEEK": f"{now}.isoweekday()",
+            "TIME": f"({now}.strftime('%H%M%S') + str({now}.microsecond // 10000).zfill(2))",
+        }
+        value_expr = source_values[source_kind]
+        target_base = re.match(r"[A-Za-z0-9-]+", target)
+        target_var = (variables or {}).get(target_base.group(0).upper()) if target_base else None
+        if target_var is not None and target_var.is_group:
+            return [f"# ACCEPT FROM {source_kind} into group {target}: group layout is not supported"]
+        return [emit_assignment(target, value_expr, variables or {})]
+
     m = re.match(rf"ACCEPT\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
         target = m.group(1)
