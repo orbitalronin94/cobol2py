@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   compare:
+    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'experiment/')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout tested revision and history
