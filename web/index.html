@@ -392,6 +392,7 @@ class CobolVar:
     occurs: Optional[int] = None
     depending_on: Optional[str] = None
     indexed_by: Optional[str] = None
+    indexed_by_names: list[str] = field(default_factory=list)
     ascending_key: Optional[str] = None
     parent_name: Optional[str] = None
     redefines: Optional[str] = None
