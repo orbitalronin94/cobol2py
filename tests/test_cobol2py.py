@@ -2009,6 +2009,9 @@ class CobolIntrinsicFunctionRegressionTests(unittest.TestCase):
         self.assertAlmostEqual(convert("-$123.45"), -123.45)
         self.assertAlmostEqual(convert("(€9.50)"), -9.50)
         self.assertAlmostEqual(convert("  42.00 USD  "), 42.00)
+        self.assertAlmostEqual(convert("$1.234,56"), 1234.56)
+        self.assertAlmostEqual(convert("(€9,50)"), -9.50)
+        self.assertAlmostEqual(convert("1,234.56"), 1234.56)
 
     def test_case_and_trim_intrinsics_are_valid_python_calls(self):
         cases = {
