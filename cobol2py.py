@@ -1123,6 +1123,7 @@ def parse_cobol(
     special_registers = {
         "DEBUG-LINE": "X(6)",
         "DEBUG-NAME": "X(30)",
+        "DEBUG-CONTENTS": "X(10)",
         "LINE-COUNTER": "9(9)",
         "PAGE-COUNTER": "9(9)",
         "LINAGE-COUNTER": "9(9)",

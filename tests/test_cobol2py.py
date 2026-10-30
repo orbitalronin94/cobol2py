@@ -3606,3 +3606,23 @@ class ExternalBenchmarkConditionRegressionTests(unittest.TestCase):
         self.assertTrue(eval(translated, {"ws_opcao": "A"}))
         self.assertFalse(eval(translated, {"ws_opcao": "N"}))
         self.assertFalse(eval(translated, {"ws_opcao": "S"}))
+
+
+class DebugContentsSpecialRegisterCandidateTests(unittest.TestCase):
+    def test_debug_contents_is_added_as_implicit_storage(self):
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. DEBUGCONTENTS.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "PROCEDURE DIVISION.",
+            "DISPLAY DEBUG-CONTENTS.",
+            "STOP RUN.",
+        ])
+        program = cobol2py.parse_cobol(source, source_format="free")
+        variables = {item.name: item for item in program.variables}
+        self.assertIn("DEBUG-CONTENTS", variables)
+        self.assertEqual(variables["DEBUG-CONTENTS"].pic, "X(10)")
+        generated = cobol2py.emit_python(program)
+        self.assertIn("debug_contents", generated)
+        compile(generated, "<debug-contents-register>", "exec")

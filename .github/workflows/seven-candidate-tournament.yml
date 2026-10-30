@@ -1,0 +1,462 @@
+name: seven-candidate-tournament
+
+run-name: Seven-candidate COBOL equivalence tournament
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - "cobol2py.py"
+      - "tests/test_cobol2py.py"
+      - "web/index.html"
+      - ".github/workflows/seven-candidate-tournament.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: cobol2py-seven-candidate-tournament-v3
+  cancel-in-progress: false
+
+# This is a one-shot frozen-baseline tournament. The coordinator is PR #57;
+# all other candidate PRs carry the same workflow but do not start duplicate runs.
+# Final coordinator refresh: all seven candidate branches now have their final patch and workflow SHA.
+
+jobs:
+  candidate-tests:
+    if: github.event_name != 'pull_request' || github.event.pull_request.number == 57
+    name: Tests — ${{ matrix.candidate.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        candidate:
+          - { name: multiple-indexed-by, ref: experiment/multiple-indexed-by }
+          - { name: fixed-name-continuations, ref: experiment/fixed-name-continuations }
+          - { name: string-delimited-by, ref: experiment/string-delimited-by }
+          - { name: accept-screen-options, ref: experiment/accept-screen-options }
+          - { name: debug-contents, ref: experiment/debug-contents }
+          - { name: inspect-replacing, ref: experiment/inspect-replacing }
+          - { name: accept-from-date, ref: experiment/accept-from-date }
+    steps:
+      - name: Checkout candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.candidate.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run full unit/regression suite
+        id: unit-tests
+        run: python -m unittest discover -s tests -v
+      - name: Compile translator and benchmark runners
+        id: compile
+        run: python -m py_compile cobol2py.py cobol2native.py benchmarks/run_external_corpus.py benchmarks/run_external_multilang.py benchmarks/run_multilang_benchmark.py
+      - name: Record candidate test result
+        if: always()
+        env:
+          UNIT_OUTCOME: ${{ steps.unit-tests.outcome }}
+          COMPILE_OUTCOME: ${{ steps.compile.outcome }}
+          CANDIDATE_NAME: ${{ matrix.candidate.name }}
+          CANDIDATE_REF: ${{ matrix.candidate.ref }}
+          OUTPUT: ${{ runner.temp }}/candidate-test-result.json
+        run: |
+          python - <<'PY'
+          import json, os, subprocess
+          try:
+              sha = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          except Exception:
+              sha = ""
+          result = {
+              "candidate": os.environ["CANDIDATE_NAME"],
+              "branch": os.environ["CANDIDATE_REF"],
+              "sha": sha,
+              "tests_passed": os.environ.get("UNIT_OUTCOME") == "success" and os.environ.get("COMPILE_OUTCOME") == "success",
+              "unit_tests": os.environ.get("UNIT_OUTCOME"),
+              "compile": os.environ.get("COMPILE_OUTCOME"),
+          }
+          with open(os.environ["OUTPUT"], "w", encoding="utf-8") as handle:
+              json.dump(result, handle, indent=2)
+          print(json.dumps(result, indent=2))
+          PY
+      - name: Upload candidate test status
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-tests-${{ matrix.candidate.name }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/candidate-test-result.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  external-benchmark:
+    if: github.event_name != 'pull_request' || github.event.pull_request.number == 57
+    name: Exact corpus — ${{ matrix.candidate.name }} / ${{ matrix.sample.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        candidate:
+          - { name: multiple-indexed-by, ref: experiment/multiple-indexed-by }
+          - { name: fixed-name-continuations, ref: experiment/fixed-name-continuations }
+          - { name: string-delimited-by, ref: experiment/string-delimited-by }
+          - { name: accept-screen-options, ref: experiment/accept-screen-options }
+          - { name: debug-contents, ref: experiment/debug-contents }
+          - { name: inspect-replacing, ref: experiment/inspect-replacing }
+          - { name: accept-from-date, ref: experiment/accept-from-date }
+        sample:
+          - { name: primary, skip: 0 }
+          - { name: holdout, skip: 500 }
+    steps:
+      - name: Checkout exact candidate revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.candidate.ref }}
+      - name: Download pinned X-COBOL v2 archive
+        run: |
+          curl --fail --location --retry 3 --retry-delay 2 "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" --output /tmp/COBOL_Files.zip
+          ls -lh /tmp/COBOL_Files.zip
+      - name: Build isolated benchmark image
+        run: docker build -f benchmarks/Dockerfile.external -t cobol2py-seven-candidate .
+      - name: Prepare exact candidate/sample metadata
+        env:
+          CANDIDATE_NAME: ${{ matrix.candidate.name }}
+          CANDIDATE_REF: ${{ matrix.candidate.ref }}
+          SAMPLE_NAME: ${{ matrix.sample.name }}
+          SKIP: ${{ matrix.sample.skip }}
+          OUTPUT_DIR: ${{ runner.temp }}/candidate-artifacts
+        run: |
+          mkdir -p "$OUTPUT_DIR/$SAMPLE_NAME"
+          chmod 0777 "$OUTPUT_DIR" "$OUTPUT_DIR/$SAMPLE_NAME"
+          python - <<'PY'
+          import json, os, subprocess
+          meta = {
+              "candidate": os.environ["CANDIDATE_NAME"],
+              "branch": os.environ["CANDIDATE_REF"],
+              "sample": os.environ["SAMPLE_NAME"],
+              "skip": int(os.environ["SKIP"]),
+              "sha": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+          }
+          path = os.path.join(os.environ["OUTPUT_DIR"], os.environ["SAMPLE_NAME"], "candidate-meta.json")
+          with open(path, "w", encoding="utf-8") as handle:
+              json.dump(meta, handle, indent=2)
+          print(json.dumps(meta, indent=2))
+          PY
+      - name: Run reference-comparable 500-program sample
+        id: run-benchmark
+        env:
+          OUTPUT_DIR: ${{ runner.temp }}/candidate-artifacts
+          SAMPLE_NAME: ${{ matrix.sample.name }}
+          SKIP: ${{ matrix.sample.skip }}
+          CONTAINER_NAME: cobol2py-${{ github.run_id }}-${{ matrix.candidate.name }}-${{ matrix.sample.name }}
+        shell: bash
+        run: |
+          set +e
+          docker run --name "$CONTAINER_NAME"             --network none             --cap-drop=ALL             --security-opt=no-new-privileges             --pids-limit=128             --memory=4g             --cpus=2             --read-only             --tmpfs /tmp:rw,exec,nosuid,nodev,size=3g             --mount "type=bind,source=$GITHUB_WORKSPACE,target=/workspace,readonly"             --mount "type=bind,source=/tmp/COBOL_Files.zip,target=/input.zip,readonly"             --mount "type=bind,source=$OUTPUT_DIR,target=/output"             --workdir /workspace             cobol2py-seven-candidate             benchmarks/run_external_corpus.py             --translator /workspace/cobol2py.py             --archive /input.zip             --output "/output/$SAMPLE_NAME"             --target 500             --skip "$SKIP"             --diagnostics
+          benchmark_status=$?
+          docker rm "$CONTAINER_NAME" >/dev/null 2>&1 || true
+          exit "$benchmark_status"
+      - name: Record benchmark command outcome
+        if: always()
+        env:
+          OUTPUT_DIR: ${{ runner.temp }}/candidate-artifacts
+          SAMPLE_NAME: ${{ matrix.sample.name }}
+          BENCHMARK_OUTCOME: ${{ steps.run-benchmark.outcome }}
+        run: |
+          python - <<'PY'
+          import json, os
+          path = os.path.join(os.environ["OUTPUT_DIR"], os.environ["SAMPLE_NAME"], "candidate-run-status.json")
+          with open(path, "w", encoding="utf-8") as handle:
+              json.dump({"outcome": os.environ.get("BENCHMARK_OUTCOME")}, handle, indent=2)
+          PY
+      - name: Publish candidate scorecard
+        if: always()
+        env:
+          OUTPUT_DIR: ${{ runner.temp }}/candidate-artifacts
+          SAMPLE_NAME: ${{ matrix.sample.name }}
+          CANDIDATE_NAME: ${{ matrix.candidate.name }}
+        run: |
+          file="$OUTPUT_DIR/$SAMPLE_NAME/external-corpus-report.md"
+          if [ -f "$file" ]; then
+            echo "## $CANDIDATE_NAME — $SAMPLE_NAME" >> "$GITHUB_STEP_SUMMARY"
+            cat "$file" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No complete report for $CANDIDATE_NAME / $SAMPLE_NAME." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload exact-match report and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-benchmark-${{ matrix.candidate.name }}-${{ matrix.sample.name }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/candidate-artifacts/${{ matrix.sample.name }}/
+          if-no-files-found: warn
+          retention-days: 90
+
+  aggregate:
+    name: Compare all seven candidates against 408/1000
+    if: always() && (github.event_name != 'pull_request' || github.event.pull_request.number == 57)
+    needs: [candidate-tests, external-benchmark]
+    runs-on: ubuntu-latest
+    outputs:
+      winner: ${{ steps.score.outputs.winner }}
+      winner_branch: ${{ steps.score.outputs.winner_branch }}
+      winner_sha: ${{ steps.score.outputs.winner_sha }}
+      winner_score: ${{ steps.score.outputs.winner_score }}
+    steps:
+      - name: Download every candidate report and test result
+        uses: actions/download-artifact@v4
+        with:
+          pattern: candidate-*-${{ github.run_id }}
+          path: ${{ runner.temp }}/tournament-artifacts
+          merge-multiple: false
+      - name: Validate samples, compare IDs and select record-breaker
+        id: score
+        env:
+          REPORT_ROOT: ${{ runner.temp }}/tournament-artifacts
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          root = Path(os.environ["REPORT_ROOT"])
+          baseline = 408
+          candidates = {
+              "multiple-indexed-by": "experiment/multiple-indexed-by",
+              "fixed-name-continuations": "experiment/fixed-name-continuations",
+              "string-delimited-by": "experiment/string-delimited-by",
+              "accept-screen-options": "experiment/accept-screen-options",
+              "debug-contents": "experiment/debug-contents",
+              "inspect-replacing": "experiment/inspect-replacing",
+              "accept-from-date": "experiment/accept-from-date",
+          }
+          samples = {}
+          test_results = {}
+
+          for path in root.rglob("candidate-test-result.json"):
+              try:
+                  item = json.loads(path.read_text(encoding="utf-8"))
+                  test_results[item["candidate"]] = item
+              except Exception as exc:
+                  print(f"Invalid test artifact {path}: {exc}")
+
+          for meta_path in root.rglob("candidate-meta.json"):
+              try:
+                  meta = json.loads(meta_path.read_text(encoding="utf-8"))
+                  report_path = meta_path.parent / "external-corpus-report.json"
+                  status_path = meta_path.parent / "candidate-run-status.json"
+                  if not report_path.is_file() or not status_path.is_file():
+                      continue
+                  report = json.loads(report_path.read_text(encoding="utf-8"))
+                  status = json.loads(status_path.read_text(encoding="utf-8"))
+                  results = report.get("results", [])
+                  ids = [item.get("id") for item in results]
+                  passed = sum(item.get("status") == "passed" for item in results)
+                  valid = (
+                      status.get("outcome") == "success"
+                      and meta.get("candidate") in candidates
+                      and meta.get("branch") == candidates.get(meta.get("candidate"))
+                      and meta.get("sample") in ("primary", "holdout")
+                      and meta.get("skip") == (0 if meta.get("sample") == "primary" else 500)
+                      and report.get("tested") == 500
+                      and report.get("target") == 500
+                      and report.get("skip") == meta.get("skip")
+                      and report.get("sample_complete") is True
+                      and report.get("archive_md5_verified") is True
+                      and len(results) == 500
+                      and len(set(ids)) == 500
+                      and passed == report.get("passed")
+                  )
+                  if valid:
+                      samples.setdefault(meta["candidate"], {})[meta["sample"]] = {
+                          "passed": passed,
+                          "sha": meta.get("sha"),
+                          "ids": set(ids),
+                      }
+                  else:
+                      print(f"Rejected incomplete or invalid sample: {meta_path}")
+              except Exception as exc:
+                  print(f"Invalid benchmark artifact {meta_path}: {exc}")
+
+          rows = []
+          eligible = []
+          canonical_ids = None
+          for name, branch in candidates.items():
+              primary = samples.get(name, {}).get("primary")
+              holdout = samples.get(name, {}).get("holdout")
+              tests = test_results.get(name, {})
+              if (
+                  primary is not None
+                  and holdout is not None
+                  and primary["ids"].isdisjoint(holdout["ids"])
+                  and canonical_ids is None
+              ):
+                  canonical_ids = (primary["ids"], holdout["ids"])
+              valid = (
+                  primary is not None
+                  and holdout is not None
+                  and primary["sha"]
+                  and primary["sha"] == holdout["sha"]
+                  and tests.get("sha") == primary["sha"]
+                  and tests.get("tests_passed") is True
+                  and primary["ids"].isdisjoint(holdout["ids"])
+                  and canonical_ids is not None
+                  and primary["ids"] == canonical_ids[0]
+                  and holdout["ids"] == canonical_ids[1]
+              )
+              if not valid:
+                  rows.append((name, "INCOMPLETE / TESTS FAILED", None, None, None))
+                  continue
+              total = primary["passed"] + holdout["passed"]
+              rows.append((name, "VALID", primary["passed"], holdout["passed"], total))
+              if total > baseline:
+                  eligible.append({
+                      "candidate": name,
+                      "branch": branch,
+                      "sha": primary["sha"],
+                      "primary": primary["passed"],
+                      "holdout": holdout["passed"],
+                      "score": total,
+                  })
+
+          lines = [
+              "## Seven-candidate tournament",
+              "",
+              f"Historical record: **{baseline}/1000 (40.8%)**",
+              "",
+              "| Candidate | Validation | Primary / 500 | Holdout / 500 | Total / 1000 |",
+              "|---|---|---:|---:|---:|",
+          ]
+          for name, status, primary, holdout, total in rows:
+              lines.append(
+                  f"| {name} | {status} | {primary if primary is not None else '—'} | "
+                  f"{holdout if holdout is not None else '—'} | {total if total is not None else '—'} |"
+              )
+          lines += ["", "Eligibility requires both complete samples, matching tested SHA, and passing unit tests."]
+          if eligible:
+              eligible.sort(key=lambda item: (item["score"], item["holdout"], item["primary"]), reverse=True)
+              winner = eligible[0]
+              lines += [
+                  "",
+                  f"**Record breaker:** {winner['candidate']} — **{winner['score']}/1000** "
+                  f"(primary {winner['primary']}/500, holdout {winner['holdout']}/500).",
+                  "Auto-merge is requested only after verifying the frozen main baseline and exact PR head SHA.",
+              ]
+              output = {
+                  "winner": "true",
+                  "winner_branch": winner["branch"],
+                  "winner_sha": winner["sha"],
+                  "winner_score": str(winner["score"]),
+              }
+          else:
+              lines += ["", "**No merge:** no candidate exceeded 408/1000 with complete samples and green tests."]
+              output = {"winner": "false", "winner_branch": "", "winner_sha": "", "winner_score": "0"}
+
+          summary = "\n".join(lines) + "\n"
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
+              handle.write(summary)
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              for key, value in output.items():
+                  handle.write(f"{key}={value}\n")
+          print(summary)
+          PY
+
+  merge-winner:
+    name: Merge only a verified record-breaker
+    if: needs.aggregate.outputs.winner == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.number == 57)
+    needs: aggregate
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Verify baseline, candidate branch, and open PR
+        id: verify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WINNER_BRANCH: ${{ needs.aggregate.outputs.winner_branch }}
+          WINNER_SHA: ${{ needs.aggregate.outputs.winner_sha }}
+          WINNER_SCORE: ${{ needs.aggregate.outputs.winner_score }}
+          EXPECTED_MAIN_SHA: "6ba21280cb68848d14996c6d55f8ca64fcf40b09"
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+        run: |
+          set -euo pipefail
+          if [ "$HEAD_REPO" != "$GITHUB_REPOSITORY" ]; then
+            echo "Skip merge: tournament was triggered by a fork PR."
+            exit 1
+          fi
+          case "$WINNER_BRANCH" in
+            experiment/multiple-indexed-by|experiment/fixed-name-continuations|experiment/string-delimited-by|experiment/accept-screen-options|experiment/debug-contents|experiment/inspect-replacing|experiment/accept-from-date) ;;
+            *) echo "Rejected non-candidate branch: $WINNER_BRANCH"; exit 1 ;;
+          esac
+          main_sha=$(gh api "repos/$GITHUB_REPOSITORY/branches/main" --jq .commit.sha)
+          if [ "$main_sha" != "$EXPECTED_MAIN_SHA" ]; then
+            echo "Skip merge: main moved from frozen baseline $EXPECTED_MAIN_SHA to $main_sha."
+            exit 1
+          fi
+          branch_encoded=$(python -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["WINNER_BRANCH"], safe=""))')
+          branch_sha=$(gh api "repos/$GITHUB_REPOSITORY/branches/$branch_encoded" --jq .commit.sha)
+          if [ "$branch_sha" != "$WINNER_SHA" ]; then
+            echo "Skip merge: branch head changed after benchmark."
+            exit 1
+          fi
+          prs=$(gh api --method GET "repos/$GITHUB_REPOSITORY/pulls" -f state=open -f head="$GITHUB_REPOSITORY_OWNER:$WINNER_BRANCH" -f base=main)
+          pr_number=$(echo "$prs" | jq -r --arg sha "$WINNER_SHA" '[.[] | select(.head.sha == $sha and .base.ref == "main" and .draft == false)] | .[0].number // empty')
+          if [ -z "$pr_number" ]; then
+            echo "Skip merge: no open PR matches the exact benchmarked SHA."
+            exit 1
+          fi
+          echo "pr_number=$pr_number" >> "$GITHUB_OUTPUT"
+          echo "Verified winner: PR #$pr_number, $WINNER_SCORE/1000, $WINNER_SHA"
+      - name: Wait for all other PR checks to finish successfully
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WINNER_SHA: ${{ needs.aggregate.outputs.winner_sha }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 90); do
+            checks=$(gh api "repos/$GITHUB_REPOSITORY/commits/$WINNER_SHA/check-runs?per_page=100")
+            pending=$(echo "$checks" | jq '[.check_runs[]
+              | select((.name | startswith("Tests — ") or startswith("Exact corpus —") or . == "Compare all seven candidates against 408/1000" or . == "Merge only a verified record-breaker") | not)
+              | select(.status != "completed")] | length')
+            failures=$(echo "$checks" | jq '[.check_runs[]
+              | select((.name | startswith("Tests — ") or startswith("Exact corpus —") or . == "Compare all seven candidates against 408/1000" or . == "Merge only a verified record-breaker") | not)
+              | select(.status == "completed")
+              | select(.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")] | length')
+            if [ "$failures" -gt 0 ]; then
+              echo "Refusing merge: $failures non-tournament check(s) failed."
+              echo "$checks" | jq -r '.check_runs[] | select(.status == "completed") | select(.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral") | "- " + .name + ": " + (.conclusion // "unknown")'
+              exit 1
+            fi
+            if [ "$pending" -eq 0 ]; then
+              echo "All non-tournament checks are complete and green."
+              exit 0
+            fi
+            echo "Waiting for $pending other check(s) to complete (attempt $attempt/90)."
+            sleep 30
+          done
+          echo "Refusing merge: other PR checks did not finish before the wait timeout."
+          exit 1
+      - name: Queue auto-merge or perform guarded squash merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.verify.outputs.pr_number }}
+          WINNER_SHA: ${{ needs.aggregate.outputs.winner_sha }}
+          WINNER_SCORE: ${{ needs.aggregate.outputs.winner_score }}
+        run: |
+          set -euo pipefail
+          if gh api graphql -f query='mutation($pullRequestId: ID!) { enablePullRequestAutoMerge(input: {pullRequestId: $pullRequestId, mergeMethod: SQUASH}) { pullRequest { number autoMergeRequest { enabledAt } } } }' -F pullRequestId="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq .node_id)" >/tmp/auto-merge.json 2>/tmp/auto-merge.err; then
+            cat /tmp/auto-merge.json
+            echo "Auto-merge queued for PR #$PR_NUMBER at $WINNER_SCORE/1000."
+            exit 0
+          fi
+          echo "Repository auto-merge is disabled or unavailable; attempting a SHA-guarded squash merge."
+          cat /tmp/auto-merge.err
+          result=$(gh api --method PUT "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/merge" -f merge_method=squash -f sha="$WINNER_SHA")
+          echo "$result" | jq -e '.merged == true'
+          echo "Merged PR #$PR_NUMBER at $WINNER_SCORE/1000."
