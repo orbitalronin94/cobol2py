@@ -374,7 +374,7 @@ def main() -> int:
                                 "translator_returncode": translated.get("returncode"),
                                 "stdin": "DEVNULL; interactive input is not currently supplied.",
                                 "comparison": "Complete stdout byte streams are retained; exact score uses SHA-256, byte length, and return code."}
-                    (diagnostic_dir / "metadata.json").write_text(json.dumps(metadata, indent=2, ensure_ascii=False) + "\\n", encoding="utf-8")
+                    (diagnostic_dir / "metadata.json").write_text(json.dumps(metadata, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
                 report["results"].append(result)
                 report["tested"] += 1
                 if result["status"] == "passed": report["passed"] += 1
