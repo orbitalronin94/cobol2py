@@ -184,6 +184,32 @@ class ExternalBenchmarkProcessTests(unittest.TestCase):
             self.assertEqual(len(report["results"]), 5)
             self.assertEqual(report["eligible_skipped"], 0)
 
+            # Re-running the same immutable fixture archive must select the
+            # same ordered case IDs and preserve the same denominator.
+            compile_index[0] = 0
+            eligible_index[0] = 0
+            repeated_output = root / "repeated-output"
+            repeated_argv = [
+                "run_external_corpus.py", "--archive", str(archive),
+                "--translator", str(translator), "--output", str(repeated_output),
+                "--target", "5", "--diagnostics",
+            ]
+            with mock.patch.object(runner, "extract_archive", side_effect=fake_extract), \\
+                 mock.patch.object(runner, "run_process", side_effect=fake_run_process), \\
+                 mock.patch.object(sys, "argv", repeated_argv), \\
+                 contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(runner.main(), 0)
+            repeated_report = json.loads(
+                (repeated_output / "external-corpus-report.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(
+                [item["id"] for item in report["results"]],
+                [item["id"] for item in repeated_report["results"]],
+            )
+            self.assertEqual(report["tested"], repeated_report["tested"])
+            self.assertEqual(report["passed"], repeated_report["passed"])
+            self.assertEqual(report["failed"], repeated_report["failed"])
+
             bundles = list((output / "diagnostics").iterdir())
             self.assertEqual(len(bundles), 6)  # 2 reference exclusions + 4 candidate failures
             metadata = {
@@ -194,6 +220,14 @@ class ExternalBenchmarkProcessTests(unittest.TestCase):
                           if "reference exclusion" in item.get("classification", "")]
             self.assertEqual(len(exclusions), 2)
             self.assertTrue(all("not counted" in item["classification"] for item in exclusions))
+            compile_exclusion = next(item for item in exclusions
+                                     if item["case"]["reference_compile"] == "failed")
+            self.assertTrue(compile_exclusion["reference_compile_launched"])
+            self.assertFalse(compile_exclusion["reference_compile_timeout"])
+            runtime_exclusion = next(item for item in exclusions
+                                     if item["case"].get("reference_timeout"))
+            self.assertTrue(runtime_exclusion["reference_launched"])
+            self.assertTrue(runtime_exclusion["reference_timeout"])
 
             mismatch = next(item["case"] for item in metadata.values()
                             if item["case"].get("stdout_match") is False)
