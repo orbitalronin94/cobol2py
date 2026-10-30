@@ -564,14 +564,15 @@ def build_overlay_layout(
                     if variable.is_array and variable.occurs
                     else total_width
                 )
-                fields[variable.name.upper()] = {
-                    "base": base.name.upper(),
-                    "offset": offset,
-                    "width": element_width,
-                    "kind": "group",
-                    "strides": [stride for stride, _occurs in local_dimensions],
-                    "occurs": [occurs for _stride, occurs in local_dimensions],
-                }
+                if variable.parent_name is None:
+                    fields[variable.name.upper()] = {
+                        "base": base.name.upper(),
+                        "offset": offset,
+                        "width": element_width,
+                        "kind": "group",
+                        "strides": [stride for stride, _occurs in local_dimensions],
+                        "occurs": [occurs for _stride, occurs in local_dimensions],
+                    }
                 return offset + total_width
 
             element_width = _simple_storage_width(
@@ -2766,6 +2767,18 @@ def fit_numeric_expression(expression: str, target: str, variables: dict[str, Co
     return f"int({expression}) % (10 ** {digits})"
 
 
+def is_overlay_storage_view(variable: CobolVar, variables: dict[str, CobolVar]) -> bool:
+    """Check whether a data item belongs to a top-level REDEFINES storage view."""
+    if variable.parent_name:
+        return False
+    return variable.name.upper() in {
+        name
+        for item in variables.values()
+        if item.redefines
+        for name in (item.name.upper(), item.redefines.upper())
+    }
+
+
 def translate_group_fill_move(source: str, target: str, variables: dict[str, CobolVar]) -> Optional[list[str]]:
     """Translate MOVE of a figurative constant to a group without replacing its structure."""
     figuratives = {
@@ -2789,10 +2802,10 @@ def translate_group_fill_move(source: str, target: str, variables: dict[str, Cob
     if root is None or not root.is_group:
         return None
 
-    overlay_fields, _overlay_buffers = build_overlay_layout(variables)
-    if root.name.upper() in overlay_fields and not root.is_array:
-        width = int(overlay_fields[root.name.upper()]["width"])
-        return [emit_assignment(target, repr(fill_char * width), variables)]
+    if is_overlay_storage_view(root, variables) and not root.is_array:
+        width = _simple_storage_width(root, variables, include_occurs=False)
+        if width is not None:
+            return [emit_assignment(target, repr(fill_char * width), variables)]
 
     assignments: list[str] = []
     target_expr = normalize_data_reference(target, variables)
@@ -2861,9 +2874,8 @@ def translate_group_move(source: str, target: str, variables: dict[str, CobolVar
 
     source_root = variables.get(source_match.group(1).upper()) if source_match else None
 
-    overlay_fields, _overlay_buffers = build_overlay_layout(variables)
-    has_explicit_subscript = bool(re.search(r"\\(\\s*[^)]*\\)", target.strip()))
-    if target_root.name.upper() in overlay_fields and (
+    has_explicit_subscript = bool(re.search(r"\(\s*[^)]*\)", target.strip()))
+    if is_overlay_storage_view(target_root, variables) and (
         not target_root.is_array or has_explicit_subscript
     ):
         value = translate_move_value(source, target, variables)
