@@ -2455,7 +2455,7 @@ MAIN.
         output = StringIO()
         with redirect_stdout(output):
             namespace["main"]()
-        self.assertEqual(output.getvalue(), "ABCDEFGHIJKLMNOPQRST\\nUV\\n", generated)
+        self.assertEqual(output.getvalue(), "ABCDEFGHIJKLMNOPQRST\nUV\n", generated)
 
 
 class SpaceSeparatedSubscriptRegressionTests(unittest.TestCase):
