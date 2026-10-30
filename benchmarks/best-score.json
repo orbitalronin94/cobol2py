@@ -13,5 +13,6 @@
     "merged_commit": "06acd347caf18e776af241e83f7a35d8164c3e0f0",
     "source_pr": 61,
     "benchmark_run": 41107706787
-  }
+  },
+  "acceptance_target_each_sample": 375
 }
