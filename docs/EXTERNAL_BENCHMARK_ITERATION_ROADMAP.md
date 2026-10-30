@@ -12,9 +12,11 @@ La aprobación por caso exige coincidencia exacta de stdout y código de retorno
 | Mejor referencia conservadora | `2307c7b` | 178/500 (35,6 %) | 197/500 (39,4 %) | **375/1000 (37,5 %)** |
 | Python #7 | `13d359c` | 165/500 (33,0 %) | 191/500 (38,2 %) | 356/1000 (35,6 %) |
 | Python #12 | `8e5e2ec` | 168/500 (33,6 %) | 193/500 (38,6 %) | 361/1000 (36,1 %) |
-| Python #14, último resultado completo analizado | `9d81975` | 168/500 (33,6 %) | 194/500 (38,8 %) | **362/1000 (36,2 %)** |
+| Python #14 | `9d81975` | 168/500 (33,6 %) | 194/500 (38,8 %) | 362/1000 (36,2 %) |
+| Python #68 | `b807aae` | 188/500 (37,6 %) | 205/500 (41,0 %) | 393/1000 (39,3 %) |
+| **Python #77 (PR #53)** | `402303b` | **192/500 (38,4 %)** | **208/500 (41,6 %)** | **400/1000 (40,0 %)** |
 
-La última medición queda 13 programas por debajo del récord. El hito de recuperación es 375/1000; el objetivo aspiracional de la iteración concentrada sigue siendo 425/1000 (42,5 %), sin prometerlo antes de medirlo. Antes de atribuir cifras a `main`, registrar siempre el SHA exacto del workflow y confirmar que las dos mitades corresponden al mismo SHA.
+La #77 mejora en 7 casos (+0,70 puntos) respecto a la #68: +4 en primaria y +3 en holdout. El récord conservador histórico de 375/1000 queda superado por 25 casos. Para el objetivo aspiracional de 425/1000 (42,5 %) faltan 25 coincidencias. La #77 se midió en el SHA `402303b1e4c70b75c9c8931054de1b29ce50dae8` de la PR #53, todavía abierta: no atribuir esta puntuación a `main` hasta medir el SHA integrado. Confirmar siempre que las dos mitades corresponden al mismo SHA.
 
 ## Ingeniería inspirada en compiladores open source
 
@@ -99,3 +101,13 @@ No lanzar una nueva modificación mientras los benchmarks necesarios para evalua
 ### Disciplina de ejecución
 
 Se inició la iteración B antes de que finalizara el workflow dedicado #17 de la iteración A, después de completar el corpus multilenguaje #621, que no mostró ningún cambio pass/fail para A. Esto es una desviación de la puerta de cierre original; no iniciar una tercera modificación hasta que los resultados oficiales de A y B estén completos y comparados por ID de caso.
+
+
+## Estado actualizado — 2026-10-30 (PR #53)
+
+### Iteración C: MOVE de grupos anidados, OCCURS y REDEFINES
+
+- La PR [#53](https://github.com/orbitalronin94/cobol2py/pull/53) preserva grupos anidados en `MOVE`, evita contar dos veces almacenamiento compartido por `REDEFINES` y mantiene juntos los subíndices de referencias como `ENTRY (IDX-1, IDX-2)`. Añade regresiones para overlays anidados y `OCCURS` multidimensional, y mantiene sincronizados `cobol2py.py` y `web/index.html`.
+- Benchmark externo Python [#77](https://github.com/orbitalronin94/cobol2py/actions/runs/41061218929), SHA `402303b1e4c70b75c9c8931054de1b29ce50dae8`: **192/500 primaria (38,40 %), 208/500 holdout (41,60 %), 400/1.000 combinado (40,00 %)**. Frente a #68: +4 primaria, +3 holdout, +7 total (+0,70 puntos). Ambas muestras terminaron completas en el mismo SHA.
+- El workflow diferencial interno #1349 [falló](https://github.com/orbitalronin94/cobol2py/actions/runs/41061036358) sobre el SHA anterior `7d56754`; su informe marcó 94/105 coincidencias actuales, pero varios casos terminaron con `re.error: missing ), unterminated subpattern`. El commit posterior `402303b` restringió el reconocimiento de espacios antes de `(` en `split_cobol_items`; aún falta repetir el workflow diferencial sobre ese SHA para comprobar que desaparece el error. **No fusionar la PR hasta completar esa validación y revisar las regresiones por caso.**
+- Siguiente paso: repetir suite unitaria, browser smoke y workflow diferencial sobre el HEAD actual; si queda verde, comparar el benchmark externo caso por caso con #68 antes de aceptar la PR.
