@@ -2458,6 +2458,46 @@ MAIN.
         self.assertEqual(output.getvalue(), "ABCDEFGHIJKLMNOPQRST\nUV\n", generated)
 
 
+class NestedOccursGroupMoveTests(unittest.TestCase):
+    def test_group_move_to_nested_occurs_field_keeps_all_ancestor_subscripts(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. NESTEDOCCURSMOVE.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 SOURCE-REC.
+   05 SOURCE-ALPHA PIC X(2) VALUE "AB".
+   05 SOURCE-NUM PIC X(2) VALUE "CD".
+01 TABLE-REC.
+   05 GRP-ENTRY OCCURS 2 TIMES.
+      10 ENTRY-1 PIC X(2).
+      10 GRP2-ENTRY OCCURS 2 TIMES.
+         15 ENTRY-2 PIC X(4).
+01 IDX-1 PIC 9 VALUE 1.
+01 IDX-2 PIC 9 VALUE 2.
+PROCEDURE DIVISION.
+MAIN.
+    MOVE SOURCE-REC TO ENTRY-2 (IDX-1, IDX-2).
+    DISPLAY ENTRY-2 (IDX-1, IDX-2).
+    GOBACK.
+"""
+        program = cobol2py.parse_cobol(source, source_format="free")
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<nested-occurs-group-move>", "exec")
+        self.assertIn(
+            "table_rec['grp_entry'][int(idx_1) - 1]['grp2_entry'][int(idx_2) - 1]['entry_2']",
+            generated,
+        )
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "ABCD\\n", generated)
+
+
 class SpaceSeparatedSubscriptRegressionTests(unittest.TestCase):
     def test_numeric_subscripts_separated_by_spaces(self):
         self.assertEqual(cobol2py.normalize_data_reference("TABLE(1 2)"), "table[0][1]")
