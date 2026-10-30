@@ -344,7 +344,7 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
         re.IGNORECASE,
     )
     for line_number, source_line in lines:
-        level_only = re.fullmatch(r"\\s*(\\d{1,2})\\s*\\.?\\s*", source_line)
+        level_only = re.fullmatch(r"\s*(\d{1,2})\s*\.?\s*", source_line)
         if level_only:
             pending_level = (line_number, level_only.group(1))
             continue
