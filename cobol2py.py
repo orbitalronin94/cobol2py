@@ -1199,12 +1199,12 @@ def normalize_java_name(name: str) -> str:
         if subscript.isdigit():
             return f"[{int(subscript) - 1}]"
         return f"[{normalize_java_identifier(subscript)} - 1]"
-    return re.sub(r"\\(([A-Za-z0-9_-]+)\\)", normalize_subscript, normalized)
+    return re.sub(r"\(([A-Za-z0-9_-]+)\)", normalize_subscript, normalized)
 
 
 def normalize_name(name: str) -> str:
-    # Normalize identifiers consistently for both target languages and avoid
-    # Python/Java reserved words. This also applies to identifiers in subscripts.
+    # Normalize identifiers for Python only. Java keywords are handled by
+    # normalize_java_name so a Java-only keyword cannot rename Python data.
     normalized = re.sub(
         r"(?:[A-Za-z][A-Za-z0-9-]*|[0-9]+[A-Za-z0-9-]*[A-Za-z][A-Za-z0-9-]*)",
         lambda match: normalize_identifier(match.group(0)),
