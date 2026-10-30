@@ -1819,7 +1819,7 @@ class DataReferenceResolutionTests(unittest.TestCase):
             "FIELD OF GROUP OF RECORD", variables
         )
 
-        self.assertEqual(translated, "cobol_record['group']['field']")
+        self.assertEqual(translated, "record['group']['field']")
 
     def test_outer_qualifier_disambiguates_duplicate_group_name(self):
         # The legacy name-keyed map can retain only one GROUP declaration.
@@ -2256,7 +2256,7 @@ class ReferenceModificationSliceSemanticsTests(unittest.TestCase):
 
     def test_variable_start_and_length_become_zero_based_python_slice(self):
         translated = cobol2py.translate_expr("NEW-STRING(SUB-1:1)")
-        self.assertEqual(translated, "cobol_new_string[sub_1 - 1:(sub_1 - 1) + (1)]")
+        self.assertEqual(translated, "new_string[sub_1 - 1:(sub_1 - 1) + (1)]")
         compile(translated, "<reference-modification>", "eval")
 
     def test_numeric_reference_modification_uses_one_based_cobol_positions(self):
