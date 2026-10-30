@@ -1178,6 +1178,30 @@ def normalize_identifier(name: str) -> str:
     return normalized
 
 
+def normalize_java_identifier(name: str) -> str:
+    """Normalize a COBOL identifier for Java without leaking Java keywords into Python."""
+    normalized = name.replace("-", "_").lower()
+    if normalized and normalized[0].isdigit():
+        normalized = "cobol_" + normalized
+    if normalized in JAVA_RESERVED_WORDS:
+        return "cobol_" + normalized
+    return normalized
+
+
+def normalize_java_name(name: str) -> str:
+    normalized = re.sub(
+        r"(?:[A-Za-z][A-Za-z0-9-]*|[0-9]+[A-Za-z0-9-]*[A-Za-z][A-Za-z0-9-]*)",
+        lambda match: normalize_java_identifier(match.group(0)),
+        name,
+    )
+    def normalize_subscript(match: re.Match[str]) -> str:
+        subscript = match.group(1)
+        if subscript.isdigit():
+            return f"[{int(subscript) - 1}]"
+        return f"[{normalize_java_identifier(subscript)} - 1]"
+    return re.sub(r"\\(([A-Za-z0-9_-]+)\\)", normalize_subscript, normalized)
+
+
 def normalize_name(name: str) -> str:
     # Normalize identifiers consistently for both target languages and avoid
     # Python/Java reserved words. This also applies to identifiers in subscripts.
@@ -4130,18 +4154,18 @@ def java_data_reference(name: str, variables: dict[str, CobolVar]) -> str:
         re.IGNORECASE,
     )
     if not match:
-        return normalize_name(text)
+        return normalize_java_name(text)
     field_name, subscript, qualifier = match.groups()
     if qualifier:
-        expr = java_data_reference(qualifier, variables) + "." + normalize_name(field_name)
+        expr = java_data_reference(qualifier, variables) + "." + normalize_java_name(field_name)
     else:
         variable = variables.get(field_name.upper())
         if variable is not None and variable.parent_name:
-            expr = java_data_reference(variable.parent_name, variables) + "." + normalize_name(field_name)
+            expr = java_data_reference(variable.parent_name, variables) + "." + normalize_java_name(field_name)
         else:
-            expr = normalize_name(field_name)
+            expr = normalize_java_name(field_name)
     if subscript:
-        index = str(int(subscript) - 1) if subscript.isdigit() else f"{normalize_name(subscript)} - 1"
+        index = str(int(subscript) - 1) if subscript.isdigit() else f"{normalize_java_name(subscript)} - 1"
         expr += f".get({index})"
     return expr
 
@@ -4400,7 +4424,7 @@ def java_assignment_statement(
     field_name, subscript, qualifier = match.groups()
     collection_name = field_name + (f" OF {qualifier}" if qualifier else "")
     collection = java_data_reference(collection_name, variables)
-    index = str(int(subscript) - 1) if subscript.isdigit() else f"{normalize_name(subscript)} - 1"
+    index = str(int(subscript) - 1) if subscript.isdigit() else f"{normalize_java_name(subscript)} - 1"
     if operator == "=":
         result = value
     else:
@@ -4499,13 +4523,13 @@ def translate_java_statement(
         return [java_assignment_statement(match.group(2), "/=", translate_java_literal(match.group(1), variables), variables)]
     match = re.match(r"PERFORM\s+([A-Za-z0-9-]+)\s+(\d+)\s+TIMES", text, re.IGNORECASE)
     if match and match.group(1).upper() in paragraphs:
-        return [f"for (int _i = 0; _i < {match.group(2)}; _i++) {{ {normalize_name(match.group(1))}(); }}"]
+        return [f"for (int _i = 0; _i < {match.group(2)}; _i++) {{ {normalize_java_name(match.group(1))}(); }}"]
     match = re.match(r"PERFORM\s+([A-Za-z0-9-]+)\s+UNTIL\s+(.+)", text, re.IGNORECASE)
     if match and match.group(1).upper() in paragraphs:
-        return [f"while (!({translate_java_condition(match.group(2), variables)})) {{ {normalize_name(match.group(1))}(); }}"]
+        return [f"while (!({translate_java_condition(match.group(2), variables)})) {{ {normalize_java_name(match.group(1))}(); }}"]
     match = re.match(r"PERFORM\s+([A-Za-z0-9-]+)", text, re.IGNORECASE)
     if match and match.group(1).upper() in paragraphs:
-        return [f"{normalize_name(match.group(1))}();"]
+        return [f"{normalize_java_name(match.group(1))}();"]
     return [f"// COBOL no traducido: {text}"]
 
 
@@ -4605,7 +4629,7 @@ def emit_java(prog: Program) -> str:
             lines.append("        // Empty COBOL group")
         for child in children:
             lines.append(
-                f"        {java_type(child, variables)} {normalize_name(child.name)} = "
+                f"        {java_type(child, variables)} {normalize_java_name(child.name)} = "
                 f"{java_field_default(child, variables)};"
             )
         lines.append("    }")
@@ -4615,7 +4639,7 @@ def emit_java(prog: Program) -> str:
         if variable.parent_name:
             continue
         lines.append(
-            f"    private static {java_type(variable, variables)} {normalize_name(variable.name)} = "
+            f"    private static {java_type(variable, variables)} {normalize_java_name(variable.name)} = "
             f"{java_field_default(variable, variables)};"
         )
     lines.extend([
@@ -4655,7 +4679,7 @@ def emit_java(prog: Program) -> str:
     if "__MAIN__" in prog.paragraphs and prog.paragraphs["__MAIN__"]:
         order = ["__MAIN__"] + order
     for paragraph in order:
-        method_name = "mainParagraph" if paragraph == "__MAIN__" else normalize_name(paragraph)
+        method_name = "mainParagraph" if paragraph == "__MAIN__" else normalize_java_name(paragraph)
         lines.append(f"    private static void {method_name}() {{")
         body = translate_java_nodes(prog.paragraphs.get(paragraph, []), paragraph_names, variables, indent=2)
         if not body:
@@ -4669,7 +4693,7 @@ def emit_java(prog: Program) -> str:
     if "__MAIN__" in prog.paragraphs and prog.paragraphs["__MAIN__"]:
         lines.append("        mainParagraph();")
     elif order:
-        first = "mainParagraph" if order[0] == "__MAIN__" else normalize_name(order[0])
+        first = "mainParagraph" if order[0] == "__MAIN__" else normalize_java_name(order[0])
         lines.append(f"        {first}();")
     lines.append("    }")
     lines.append("}")
