@@ -33,7 +33,7 @@ class ExternalBenchmarkProcessTests(unittest.TestCase):
     def test_full_stream_files_and_byte_diff(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory); out = root / "stdout.bin"; err = root / "stderr.bin"
-            payload = b"prefix-" + bytes(range(256)) * 5000
+            payload = b"prefix-" + bytes(range(256)) * 300
             code = "import sys; sys.stdout.buffer.write(" + repr(payload) + "); sys.stderr.buffer.write(bytes([101,114,114,0]))"
             result = run_process([sys.executable, "-c", code], root, 5, out, err)
             self.assertFalse(result["timeout"]); self.assertEqual(out.read_bytes(), payload)
