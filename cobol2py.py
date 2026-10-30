@@ -3654,15 +3654,10 @@ def translate_statement(
             "DATE YYYYMMDD": f"{now}.strftime('%Y%m%d')",
             "DAY": f"{now}.strftime('%y%j')",
             "DAY YYYYDDD": f"{now}.strftime('%Y%j')",
-            "DAY-OF-WEEK": f"{now}.isoweekday()",
-            "TIME": f"({now}.strftime('%H%M%S') + str({now}.microsecond // 10000).zfill(2))",
+            "DAY-OF-WEEK": f"(({now}.weekday() + 1) % 7) + 1",
+            "TIME": f"{now}.strftime('%H%M%S%f')[:8]",
         }
-        value_expr = source_values[source_kind]
-        target_base = re.match(r"[A-Za-z0-9-]+", target)
-        target_var = (variables or {}).get(target_base.group(0).upper()) if target_base else None
-        if target_var is not None and target_var.is_group:
-            return [f"# ACCEPT FROM {source_kind} into group {target}: group layout is not supported"]
-        return [emit_assignment(target, value_expr, variables or {})]
+        return [emit_assignment(target, source_values[source_kind], variables)]
 
     m = re.match(rf"ACCEPT\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
