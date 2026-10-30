@@ -4,7 +4,7 @@ run-name: Seven-candidate COBOL equivalence tournament
 
 on:
   pull_request:
-    types: [opened, reopened]
+    types: [opened, reopened, synchronize]
     branches: [main]
     paths:
       - "cobol2py.py"
