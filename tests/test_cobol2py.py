@@ -3358,8 +3358,7 @@ class IndexedByParsingRegressionTests(unittest.TestCase):
             (2, "   05 WS-TABLE OCCURS 10 TIMES"),
             (3, "      INDEXED BY IDX-4"),
             (4, "         IDX-5 IDX-6."),
-            (5, "   05 WS-NESTED OCCURS 5 TIMES INDEXED BY IDX-7"),
-            (6, "      IDX-8 IDX-9."),
+            (5, "   05 WS-NESTED OCCURS 5 TIMES INDEXED IDX-7 IDX-8 IDX-9."),
         ])
         by_name = {item.name: item for item in variables}
         self.assertEqual(by_name["WS-TABLE"].indexed_by, "IDX-4")
