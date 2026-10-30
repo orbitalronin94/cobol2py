@@ -23,6 +23,7 @@ concurrency:
 
 # This is a one-shot frozen-baseline tournament. The coordinator is PR #57;
 # all other candidate PRs carry the same workflow but do not start duplicate runs.
+# Final coordinator refresh: all seven candidate branches now have their final patch and workflow SHA.
 
 jobs:
   candidate-tests:
