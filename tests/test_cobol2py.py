@@ -3386,7 +3386,7 @@ class IndexedByParsingRegressionTests(unittest.TestCase):
         )
         self.assertIn("while idx_1 <= int(3):", generated)
         self.assertIn("if ws_table[int(idx_1) - 1] == 3:", generated)
-        self.assertIn("found = 0", generated)
+        self.assertIn("found = int(0) % (10 ** 1)", generated)
         self.assertIn("break", generated)
 
     def test_set_multiple_index_names_and_move_indexes_up_or_down(self):
