@@ -1196,6 +1196,26 @@ def normalize_name(name: str) -> str:
 
     return re.sub(r"\(([A-Za-z0-9_-]+)\)", normalize_subscript, normalized)
 
+def split_cobol_subscripts(subscript_text: Optional[str]) -> list[str]:
+    """Split COBOL table subscripts separated by commas, semicolons, or spaces.
+
+    Space-separated subscripts are valid COBOL. Preserve spaces inside an
+    arithmetic subscript (for example, IDX + 1) while splitting at the next
+    operand that starts a new dimension.
+    """
+    if not subscript_text:
+        return []
+    subscripts = [part.strip() for part in re.split(r"[,;]", subscript_text)]
+    if len(subscripts) == 1 and re.search(r"\s", subscript_text.strip()):
+        candidates = re.split(
+            r"(?<![+\-*/])\s+(?=[A-Za-z0-9][A-Za-z0-9_-]*(?:\s|$))",
+            subscript_text.strip(),
+        )
+        if len(candidates) > 1:
+            subscripts = [part.strip() for part in candidates]
+    return subscripts
+
+
 def emit_assignment(target: str, value: str, variables: Optional[dict[str, CobolVar]] = None) -> str:
     """Route supported REDEFINES assignments through the shared storage buffer."""
     variable_map = variables or {}
@@ -1212,8 +1232,7 @@ def emit_assignment(target: str, value: str, variables: Optional[dict[str, Cobol
                 return f"_cobol_set({field_name!r}, {value})"
             if ":" not in subscript_text:
                 index_args = []
-                for subscript in re.split(r"[,;]", subscript_text):
-                    subscript = subscript.strip()
+                for subscript in split_cobol_subscripts(subscript_text):
                     if subscript.isdigit():
                         index_args.append(str(int(subscript) - 1))
                     elif re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*", subscript):
@@ -1280,18 +1299,7 @@ def normalize_data_reference(
             return translate_condition(text, variables)
         return normalize_name(text)
     field_name, subscript_text, qualifier, qualifier_subscript = match.groups()
-    subscripts = [part.strip() for part in re.split(r"[,;]", subscript_text)] if subscript_text else []
-    if subscript_text and len(subscripts) == 1 and re.search(r"\s", subscript_text.strip()):
-        # Some COBOL sources separate multidimensional subscripts with spaces
-        # rather than commas, and individual subscripts may themselves contain
-        # arithmetic (e.g. TABLE(I J + 1 K + 1)). Split only before an identifier
-        # when the preceding token is not an arithmetic operator.
-        candidate_subscripts = re.split(
-            r"(?<![+\-*/])\s+(?=[A-Za-z0-9][A-Za-z0-9_-]*(?:\s|$))",
-            subscript_text.strip(),
-        )
-        if len(candidate_subscripts) > 1:
-            subscripts = candidate_subscripts
+    subscripts = split_cobol_subscripts(subscript_text)
     variable_map = variables or {}
     overlay_fields, _overlay_buffers = build_overlay_layout(variable_map)
     if not subscripts and field_name.upper() in overlay_fields:
@@ -1351,16 +1359,7 @@ def normalize_data_reference(
             for child_name, child_subscript_text in reversed(part_matches[:-1]):
                 expression += f"[{normalize_name(child_name)!r}]"
                 if child_subscript_text:
-                    child_subscripts = [
-                        part.strip() for part in re.split(r"[,;]", child_subscript_text)
-                    ]
-                    if len(child_subscripts) == 1 and re.search(r"\s", child_subscript_text.strip()):
-                        candidates = re.split(
-                            r"(?<![+\-*/])\s+(?=[A-Za-z0-9][A-Za-z0-9_-]*(?:\s|$))",
-                            child_subscript_text.strip(),
-                        )
-                        if len(candidates) > 1:
-                            child_subscripts = candidates
+                    child_subscripts = split_cobol_subscripts(child_subscript_text)
                     for child_subscript in child_subscripts:
                         expression += f"[{index_expression(child_subscript)}]"
             return expression
