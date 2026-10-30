@@ -3467,15 +3467,14 @@ def translate_statement(
     if upper in ("CONTINUE", "EXIT"):
         return ["pass"]
 
-    # INSPECT REPLACING CHARACTERS BY supports the whole item and the
-    # suffix following the first occurrence of an AFTER INITIAL delimiter.
-    inspect_match = re.fullmatch(
+    # INSPECT REPLACING CHARACTERS, optionally scoped AFTER INITIAL.
+    inspect_replace = re.fullmatch(
         rf"INSPECT\s+({DATA_REF_PATTERN})\s+REPLACING\s+CHARACTERS\s+BY\s+(.+?)(?:\s+AFTER\s+INITIAL\s+(.+))?",
         s,
         re.IGNORECASE,
     )
-    if inspect_match:
-        target, replacement, after_initial = inspect_match.groups()
+    if inspect_replace:
+        target, replacement, after_initial = inspect_replace.groups()
         variable_map = variables or {}
         target_expr = normalize_data_reference(target, variable_map)
         replacement_expr = translate_literal(replacement.strip(), variable_map)
@@ -3486,7 +3485,8 @@ def translate_statement(
                 f"_cobol_inspect_marker = str({marker_expr})",
                 "_cobol_inspect_offset = _cobol_inspect_text.find(_cobol_inspect_marker)",
                 "if _cobol_inspect_offset >= 0:",
-                f"    {target_expr} = (_cobol_inspect_text[:_cobol_inspect_offset + len(_cobol_inspect_marker)] + str({replacement_expr})[:1] * max(len(_cobol_inspect_text) - _cobol_inspect_offset - len(_cobol_inspect_marker), 0))",
+                "    _cobol_inspect_start = _cobol_inspect_offset + len(_cobol_inspect_marker)",
+                f"    {target_expr} = (_cobol_inspect_text[:_cobol_inspect_start] + str({replacement_expr})[:1] * max(len(_cobol_inspect_text) - _cobol_inspect_start, 0))",
             ]
         return [
             f"{target_expr} = str({replacement_expr})[:1] * len(str({target_expr}))"
