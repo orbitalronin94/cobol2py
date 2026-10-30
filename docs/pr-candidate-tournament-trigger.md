@@ -14,3 +14,5 @@ Candidates are measured as isolated translator/test/browser patches applied to t
 - PR #63 — ACCEPT FROM date/time
 
 The workflow also reruns the unmodified main baseline. No candidate is automatically merged; scorecards and failure diagnostics are retained for manual review.
+
+Workflow correction merged in PR #68: each PR's own tests run at its source SHA; only translator and browser implementation files are transplanted onto the current-main baseline. This commit re-triggers the corrected tournament.
