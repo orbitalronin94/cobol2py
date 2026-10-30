@@ -706,11 +706,6 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
             units.append((num, "ELSE"))
             continue
 
-        if upper.startswith(("AND ", "OR ")):
-            flush()
-            units.append((num, text.strip()))
-            continue
-
         if upper.startswith("WHEN "):
             flush()
             # EVALUATE/SEARCH WHEN clauses may carry an inline imperative
