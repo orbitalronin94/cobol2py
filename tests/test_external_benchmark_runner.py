@@ -92,7 +92,7 @@ class ExternalBenchmarkProcessTests(unittest.TestCase):
             output = root / "output"
             source_names = [
                 "case-a.cbl", "case-b.cbl", "case-c.cbl",
-                "case-d.cbl", "case-e.cbl", "case-f.cbl",
+                "case-d.cbl", "case-e.cbl", "case-f.cbl", "case-g.cbl",
             ]
             compile_index = [0]
             eligible_index = [0]
@@ -148,9 +148,16 @@ class ExternalBenchmarkProcessTests(unittest.TestCase):
                     if eligible_index[0] == 3:
                         return result(stdout=b"print('candidate')\n", stdout_path=stdout_path,
                                       stderr_path=stderr_path)
+                    if eligible_index[0] == 4:
+                        return result(stdout=b"print('launch-failure')\n", stdout_path=stdout_path,
+                                      stderr_path=stderr_path)
                     return result(stdout=b"print('same')\n", stdout_path=stdout_path,
                                   stderr_path=stderr_path)
                 if command[0] == "python3":
+                    if eligible_index[0] == 4:
+                        return result(stderr=b"FileNotFoundError: executable missing",
+                                      launched=False, stdout_path=stdout_path,
+                                      stderr_path=stderr_path)
                     payload = b"candidate\n" if eligible_index[0] == 3 else b"reference\n"
                     return result(stdout=payload, stdout_path=stdout_path, stderr_path=stderr_path)
                 raise AssertionError(f"unexpected command: {command!r}")
@@ -158,7 +165,7 @@ class ExternalBenchmarkProcessTests(unittest.TestCase):
             argv = [
                 "run_external_corpus.py", "--archive", str(archive),
                 "--translator", str(translator), "--output", str(output),
-                "--target", "4", "--diagnostics",
+                "--target", "5", "--diagnostics",
             ]
             stdout = io.StringIO()
             with mock.patch.object(runner, "extract_archive", side_effect=fake_extract), \
@@ -170,15 +177,15 @@ class ExternalBenchmarkProcessTests(unittest.TestCase):
             report = json.loads((output / "external-corpus-report.json").read_text(encoding="utf-8"))
             self.assertEqual(report["reference_compile_failures"], 1)
             self.assertEqual(report["reference_runtime_exclusions"], 1)
-            self.assertEqual(report["tested"], 4)
+            self.assertEqual(report["tested"], 5)
             self.assertEqual(report["passed"], 1)
-            self.assertEqual(report["failed"], 3)
+            self.assertEqual(report["failed"], 4)
             self.assertTrue(report["sample_complete"])
-            self.assertEqual(len(report["results"]), 4)
+            self.assertEqual(len(report["results"]), 5)
             self.assertEqual(report["eligible_skipped"], 0)
 
             bundles = list((output / "diagnostics").iterdir())
-            self.assertEqual(len(bundles), 5)  # 2 reference exclusions + 3 candidate failures
+            self.assertEqual(len(bundles), 6)  # 2 reference exclusions + 4 candidate failures
             metadata = {
                 item.name: json.loads((item / "metadata.json").read_text(encoding="utf-8"))
                 for item in bundles
@@ -203,6 +210,14 @@ class ExternalBenchmarkProcessTests(unittest.TestCase):
             self.assertTrue((syntax_dir / "translated.py").is_file())
             self.assertTrue((syntax_dir / "translator.stdout.bin").is_file())
             self.assertFalse((syntax_dir / "candidate.stdout.bin").exists())
+
+            launch_case = next(item for item in report["results"]
+                               if item.get("reason") == "translated program could not launch")
+            self.assertFalse(launch_case["candidate_launched"])
+            launch_dir = output / "diagnostics" / launch_case["id"]
+            launch_metadata = json.loads((launch_dir / "metadata.json").read_text(encoding="utf-8"))
+            self.assertFalse(launch_metadata["candidate_launched"])
+            self.assertTrue((launch_dir / "candidate.stderr.bin").is_file())
 
             translator_failure = next(item for item in report["results"]
                                       if (item.get("reason") or "").strip() == "translator failed")
