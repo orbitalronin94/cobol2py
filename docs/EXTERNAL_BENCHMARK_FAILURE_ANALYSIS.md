@@ -253,3 +253,23 @@ El workflow multilenguaje #621 selecciona muestras de forma distinta: dio 362/1.
 El fixture mínimo ya confirmó un fallo real de semántica: después de escribir `ENTRY-3(2,1,2)` en la vista base, leer `ENTRY-3-1(2,1,2)` desde la vista redefinida devolvía espacios. El código emitido mostraba dos diccionarios independientes (`cobol_3_dimension_tbl` y `cobol_3_dem_tbl`), no almacenamiento compartido.
 
 La PR [#41](https://github.com/orbitalronin94/cobol2py/pull/41) incorpora un layout con strides por dimensión y acceso indexado a un buffer común. La prueba nueva y la suite de 292 tests pasan en Python 3.10, 3.11, 3.12 y 3.13; el workflow diferencial interno también pasa. El benchmark externo de 1.000 programas para este SHA sigue pendiente. La hipótesis de que esto resuelva todos los errores `list indices must be integers or slices, not str` no está demostrada; los resultados por caso determinarán si se mantiene o se revierte.
+
+
+## Estado actualizado — 2026-10-30: iteraciones D/E integradas
+
+Las PR [#54](https://github.com/orbitalronin94/cobol2py/pull/54) y [#55](https://github.com/orbitalronin94/cobol2py/pull/55) se integraron en `main` mediante `b265e50` y `de7fddd`. El benchmark multilenguaje #697 sobre el SHA pre-merge de la iteración E obtuvo **408/1.000 (40,80 %) Python**: 196/500 primaria y 212/500 holdout. Comparado por ID con la scorecard dedicada #80: 8 ganancias y 0 pérdidas; siete ganancias atribuibles a la corrección `cobol_int`, y una variación temporal de `FunctionCall.cbl` no atribuible. La scorecard dedicada #81 estaba todavía `in_progress` al documentar este estado.
+
+### Diagnósticos que deja la iteración E
+
+- `NC2384.2` y `NC238A`: después de resolver la coerción `cobol_int`, el código llega a referencias a índices secundarios que el parser no declara. La cláusula `INDEXED BY` puede incluir varios nombres y continuar en líneas posteriores; el modelo actual conserva solo el primero.
+- `NC125A` y `NC1254.2`: avanzan más allá del NameError inicial y exponen `KeyError` en acceso/movimiento de grupos. Requiere inspeccionar el layout y las rutas de datos generadas.
+- `DECTRANS`: avanza más allá del NameError inicial y expone `ValueError` al convertir un campo alfanumérico o con espacios a entero. Hay que seguir la semántica PIC/uso del campo antes de elegir coerción o valor por defecto.
+- No contar esos seis casos como ganancias: son errores posteriores que quedan visibles al corregir el primer bloqueo.
+
+### Próxima familia: múltiples índices de tabla
+
+Prioridad inmediata: representar todos los nombres declarados por `INDEXED BY`, incluyendo continuaciones multilínea y niveles OCCURS anidados. Añadir pruebas para que cada índice tenga almacenamiento, inicialización y alcance correctos; verificar `SET index TO n`, `SET index UP/DOWN BY n` y `SEARCH ... VARYING index`. En particular, no asumir que declarar variables globales basta: la semántica de cada operación debe respetar el índice que nombra el fuente COBOL.
+
+### Siguiente familia separada: nivel 66 RENAMES
+
+Hay dos candidatos compilables del holdout con referencias no resueltas: `CBL0302v01DataLayoutRenames` y `nivel`. Mantenerlos separados de la corrección de índices para poder atribuir ganancias/regresiones con claridad.
