@@ -127,7 +127,6 @@ jobs:
       primary: ${{ steps.score.outputs.primary }}
       holdout: ${{ steps.score.outputs.holdout }}
       candidate_sha: ${{ steps.score.outputs.candidate_sha }}
-      target_reached: ${{ steps.score.outputs.target_reached }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -201,6 +200,7 @@ jobs:
           print(f"Current best: {baseline['score']}/1000 ({baseline['primary']}/500 + {baseline['holdout']}/500)")
           print(f"Candidate: {total}/1000 ({primary}/500 + {holdout}/500)")
           print(f"Strict improvement: {better}")
+          print(f"v1.0 threshold reached (375/500 in each split): {target_reached}")
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f"eligible={'true' if better else 'false'}\n")
               f.write(f"score={total}\nprimary={primary}\nholdout={holdout}\n")
