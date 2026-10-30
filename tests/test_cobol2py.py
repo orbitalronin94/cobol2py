@@ -3345,6 +3345,63 @@ class TestNumvalIntrinsicRegressionTests(unittest.TestCase):
 
 
 class NestedQualifiedOccursSubscriptRegressionTests(unittest.TestCase):
+    def test_nested_group_fields_are_resolved_when_used_as_table_subscripts(self):
+        variables = {
+            "GRP-TABLE1": cobol2py.CobolVar(
+                level=1, name="GRP-TABLE1", is_group=True
+            ),
+            "ELEM1": cobol2py.CobolVar(
+                level=2, name="ELEM1", pic="S999", is_array=True, occurs=100,
+                parent_name="GRP-TABLE1",
+            ),
+            "GRP-SUB": cobol2py.CobolVar(
+                level=1, name="GRP-SUB", is_group=True
+            ),
+            "S1": cobol2py.CobolVar(
+                level=2, name="S1", pic="S999", parent_name="GRP-SUB"
+            ),
+        }
+
+        translated = cobol2py.normalize_data_reference("ELEM1(S1)", variables)
+
+        self.assertEqual(
+            translated,
+            "grp_table1['elem1'][int(grp_sub['s1']) - 1]",
+        )
+        compile(translated, "<nested-group-subscript>", "eval")
+
+    def test_nested_group_fields_resolve_all_dimensions_of_table_subscripts(self):
+        variables = {
+            "GRP-TABLE2": cobol2py.CobolVar(
+                level=1, name="GRP-TABLE2", is_group=True
+            ),
+            "GROUP1": cobol2py.CobolVar(
+                level=2, name="GROUP1", is_group=True, is_array=True, occurs=10,
+                parent_name="GRP-TABLE2",
+            ),
+            "ELEM2": cobol2py.CobolVar(
+                level=3, name="ELEM2", pic="S999", is_array=True, occurs=10,
+                parent_name="GROUP1",
+            ),
+            "GRP-SUB": cobol2py.CobolVar(
+                level=1, name="GRP-SUB", is_group=True
+            ),
+            "S21": cobol2py.CobolVar(
+                level=2, name="S21", pic="S999", parent_name="GRP-SUB"
+            ),
+            "S22": cobol2py.CobolVar(
+                level=2, name="S22", pic="S999", parent_name="GRP-SUB"
+            ),
+        }
+
+        translated = cobol2py.normalize_data_reference("ELEM2(S21 S22)", variables)
+
+        self.assertEqual(
+            translated,
+            "grp_table2['group1'][int(grp_sub['s21']) - 1]['elem2'][int(grp_sub['s22']) - 1]",
+        )
+        compile(translated, "<nested-group-multidimensional-subscript>", "eval")
+
     def test_each_qualified_occurs_level_keeps_its_own_subscript(self):
         variables = {
             "PARENT-TABLE": cobol2py.CobolVar(
