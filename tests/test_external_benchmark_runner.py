@@ -210,6 +210,33 @@ class ExternalBenchmarkProcessTests(unittest.TestCase):
             self.assertEqual(report["passed"], repeated_report["passed"])
             self.assertEqual(report["failed"], repeated_report["failed"])
 
+            # --skip counts only programs that compile and terminate under
+            # the reference runtime, never reference exclusions.
+            compile_index[0] = 0
+            eligible_index[0] = 1  # model the first eligible source being skipped
+            skipped_output = root / "skipped-output"
+            skipped_argv = [
+                "run_external_corpus.py", "--archive", str(archive),
+                "--translator", str(translator), "--output", str(skipped_output),
+                "--target", "4", "--skip", "1", "--diagnostics",
+            ]
+            with mock.patch.object(runner, "extract_archive", side_effect=fake_extract), \
+                 mock.patch.object(runner, "run_process", side_effect=fake_run_process), \
+                 mock.patch.object(sys, "argv", skipped_argv), \
+                 contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(runner.main(), 0)
+            skipped_report = json.loads(
+                (skipped_output / "external-corpus-report.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(skipped_report["eligible_skipped"], 1)
+            self.assertEqual(skipped_report["tested"], 4)
+            self.assertEqual(skipped_report["passed"], 1)
+            self.assertEqual(skipped_report["failed"], 3)
+            self.assertEqual(
+                [item["id"] for item in skipped_report["results"]],
+                [item["id"] for item in report["results"][1:]],
+            )
+
             bundles = list((output / "diagnostics").iterdir())
             self.assertEqual(len(bundles), 6)  # 2 reference exclusions + 4 candidate failures
             metadata = {
