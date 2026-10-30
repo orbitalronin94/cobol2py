@@ -3467,6 +3467,26 @@ def translate_statement(
     if upper in ("CONTINUE", "EXIT"):
         return ["pass"]
 
+    # INSPECT TALLYING CHARACTERS BEFORE INITIAL.
+    inspect_tally = re.fullmatch(
+        rf"INSPECT\s+({DATA_REF_PATTERN})\s+TALLYING\s+({DATA_REF_PATTERN})\s+FOR\s+CHARACTERS\s+BEFORE\s+INITIAL\s+(.+)",
+        s,
+        re.IGNORECASE,
+    )
+    if inspect_tally:
+        source, counter, marker = inspect_tally.groups()
+        variable_map = variables or {}
+        source_expr = normalize_data_reference(source, variable_map)
+        marker_expr = translate_literal(marker.strip(), variable_map)
+        counter_expr = normalize_data_reference(counter, variable_map)
+        return [
+            f"_cobol_inspect_source = str({source_expr})",
+            f"_cobol_inspect_marker = str({marker_expr})",
+            "_cobol_inspect_position = _cobol_inspect_source.find(_cobol_inspect_marker)",
+            "_cobol_inspect_count = _cobol_inspect_position if _cobol_inspect_position >= 0 else len(_cobol_inspect_source)",
+            f"{counter_expr} = int({counter_expr}) + _cobol_inspect_count",
+        ]
+
     # Basic UNSTRING support for a single delimiter and multiple receiving fields.
     if upper.startswith("UNSTRING "):
         unstring_text = re.sub(r"\s+END-UNSTRING\s*$", "", s, flags=re.IGNORECASE).strip()
@@ -3548,7 +3568,7 @@ def translate_statement(
 
                 sending_items: list[tuple[str, str]] = []
                 item_pattern = re.compile(
-                    r"""(.+?)\s+DELIMITED\s+(?:BY\s+)?("(?:[^"]|"")*"|'(?:[^']|'')*'|SIZE|SPACES?|ZEROS?|[A-Za-z][A-Za-z0-9-]*)""",
+                    r"""(.+?)\s+DELIMITED\s+BY\s+("(?:[^"]|"")*"|'(?:[^']|'')*'|SIZE|SPACES?|ZEROS?|[A-Za-z][A-Za-z0-9-]*)""",
                     re.IGNORECASE,
                 )
                 cursor = 0
