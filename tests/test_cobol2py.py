@@ -1775,6 +1775,46 @@ MAIN.
         )
 
 
+class RootGroupRedefinesTests(unittest.TestCase):
+    def test_redefined_root_groups_read_and_write_the_shared_storage(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. ROOTGROUPOVERLAY.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 FILE-COBOL-RECORD-INFORMATION-REC.
+   05 REC-COUNT PIC 9(3).
+   05 REC-TEXT PIC X(3).
+01 FILE-COBOL-RECORD-ALT REDEFINES FILE-COBOL-RECORD-INFORMATION-REC.
+   05 ALT-COUNT PIC 9(3).
+   05 ALT-TEXT PIC X(3).
+PROCEDURE DIVISION.
+MAIN.
+    MOVE "123ABC" TO FILE-COBOL-RECORD-INFORMATION-REC.
+    DISPLAY ALT-COUNT.
+    MOVE "456DEF" TO FILE-COBOL-RECORD-ALT.
+    DISPLAY REC-COUNT.
+    STOP RUN.
+"""
+        program = cobol2py.parse_cobol(source, source_format="free")
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<root-group-redefines>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+
+        self.assertEqual(output.getvalue(), "123\n456\n", generated)
+        self.assertEqual(
+            namespace["_cobol_storage"]["FILE-COBOL-RECORD-INFORMATION-REC"],
+            "456DEF",
+        )
+
+
 class DataReferenceResolutionTests(unittest.TestCase):
     def test_three_level_qualified_reference_resolves_nearest_parent(self):
         variables = {
