@@ -338,11 +338,22 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
     # the preceding declaration; do not swallow section headers or arbitrary
     # source lines as part of a variable.
     declarations: list[tuple[int, str]] = []
+    pending_level: Optional[tuple[int, str]] = None
     continuation = re.compile(
         r"^\s*(?:ASCENDING|DESCENDING|INDEXED|DEPENDING|PIC(?:TURE)?|VALUE|USAGE|SIGN|OCCURS|REDEFINES)\b",
         re.IGNORECASE,
     )
     for line_number, source_line in lines:
+        level_only = re.fullmatch(r"\s*(\d{1,2})\s*\.?\s*", source_line)
+        if level_only:
+            pending_level = (line_number, level_only.group(1))
+            continue
+        if pending_level and source_line.strip() and not RE_VAR.match(source_line):
+            declarations.append((pending_level[0], f"{pending_level[1]} {source_line.strip()}"))
+            pending_level = None
+            continue
+        if pending_level and RE_VAR.match(source_line):
+            pending_level = None
         if RE_VAR.match(source_line):
             declarations.append((line_number, source_line))
         elif (
