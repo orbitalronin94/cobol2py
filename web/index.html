@@ -2988,6 +2988,11 @@ def translate_group_fill_move(source: str, target: str, variables: dict[str, Cob
     if root is None or not root.is_group:
         return None
 
+    overlay_fields, _overlay_buffers = build_overlay_layout(variables)
+    if root.name.upper() in overlay_fields and not root.is_array:
+        width = int(overlay_fields[root.name.upper()]["width"])
+        return [emit_assignment(target, repr(fill_char * width), variables)]
+
     assignments: list[str] = []
     target_expr = normalize_data_reference(target, variables)
     # A subscripted group reference names one occurrence. An unsubscripted
@@ -3054,6 +3059,14 @@ def translate_group_move(source: str, target: str, variables: dict[str, CobolVar
         return None
 
     source_root = variables.get(source_match.group(1).upper()) if source_match else None
+
+    overlay_fields, _overlay_buffers = build_overlay_layout(variables)
+    has_explicit_subscript = bool(re.search(r"\\(\\s*[^)]*\\)", target.strip()))
+    if target_root.name.upper() in overlay_fields and (
+        not target_root.is_array or has_explicit_subscript
+    ):
+        value = translate_move_value(source, target, variables)
+        return [emit_assignment(target, value, variables)]
 
     def descendants(root: CobolVar) -> list[CobolVar]:
         found: list[CobolVar] = []
