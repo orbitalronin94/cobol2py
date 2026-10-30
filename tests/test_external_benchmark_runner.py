@@ -102,7 +102,7 @@ class ExternalBenchmarkProcessTests(unittest.TestCase):
                 sources = []
                 for name in source_names:
                     source = destination / name
-                    source.write_text("IDENTIFICATION DIVISION.\\n", encoding="utf-8")
+                    source.write_text("IDENTIFICATION DIVISION.\n", encoding="utf-8")
                     sources.append(source)
                 return sources
 
@@ -128,30 +128,30 @@ class ExternalBenchmarkProcessTests(unittest.TestCase):
                 if command[0] == "cobc":
                     compile_index[0] += 1
                     if compile_index[0] == 1:
-                        return result(stderr=b"fixture compile error\\n", returncode=1,
+                        return result(stderr=b"fixture compile error\n", returncode=1,
                                       stdout_path=stdout_path, stderr_path=stderr_path)
                     return result(stdout_path=stdout_path, stderr_path=stderr_path)
                 if str(command[0]).endswith("/reference"):
                     if compile_index[0] == 2:
-                        return result(stderr=b"reference timeout\\n", timeout=True,
+                        return result(stderr=b"reference timeout\n", timeout=True,
                                       stdout_path=stdout_path, stderr_path=stderr_path)
-                    return result(stdout=b"reference\\n", stdout_path=stdout_path,
+                    return result(stdout=b"reference\n", stdout_path=stdout_path,
                                   stderr_path=stderr_path)
                 if command[0] == "python3" and "--format" in command:
                     eligible_index[0] += 1
                     if eligible_index[0] == 1:
-                        return result(stderr=b"translator failed\\n", returncode=2,
+                        return result(stderr=b"translator failed\n", returncode=2,
                                       stdout_path=stdout_path, stderr_path=stderr_path)
                     if eligible_index[0] == 2:
-                        return result(stdout=b"def broken(:\\n", stdout_path=stdout_path,
+                        return result(stdout=b"def broken(:\n", stdout_path=stdout_path,
                                       stderr_path=stderr_path)
                     if eligible_index[0] == 3:
-                        return result(stdout=b"print('candidate')\\n", stdout_path=stdout_path,
+                        return result(stdout=b"print('candidate')\n", stdout_path=stdout_path,
                                       stderr_path=stderr_path)
-                    return result(stdout=b"print('same')\\n", stdout_path=stdout_path,
+                    return result(stdout=b"print('same')\n", stdout_path=stdout_path,
                                   stderr_path=stderr_path)
                 if command[0] == "python3":
-                    payload = b"candidate\\n" if eligible_index[0] == 3 else b"reference\\n"
+                    payload = b"candidate\n" if eligible_index[0] == 3 else b"reference\n"
                     return result(stdout=payload, stdout_path=stdout_path, stderr_path=stderr_path)
                 raise AssertionError(f"unexpected command: {command!r}")
 
@@ -161,9 +161,9 @@ class ExternalBenchmarkProcessTests(unittest.TestCase):
                 "--target", "4", "--diagnostics",
             ]
             stdout = io.StringIO()
-            with mock.patch.object(runner, "extract_archive", side_effect=fake_extract), \\
-                 mock.patch.object(runner, "run_process", side_effect=fake_run_process), \\
-                 mock.patch.object(sys, "argv", argv), \\
+            with mock.patch.object(runner, "extract_archive", side_effect=fake_extract), \
+                 mock.patch.object(runner, "run_process", side_effect=fake_run_process), \
+                 mock.patch.object(sys, "argv", argv), \
                  contextlib.redirect_stdout(stdout):
                 self.assertEqual(runner.main(), 0)
 
