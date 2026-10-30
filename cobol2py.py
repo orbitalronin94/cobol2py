@@ -3138,7 +3138,7 @@ def split_cobol_items(s: str) -> list[str]:
         elif char == ")":
             depth = max(0, depth - 1)
             current.append(char)
-        elif depth == 0 and char.isspace() and current and re.match(r"\\s*\\(", s[i:]):
+        elif depth == 0 and char.isspace() and current and re.match(r"\s*\(", s[i:]):
             # A space before "(" belongs to the COBOL subscript reference:
             # ENTRY (I, J) is one target, not three MOVE receivers.
             current.append(char)
