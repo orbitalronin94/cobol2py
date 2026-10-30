@@ -559,6 +559,20 @@ def build_overlay_layout(
                 total_width = _simple_storage_width(variable, variables)
                 if total_width is None:
                     raise ValueError("unsupported overlay group width")
+                element_width = (
+                    total_width // variable.occurs
+                    if variable.is_array and variable.occurs
+                    else total_width
+                )
+                if variable.parent_name is None:
+                    fields[variable.name.upper()] = {
+                        "base": base.name.upper(),
+                        "offset": offset,
+                        "width": element_width,
+                        "kind": "group",
+                        "strides": [stride for stride, _occurs in local_dimensions],
+                        "occurs": [occurs for _stride, occurs in local_dimensions],
+                    }
                 return offset + total_width
 
             element_width = _simple_storage_width(
@@ -1182,7 +1196,7 @@ def normalize_name(name: str) -> str:
     # Normalize identifiers consistently for both target languages and avoid
     # Python/Java reserved words. This also applies to identifiers in subscripts.
     normalized = re.sub(
-        r"(?:[A-Za-z][A-Za-z0-9-]*|[0-9]+[A-Za-z0-9-]*[A-Za-z][A-Za-z0-9-]*)",
+        r"(?:[A-Za-z][A-Za-z0-9_-]*|[0-9]+[A-Za-z0-9_-]*[A-Za-z][A-Za-z0-9_-]*)",
         lambda match: normalize_identifier(match.group(0)),
         name,
     )
@@ -2753,6 +2767,18 @@ def fit_numeric_expression(expression: str, target: str, variables: dict[str, Co
     return f"int({expression}) % (10 ** {digits})"
 
 
+def is_overlay_storage_view(variable: CobolVar, variables: dict[str, CobolVar]) -> bool:
+    """Check whether a data item belongs to a top-level REDEFINES storage view."""
+    if variable.parent_name:
+        return False
+    return variable.name.upper() in {
+        name
+        for item in variables.values()
+        if item.redefines
+        for name in (item.name.upper(), item.redefines.upper())
+    }
+
+
 def translate_group_fill_move(source: str, target: str, variables: dict[str, CobolVar]) -> Optional[list[str]]:
     """Translate MOVE of a figurative constant to a group without replacing its structure."""
     figuratives = {
@@ -2775,6 +2801,11 @@ def translate_group_fill_move(source: str, target: str, variables: dict[str, Cob
     root = variables.get(target_match.group(1).upper())
     if root is None or not root.is_group:
         return None
+
+    if is_overlay_storage_view(root, variables) and not root.is_array:
+        width = _simple_storage_width(root, variables, include_occurs=False)
+        if width is not None:
+            return [emit_assignment(target, repr(fill_char * width), variables)]
 
     assignments: list[str] = []
     target_expr = normalize_data_reference(target, variables)
@@ -2842,6 +2873,13 @@ def translate_group_move(source: str, target: str, variables: dict[str, CobolVar
         return None
 
     source_root = variables.get(source_match.group(1).upper()) if source_match else None
+
+    has_explicit_subscript = bool(re.search(r"\(\s*[^)]*\)", target.strip()))
+    if is_overlay_storage_view(target_root, variables) and (
+        not target_root.is_array or has_explicit_subscript
+    ):
+        value = translate_move_value(source, target, variables)
+        return [emit_assignment(target, value, variables)]
 
     def descendants(root: CobolVar) -> list[CobolVar]:
         found: list[CobolVar] = []
@@ -4728,8 +4766,10 @@ def emit_python(prog: Program) -> str:
     lines.append("    except EOFError:")
     lines.append("        return default")
     lines.append("")
-    lines.append("def _cobol_numval_c(value):")
+    lines.append("def _cobol_numval_c(value, currency_symbol=None):")
     lines.append("    text = str(value).strip()")
+    lines.append("    if currency_symbol is not None:")
+    lines.append("        text = text.replace(str(currency_symbol), '')")
     lines.append("    if not text:")
     lines.append("        return 0.0")
     lines.append("    negative = text.startswith('(') and text.endswith(')')")
@@ -4745,7 +4785,14 @@ def emit_python(prog: Program) -> str:
     lines.append("        if text[0] == '-':")
     lines.append("            negative = not negative")
     lines.append("        text = text[1:]")
-    lines.append("    text = text.replace(',', '')")
+    lines.append("    if ',' in text and '.' in text:")
+    lines.append("        if text.rfind(',') > text.rfind('.'):")
+    lines.append("            text = text.replace('.', '').replace(',', '.')")
+    lines.append("        else:")
+    lines.append("            text = text.replace(',', '')")
+    lines.append("    elif ',' in text:")
+    lines.append("        groups = text.split(',')")
+    lines.append("        text = (''.join(groups) if len(groups[-1]) == 3 and all(len(group) == 3 for group in groups[1:]) else '.'.join(groups))")
     lines.append("    number = float(text or '0')")
     lines.append("    return -number if negative else number")
     lines.append("")
@@ -4836,14 +4883,14 @@ def emit_python(prog: Program) -> str:
     lines.append("    field = _cobol_overlay_fields[name]")
     lines.append("    offset = _cobol_field_offset(field, subscripts)")
     lines.append("    raw = _cobol_storage[field['base']][offset:offset + field['width']]")
-    lines.append("    return raw if field['kind'] == 'alpha' else int(raw or '0')")
+    lines.append("    return raw if field['kind'] in ('alpha', 'group') else int(raw or '0')")
     lines.append("")
     lines.append("def _cobol_set(name, value, *subscripts):")
     lines.append("    field = _cobol_overlay_fields[name]")
     lines.append("    base = field['base']")
     lines.append("    offset = _cobol_field_offset(field, subscripts)")
     lines.append("    width = field['width']")
-    lines.append("    if field['kind'] == 'alpha':")
+    lines.append("    if field['kind'] in ('alpha', 'group'):")
     lines.append("        text = str(value)[:width].ljust(width)")
     lines.append("    else:")
     lines.append("        text = str(abs(int(value)) % (10 ** width)).zfill(width)")

@@ -477,6 +477,16 @@ class TranslationTests(unittest.TestCase):
         self.assertEqual(cobol2py.normalize_name("WS-CLASS(1)"), "ws_class[0]")
         self.assertEqual(cobol2py.normalize_name("WS-ITEM(INT)"), "ws_item[cobol_int - 1]")
 
+    def test_normalize_name_is_idempotent_for_python_identifiers(self):
+        cobol_name = "FILE-RECORD-INFORMATION-REC"
+        normalized = cobol2py.normalize_name(cobol_name)
+        self.assertEqual(normalized, "file_record_information_rec")
+        self.assertEqual(cobol2py.normalize_name(normalized), normalized)
+        self.assertEqual(
+            cobol2py.normalize_name("cobol_record_information_rec"),
+            "cobol_record_information_rec",
+        )
+
     def test_hyphenated_identifier_and_subtraction_are_tokenized(self):
         self.assertEqual(cobol2py.translate_expr("WS-NUM - 1"), "ws_num - 1")
         self.assertEqual(cobol2py.translate_expr("WS-NUM + WS-TOTAL"), "ws_num + ws_total")
@@ -1775,6 +1785,49 @@ MAIN.
         )
 
 
+class RootGroupRedefinesTests(unittest.TestCase):
+    def test_redefined_root_groups_read_and_write_the_shared_storage(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. ROOTGROUPOVERLAY.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 FILE-COBOL-RECORD-INFORMATION-REC.
+   05 REC-COUNT PIC 9(3).
+   05 REC-TEXT PIC X(3).
+01 FILE-COBOL-RECORD-ALT REDEFINES FILE-COBOL-RECORD-INFORMATION-REC.
+   05 ALT-COUNT PIC 9(3).
+   05 ALT-TEXT PIC X(3).
+PROCEDURE DIVISION.
+MAIN.
+    MOVE "123ABC" TO FILE-COBOL-RECORD-INFORMATION-REC.
+    DISPLAY ALT-COUNT.
+    MOVE "456DEF" TO FILE-COBOL-RECORD-ALT.
+    DISPLAY REC-COUNT.
+    STOP RUN.
+"""
+        program = cobol2py.parse_cobol(source, source_format="free")
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<root-group-redefines>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+
+        output = StringIO()
+        try:
+            with redirect_stdout(output):
+                namespace["main"]()
+        except Exception as error:
+            self.fail(f"{error}\nGenerated Python:\n{generated}")
+
+        self.assertEqual(output.getvalue(), "123\n456\n", generated)
+        self.assertEqual(
+            namespace["_cobol_storage"]["FILE-COBOL-RECORD-INFORMATION-REC"],
+            "456DEF",
+        )
+
+
 class DataReferenceResolutionTests(unittest.TestCase):
     def test_three_level_qualified_reference_resolves_nearest_parent(self):
         variables = {
@@ -2035,6 +2088,9 @@ class CobolIntrinsicFunctionRegressionTests(unittest.TestCase):
         translated = cobol2py.translate_expr("FUNCTION NUMVAL-C(WS-AMOUNT)")
         self.assertEqual(translated, "_cobol_numval_c(ws_amount)")
         compile(translated, "<numval-c-intrinsic>", "eval")
+        translated_with_currency = cobol2py.translate_expr('FUNCTION NUMVAL-C(WS-AMOUNT, "$")')
+        self.assertEqual(translated_with_currency, '_cobol_numval_c(ws_amount, "$")')
+        compile(translated_with_currency, "<numval-c-currency-argument>", "eval")
 
         source = "\n".join([
             "IDENTIFICATION DIVISION.",
@@ -2051,6 +2107,10 @@ class CobolIntrinsicFunctionRegressionTests(unittest.TestCase):
         self.assertAlmostEqual(convert("-$123.45"), -123.45)
         self.assertAlmostEqual(convert("(€9.50)"), -9.50)
         self.assertAlmostEqual(convert("  42.00 USD  "), 42.00)
+        self.assertAlmostEqual(convert("$1.234,56"), 1234.56)
+        self.assertAlmostEqual(convert("(€9,50)"), -9.50)
+        self.assertAlmostEqual(convert("1,234.56"), 1234.56)
+        self.assertAlmostEqual(convert("$1.234,56", "$"), 1234.56)
 
     def test_case_and_trim_intrinsics_are_valid_python_calls(self):
         cases = {
