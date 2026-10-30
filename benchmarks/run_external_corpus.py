@@ -196,7 +196,7 @@ def preserve_exclusion_diagnostics(
         "classification": "reference exclusion; not counted as a translator failure or in the tested denominator",
     }
     (diagnostic_dir / "metadata.json").write_text(
-        json.dumps(metadata, indent=2, ensure_ascii=False) + "\\n", encoding="utf-8"
+        json.dumps(metadata, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
 
 def extract_archive(archive: Path, destination: Path) -> list[Path]:
