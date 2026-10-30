@@ -283,10 +283,18 @@ jobs:
 
           rows = []
           eligible = []
+          canonical_ids = None
           for name, branch in candidates.items():
               primary = samples.get(name, {}).get("primary")
               holdout = samples.get(name, {}).get("holdout")
               tests = test_results.get(name, {})
+              if (
+                  primary is not None
+                  and holdout is not None
+                  and primary["ids"].isdisjoint(holdout["ids"])
+                  and canonical_ids is None
+              ):
+                  canonical_ids = (primary["ids"], holdout["ids"])
               valid = (
                   primary is not None
                   and holdout is not None
@@ -295,6 +303,9 @@ jobs:
                   and tests.get("sha") == primary["sha"]
                   and tests.get("tests_passed") is True
                   and primary["ids"].isdisjoint(holdout["ids"])
+                  and canonical_ids is not None
+                  and primary["ids"] == canonical_ids[0]
+                  and holdout["ids"] == canonical_ids[1]
               )
               if not valid:
                   rows.append((name, "INCOMPLETE / TESTS FAILED", None, None, None))
