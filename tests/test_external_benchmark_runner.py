@@ -61,5 +61,17 @@ class ExternalBenchmarkProcessTests(unittest.TestCase):
             self.assertIn("not counted", metadata["classification"])
             self.assertEqual(metadata["reference_compile_returncode"], 0)
 
+    def test_launch_failure_still_creates_empty_diagnostic_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            out, err = root / "nested" / "stdout.bin", root / "nested" / "stderr.bin"
+            result = run_process([str(root / "does-not-exist")], root, 2, out, err)
+            self.assertFalse(result["launched"])
+            self.assertEqual(out.read_bytes(), b"")
+            self.assertEqual(err.read_bytes(), b"")
+            reference = root / "reference.bin"
+            reference.write_bytes(b"reference output")
+            self.assertEqual(first_byte_difference(out, reference), 0)
+
 if __name__ == "__main__": unittest.main()
 
