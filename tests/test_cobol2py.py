@@ -3606,3 +3606,16 @@ class ExternalBenchmarkConditionRegressionTests(unittest.TestCase):
         self.assertTrue(eval(translated, {"ws_opcao": "A"}))
         self.assertFalse(eval(translated, {"ws_opcao": "N"}))
         self.assertFalse(eval(translated, {"ws_opcao": "S"}))
+
+
+class InspectReplacingCharactersCandidateTests(unittest.TestCase):
+    def test_inspect_replacing_after_initial_changes_only_suffix(self):
+        variables = {"WS-TEXT": cobol2py.CobolVar(level=77, name="WS-TEXT", pic="X(8)")}
+        generated = "\\n".join(cobol2py.translate_statement(
+            'INSPECT WS-TEXT REPLACING CHARACTERS BY "X" AFTER INITIAL "B"',
+            set(), variables,
+        ))
+        compile(generated, "<inspect-replacing>", "exec")
+        namespace = {"ws_text": "ABcd ef "}
+        exec(generated, namespace)
+        self.assertEqual(namespace["ws_text"], "ABXXXXXX")
