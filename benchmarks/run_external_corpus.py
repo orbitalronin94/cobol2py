@@ -45,12 +45,16 @@ def run_process(command: list[str], cwd: Path, timeout: int, stdout_path: Option
         overflow: list[bool],
         digest: Any = None,
         total_length: Optional[list[int]] = None,
+        output_path: Optional[Path] = None,
     ) -> None:
+        output_handle = output_path.open("wb") if output_path else None
         try:
             while True:
                 chunk = stream.read(65536)
                 if not chunk:
                     break
+                if output_handle is not None:
+                    output_handle.write(chunk)
                 if digest is not None:
                     digest.update(chunk)
                 if total_length is not None:
@@ -62,16 +66,18 @@ def run_process(command: list[str], cwd: Path, timeout: int, stdout_path: Option
                     overflow[0] = True
         finally:
             stream.close()
+            if output_handle is not None:
+                output_handle.close()
 
     readers = [
         threading.Thread(
             target=drain,
-            args=(process.stdout, stdout_capture, stdout_overflow, stdout_digest, stdout_length),
+            args=(process.stdout, stdout_capture, stdout_overflow, stdout_digest, stdout_length, stdout_path),
             daemon=True,
         ),
         threading.Thread(
             target=drain,
-            args=(process.stderr, stderr_capture, stderr_overflow),
+            args=(process.stderr, stderr_capture, stderr_overflow, None, None, stderr_path),
             daemon=True,
         ),
     ]
