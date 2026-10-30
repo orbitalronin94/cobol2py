@@ -140,8 +140,8 @@ Se inició la iteración B antes de que finalizara el workflow dedicado #17 de l
   - Python combinado: **408/1.000 (40,80 %)**.
   - C: 42/1.000 (4,20 %); Rust: 40/1.000 (4,00 %).
 - Comparación por ID contra el benchmark dedicado #80: **8 ganancias y 0 pérdidas**. Siete ganancias corresponden al arreglo de `cobol_int`; `FunctionCall.cbl` se excluye de atribución por variabilidad de `WHEN-COMPILED`.
-- La scorecard dedicada #81 [sigue identificada aquí](https://github.com/orbitalronin94/cobol2py/actions/runs/41088604039); al redactar esta actualización GitHub aún la marcaba `in_progress`. No atribuirle una puntuación hasta que publique ambos bloques completos.
-- El resultado 40,80 % es el máximo multilenguaje observado sobre el SHA pre-merge, no una medición del SHA integrado `de7fddd`.
+- La scorecard dedicada #81 [terminó correctamente](https://github.com/orbitalronin94/cobol2py/actions/runs/41088604039): primaria 196/500 (39,20 %), holdout 212/500 (42,40 %), total **408/1.000 (40,80 %)**. Los dos informes individuales marcaron `sample_complete: true` y el agregador finalizó con éxito.
+- El 40,80 % también queda confirmado por la scorecard dedicada #81 sobre el mismo SHA pre-merge `a8f2f98`; todavía no es una medición del SHA integrado `de7fddd`.
 
 ### Siguiente iteración prioritaria
 
