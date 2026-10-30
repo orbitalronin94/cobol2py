@@ -2373,6 +2373,41 @@ class QualifiedDisplayOperandRegressionTests(unittest.TestCase):
         )
 
 
+class SpaceSeparatedOverlayAssignmentRegressionTests(unittest.TestCase):
+    def test_overlay_assignment_splits_space_separated_occurs_indexes(self):
+        variables = {
+            "WS-RAW": cobol2py.CobolVar(
+                level=1, name="WS-RAW", pic="X(900)"
+            ),
+            "WS-VIEW": cobol2py.CobolVar(
+                level=1, name="WS-VIEW", is_group=True, redefines="WS-RAW"
+            ),
+            "TABLE-8": cobol2py.CobolVar(
+                level=2, name="TABLE-8", is_group=True, is_array=True,
+                occurs=10, parent_name="WS-VIEW",
+            ),
+            "TABLE-7": cobol2py.CobolVar(
+                level=3, name="TABLE-7", is_group=True, is_array=True,
+                occurs=10, parent_name="TABLE-8",
+            ),
+            "TABLE-1": cobol2py.CobolVar(
+                level=4, name="TABLE-1", pic="9(3)", is_array=True,
+                occurs=3, parent_name="TABLE-7",
+            ),
+        }
+
+        translated = cobol2py.emit_assignment(
+            "TABLE-1(INXEX1 INXEX2 INXEX3)", "w_3", variables
+        )
+
+        self.assertEqual(
+            translated,
+            "_cobol_set('TABLE-1', w_3, int(inxex1) - 1, "
+            "int(inxex2) - 1, int(inxex3) - 1)",
+        )
+        compile(translated, "<space-separated-overlay-assignment>", "exec")
+
+
 class SpaceSeparatedSubscriptRegressionTests(unittest.TestCase):
     def test_numeric_subscripts_separated_by_spaces(self):
         self.assertEqual(cobol2py.normalize_data_reference("TABLE(1 2)"), "table[0][1]")
