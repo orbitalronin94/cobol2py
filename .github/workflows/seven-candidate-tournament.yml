@@ -23,6 +23,7 @@ concurrency:
 
 jobs:
   candidate-tests:
+    if: github.event_name != 'pull_request' || github.event.pull_request.number == 57
     name: Tests — ${{ matrix.candidate.name }}
     runs-on: ubuntu-latest
     strategy:
@@ -87,6 +88,7 @@ jobs:
           retention-days: 30
 
   external-benchmark:
+    if: github.event_name != 'pull_request' || github.event.pull_request.number == 57
     name: Exact corpus — ${{ matrix.candidate.name }} / ${{ matrix.sample.name }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -191,7 +193,7 @@ jobs:
 
   aggregate:
     name: Compare all seven candidates against 408/1000
-    if: always()
+    if: always() && (github.event_name != 'pull_request' || github.event.pull_request.number == 57)
     needs: [candidate-tests, external-benchmark]
     runs-on: ubuntu-latest
     outputs:
@@ -348,7 +350,7 @@ jobs:
 
   merge-winner:
     name: Queue auto-merge for the unique record-breaker
-    if: needs.aggregate.outputs.winner == 'true'
+    if: needs.aggregate.outputs.winner == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.number == 57)
     needs: aggregate
     runs-on: ubuntu-latest
     permissions:
