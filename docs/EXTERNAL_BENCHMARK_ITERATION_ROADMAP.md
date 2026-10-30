@@ -122,3 +122,33 @@ Se inició la iteración B antes de que finalizara el workflow dedicado #17 de l
 - Evidencia: los artefactos de #77 muestran que `MOVE WRK1 TO ELEM1 (S1) ELEM2 (S21 S22)` genera `int(s1)`/`int(s21)`/`int(s22)`, aunque los campos COBOL están declarados dentro de `01 GRP-SUB` y se almacenan como `grp_sub['s1']`, etc. Resultado: `NameError` en `NC1404` y `NC140A`.
 - Cambio propuesto en `normalize_data_reference.index_expression`: resolver un subíndice identificador con `normalize_data_reference(subscript, variable_map)` antes de convertirlo a entero. Aplicar la misma regla al camino de asignación overlay en `emit_assignment`; mantener sincronizados `cobol2py.py` y `web/index.html`.
 - Añadir tests para `ELEM1(S1)` y para la tabla bidimensional `ELEM2(S21 S22)`. La rama de trabajo es `fix/nested-group-subscript-resolution`; no considerar la corrección validada hasta que la suite, el benchmark diferencial, browser smoke y el corpus externo completo terminen sobre el mismo SHA.
+
+
+## Estado actualizado — 2026-10-30 (Iteraciones D y E integradas)
+
+### Integración
+
+- PR [#54](https://github.com/orbitalronin94/cobol2py/pull/54), resolución de subíndices anidados en grupos, integrada mediante squash commit `b265e50e6a9bdb5d746cb09cc19f7081c870bd11`.
+- PR [#55](https://github.com/orbitalronin94/cobol2py/pull/55), restauración de llamadas `int(...)` generadas para índices de overlays/REDEFINES, integrada mediante squash commit `de7fddd0d0f3971f09c97efb95973563956920da`.
+- Ambas PR incluyen la sincronización del traductor Python y la versión embebida en `web/index.html`, además de pruebas de regresión.
+
+### Resultado medido
+
+- Benchmark multilenguaje [#697](https://github.com/orbitalronin94/cobol2py/actions/runs/41088604171), SHA pre-merge `a8f2f98ed777792fa2df499925c1ea8f6c9c05e9`:
+  - Python primaria: **196/500 (39,20 %)**.
+  - Python holdout: **212/500 (42,40 %)**.
+  - Python combinado: **408/1.000 (40,80 %)**.
+  - C: 42/1.000 (4,20 %); Rust: 40/1.000 (4,00 %).
+- Comparación por ID contra el benchmark dedicado #80: **8 ganancias y 0 pérdidas**. Siete ganancias corresponden al arreglo de `cobol_int`; `FunctionCall.cbl` se excluye de atribución por variabilidad de `WHEN-COMPILED`.
+- La scorecard dedicada #81 [sigue identificada aquí](https://github.com/orbitalronin94/cobol2py/actions/runs/41088604039); al redactar esta actualización GitHub aún la marcaba `in_progress`. No atribuirle una puntuación hasta que publique ambos bloques completos.
+- El resultado 40,80 % es el máximo multilenguaje observado sobre el SHA pre-merge, no una medición del SHA integrado `de7fddd`.
+
+### Siguiente iteración prioritaria
+
+1. Múltiples nombres `INDEXED BY` en cláusulas multilínea y tablas anidadas: parser conserva solo el primer nombre; reproducido en `NC2384.2` y `NC238A`.
+2. `SET index TO`, `SET index UP/DOWN BY` y `SEARCH ... VARYING`: validar semántica e inicialización de cada índice, no solo declarar variables.
+3. Resolver `KeyError` de layout/grupos en `NC125A` y `NC1254.2`.
+4. Revisar conversión alfanumérica/espacios en `DECTRANS`.
+5. Separar el soporte de nivel 66 `RENAMES` como una iteración posterior con los casos compilables `CBL0302v01DataLayoutRenames` y `nivel`.
+
+El objetivo aspiracional sigue siendo **425/1.000 (42,50 %)**: el máximo observado 408/1.000 deja 17 aciertos. La aceptación v1.0 sigue exigiendo 375/500 en cada muestra, validación reproducible y revisión de regresiones.
