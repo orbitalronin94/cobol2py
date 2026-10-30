@@ -1805,8 +1805,11 @@ MAIN.
         exec(generated, namespace)
 
         output = StringIO()
-        with redirect_stdout(output):
-            namespace["main"]()
+        try:
+            with redirect_stdout(output):
+                namespace["main"]()
+        except Exception as error:
+            self.fail(f"{error}\nGenerated Python:\n{generated}")
 
         self.assertEqual(output.getvalue(), "123\n456\n", generated)
         self.assertEqual(
