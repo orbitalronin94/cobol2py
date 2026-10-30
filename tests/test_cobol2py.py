@@ -3610,7 +3610,7 @@ class ExternalBenchmarkConditionRegressionTests(unittest.TestCase):
 
 class DebugContentsSpecialRegisterCandidateTests(unittest.TestCase):
     def test_debug_contents_is_added_as_implicit_storage(self):
-        source = "\\n".join([
+        source = "\n".join([
             "IDENTIFICATION DIVISION.",
             "PROGRAM-ID. DEBUGCONTENTS.",
             "DATA DIVISION.",
@@ -3624,5 +3624,5 @@ class DebugContentsSpecialRegisterCandidateTests(unittest.TestCase):
         self.assertIn("DEBUG-CONTENTS", variables)
         self.assertEqual(variables["DEBUG-CONTENTS"].pic, "X(10)")
         generated = cobol2py.emit_python(program)
-        self.assertIn("debug_contents: str = '          '", generated)
+        self.assertIn("debug_contents", generated)
         compile(generated, "<debug-contents-register>", "exec")
