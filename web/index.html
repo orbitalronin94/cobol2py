@@ -2948,6 +2948,15 @@ def fit_numeric_expression(expression: str, target: str, variables: dict[str, Co
     return f"int({expression}) % (10 ** {digits})"
 
 
+def is_subscripted_overlay_reference(target: str, variables: dict[str, CobolVar]) -> bool:
+    """Identify an indexed elementary field backed by a REDEFINES byte buffer."""
+    match = re.match(r"([A-Za-z0-9-]+)\s*\(([^()]*)\)", target.strip())
+    if match is None:
+        return False
+    overlay_fields, _overlay_buffers = build_overlay_layout(variables)
+    return match.group(1).upper() in overlay_fields
+
+
 def translate_group_fill_move(source: str, target: str, variables: dict[str, CobolVar]) -> Optional[list[str]]:
     """Translate MOVE of a figurative constant to a group without replacing its structure."""
     figuratives = {
@@ -3021,12 +3030,11 @@ def translate_group_fill_move(source: str, target: str, variables: dict[str, Cob
 
 
 def translate_group_move(source: str, target: str, variables: dict[str, CobolVar]) -> Optional[list[str]]:
-    """Move bytes between simple COBOL groups without replacing their dict storage.
+    """Move COBOL group bytes while preserving nested Python group dictionaries.
 
-    COBOL group moves copy a contiguous byte sequence, not Python dictionaries.
-    Flatten the source leaves in declaration order, then distribute those bytes
-    across the receiving group's elementary fields. Overlays are left to the
-    dedicated storage-overlay path rather than guessed here.
+    REDEFINES siblings share storage. Flatten only the non-redefining view and
+    route overlay leaves through the shared byte-buffer setter instead of
+    replacing a group dictionary with a string or a second dictionary.
     """
     target_match = re.match(r"([A-Za-z0-9-]+)", target.strip())
     source_match = re.match(r"([A-Za-z0-9-]+)", source.strip())
@@ -3035,33 +3043,7 @@ def translate_group_move(source: str, target: str, variables: dict[str, CobolVar
     target_root = variables.get(target_match.group(1).upper())
     if target_root is None or not target_root.is_group:
         return None
-
     source_root = variables.get(source_match.group(1).upper()) if source_match else None
-
-    def descendants(root: CobolVar) -> list[CobolVar]:
-        found: list[CobolVar] = []
-        pending = [root.name.upper()]
-        visited: set[str] = set()
-        while pending:
-            parent = pending.pop()
-            if parent in visited:
-                continue
-            visited.add(parent)
-            children = [
-                item for item in variables.values()
-                if (item.parent_name or "").upper() == parent
-            ]
-            found.extend(children)
-            pending.extend(item.name.upper() for item in children if item.is_group)
-        return found
-
-    # REDEFINES shares bytes with another view. Do not flatten such layouts
-    # independently, because doing so would double-count the overlaid storage.
-    if any(item.redefines for item in descendants(target_root)):
-        return None
-    if source_root is not None and source_root.is_group:
-        if any(item.redefines for item in descendants(source_root)):
-            return None
 
     def width(variable: CobolVar) -> int:
         if variable.pic:
@@ -3070,77 +3052,100 @@ def translate_group_move(source: str, target: str, variables: dict[str, CobolVar
             return max(1, pic_digit_count(variable.pic))
         return 1
 
-    def leaves(group: CobolVar, expression: str, ancestors: set[str]) -> list[tuple[str, CobolVar]]:
+    def reference_indices(reference: str) -> tuple[str, ...]:
+        match = re.match(r"[A-Za-z0-9-]+\s*\(([^()]*)\)", reference.strip())
+        if match is None:
+            return ()
+        return tuple(part.strip() for part in re.split(r"[,;]", match.group(1)) if part.strip())
+
+    def leaves(
+        group: CobolVar,
+        expression: str,
+        ancestors: set[str],
+        indices: tuple[str, ...] = (),
+    ) -> list[tuple[str, CobolVar, str]]:
         if group.name.upper() in ancestors:
             return []
         next_ancestors = ancestors | {group.name.upper()}
-        result: list[tuple[str, CobolVar]] = []
+        result: list[tuple[str, CobolVar, str]] = []
         children = [
             item for item in variables.values()
             if (item.parent_name or "").upper() == group.name.upper()
         ]
         for child in children:
+            # A redefining sibling is another view of bytes already counted
+            # through its base item. Including both would double the group size.
+            if child.redefines:
+                continue
             child_expr = f"{expression}[{normalize_name(child.name)!r}]"
             if child.is_group:
                 if child.is_array:
                     for index in range(child.occurs or 0):
-                        result.extend(leaves(child, f"{child_expr}[{index}]", next_ancestors))
+                        result.extend(
+                            leaves(
+                                child,
+                                f"{child_expr}[{index}]",
+                                next_ancestors,
+                                indices + (str(index + 1),),
+                            )
+                        )
                 else:
-                    result.extend(leaves(child, child_expr, next_ancestors))
+                    result.extend(leaves(child, child_expr, next_ancestors, indices))
             elif child.is_array:
                 for index in range(child.occurs or 0):
-                    result.append((f"{child_expr}[{index}]", child))
+                    item_indices = indices + (str(index + 1),)
+                    reference = f"{child.name}({', '.join(item_indices)})"
+                    result.append((f"{child_expr}[{index}]", child, reference))
             else:
-                result.append((child_expr, child))
+                reference = (
+                    f"{child.name}({', '.join(indices)})" if indices else child.name
+                )
+                result.append((child_expr, child, reference))
         return result
 
-    target_expression = normalize_data_reference(target, variables)
-    if target_root.is_array and not re.search(r"\(\s*[^)]*\)", target.strip()):
+    target_indices = reference_indices(target)
+    if target_root.is_array and not target_indices:
         # An unsubscripted OCCURS group denotes the whole table, not one row.
         return None
-    target_leaves = leaves(target_root, target_expression, set())
+    target_expression = normalize_data_reference(target, variables)
+    target_leaves = leaves(target_root, target_expression, set(), target_indices)
     if not target_leaves:
         return None
-    target_width = sum(width(item) for _, item in target_leaves)
+    target_width = sum(width(item) for _expression, item, _reference in target_leaves)
 
     if source_root is not None and source_root.is_group:
-        source_expression = normalize_data_reference(source, variables)
-        source_leaves = leaves(source_root, source_expression, set())
-        if not source_leaves:
+        source_bytes = translate_group_bytes(source, variables)
+        if source_bytes is None:
             return None
-        source_parts: list[str] = []
-        for expression, variable in source_leaves:
-            item_width = width(variable)
-            if variable.pic and any(char in variable.pic.upper() for char in "XA"):
-                source_parts.append(f"str({expression})[:{item_width}].ljust({item_width})")
-            else:
-                source_parts.append(f"str({expression}).zfill({item_width})[-{item_width}:]")
-        source_bytes = " + ".join(source_parts)
     else:
         all_literal = decode_cobol_all_literal(source.strip())
         if all_literal is not None:
-            # MOVE ALL literal TO group repeats the byte across the group's
-            # contiguous storage, rather than treating ALL as a data-name.
             source_bytes = repr((all_literal * target_width)[:target_width])
         else:
             source_bytes = f"str({translate_expr(source, variables)})"
 
-    statements = [f"_cobol_group_move_value = ({source_bytes})[:{target_width}].ljust({target_width})"]
+    statements = [
+        f"_cobol_group_move_value = ({source_bytes})[:{target_width}].ljust({target_width})"
+    ]
+    overlay_fields, _overlay_buffers = build_overlay_layout(variables)
     offset = 0
-    for expression, variable in target_leaves:
+    for expression, variable, reference in target_leaves:
         item_width = width(variable)
         chunk = f"_cobol_group_move_value[{offset}:{offset + item_width}]"
         if variable.pic and any(char in variable.pic.upper() for char in "XA"):
             value = f"{chunk}.ljust({item_width})"
         else:
             value = f"int(({chunk}).strip() or '0')"
-        statements.append(f"{expression} = {value}")
+        if variable.name.upper() in overlay_fields:
+            statements.append(emit_assignment(reference, value, variables))
+        else:
+            statements.append(f"{expression} = {value}")
         offset += item_width
     return statements
 
 
 def translate_group_bytes(source: str, variables: dict[str, CobolVar]) -> Optional[str]:
-    """Return a COBOL group's raw DISPLAY bytes as a Python expression."""
+    """Return a COBOL group's contiguous bytes, using the base of each overlay."""
     source_match = re.match(r"([A-Za-z0-9-]+)", source.strip())
     if source_match is None:
         return None
@@ -3148,59 +3153,70 @@ def translate_group_bytes(source: str, variables: dict[str, CobolVar]) -> Option
     if root is None or not root.is_group:
         return None
 
-    def descendants(group: CobolVar) -> list[CobolVar]:
-        result: list[CobolVar] = []
-        pending = [group.name.upper()]
-        visited: set[str] = set()
-        while pending:
-            parent = pending.pop()
-            if parent in visited:
-                continue
-            visited.add(parent)
-            children = [
-                item for item in variables.values()
-                if (item.parent_name or "").upper() == parent
-            ]
-            result.extend(children)
-            pending.extend(item.name.upper() for item in children if item.is_group)
-        return result
-
-    if any(item.redefines for item in descendants(root)):
-        return None
-
     def width(variable: CobolVar) -> int:
         if variable.pic and any(char in variable.pic.upper() for char in "XA"):
             return max(1, pic_character_count(variable.pic))
         return max(1, pic_digit_count(variable.pic)) if variable.pic else 1
 
-    def leaves(group: CobolVar, expression: str, ancestors: set[str]) -> list[tuple[str, CobolVar]]:
+    def reference_indices(reference: str) -> tuple[str, ...]:
+        match = re.match(r"[A-Za-z0-9-]+\s*\(([^()]*)\)", reference.strip())
+        if match is None:
+            return ()
+        return tuple(part.strip() for part in re.split(r"[,;]", match.group(1)) if part.strip())
+
+    def leaves(
+        group: CobolVar,
+        expression: str,
+        ancestors: set[str],
+        indices: tuple[str, ...] = (),
+    ) -> list[tuple[str, CobolVar, str]]:
         if group.name.upper() in ancestors:
             return []
         next_ancestors = ancestors | {group.name.upper()}
-        result: list[tuple[str, CobolVar]] = []
+        result: list[tuple[str, CobolVar, str]] = []
         for child in variables.values():
             if (child.parent_name or "").upper() != group.name.upper():
+                continue
+            if child.redefines:
                 continue
             child_expr = f"{expression}[{normalize_name(child.name)!r}]"
             if child.is_group:
                 if child.is_array:
                     for index in range(child.occurs or 0):
-                        result.extend(leaves(child, f"{child_expr}[{index}]", next_ancestors))
+                        result.extend(
+                            leaves(
+                                child,
+                                f"{child_expr}[{index}]",
+                                next_ancestors,
+                                indices + (str(index + 1),),
+                            )
+                        )
                 else:
-                    result.extend(leaves(child, child_expr, next_ancestors))
+                    result.extend(leaves(child, child_expr, next_ancestors, indices))
             elif child.is_array:
                 for index in range(child.occurs or 0):
-                    result.append((f"{child_expr}[{index}]", child))
+                    item_indices = indices + (str(index + 1),)
+                    reference = f"{child.name}({', '.join(item_indices)})"
+                    result.append((f"{child_expr}[{index}]", child, reference))
             else:
-                result.append((child_expr, child))
+                reference = (
+                    f"{child.name}({', '.join(indices)})" if indices else child.name
+                )
+                result.append((child_expr, child, reference))
         return result
 
+    source_indices = reference_indices(source)
+    if root.is_array and not source_indices:
+        return None
     expression = normalize_data_reference(source, variables)
-    fields = leaves(root, expression, set())
+    fields = leaves(root, expression, set(), source_indices)
     if not fields:
         return None
+    overlay_fields, _overlay_buffers = build_overlay_layout(variables)
     parts: list[str] = []
-    for field_expr, variable in fields:
+    for field_expr, variable, reference in fields:
+        if variable.name.upper() in overlay_fields:
+            field_expr = normalize_data_reference(reference, variables)
         field_width = width(variable)
         if variable.pic and any(char in variable.pic.upper() for char in "XA"):
             parts.append(f"str({field_expr})[:{field_width}].ljust({field_width})")
@@ -3320,6 +3336,10 @@ def split_cobol_items(s: str) -> list[str]:
             current.append(char)
         elif char == ")":
             depth = max(0, depth - 1)
+            current.append(char)
+        elif depth == 0 and char.isspace() and current and re.fullmatch(r"[A-Za-z0-9_-]+", "".join(current).strip()) and re.match(r"\s*\(", s[i:]):
+            # A space before "(" belongs to the COBOL subscript reference:
+            # ENTRY (I, J) is one target, not three MOVE receivers.
             current.append(char)
         elif depth == 0 and (char.isspace() or char == ","):
             token = "".join(current).strip()
@@ -3925,6 +3945,10 @@ def translate_statement(
                     if reference_modification is not None:
                         assignments.append(reference_modification)
                         continue
+                    if is_subscripted_overlay_reference(target, variable_map):
+                        value = translate_move_value(source, target, variable_map)
+                        assignments.append(emit_assignment(target, value, variable_map))
+                        continue
                     group_fill = translate_group_fill_move(source, target, variable_map)
                     if group_fill is not None:
                         assignments.extend(group_fill)
@@ -3944,6 +3968,9 @@ def translate_statement(
         reference_modification = emit_reference_modification_move(source, target, variable_map)
         if reference_modification is not None:
             return [reference_modification]
+        if is_subscripted_overlay_reference(target, variable_map):
+            value = translate_move_value(source, target, variable_map)
+            return [emit_assignment(target, value, variable_map)]
         group_fill = translate_group_fill_move(source, target, variable_map)
         if group_fill is not None:
             return group_fill

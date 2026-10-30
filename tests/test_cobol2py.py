@@ -2377,6 +2377,127 @@ class CrossBackendIdentifierNormalizationTests(unittest.TestCase):
         self.assertEqual(cobol2py.normalize_java_name("FILE-RECORD-INFORMATION-REC"), "file_record_information_rec")
 
 
+class SubscriptedRedefinesGroupMoveTests(unittest.TestCase):
+    def test_group_move_to_multidimensional_redefines_element_keeps_subscripts(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. OVERLAYGROUPMOVE.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 SOURCE-REC.
+   05 SOURCE-ALPHA PIC X(2) VALUE "AB".
+   05 SOURCE-NUM PIC 9(2) VALUE 12.
+01 BASE-TABLE.
+   05 BASE-ROW OCCURS 2 TIMES.
+      10 BASE-SUBROW OCCURS 2 TIMES.
+         15 BASE-ENTRY PIC X(4).
+01 VIEW-TABLE REDEFINES BASE-TABLE.
+   05 VIEW-ROW OCCURS 2 TIMES.
+      10 VIEW-SUBROW OCCURS 2 TIMES.
+         15 VIEW-ENTRY PIC X(4).
+01 IDX-1 PIC 9 VALUE 1.
+01 IDX-2 PIC 9 VALUE 2.
+PROCEDURE DIVISION.
+MAIN.
+    MOVE SOURCE-REC TO VIEW-ENTRY(IDX-1, IDX-2).
+    DISPLAY BASE-ENTRY(1, 2).
+    GOBACK.
+"""
+        program = cobol2py.parse_cobol(source, source_format="free")
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<subscripted-redefines-group-move>", "exec")
+        self.assertIn("_cobol_set('VIEW-ENTRY'", generated)
+        self.assertRegex(generated, r"_cobol_set\('VIEW-ENTRY'.*int\(idx_1\) - 1, int\(idx_2\) - 1\)")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "AB12\n", generated)
+
+
+class NestedRedefinesGroupMoveTests(unittest.TestCase):
+    def test_group_move_reads_and_writes_base_fields_of_nested_redefines(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. NESTEDOVERLAYMOVE.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 SOURCE-GROUP.
+   02 SOURCE-BASE PIC X(20).
+   02 SOURCE-NUM REDEFINES SOURCE-BASE PIC 9(20).
+   02 SOURCE-TAIL PIC X(2).
+01 TARGET-RECORD.
+   02 TARGET-GROUP.
+      03 TARGET-BASE PIC X(20).
+      03 TARGET-NUM REDEFINES TARGET-BASE PIC 9(20).
+      03 TARGET-TAIL PIC X(2).
+PROCEDURE DIVISION.
+MAIN.
+    MOVE "ABCDEFGHIJKLMNOPQRST" TO SOURCE-BASE.
+    MOVE "UV" TO SOURCE-TAIL.
+    MOVE SOURCE-GROUP TO TARGET-GROUP.
+    DISPLAY TARGET-BASE.
+    DISPLAY TARGET-TAIL.
+    GOBACK.
+"""
+        program = cobol2py.parse_cobol(source, source_format="free")
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<nested-redefines-group-move>", "exec")
+        self.assertIn("_cobol_set('TARGET-BASE'", generated)
+        self.assertIn("_cobol_get('SOURCE-BASE')", generated)
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "ABCDEFGHIJKLMNOPQRST\nUV\n", generated)
+
+
+class NestedOccursGroupMoveTests(unittest.TestCase):
+    def test_group_move_to_nested_occurs_field_keeps_all_ancestor_subscripts(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. NESTEDOCCURSMOVE.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 SOURCE-REC.
+   05 SOURCE-ALPHA PIC X(2) VALUE "AB".
+   05 SOURCE-NUM PIC X(2) VALUE "CD".
+01 TABLE-REC.
+   05 GRP-ENTRY OCCURS 2 TIMES.
+      10 ENTRY-1 PIC X(2).
+      10 GRP2-ENTRY OCCURS 2 TIMES.
+         15 ENTRY-2 PIC X(4).
+01 IDX-1 PIC 9 VALUE 1.
+01 IDX-2 PIC 9 VALUE 2.
+PROCEDURE DIVISION.
+MAIN.
+    MOVE SOURCE-REC TO ENTRY-2 (IDX-1, IDX-2).
+    DISPLAY ENTRY-2 (IDX-1, IDX-2).
+    GOBACK.
+"""
+        program = cobol2py.parse_cobol(source, source_format="free")
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<nested-occurs-group-move>", "exec")
+        self.assertIn(
+            "table_rec['grp_entry'][int(idx_1) - 1]['grp2_entry'][int(idx_2) - 1]['entry_2']",
+            generated,
+        )
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "ABCD\n", generated)
+
+
 class SpaceSeparatedSubscriptRegressionTests(unittest.TestCase):
     def test_numeric_subscripts_separated_by_spaces(self):
         self.assertEqual(cobol2py.normalize_data_reference("TABLE(1 2)"), "table[0][1]")
