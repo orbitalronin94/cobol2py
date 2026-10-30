@@ -706,6 +706,38 @@ MAIN.
         self.assertNotIn("UNSUPPORTED_STORAGE_OVERLAY", {item["code"] for item in diagnostics})
         self.assertEqual(namespace["_cobol_storage"]["WS-RAW-INPUT"], "9999911111")
 
+    def test_reference_modification_move_updates_occurs_redefines_view(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. REDEFINESREFMOD.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-RAW PIC X(6).
+01 WS-VIEW REDEFINES WS-RAW.
+   05 WS-TEXT PIC X(3) OCCURS 2 TIMES.
+PROCEDURE DIVISION.
+MAIN.
+    MOVE "ABCDEF" TO WS-RAW.
+    MOVE "xy" TO WS-TEXT(2)(2:2).
+    DISPLAY WS-RAW.
+    DISPLAY WS-TEXT(2).
+    STOP RUN.
+"""
+        program = cobol2py.parse_cobol(source, source_format="free")
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<redefines-reference-modification>", "exec")
+        self.assertIn("_cobol_set('WS-TEXT'", generated)
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "ABCDxy\\nDxy\\n", generated)
+        self.assertEqual(namespace["_cobol_storage"]["WS-RAW"], "ABCDxy")
+
+
     def test_combined_alter_computed_goto_and_redefines_storage(self):
         from contextlib import redirect_stdout
         from io import StringIO
