@@ -1,18 +1,8 @@
 name: external-cobol-corpus
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/external-cobol-corpus.yml"
-      - "cobol2py.py"
-      - "cobol2native.py"
-      - "tests/test_native_backends.py"
-      - "tests/test_cobol2py.py"
-      - "web/index.html"
-      - "benchmarks/Dockerfile.external"
-      - "benchmarks/run_external_corpus.py"
-      - "benchmarks/run_external_multilang.py"
+  # This full external-corpus sweep is expensive; run it on PRs or explicitly
+  # via workflow_dispatch rather than on every direct commit to main.
   pull_request:
     paths:
       - ".github/workflows/external-cobol-corpus.yml"
