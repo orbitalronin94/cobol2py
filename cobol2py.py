@@ -193,6 +193,7 @@ class CobolVar:
     occurs: Optional[int] = None
     depending_on: Optional[str] = None
     indexed_by: Optional[str] = None
+    indexed_by_names: list[str] = field(default_factory=list)
     ascending_key: Optional[str] = None
     parent_name: Optional[str] = None
     redefines: Optional[str] = None
@@ -330,6 +331,18 @@ RE_OCCURS = re.compile(
 RE_PARAGRAPH = re.compile(r"^(?!END-)([A-Za-z][A-Za-z0-9\-]*)\.\s*$")
 
 
+def _parse_indexed_by_names(rest: str) -> list[str]:
+    """Return every index-name from INDEXED [BY] clauses."""
+    match = re.search(
+        r"\bINDEXED\s+(?:BY\s+)?(.+?)(?=\s+(?:ASCENDING|DESCENDING|DEPENDING|PIC(?:TURE)?|VALUE|USAGE|SIGN|OCCURS|REDEFINES)\b|$)",
+        rest,
+        re.IGNORECASE,
+    )
+    if not match:
+        return []
+    return list(dict.fromkeys(name.upper() for name in re.findall(r"[A-Za-z][A-Za-z0-9-]*", match.group(1))))
+
+
 def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
     variables: list[CobolVar] = []
     hierarchy: list[CobolVar] = []
@@ -388,6 +401,7 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
         parent = None if level == 77 else next(
             (item for item in reversed(hierarchy) if item.is_group), None
         )
+        index_names = _parse_indexed_by_names(rest)
         variable = CobolVar(
             level=level,
             name=name,
@@ -397,8 +411,8 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
             is_array=occ_m is not None,
             occurs=int(occ_m.group(1)) if occ_m else None,
             depending_on=occ_m.group(2) if occ_m and occ_m.group(2) else None,
-            indexed_by=(re.search(r"\bINDEXED\s+BY\s+([A-Za-z0-9-]+)", rest, re.IGNORECASE).group(1).upper()
-                        if re.search(r"\bINDEXED\s+BY\s+([A-Za-z0-9-]+)", rest, re.IGNORECASE) else None),
+            indexed_by=index_names[0] if index_names else None,
+            indexed_by_names=index_names,
             ascending_key=(re.search(r"\bASCENDING\s+KEY\s+(?:IS\s+)?([A-Za-z0-9-]+)", rest, re.IGNORECASE).group(1).upper()
                            if re.search(r"\bASCENDING\s+KEY\s+(?:IS\s+)?([A-Za-z0-9-]+)", rest, re.IGNORECASE) else None),
             parent_name=parent.name if parent else None,
@@ -4837,10 +4851,14 @@ def emit_python(prog: Program) -> str:
                 comment += f" VALUE {variable.value}"
             lines.append(f"{normalize_name(variable.name)}: {variable.py_type()} = {default}{comment}")
         lines.append("")
+        emitted_index_names: set[str] = set()
         for variable in prog.variables:
-            if variable.indexed_by:
-                lines.append(f"{normalize_name(variable.indexed_by)} = 1  # INDEXED BY {variable.indexed_by}")
-        if any(variable.indexed_by for variable in prog.variables):
+            for index_name in variable.indexed_by_names or ([variable.indexed_by] if variable.indexed_by else []):
+                if index_name.upper() in emitted_index_names:
+                    continue
+                emitted_index_names.add(index_name.upper())
+                lines.append(f"{normalize_name(index_name)} = 1  # INDEXED BY {index_name}")
+        if emitted_index_names:
             lines.append("")
 
     para_names = set(prog.paragraphs.keys())
@@ -4907,8 +4925,10 @@ def emit_python(prog: Program) -> str:
         # COBOL storage instead of creating Python locals.
         global_vars = [normalize_name(v.name) for v in prog.variables if not v.parent_name]
         global_vars.extend(
-            normalize_name(v.indexed_by) for v in prog.variables
-            if v.indexed_by and normalize_name(v.indexed_by) not in global_vars
+            normalize_name(index_name)
+            for variable in prog.variables
+            for index_name in (variable.indexed_by_names or ([variable.indexed_by] if variable.indexed_by else []))
+            if normalize_name(index_name) not in global_vars
         )
         if global_vars:
             lines.append("    global " + ", ".join(global_vars))
