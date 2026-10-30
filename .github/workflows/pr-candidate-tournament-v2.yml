@@ -146,6 +146,7 @@ jobs:
           SOURCE_SHA: ${{ matrix.candidate.head || github.event.pull_request.base.sha }}
         run: |
           mkdir -p "$RUNNER_TEMP/sample"
+          chmod 0777 "$RUNNER_TEMP/sample"
           python - <<'PY'
           import json, os, subprocess
           item = {
