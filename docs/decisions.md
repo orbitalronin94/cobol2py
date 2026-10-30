@@ -86,3 +86,14 @@ Añadir una sección con:
 - **Consecuencias:** ventajas, costes y riesgos
 - **Validación:** tests/casos de benchmark que la respaldan
 - **Revisión:** qué evidencia podría hacer cambiar la decisión
+
+
+## D-031 — No aceptar una mejora del benchmark a ciegas ni conformarse con el porcentaje
+
+- **Fecha:** 2026-10-30.
+- **Estado:** aceptada.
+- **Contexto:** las ejecuciones externas X-COBOL v2 han llegado históricamente a un máximo observado del 37,7 % de coincidencia exacta (377/1.000). Los informes actuales permiten identificar casos y algunas clases de error, pero no conservan toda la evidencia necesaria para reconstruir y explicar cada discrepancia. Se ha trabajado con visibilidad insuficiente sobre las salidas exactas de referencia y del programa traducido.
+- **Decisión:** no volver a aceptar voluntariamente un flujo de depuración «a ciegas» ni tratar el porcentaje alcanzado como un resultado satisfactorio o un techo. El 37,7 % es una referencia histórica que hay que superar, no una justificación para limitar el esfuerzo. Cada fallo investigable debe poder rastrearse hasta el COBOL de entrada, la salida y el código de retorno de GnuCOBOL, la salida y el código de retorno de Python, el código generado y un diff reproducible a nivel de bytes. Cuando conservar una entrada o un artefacto plantee restricciones de licencia o privacidad, se documentará explícitamente qué evidencia se omite y por qué; no se presentará un diagnóstico parcial como si fuera completo.
+- **Consecuencias:** los cambios al runner deben priorizar evidencia diagnóstica accionable y reproducible, además de mantener la integridad del benchmark. La concurrencia solo se aceptará si conserva exactamente la selección determinista de 500 primary y 500 holdout, el denominador, los timeouts y la comparación exacta. Los resultados deben informar por separado fallos de compilación de referencia, exclusiones, errores de traducción, excepciones y diferencias de ejecución.
+- **Validación:** ejecutar ambos grupos completos y comprobar que los artefactos permiten reproducir y clasificar los fallos sin alterar la puntuación. Comparar la ejecución secuencial y concurrente con los mismos IDs, estados y resultados.
+- **Revisión:** cualquier reducción de evidencia diagnóstica o cambio de criterios de selección exige una nueva decisión documentada y una justificación explícita.
