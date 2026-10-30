@@ -109,5 +109,16 @@ Se inició la iteración B antes de que finalizara el workflow dedicado #17 de l
 
 - La PR [#53](https://github.com/orbitalronin94/cobol2py/pull/53) preserva grupos anidados en `MOVE`, evita contar dos veces almacenamiento compartido por `REDEFINES` y mantiene juntos los subíndices de referencias como `ENTRY (IDX-1, IDX-2)`. Añade regresiones para overlays anidados y `OCCURS` multidimensional, y mantiene sincronizados `cobol2py.py` y `web/index.html`.
 - Benchmark externo Python [#77](https://github.com/orbitalronin94/cobol2py/actions/runs/41061218929), SHA `402303b1e4c70b75c9c8931054de1b29ce50dae8`: **192/500 primaria (38,40 %), 208/500 holdout (41,60 %), 400/1.000 combinado (40,00 %)**. Frente a #68: +4 primaria, +3 holdout, +7 total (+0,70 puntos). Ambas muestras terminaron completas en el mismo SHA.
-- El workflow diferencial interno #1349 [falló](https://github.com/orbitalronin94/cobol2py/actions/runs/41061036358) sobre el SHA anterior `7d56754`; su informe marcó 94/105 coincidencias actuales, pero varios casos terminaron con `re.error: missing ), unterminated subpattern`. El commit posterior `402303b` restringió el reconocimiento de espacios antes de `(` en `split_cobol_items`; aún falta repetir el workflow diferencial sobre ese SHA para comprobar que desaparece el error. **No fusionar la PR hasta completar esa validación y revisar las regresiones por caso.**
-- Siguiente paso: repetir suite unitaria, browser smoke y workflow diferencial sobre el HEAD actual; si queda verde, comparar el benchmark externo caso por caso con #68 antes de aceptar la PR.
+- El workflow diferencial interno #1353 [pasó 105/105](https://github.com/orbitalronin94/cobol2py/actions/runs/41071645897) en el candidato final. Tras el merge, tests #1704, diferencial #1354 y multilenguaje #104 pasaron sobre `main` en el SHA `62d038bbe7bae7e212ff34e30c1f4c1fd020cd71`.
+- La PR #53 se integró en `main` el 2026-10-30 mediante el merge `62d038bbe7bae7e212ff34e30c1f4c1fd020cd71`.
+- Comparación por caso de #77 frente a #68: primaria 5 ganancias/1 regresión; holdout 4 ganancias/1 regresión. Las dos regresiones (`nc1404-2-20495d0582`, `nc140a-a1fdd01b63`) comparten una causa: los índices `S1`, `S21` y `S22` viven dentro de `GRP-SUB`, pero el generador emitía `s1`/`s21`/`s22` en lugar de `grp_sub['s1']` etc. La iteración D aborda esta resolución.
+- Repetición #78, con el mismo código funcional, dio 399/1.000 (39,90 %) frente a 400/1.000 (40,00 %) en #77. El único cambio de caso fue `FunctionCall.cbl`, cuyo `WHEN-COMPILED` varía un segundo entre compilaciones. Registrar ambos resultados y no contar esa fluctuación como una regresión funcional del traductor.
+
+
+## Estado actualizado — 2026-10-30 (Iteración D)
+
+### Resolución de nombres de grupo usados como subíndices
+
+- Evidencia: los artefactos de #77 muestran que `MOVE WRK1 TO ELEM1 (S1) ELEM2 (S21 S22)` genera `int(s1)`/`int(s21)`/`int(s22)`, aunque los campos COBOL están declarados dentro de `01 GRP-SUB` y se almacenan como `grp_sub['s1']`, etc. Resultado: `NameError` en `NC1404` y `NC140A`.
+- Cambio propuesto en `normalize_data_reference.index_expression`: resolver un subíndice identificador con `normalize_data_reference(subscript, variable_map)` antes de convertirlo a entero. Aplicar la misma regla al camino de asignación overlay en `emit_assignment`; mantener sincronizados `cobol2py.py` y `web/index.html`.
+- Añadir tests para `ELEM1(S1)` y para la tabla bidimensional `ELEM2(S21 S22)`. La rama de trabajo es `fix/nested-group-subscript-resolution`; no considerar la corrección validada hasta que la suite, el benchmark diferencial, browser smoke y el corpus externo completo terminen sobre el mismo SHA.
