@@ -477,6 +477,16 @@ class TranslationTests(unittest.TestCase):
         self.assertEqual(cobol2py.normalize_name("WS-CLASS(1)"), "ws_class[0]")
         self.assertEqual(cobol2py.normalize_name("WS-ITEM(INT)"), "ws_item[cobol_int - 1]")
 
+    def test_normalize_name_is_idempotent_for_python_identifiers(self):
+        cobol_name = "FILE-RECORD-INFORMATION-REC"
+        normalized = cobol2py.normalize_name(cobol_name)
+        self.assertEqual(normalized, "file_record_information_rec")
+        self.assertEqual(cobol2py.normalize_name(normalized), normalized)
+        self.assertEqual(
+            cobol2py.normalize_name("cobol_record_information_rec"),
+            "cobol_record_information_rec",
+        )
+
     def test_hyphenated_identifier_and_subtraction_are_tokenized(self):
         self.assertEqual(cobol2py.translate_expr("WS-NUM - 1"), "ws_num - 1")
         self.assertEqual(cobol2py.translate_expr("WS-NUM + WS-TOTAL"), "ws_num + ws_total")
