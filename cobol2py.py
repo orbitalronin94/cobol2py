@@ -345,7 +345,7 @@ def _program_index_names(program: Program) -> list[str]:
     }
     for _, source_line in program.raw_lines:
         for match in re.finditer(
-            r"\\b(?:SET\\s+([A-Za-z][A-Za-z0-9-]*)\\s+(?:TO|UP\\s+BY|DOWN\\s+BY)|SEARCH\\s+[A-Za-z][A-Za-z0-9-]*\\s+VARYING\\s+([A-Za-z][A-Za-z0-9-]*))",
+            r"\b(?:SET\s+([A-Za-z][A-Za-z0-9-]*)\s+(?:TO|UP\s+BY|DOWN\s+BY)|SEARCH\s+[A-Za-z][A-Za-z0-9-]*\s+VARYING\s+([A-Za-z][A-Za-z0-9-]*))",
             source_line,
             re.IGNORECASE,
         ):
