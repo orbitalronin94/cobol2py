@@ -2948,6 +2948,15 @@ def fit_numeric_expression(expression: str, target: str, variables: dict[str, Co
     return f"int({expression}) % (10 ** {digits})"
 
 
+def is_subscripted_overlay_reference(target: str, variables: dict[str, CobolVar]) -> bool:
+    """Identify an indexed elementary field backed by a REDEFINES byte buffer."""
+    match = re.match(r"([A-Za-z0-9-]+)\s*\(([^()]*)\)", target.strip())
+    if match is None:
+        return False
+    overlay_fields, _overlay_buffers = build_overlay_layout(variables)
+    return match.group(1).upper() in overlay_fields
+
+
 def translate_group_fill_move(source: str, target: str, variables: dict[str, CobolVar]) -> Optional[list[str]]:
     """Translate MOVE of a figurative constant to a group without replacing its structure."""
     figuratives = {
@@ -3925,6 +3934,10 @@ def translate_statement(
                     if reference_modification is not None:
                         assignments.append(reference_modification)
                         continue
+                    if is_subscripted_overlay_reference(target, variable_map):
+                        value = translate_move_value(source, target, variable_map)
+                        assignments.append(emit_assignment(target, value, variable_map))
+                        continue
                     group_fill = translate_group_fill_move(source, target, variable_map)
                     if group_fill is not None:
                         assignments.extend(group_fill)
@@ -3944,6 +3957,9 @@ def translate_statement(
         reference_modification = emit_reference_modification_move(source, target, variable_map)
         if reference_modification is not None:
             return [reference_modification]
+        if is_subscripted_overlay_reference(target, variable_map):
+            value = translate_move_value(source, target, variable_map)
+            return [emit_assignment(target, value, variable_map)]
         group_fill = translate_group_fill_move(source, target, variable_map)
         if group_fill is not None:
             return group_fill
