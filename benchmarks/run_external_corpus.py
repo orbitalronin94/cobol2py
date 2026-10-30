@@ -197,6 +197,10 @@ def preserve_exclusion_diagnostics(
     metadata = {
         "case": result,
         "reference_compile_returncode": compiled.get("returncode"),
+        "reference_compile_launched": compiled.get("launched"),
+        "reference_compile_timeout": compiled.get("timeout"),
+        "reference_launched": result.get("reference_launched"),
+        "reference_timeout": result.get("reference_timeout"),
         "reference_returncode": result.get("reference_returncode"),
         "stdin": "DEVNULL; interactive input is not currently supplied.",
         "classification": "reference exclusion; not counted as a translator failure or in the tested denominator",
@@ -297,6 +301,8 @@ def main() -> int:
                 if not compiled["launched"] or compiled["timeout"] or compiled["returncode"] != 0:
                     report["reference_compile_failures"] += 1
                     result["reference_compile"] = "failed"
+                    result["reference_compile_launched"] = compiled["launched"]
+                    result["reference_compile_timeout"] = compiled["timeout"]
                     result["reason"] = "compile timeout" if compiled["timeout"] else (
                         compiled["stderr"] or "compiler did not produce an executable")[-400:]
                     if args.diagnostics:
@@ -309,6 +315,8 @@ def main() -> int:
                 if not reference["launched"] or reference["timeout"]:
                     report["reference_runtime_exclusions"] += 1
                     result["reason"] = "reference execution timed out or could not launch"
+                    result["reference_launched"] = reference["launched"]
+                    result["reference_timeout"] = reference["timeout"]
                     result["reference_returncode"] = reference.get("returncode")
                     if args.diagnostics:
                         preserve_exclusion_diagnostics(args.output, case_root, source, result, compiled)
@@ -322,6 +330,9 @@ def main() -> int:
                                          candidate_work, args.translator_timeout,
                                          case_root / "translator.stdout.bin" if args.diagnostics else None,
                                          case_root / "translator.stderr.bin" if args.diagnostics else None)
+                result["translator_launched"] = translated["launched"]
+                result["translator_timeout"] = translated["timeout"]
+                result["translator_stdout_truncated"] = translated["stdout_truncated"]
                 if (not translated["launched"] or translated["timeout"] or translated["stdout_truncated"]
                         or translated["returncode"] != 0):
                     reason = ("translator timeout" if translated["timeout"] else
@@ -345,6 +356,8 @@ def main() -> int:
                         candidate = run_process(["python3", "-I", str(generated)], candidate_work, args.translator_timeout,
                                                case_root / "candidate.stdout.bin" if args.diagnostics else None,
                                                case_root / "candidate.stderr.bin" if args.diagnostics else None)
+                        result["candidate_launched"] = candidate["launched"]
+                        result["candidate_timeout"] = candidate["timeout"]
                         result["candidate_returncode"] = candidate["returncode"]
                         result["reference_returncode"] = reference["returncode"]
                         result["stdout_match"] = stdout_matches(candidate, reference)
@@ -388,7 +401,8 @@ def main() -> int:
                                 and result["stdout_match"] and result["returncode_match"]):
                             result.update({"status": "passed", "reason": None})
                         else:
-                            reason = ("translated program timed out" if candidate["timeout"]
+                            reason = ("translated program could not launch" if not candidate["launched"]
+                                else "translated program timed out" if candidate["timeout"]
                                 else "stdout or return code differs from GnuCOBOL")
                             result.update({"status": "failed", "reason": reason})
                 if args.diagnostics and result.get("status") == "failed":
@@ -406,8 +420,16 @@ def main() -> int:
                         if artifact.is_file():
                             shutil.copy2(artifact, diagnostic_dir / artifact_name)
                     metadata = {"case": result, "reference_compile_returncode": compiled.get("returncode"),
+                                "reference_compile_launched": compiled.get("launched"),
+                                "reference_compile_timeout": compiled.get("timeout"),
+                                "reference_launched": reference.get("launched"),
+                                "reference_timeout": reference.get("timeout"),
                                 "reference_returncode": reference.get("returncode"),
+                                "candidate_launched": result.get("candidate_launched"),
+                                "candidate_timeout": result.get("candidate_timeout"),
                                 "candidate_returncode": result.get("candidate_returncode"),
+                                "translator_launched": translated.get("launched"),
+                                "translator_timeout": translated.get("timeout"),
                                 "translator_returncode": translated.get("returncode"),
                                 "stdin": "DEVNULL; interactive input is not currently supplied.",
                                 "comparison": "Complete stdout byte streams are retained; exact score uses SHA-256, byte length, and return code."}
