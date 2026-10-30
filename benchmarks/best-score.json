@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "corpus": "X-COBOL-v2",
+  "sample_size": 500,
+  "holdout_size": 500,
+  "exact_match": "stdout-byte-for-byte-and-exit-code",
+  "best": {
+    "score": 411,
+    "primary": 197,
+    "holdout": 214,
+    "percent": 41.1,
+    "measured_sha": "ef63c72c14b0fc35d90cd43a9038dd5531a3d3f3",
+    "merged_commit": "06acd347caf18e776af241e83f7a35d8164c3e0f0",
+    "source_pr": 61,
+    "benchmark_run": 41107706787
+  }
+}
