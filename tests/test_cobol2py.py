@@ -3606,3 +3606,15 @@ class ExternalBenchmarkConditionRegressionTests(unittest.TestCase):
         self.assertTrue(eval(translated, {"ws_opcao": "A"}))
         self.assertFalse(eval(translated, {"ws_opcao": "N"}))
         self.assertFalse(eval(translated, {"ws_opcao": "S"}))
+
+
+class SplitDataNameContinuationCandidateTests(unittest.TestCase):
+    def test_level_number_on_own_line_joins_split_data_name(self):
+        variables = cobol2py.parse_variables([
+            (10, "04"),
+            (11, "LEVEL-04 PICTURE X(10)."),
+        ])
+        self.assertEqual(len(variables), 1)
+        self.assertEqual(variables[0].level, 4)
+        self.assertEqual(variables[0].name, "LEVEL-04")
+        self.assertEqual(variables[0].pic, "X(10)")
