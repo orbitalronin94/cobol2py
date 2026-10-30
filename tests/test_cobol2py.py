@@ -1819,7 +1819,7 @@ class DataReferenceResolutionTests(unittest.TestCase):
             "FIELD OF GROUP OF RECORD", variables
         )
 
-        self.assertEqual(translated, "cobol_record['group']['field']")
+        self.assertEqual(translated, "record['group']['field']")
 
     def test_outer_qualifier_disambiguates_duplicate_group_name(self):
         # The legacy name-keyed map can retain only one GROUP declaration.
@@ -2256,7 +2256,7 @@ class ReferenceModificationSliceSemanticsTests(unittest.TestCase):
 
     def test_variable_start_and_length_become_zero_based_python_slice(self):
         translated = cobol2py.translate_expr("NEW-STRING(SUB-1:1)")
-        self.assertEqual(translated, "cobol_new_string[sub_1 - 1:(sub_1 - 1) + (1)]")
+        self.assertEqual(translated, "new_string[sub_1 - 1:(sub_1 - 1) + (1)]")
         compile(translated, "<reference-modification>", "eval")
 
     def test_numeric_reference_modification_uses_one_based_cobol_positions(self):
@@ -2361,6 +2361,20 @@ class QualifiedDisplayOperandRegressionTests(unittest.TestCase):
             cobol2py.split_cobol_items("WS-NAME OF WS-CUSTOMER ERASE"),
             ["WS-NAME OF WS-CUSTOMER", "ERASE"],
         )
+
+
+class CrossBackendIdentifierNormalizationTests(unittest.TestCase):
+    def test_java_reserved_word_does_not_change_python_identifier(self):
+        self.assertEqual(cobol2py.normalize_identifier("record"), "record")
+        self.assertEqual(cobol2py.normalize_name("FILE-RECORD-INFORMATION-REC"), "file_record_information_rec")
+        self.assertEqual(cobol2py.translate_expr("RECORD"), "record")
+
+    def test_java_reserved_word_is_escaped_for_java(self):
+        self.assertEqual(cobol2py.normalize_java_identifier("record"), "cobol_record")
+        self.assertEqual(cobol2py.normalize_java_name("record"), "cobol_record")
+        self.assertEqual(cobol2py.normalize_java_name("ITEM(IDX)"), "item[idx - 1]")
+        self.assertEqual(cobol2py.translate_java_expr("RECORD", {}), "cobol_record")
+        self.assertEqual(cobol2py.normalize_java_name("FILE-RECORD-INFORMATION-REC"), "file_record_information_rec")
 
 
 class SpaceSeparatedSubscriptRegressionTests(unittest.TestCase):
