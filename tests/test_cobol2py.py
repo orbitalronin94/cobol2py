@@ -4128,3 +4128,23 @@ class CandidateUnstringZeroTests(unittest.TestCase):
         code=cobol2py.translate_statement("UNSTRING WS-S DELIMITED BY ZERO INTO WS-A WS-B",set(),v)
         ns={"ws_s":"A0B  ","ws_a":"  ","ws_b":"  "}; exec("\n".join(code or []),ns)
         self.assertEqual((ns["ws_a"],ns["ws_b"]),("A ","B "))
+
+
+class NumericEditedPictureParsingTests(unittest.TestCase):
+    def test_picture_clause_keeps_numeric_editing_symbols_and_decimal_point(self):
+        source = [
+            (1, "77 WS-S-MEDIA PIC Z9.99."),
+            (2, "77 WS-EDITED PIC ZZ,ZZ9.99-."),
+            (3, "77 WS-DISPLAY PIC X(12)."),
+        ]
+        variables = {var.name: var for var in cobol2py.parse_variables(source)}
+        self.assertEqual(variables["WS-S-MEDIA"].pic, "Z9.99")
+        self.assertEqual(variables["WS-EDITED"].pic, "ZZ,ZZ9.99-")
+        self.assertEqual(variables["WS-DISPLAY"].pic, "X(12)")
+
+    def test_trim_of_numeric_edited_field_is_not_mistyped_as_integer(self):
+        source = [(1, "77 WS-S-MEDIA PIC Z9.99.")]
+        variables = {var.name: var for var in cobol2py.parse_variables(source)}
+        variable = variables["WS-S-MEDIA"]
+        self.assertEqual(variable.pic, "Z9.99")
+        self.assertEqual(variable._base_py_type(), "str")
