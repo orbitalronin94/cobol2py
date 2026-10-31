@@ -3662,6 +3662,8 @@ def translate_statement(
             source = current_paragraph.upper() if current_paragraph else ""
             return [f"raise _CobolGoTo(_cobol_alter_targets.get({source!r}, {target!r}))"]
         return [f"# COBOL no traducido: {s}"]
+    if upper == "EXIT PARAGRAPH":
+        return ["return"]
     if upper.startswith("EXIT PROGRAM") or upper == "GOBACK":
         return ["return"]
     if upper in ("CONTINUE", "EXIT"):
