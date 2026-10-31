@@ -3611,6 +3611,15 @@ def translate_statement(
             else:
                 initialize_group(root, target_expr, set())
         return assignments or [f"# INITIALIZE sin campos traducibles: {s}"]
+    inspect_replace = re.fullmatch(r"""INSPECT\s+([A-Za-z0-9-]+)\s+REPLACING\s+ALL\s+("(?:[^"]|"")*"|'(?:[^']|'')*')\s+BY\s+("(?:[^"]|"")*"|'(?:[^']|'')*')(?:\s+END-INSPECT)?""", s, re.IGNORECASE)
+    if inspect_replace:
+        target, old_literal, new_literal = inspect_replace.groups()
+        variable_map = variables or {}
+        target_expr = normalize_data_reference(target, variable_map)
+        old_expr = translate_literal(old_literal, variable_map)
+        new_expr = translate_literal(new_literal, variable_map)
+        return [emit_assignment(target, f"str({target_expr}).replace(str({old_expr}), str({new_expr}))", variable_map)]
+
     # INSPECT TALLYING FOR ALL counts non-overlapping occurrences of one
     # operand and adds that count to the receiving numeric item.
     tally_match = re.fullmatch(
