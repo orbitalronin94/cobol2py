@@ -107,41 +107,71 @@ jobs:
         with:
           pattern: external-python-corpus-*-${{ github.run_number }}
           path: ${{ runner.temp }}/python-scorecard
-      - name: Calculate the 1,000-program target
+      - name: Enforce strict improvement over frozen main baseline
         shell: python
         env:
           REPORT_ROOT: ${{ runner.temp }}/python-scorecard
         run: |
-          import glob
           import json
           import os
-          import pathlib
+          from pathlib import Path
 
-          root = pathlib.Path(os.environ["REPORT_ROOT"])
+          root = Path(os.environ["REPORT_ROOT"])
           reports = []
           for filename in root.rglob("external-corpus-report.json"):
               with filename.open(encoding="utf-8") as handle:
                   reports.append(json.load(handle))
-          tested = sum(int(report.get("tested", 0)) for report in reports)
-          passed = sum(int(report.get("passed", 0)) for report in reports)
-          percent = 100.0 * passed / tested if tested else 0.0
-          full_sample = tested == 1000
-          baseline = 37.5
-          target = baseline + 5.0
-          reached = full_sample and percent >= target
+
+          by_skip = {int(report.get("skip", -1)): report for report in reports}
+          if set(by_skip) != {0, 500} or len(reports) != 2:
+              raise SystemExit(
+                  f"Expected exactly primary(skip=0) and holdout(skip=500) reports; "
+                  f"found {[(r.get('skip'), r.get('tested')) for r in reports]}"
+              )
+
+          primary = by_skip[0]
+          holdout = by_skip[500]
+          expected = {
+              "primary": (197, 500),
+              "holdout": (216, 500),
+          }
+          for name, report in (("primary", primary), ("holdout", holdout)):
+              if not report.get("archive_md5_verified"):
+                  raise SystemExit(f"{name}: X-COBOL v2 archive checksum was not verified")
+              if not report.get("sample_complete") or int(report.get("tested", 0)) != 500:
+                  raise SystemExit(f"{name}: expected a complete 500-program sample")
+              if int(report.get("target", 0)) != 500:
+                  raise SystemExit(f"{name}: benchmark target was not 500")
+
+          primary_passed = int(primary.get("passed", 0))
+          holdout_passed = int(holdout.get("passed", 0))
+          total_passed = primary_passed + holdout_passed
+          total_tested = int(primary["tested"]) + int(holdout["tested"])
+          total_percent = 100.0 * total_passed / total_tested
+
+          primary_ok = primary_passed >= expected["primary"][0]
+          holdout_ok = holdout_passed >= expected["holdout"][0]
+          total_ok = total_passed > sum(value[0] for value in expected.values())
+          reached = primary_ok and holdout_ok and total_ok
+
           summary = [
-              "## External Python target",
+              "## X-COBOL v2 strict improvement gate",
               "",
-              f"- Exact matches: **{passed}/{tested} ({percent:.2f}%)**",
-              f"- Reference baseline: **{baseline:.2f}%**",
-              f"- Required target: **{target:.2f}%** (+5.00 percentage points)",
-              f"- Improvement vs baseline: **{percent - baseline:+.2f} percentage points**",
-              f"- Full 1,000-program sample: **{full_sample}**",
-              f"- Target reached: **{reached}**",
+              "| Sample | Candidate | Frozen main | Delta |",
+              "|---|---:|---:|---:|",
+              f"| Primary | {primary_passed}/500 ({100*primary_passed/500:.2f}%) | 197/500 (39.40%) | {primary_passed-197:+d} |",
+              f"| Holdout | {holdout_passed}/500 ({100*holdout_passed/500:.2f}%) | 216/500 (43.20%) | {holdout_passed-216:+d} |",
+              f"| **Combined** | **{total_passed}/{total_tested} ({total_percent:.2f}%)** | **413/1000 (41.30%)** | **{total_passed-413:+d}** |",
               "",
+              f"- Primary did not regress: **{primary_ok}**",
+              f"- Holdout did not regress: **{holdout_ok}**",
+              f"- Combined score strictly increased: **{total_ok}**",
+              f"- **Gate: {'PASS' if reached else 'FAIL'}**",
+              "",
+              "A PR is green only when both 500-case samples are complete, neither sample regresses, and the combined exact-match count is strictly greater than 413/1000.",
           ]
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
-              handle.write("\n".join(summary))
+              handle.write("\n".join(summary) + "\n")
           print("\n".join(summary))
-          if not reports:
-              raise SystemExit("No benchmark reports found; inspect the sample jobs.")
+          if not reached:
+              raise SystemExit("X-COBOL v2 score did not strictly improve without a sample regression.")
