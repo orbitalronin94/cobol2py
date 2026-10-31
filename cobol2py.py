@@ -3479,6 +3479,11 @@ def translate_statement(
         return [f"# COBOL no traducido: {s}"]
     if upper.startswith("EXIT PROGRAM") or upper == "GOBACK":
         return ["return"]
+    # EXIT PARAGRAPH terminates only the current paragraph invocation.
+    # EXIT SECTION is deliberately not collapsed here: section-level control
+    # flow needs section boundaries in the parsed program model.
+    if upper == "EXIT PARAGRAPH":
+        return ["return"]
     if upper in ("CONTINUE", "EXIT"):
         return ["pass"]
 
