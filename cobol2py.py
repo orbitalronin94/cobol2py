@@ -2606,7 +2606,7 @@ def translate_condition(
         c = re.sub(r"\bEQUALS?\s+TO\b", "==", c, flags=re.IGNORECASE)
         c = re.sub(r"\bEQUALS?\b", "==", c, flags=re.IGNORECASE)
         c = re.sub(r"\bNOT\b", "not", c, flags=re.IGNORECASE)
-        c = re.sub(r"\bIS\b", "==", c, flags=re.IGNORECASE)
+        c = re.sub(r"(?<![A-Za-z0-9-])IS(?![A-Za-z0-9-])", "==", c, flags=re.IGNORECASE)
         c = re.sub(r"(?<![!<>=])=(?!=)", "==", c)
         c = c.replace("<>", "!=")
         # Some legacy sources express a compound relation with an equality
