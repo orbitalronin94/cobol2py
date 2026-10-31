@@ -4128,3 +4128,36 @@ class CandidateUnstringZeroTests(unittest.TestCase):
         code=cobol2py.translate_statement("UNSTRING WS-S DELIMITED BY ZERO INTO WS-A WS-B",set(),v)
         ns={"ws_s":"A0B  ","ws_a":"  ","ws_b":"  "}; exec("\n".join(code or []),ns)
         self.assertEqual((ns["ws_a"],ns["ws_b"]),("A ","B "))
+
+
+class InspectConvertingRegressionTests(unittest.TestCase):
+    def _run(self, statement, variables, namespace):
+        translated = cobol2py.translate_statement(statement, set(), variables)
+        self.assertIsNotNone(translated)
+        exec("\n".join(translated or []), namespace)
+
+    def test_converts_characters_by_position_and_preserves_spaces(self):
+        variables = {
+            "WS-TEXT": cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(6)"),
+        }
+        namespace = {"ws_text": "ABAC  "}
+        self._run('INSPECT WS-TEXT CONVERTING "AB" TO "xy"', variables, namespace)
+        self.assertEqual(namespace["ws_text"], "xyxC  ")
+
+    def test_uses_data_fields_as_from_and_to_operands(self):
+        variables = {
+            "WS-TEXT": cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(5)"),
+            "WS-FROM": cobol2py.CobolVar(level=1, name="WS-FROM", pic="X(3)"),
+            "WS-TO": cobol2py.CobolVar(level=1, name="WS-TO", pic="X(3)"),
+        }
+        namespace = {"ws_text": "ABC  ", "ws_from": "ABC", "ws_to": "123"}
+        self._run("INSPECT WS-TEXT CONVERTING WS-FROM TO WS-TO", variables, namespace)
+        self.assertEqual(namespace["ws_text"], "123  ")
+
+    def test_duplicate_from_character_uses_first_mapping(self):
+        variables = {
+            "WS-TEXT": cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(3)"),
+        }
+        namespace = {"ws_text": "ABA"}
+        self._run('INSPECT WS-TEXT CONVERTING "ABA" TO "xyz"', variables, namespace)
+        self.assertEqual(namespace["ws_text"], "xyx")

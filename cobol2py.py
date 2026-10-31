@@ -3611,6 +3611,29 @@ def translate_statement(
             else:
                 initialize_group(root, target_expr, set())
         return assignments or [f"# INITIALIZE sin campos traducibles: {s}"]
+    # INSPECT CONVERTING performs a character-position mapping on the
+    # receiving data item. Reverse construction makes the first occurrence
+    # of a repeated source character win, rather than Python dict's last one.
+    converting_match = re.fullmatch(
+        rf"INSPECT\s+({DATA_REF_PATTERN})\s+CONVERTING\s+(.+?)\s+TO\s+(.+?)(?:\s+END-INSPECT)?",
+        s,
+        re.IGNORECASE,
+    )
+    if converting_match:
+        source, from_operand, to_operand = (
+            part.strip() for part in converting_match.groups()
+        )
+        variable_map = variables or {}
+        source_expr = translate_literal(source, variable_map)
+        from_expr = translate_literal(from_operand, variable_map)
+        to_expr = translate_literal(to_operand, variable_map)
+        converted_expr = (
+            f"(lambda _s, _f, _t: str(_s).translate("
+            f"{{ord(_f[_i]): _t[_i] for _i in range(min(len(_f), len(_t)) - 1, -1, -1)}}))"
+            f"({source_expr}, str({from_expr}), str({to_expr}))"
+        )
+        return [emit_assignment(source, converted_expr, variable_map)]
+
     # INSPECT TALLYING FOR ALL counts non-overlapping occurrences of one
     # operand and adds that count to the receiving numeric item.
     tally_match = re.fullmatch(
