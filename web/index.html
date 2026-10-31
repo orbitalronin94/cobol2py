@@ -3642,6 +3642,25 @@ def translate_statement(
             else:
                 initialize_group(root, target_expr, set())
         return assignments or [f"# INITIALIZE sin campos traducibles: {s}"]
+    # INSPECT TALLYING FOR ALL counts non-overlapping occurrences of one
+    # operand and adds that count to the receiving numeric item.
+    tally_match = re.fullmatch(
+        rf"INSPECT\s+({DATA_REF_PATTERN})\s+TALLYING\s+({DATA_REF_PATTERN})\s+FOR\s+ALL\s+(.+?)(?:\s+END-INSPECT)?",
+        s,
+        re.IGNORECASE,
+    )
+    if tally_match:
+        source, counter, tally_operand = (part.strip() for part in tally_match.groups())
+        variable_map = variables or {}
+        source_expr = translate_literal(source, variable_map)
+        operand_expr = translate_literal(tally_operand, variable_map)
+        counter_expr = normalize_data_reference(counter, variable_map)
+        value_expr = (
+            f"int({counter_expr}) + (str({source_expr}).count(str({operand_expr})) "
+            f"if str({operand_expr}) else 0)"
+        )
+        return [emit_assignment(counter, value_expr, variable_map)]
+
     # ALTER changes the destination of a later GO TO to the altered paragraph.
     m = re.fullmatch(r"ALTER\s+([A-Za-z0-9-]+)\s+TO\s+PROCEED\s+TO\s+([A-Za-z0-9-]+)", s, re.IGNORECASE)
     if m:
