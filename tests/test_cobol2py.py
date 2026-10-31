@@ -3650,3 +3650,35 @@ class DebugContentsSpecialRegisterCandidateTests(unittest.TestCase):
         generated = cobol2py.emit_python(program)
         self.assertIn("debug_contents", generated)
         compile(generated, "<debug-contents-register>", "exec")
+
+
+class InspectTallyingRegressionTests(unittest.TestCase):
+    def test_inspect_tallying_for_all_adds_non_overlapping_matches(self):
+        variables = {
+            "WS-TEXT": cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(6)"),
+            "WS-COUNT": cobol2py.CobolVar(level=1, name="WS-COUNT", pic="9(3)"),
+        }
+        translated = cobol2py.translate_statement(
+            'INSPECT WS-TEXT TALLYING WS-COUNT FOR ALL "AN"',
+            set(),
+            variables,
+        )
+        self.assertIsNotNone(translated)
+        namespace = {"ws_text": "BANANA", "ws_count": 4}
+        exec("\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_count"], 6)
+
+    def test_inspect_tallying_empty_operand_does_not_raise(self):
+        variables = {
+            "WS-TEXT": cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(3)"),
+            "WS-COUNT": cobol2py.CobolVar(level=1, name="WS-COUNT", pic="9(3)"),
+        }
+        translated = cobol2py.translate_statement(
+            'INSPECT WS-TEXT TALLYING WS-COUNT FOR ALL ""',
+            set(),
+            variables,
+        )
+        self.assertIsNotNone(translated)
+        namespace = {"ws_text": "ABC", "ws_count": 2}
+        exec("\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_count"], 2)
