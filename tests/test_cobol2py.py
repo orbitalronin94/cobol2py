@@ -4035,3 +4035,21 @@ class InspectTallyingRegressionTests(unittest.TestCase):
         namespace = {"ws_text": "ABC", "ws_count": 2}
         exec("\n".join(translated or []), namespace)
         self.assertEqual(namespace["ws_count"], 2)
+
+
+class MoveFigurativeZeroAlphanumericTests(unittest.TestCase):
+    def test_move_zero_fills_alphanumeric_receiver_with_zero_characters(self):
+        variables = {
+            "WS-TEXT": cobol2py.CobolVar(
+                level=1, name="WS-TEXT", pic="X(4)"
+            ),
+        }
+        for source in ("ZERO", "ZEROS", "ZEROES"):
+            with self.subTest(source=source):
+                translated = cobol2py.translate_statement(
+                    f"MOVE {source} TO WS-TEXT", set(), variables
+                )
+                self.assertIsNotNone(translated)
+                namespace = {"ws_text": "ABCD"}
+                exec("\n".join(translated or []), namespace)
+                self.assertEqual(namespace["ws_text"], "0000")
