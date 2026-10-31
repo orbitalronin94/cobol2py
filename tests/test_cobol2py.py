@@ -3650,3 +3650,33 @@ class DebugContentsSpecialRegisterCandidateTests(unittest.TestCase):
         generated = cobol2py.emit_python(program)
         self.assertIn("debug_contents", generated)
         compile(generated, "<debug-contents-register>", "exec")
+
+
+class InspectConvertingRegressionTests(unittest.TestCase):
+    def test_inspect_converting_maps_each_character_by_position(self):
+        variables = {
+            "WS-TEXT": cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(6)"),
+        }
+        translated = cobol2py.translate_statement(
+            'INSPECT WS-TEXT CONVERTING "abc" TO "XYZ"',
+            set(),
+            variables,
+        )
+        self.assertIsNotNone(translated)
+        namespace = {"ws_text": "abca!!"}
+        exec("\\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_text"], "XYZX!!")
+
+    def test_inspect_converting_preserves_characters_without_mapping(self):
+        variables = {
+            "WS-TEXT": cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(5)"),
+        }
+        translated = cobol2py.translate_statement(
+            "INSPECT WS-TEXT CONVERTING 'az' TO 'AZ'",
+            set(),
+            variables,
+        )
+        self.assertIsNotNone(translated)
+        namespace = {"ws_text": "pizza"}
+        exec("\\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_text"], "piZZA")
