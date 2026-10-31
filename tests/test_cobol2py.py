@@ -4106,6 +4106,6 @@ class UnstringFigurativeZeroDelimiterTests(unittest.TestCase):
         )
         self.assertIsNotNone(translated)
         namespace = {"ws_source": "A0B0C", "ws_a": "  ", "ws_b": "  "}
-        exec("\\n".join(translated or []), namespace)
+        exec("\\n".join(translated or []), namespace
         self.assertEqual(namespace["ws_a"], "A ")
         self.assertEqual(namespace["ws_b"], "B ")
