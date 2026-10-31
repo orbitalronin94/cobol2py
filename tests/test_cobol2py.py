@@ -330,6 +330,44 @@ MAIN.
         self.assertEqual(output.getvalue(), "AB  \n", generated)
         self.assertEqual(namespace["ws_eof"], " ")
 
+class CobolSequentialWriteTests(unittest.TestCase):
+    def test_open_output_write_and_close_emit_line_sequential_record(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. WRITE-RECORD.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT OUTPUT-FILE ASSIGN TO "output.dat"
+        ORGANIZATION IS LINE SEQUENTIAL.
+DATA DIVISION.
+FILE SECTION.
+FD OUTPUT-FILE.
+01 OUTPUT-RECORD PIC X(4).
+WORKING-STORAGE SECTION.
+01 WS-TEXT PIC X(4) VALUE "AB".
+PROCEDURE DIVISION.
+MAIN.
+    OPEN OUTPUT OUTPUT-FILE.
+    MOVE WS-TEXT TO OUTPUT-RECORD.
+    WRITE OUTPUT-RECORD.
+    CLOSE OUTPUT-FILE.
+    GOBACK.
+"""
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<write-record>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        previous = Path.cwd()
+        with tempfile.TemporaryDirectory() as directory:
+            try:
+                os.chdir(directory)
+                namespace["main"]()
+                contents = Path("output.dat").read_text(encoding="latin-1")
+            finally:
+                os.chdir(previous)
+        self.assertEqual(contents, "AB\n", generated)
+
+
 class TranslationTests(unittest.TestCase):
     def test_sign_conditions_handle_positive_negative_and_not(self):
         variable = cobol2py.CobolVar(level=77, name="WS-N", pic="S9(4)")
