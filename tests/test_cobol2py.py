@@ -2670,7 +2670,7 @@ class DisplayOperandSplittingRegressionTests(unittest.TestCase):
     def test_parenthesized_numeric_display_generates_valid_python(self):
         translated = cobol2py.translate_statement("DISPLAY (01) (01) ERASE", set(), {})
         self.assertIsNotNone(translated)
-        compile("\\n".join(translated or []), "<display-operands>", "exec")
+        compile("\n".join(translated or []), "<display-operands>", "exec")
 
 
 class ComputeSizeErrorClauseRegressionTests(unittest.TestCase):
@@ -2682,7 +2682,7 @@ class ComputeSizeErrorClauseRegressionTests(unittest.TestCase):
         )
         self.assertIsNotNone(translated)
         self.assertEqual(translated, ["ws_total = ws_left + ws_right"])
-        compile("\\n".join(translated or []), "<compute-size-error>", "exec")
+        compile("\n".join(translated or []), "<compute-size-error>", "exec")
 
 
 class FigurativeConstantIdentifierBoundaryTests(unittest.TestCase):
@@ -2986,7 +2986,7 @@ class HexadecimalLiteralRegressionTests(unittest.TestCase):
         items = cobol2py.split_cobol_items('X"0D" ERASE')
         self.assertEqual(items, ['X"0D"', "ERASE"])
         translated = cobol2py.translate_statement('DISPLAY X"0D" ERASE', set(), {})
-        compile("\\n".join(translated or []), "<hex-display>", "exec")
+        compile("\n".join(translated or []), "<hex-display>", "exec")
 
 
 class ParenthesizedDisplayListRegressionTests(unittest.TestCase):
@@ -2994,7 +2994,7 @@ class ParenthesizedDisplayListRegressionTests(unittest.TestCase):
         self.assertEqual(cobol2py.split_cobol_items("(01, 01) ERASE"), ["01", "01", "ERASE"])
         translated = cobol2py.translate_statement("DISPLAY (01, 01) ERASE", set(), {})
         self.assertIsNotNone(translated)
-        compile("\\n".join(translated or []), "<parenthesized-display-list>", "exec")
+        compile("\n".join(translated or []), "<parenthesized-display-list>", "exec")
 
 
 class CobolAcceptEofRegressionTests(unittest.TestCase):
@@ -4101,8 +4101,8 @@ class InspectConvertingRegressionTests(unittest.TestCase):
         )
         self.assertIsNotNone(translated)
         namespace = {"ws_text": "CABBA"}
-        exec("\\n".join(translated or []), namespace)
-        self.assertEqual(namespace["ws_text"], "ZXY Y".replace(" ", ""))
+        exec("\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_text"], "ZXYYX")
 
     def test_inspect_converting_leaves_unmapped_characters_unchanged(self):
         variables = {
@@ -4114,5 +4114,5 @@ class InspectConvertingRegressionTests(unittest.TestCase):
             variables,
         )
         namespace = {"ws_text": "BACA"}
-        exec("\\n".join(translated or []), namespace)
-        self.assertEqual(namespace["ws_text"], "2 1 2 A".replace(" ", ""))
+        exec("\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_text"], "21C1")
