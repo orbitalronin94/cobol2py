@@ -3687,7 +3687,7 @@ def translate_statement(
                     if delimiter.upper() in ("SPACE", "SPACES"):
                         delimiter_expr = repr(" ")
                     elif delimiter.upper() in ("ZERO", "ZEROS"):
-                        delimiter_expr = repr("\x00")
+                        delimiter_expr = repr("0")
                     else:
                         delimiter_expr = translate_literal(delimiter, variable_map)
                     source_expr = translate_literal(source, variable_map)
@@ -3775,7 +3775,7 @@ def translate_statement(
                         if delimiter.upper() in ("SPACE", "SPACES"):
                             delimiter_expr = repr(" ")
                         elif delimiter.upper() in ("ZERO", "ZEROS"):
-                            delimiter_expr = repr("0")
+                            delimiter_expr = repr("\x00")
                         else:
                             delimiter_expr = translate_literal(delimiter, variable_map)
                         pieces.append(
