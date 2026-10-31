@@ -2481,7 +2481,7 @@ class StringDelimitedByZeroRegressionTests(unittest.TestCase):
             variables,
         )
         namespace = {"ws_out": " " * 5}
-        exec("\\n".join(translated), namespace)
+        exec("\n".join(translated), namespace)
         self.assertEqual(namespace["ws_out"], "A    ")
 
 
