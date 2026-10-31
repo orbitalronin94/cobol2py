@@ -4,7 +4,7 @@
 The original 500+500 external score is deliberately kept separate. This runner
 writes a JSON scorecard for the additional 50 cases and returns non-zero only
 when a reference program fails to compile or execute; translation mismatches are
-reported as data so the corpus can be used to diagnose current behavior.
+reported as data so the corpus can be used to diagnose current behavior. The CI gate also requires at least 60% exact matches.
 """
 from __future__ import annotations
 
@@ -64,7 +64,13 @@ def main() -> int:
                 rows.append(row)
                 continue
             pyfile = tempdir / f"{source.stem}.py"
-            pyfile.write_text(translated.stdout, encoding="utf-8")
+            generated = translated.stdout
+            row["generated_python_bytes"] = len(generated.encode("utf-8"))
+            if not generated.strip():
+                row.update(status="empty_translation", translator_stderr=translated.stderr[-4000:])
+                rows.append(row)
+                continue
+            pyfile.write_text(generated, encoding="utf-8")
             syntax = run([sys.executable, "-m", "py_compile", str(pyfile)], cwd=root)
             if syntax.returncode:
                 row.update(status="generated_python_syntax_error", translator_stderr=syntax.stderr[-4000:])
@@ -96,7 +102,13 @@ def main() -> int:
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({k: report[k] for k in ("cases", "passed", "percent", "reference_compile_failures", "status_counts")}, indent=2))
-    return 1 if compile_failures else 0
+    if compile_failures:
+        return 1
+    minimum_percent = 60.0
+    if report["percent"] < minimum_percent:
+        print(f"Edge-case gate failed: {report['percent']:.2f}% exact matches; minimum required is {minimum_percent:.2f}%.", file=sys.stderr)
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
