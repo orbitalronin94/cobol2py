@@ -3541,7 +3541,7 @@ def translate_statement(
                             elif "9" in pic:
                                 value = f"(int(float({value})) if str({value}).strip() else 0)"
                         lines.append(emit_assignment(target, value, variable_map))
-                    extracted_count = min(len(_cobol_unstring_parts), len(targets))
+                    extracted_count = f"min(len(_cobol_unstring_parts), {len(targets)})"
                     if tally_match:
                         tally = normalize_data_reference(tally_match.group(1), variable_map)
                         lines.append(f"{tally} = {tally} + {extracted_count}")
