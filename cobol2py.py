@@ -204,7 +204,9 @@ class CobolVar:
         if self.pic is None:
             return "dict"
         p = self.pic.upper()
-        if any(c in p for c in ("X", "A")):
+        # Numeric-edited pictures (Z, *, currency, decimal point, grouping
+        # comma or editing sign) are display strings, not numeric storage.
+        if any(c in p for c in ("X", "A", "Z", "*", "$", ".", ",", "+", "-")):
             return "str"
         if "V" in p:
             return "float"
