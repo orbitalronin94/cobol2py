@@ -17,6 +17,7 @@ permissions:
   contents: read
   pull-requests: read
   actions: read
+  checks: read
 
 concurrency:
   group: cobol2py-incremental-${{ github.event.pull_request.number }}
@@ -64,6 +65,7 @@ jobs:
           SKIP: ${{ matrix.sample.skip }}
         run: |
           mkdir -p "$RUNNER_TEMP/sample"
+          chmod 0777 "$RUNNER_TEMP/sample"
           python - <<'PY'
           import json, os, subprocess
           item = {
@@ -148,7 +150,16 @@ jobs:
           import json, os
           from pathlib import Path
           root = Path(os.environ["REPORT_ROOT"])
-          baseline = json.loads(Path("benchmarks/best-score.json").read_text())["best"]
+          baseline_document = json.loads(Path("benchmarks/best-score.json").read_text())
+          baseline = baseline_document["best"]
+          if baseline.get("score") != baseline.get("primary") + baseline.get("holdout"):
+              raise SystemExit("Stored best score is internally inconsistent")
+          if (baseline.get("score", 0) < 414
+                  or baseline.get("primary", 0) < 197
+                  or baseline.get("holdout", 0) < 217):
+              raise SystemExit("Stored best score regressed below validated 414/1000")
+          if any(item.get("score", 0) > baseline["score"] for item in baseline_document.get("history", [])):
+              raise SystemExit("Historical score exceeds current best")
           samples = {}
           for meta_path in root.rglob("candidate-meta.json"):
               folder = meta_path.parent
@@ -194,9 +205,12 @@ jobs:
           total = primary + holdout
           target = 375
           target_reached = primary >= target and holdout >= target
-          better = (total > baseline["score"] and primary >= baseline["primary"]
-                    and holdout >= baseline["holdout"]
-                    and baseline["primary"] < target and baseline["holdout"] < target)
+          better = (
+              total > baseline["score"]
+              and primary >= baseline["primary"]
+              and holdout >= baseline["holdout"]
+              and not (baseline["primary"] >= target and baseline["holdout"] >= target)
+          )
           print(f"Current best: {baseline['score']}/1000 ({baseline['primary']}/500 + {baseline['holdout']}/500)")
           print(f"Candidate: {total}/1000 ({primary}/500 + {holdout}/500)")
           print(f"Strict improvement: {better}")
@@ -220,6 +234,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      checks: read
     steps:
       - name: Verify branch and base have not moved
         env:
@@ -235,6 +250,31 @@ jobs:
           test "$(echo "$pr" | jq -r .head.sha)" = "$EXPECTED_HEAD"
           test "$(echo "$pr" | jq -r .base.ref)" = "main"
           test "$(echo "$pr" | jq -r .draft)" = "false"
+      - name: Wait for all other PR checks to finish successfully
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_HEAD: ${{ needs.compare.outputs.candidate_sha }}
+        run: |
+          set -euo pipefail
+          excluded='["Unit tests and compile — candidate SHA","Exact X-COBOL — primary","Exact X-COBOL — holdout","Compare candidate with current best","Merge verified record and advance best score"]'
+          for attempt in $(seq 1 90); do
+            checks=$(gh api "repos/$GITHUB_REPOSITORY/commits/$EXPECTED_HEAD/check-runs?per_page=100")
+            pending=$(echo "$checks" | jq --argjson excluded "$excluded" '[.check_runs[] | select((.name as $name | ($excluded | index($name)) == null) and .status != "completed")] | length')
+            failures=$(echo "$checks" | jq --argjson excluded "$excluded" '[.check_runs[] | select((.name as $name | ($excluded | index($name)) == null) and .status == "completed" and (.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral"))] | length')
+            if [ "$failures" -gt 0 ]; then
+              echo "Refusing merge: $failures other check(s) failed."
+              echo "$checks" | jq --argjson excluded "$excluded" -r '.check_runs[] | select((.name as $name | ($excluded | index($name)) == null) and .status == "completed" and (.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")) | "- (.name): (.conclusion)"'
+              exit 1
+            fi
+            if [ "$pending" -eq 0 ]; then
+              echo "All other checks are complete and green."
+              exit 0
+            fi
+            echo "Waiting for $pending other check(s) to complete (attempt $attempt/90)."
+            sleep 30
+          done
+          echo "Refusing merge: other checks did not finish in time."
+          exit 1
       - name: Squash merge exact benchmarked SHA
         id: merge
         env:
@@ -256,30 +296,42 @@ jobs:
           MERGE_SHA: ${{ steps.merge.outputs.merge_sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           RUN_ID: ${{ github.run_id }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
         run: |
           set -euo pipefail
           gh api "repos/$GITHUB_REPOSITORY/contents/benchmarks/best-score.json" > /tmp/current.json
           blob_sha=$(jq -r .sha /tmp/current.json)
-          cat > /tmp/best-score.json <<EOF
-          {
-            "schema_version": 1,
-            "corpus": "X-COBOL-v2",
-            "sample_size": 500,
-            "holdout_size": 500,
-            "exact_match": "stdout-byte-for-byte-and-exit-code",
-            "acceptance_target_each_sample": 375,
-            "best": {
-              "score": $SCORE,
-              "primary": $PRIMARY,
-              "holdout": $HOLDOUT,
-              "percent": $(python -c "print(round($SCORE/10, 2))"),
-              "measured_sha": "$MEASURED_SHA",
-              "merged_commit": "$MERGE_SHA",
-              "source_pr": $PR_NUMBER,
-              "benchmark_run": $RUN_ID
-            }
+          jq -r .content /tmp/current.json | base64 -d > /tmp/best-score.json
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          path = Path("/tmp/best-score.json")
+          data = json.loads(path.read_text(encoding="utf-8"))
+          history = data.setdefault("history", [])
+          previous = data.get("best")
+          if previous:
+              previous_run = previous.get("benchmark_run")
+              if not any(item.get("benchmark_run") == previous_run for item in history):
+                  history.append(previous)
+          score = int(os.environ["SCORE"])
+          data["best"] = {
+              "score": score,
+              "primary": int(os.environ["PRIMARY"]),
+              "holdout": int(os.environ["HOLDOUT"]),
+              "percent": round(score / 10, 2),
+              "measured_sha": os.environ["MEASURED_SHA"],
+              "measured_branch": os.environ["BRANCH"],
+              "merged_commit": os.environ["MERGE_SHA"],
+              "source_pr": int(os.environ["PR_NUMBER"]),
+              "benchmark_run": int(os.environ["RUN_ID"]),
+              "run_url": (
+                  f"https://github.com/{os.environ['GITHUB_REPOSITORY']}"
+                  f"/actions/runs/{os.environ['RUN_ID']}"
+              ),
           }
-          EOF
+          path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+          PY
           content=$(base64 -w0 /tmp/best-score.json)
           gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/benchmarks/best-score.json" \
             -f message="Advance exact benchmark best score to $SCORE/1000" \
