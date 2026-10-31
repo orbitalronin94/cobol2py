@@ -110,3 +110,5 @@ jobs:
           path: ${{ runner.temp }}/external-corpus-artifacts/${{ matrix.sample.name }}/
           if-no-files-found: warn
           retention-days: 90
+
+# Candidate PR 57: ensure the baseline-comparison workflow is included in this PR diff.
