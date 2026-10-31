@@ -23,11 +23,28 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-      - name: Download pinned X-COBOL v2 archive
+      - name: Restore pinned X-COBOL v2 archive cache
+        id: archive-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/COBOL_Files.zip
+          key: x-cobol-v2-cbd974caed72b0836777dc2305928ed3
+      - name: Download and verify pinned X-COBOL v2 archive
+        shell: bash
         run: |
-          curl --fail --location --retry 3 --retry-delay 2 \
-            "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" \
-            --output /tmp/COBOL_Files.zip
+          archive="/tmp/COBOL_Files.zip"
+          if [ ! -f "$archive" ]; then
+            curl --fail --location --retry 3 --retry-delay 2 \
+              "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" \
+              --output "$archive"
+          fi
+          echo "cbd974caed72b0836777dc2305928ed3  $archive" | md5sum --check -
+      - name: Save verified corpus archive cache
+        if: steps.archive-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/COBOL_Files.zip
+          key: x-cobol-v2-cbd974caed72b0836777dc2305928ed3
       - name: Build isolated benchmark image
         run: docker build -f benchmarks/Dockerfile.external -t cobol2py-external-benchmark .
       - name: Run deterministic 50-program differential smoke test
