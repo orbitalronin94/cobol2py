@@ -67,10 +67,12 @@ jobs:
         env:
           CACHE_SCOPE: external-benchmark-${{ github.workflow }}-${{ matrix.sample.name }}
           CACHE_PEER_SCOPE: external-benchmark-${{ github.workflow }}-${{ matrix.sample.name == 'primary' && 'holdout' || 'primary' }}
+          CACHE_CROSS_WORKFLOW_SCOPE: external-benchmark-external-cobol-corpus-${{ matrix.sample.name }}
         run: |
           docker buildx build --load \
             --cache-from "type=gha,scope=$CACHE_SCOPE" \
             --cache-from "type=gha,scope=$CACHE_PEER_SCOPE" \
+            --cache-from "type=gha,scope=$CACHE_CROSS_WORKFLOW_SCOPE" \
             --cache-to "type=gha,mode=max,scope=$CACHE_SCOPE" \
             -f benchmarks/Dockerfile.external \
             -t cobol2py-external-benchmark .
