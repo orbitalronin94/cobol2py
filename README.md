@@ -21,7 +21,6 @@ Este es el roadmap de producto canónico: **el objetivo vigente es v1.0**. Los h
 - **Objetivo v1.0 y brecha:** la puerta de release sigue siendo ≥375/500 (75 %) en primaria y ≥375/500 (75 %) en holdout, con muestras disjuntas. La v1.0 sigue bloqueada hasta cumplir ambas metas y la validación completa.
 - **Siguiente iteración:** seguir el [roadmap operativo del benchmark externo](docs/EXTERNAL_BENCHMARK_ITERATION_ROADMAP.md), el [análisis actualizado de fallos](docs/EXTERNAL_BENCHMARK_FAILURE_ANALYSIS.md) y la [investigación de arquitecturas open source](docs/OPEN_SOURCE_COMPILER_RESEARCH.md). No atribuir una puntuación a un SHA distinto del medido.
 - **Límites:** la métrica mide stdout y código de retorno de programas ejecutables del dataset, no equivalencia de archivos, bases de datos, transacciones, interacciones ni todos los dialectos.
-- **Límites:** la métrica mide stdout y código de retorno de programas ejecutables del dataset, no equivalencia de archivos, bases de datos, transacciones, interacciones ni todos los dialectos.
 
 ### Hitos de versión
 
