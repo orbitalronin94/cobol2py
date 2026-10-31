@@ -3791,12 +3791,13 @@ def translate_statement(
                     if pointer:
                         pointer_expr = normalize_data_reference(pointer, variable_map)
                         start_index = f"max(int({pointer_expr}) - 1, 0)"
+                        written_length = f"min(len(str({value_expr})), max({width} - {start_index}, 0))"
                         assignment = (
                             f"{target_expr} = str({target_expr})[:{start_index}] + "
-                            f"str({value_expr})[:max({width} - {start_index}, 0)] + "
-                            f"str({target_expr})[{start_index} + len(str({value_expr})):]"
+                            f"str({value_expr})[:{written_length}] + "
+                            f"str({target_expr})[{start_index} + ({written_length}):]"
                         )
-                        pointer_assignment = f"{pointer_expr} = int({pointer_expr}) + len(str({value_expr}))"
+                        pointer_assignment = f"{pointer_expr} = int({pointer_expr}) + ({written_length})"
                         return [assignment, pointer_assignment]
                     value_expr = f"str({value_expr})[:{width}].ljust({width})"
                 return [emit_assignment(target, value_expr, variable_map)]

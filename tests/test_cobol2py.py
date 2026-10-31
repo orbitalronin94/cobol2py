@@ -2467,6 +2467,26 @@ class NegatedComparisonAndFigurativeConstantTests(unittest.TestCase):
                 compile(translated, "<figurative-constant>", "eval")
 
 
+class StringPointerOverflowRegressionTests(unittest.TestCase):
+    def test_string_pointer_overflow_preserves_width_and_advances_by_written_chars(self):
+        variables = {
+            item.name.upper(): item
+            for item in cobol2py.parse_variables([
+                (1, "01 WS-OUT PIC X(5)."),
+                (1, "01 WS-PTR PIC 9(2)."),
+            ])
+        }
+        translated = cobol2py.translate_statement(
+            'STRING "XYZ" DELIMITED BY SIZE INTO WS-OUT WITH POINTER WS-PTR',
+            set(),
+            variables,
+        )
+        namespace = {"ws_out": "ABCDE", "ws_ptr": 4}
+        exec("\n".join(translated), namespace)
+        self.assertEqual(namespace["ws_out"], "ABCXY")
+        self.assertEqual(namespace["ws_ptr"], 6)
+
+
 class AllFigurativeConstantRegressionTests(unittest.TestCase):
     def test_all_quote_initializes_fixed_width_field_with_quotes(self):
         variable = cobol2py.CobolVar(level=77, name="IF-D5", pic="X(10)", value="ALL QUOTE")
