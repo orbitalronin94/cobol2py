@@ -1,5 +1,7 @@
 """Regression tests for cobol2py. Run with: python -m unittest discover -s tests -v."""
 import ast
+import os
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -208,6 +210,77 @@ STOP RUN.
                 "record": "INPUT-RECORD",
             },
         )
+
+
+class CobolFileOpenRuntimeTests(unittest.TestCase):
+    def test_open_missing_input_sets_declared_file_status(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. OPEN-MISSING-STATUS.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT INPUT-FILE ASSIGN TO "missing-input.dat"
+        ORGANIZATION IS LINE SEQUENTIAL
+        FILE STATUS IS WS-STATUS.
+DATA DIVISION.
+FILE SECTION.
+FD INPUT-FILE.
+01 INPUT-RECORD PIC X(10).
+WORKING-STORAGE SECTION.
+01 WS-STATUS PIC XX.
+PROCEDURE DIVISION.
+MAIN.
+    OPEN INPUT INPUT-FILE.
+    DISPLAY WS-STATUS.
+    GOBACK.
+"""
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        namespace = {"__name__": "generated_test"}
+        compile(generated, "<open-missing-status>", "exec")
+        exec(generated, namespace)
+        output = StringIO()
+        previous = Path.cwd()
+        with tempfile.TemporaryDirectory() as directory:
+            try:
+                os.chdir(directory)
+                with redirect_stdout(output):
+                    namespace["main"]()
+            finally:
+                os.chdir(previous)
+        self.assertEqual(output.getvalue(), "35\n", generated)
+
+    def test_open_missing_input_without_file_status_exits_nonzero(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. OPEN-MISSING-ERROR.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT INPUT-FILE ASSIGN TO "missing-input.dat".
+DATA DIVISION.
+FILE SECTION.
+FD INPUT-FILE.
+01 INPUT-RECORD PIC X(10).
+PROCEDURE DIVISION.
+MAIN.
+    OPEN INPUT INPUT-FILE.
+    GOBACK.
+"""
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        namespace = {"__name__": "generated_test"}
+        compile(generated, "<open-missing-error>", "exec")
+        exec(generated, namespace)
+        previous = Path.cwd()
+        with tempfile.TemporaryDirectory() as directory:
+            try:
+                os.chdir(directory)
+                with self.assertRaises(SystemExit) as raised:
+                    namespace["main"]()
+            finally:
+                os.chdir(previous)
+        self.assertEqual(raised.exception.code, 1)
 
 
 class TranslationTests(unittest.TestCase):
