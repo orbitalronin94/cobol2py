@@ -4087,3 +4087,25 @@ class MoveFigurativeZeroAlphanumericTests(unittest.TestCase):
                 namespace = {"ws_text": "ABCD"}
                 exec("\n".join(translated or []), namespace)
                 self.assertEqual(namespace["ws_text"], "0000")
+
+
+class UnstringFigurativeZeroDelimiterTests(unittest.TestCase):
+    def test_unstring_zero_delimiter_uses_zero_character(self):
+        variables = {
+            item.name.upper(): item
+            for item in cobol2py.parse_variables([
+                (1, "01 WS-SOURCE PIC X(5)."),
+                (1, "01 WS-A PIC X(2)."),
+                (1, "01 WS-B PIC X(2)."),
+            ])
+        }
+        translated = cobol2py.translate_statement(
+            "UNSTRING WS-SOURCE DELIMITED BY ZERO INTO WS-A WS-B",
+            set(),
+            variables,
+        )
+        self.assertIsNotNone(translated)
+        namespace = {"ws_source": "A0B0C", "ws_a": "  ", "ws_b": "  "}
+        exec("\\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_a"], "A ")
+        self.assertEqual(namespace["ws_b"], "B ")
