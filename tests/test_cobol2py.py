@@ -4122,6 +4122,14 @@ class MoveFigurativeQuoteRegressionTests(unittest.TestCase):
         self.assertEqual(namespace["ws_group"]["ws_field"], '"""')
 
 
+class CandidateUnstringPointerTests(unittest.TestCase):
+    def test_unstring_pointer_starts_from_one_based_position(self):
+        v={"WS-S":cobol2py.CobolVar(level=1,name="WS-S",pic="X(8)"),"WS-P":cobol2py.CobolVar(level=1,name="WS-P",pic="9(2)"),"WS-A":cobol2py.CobolVar(level=1,name="WS-A",pic="X(2)")}
+        code=cobol2py.translate_statement('UNSTRING WS-S DELIMITED BY "," INTO WS-A WITH POINTER WS-P',set(),v)
+        ns={"ws_s":"x,A,B  ","ws_p":3,"ws_a":"  "}; exec("\\n".join(code or []),ns)
+        self.assertEqual(ns["ws_a"],"A "); self.assertGreater(ns["ws_p"],3)
+
+
 class CandidateUnstringZeroTests(unittest.TestCase):
     def test_unstring_zero_delimits_on_digit_zero(self):
         v={"WS-S":cobol2py.CobolVar(level=1,name="WS-S",pic="X(5)"),"WS-A":cobol2py.CobolVar(level=1,name="WS-A",pic="X(2)"),"WS-B":cobol2py.CobolVar(level=1,name="WS-B",pic="X(2)")}
