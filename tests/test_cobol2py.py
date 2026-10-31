@@ -180,6 +180,36 @@ class PreprocessTests(unittest.TestCase):
         self.assertEqual(variables["INPUT-AMOUNT"].parent_name, "INPUT-RECORD")
 
 
+    def test_select_and_fd_file_metadata_are_preserved(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. FILE-METADATA.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT INPUT-FILE ASSIGN TO "../database.dat"
+        ORGANIZATION IS LINE SEQUENTIAL
+        FILE STATUS IS WS-FILE-STATUS.
+DATA DIVISION.
+FILE SECTION.
+FD INPUT-FILE.
+01 INPUT-RECORD PIC X(100).
+WORKING-STORAGE SECTION.
+01 WS-FILE-STATUS PIC XX.
+PROCEDURE DIVISION.
+STOP RUN.
+"""
+        program = cobol2py.parse_cobol(source, source_format="free")
+        self.assertEqual(
+            program.file_specs["INPUT-FILE"],
+            {
+                "assign": "../database.dat",
+                "organization": "LINE SEQUENTIAL",
+                "status": "WS-FILE-STATUS",
+                "record": "INPUT-RECORD",
+            },
+        )
+
+
 class TranslationTests(unittest.TestCase):
     def test_sign_conditions_handle_positive_negative_and_not(self):
         variable = cobol2py.CobolVar(level=77, name="WS-N", pic="S9(4)")
