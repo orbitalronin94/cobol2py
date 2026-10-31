@@ -8,7 +8,12 @@ from __future__ import annotations
 import argparse, hashlib, json, os, re, shutil, signal, subprocess, tempfile, threading, zipfile
 from pathlib import Path, PurePosixPath
 from typing import Any, Optional
+import sys
 
+# Docker invokes Python with -I (isolated mode), which omits the checkout root
+# from sys.path. Add the mounted, read-only repository explicitly so the
+# optional repair module remains importable in the benchmark container.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from ronin.compiler_guided_repair import repair_python_source
 
 # Bound captured output from untrusted corpus programs. Reader threads keep
