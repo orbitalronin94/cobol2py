@@ -301,6 +301,7 @@ class Program:
     raw_lines: list[tuple[int, str]] = field(default_factory=list)
     unresolved_copybooks: list[str] = field(default_factory=list)
     condition_names: dict[str, tuple[str, list[tuple[str, Optional[str]]]]] = field(default_factory=dict)
+    file_specs: dict[str, dict[str, Optional[str]]] = field(default_factory=dict)
 
 
 # ============================================================================
@@ -1064,6 +1065,89 @@ def parse_condition_names(lines: list[tuple[int, str]]) -> dict[str, tuple[str, 
     return result
 
 
+def parse_file_specs(lines: list[tuple[int, str]]) -> dict[str, dict[str, Optional[str]]]:
+    """Parse the common SELECT/FD metadata needed by the Python file runtime."""
+    control_lines: list[str] = []
+    in_file_control = False
+    for _line_number, text in lines:
+        upper = text.upper()
+        if "FILE-CONTROL" in upper:
+            in_file_control = True
+            continue
+        if "DATA DIVISION" in upper:
+            break
+        if in_file_control:
+            control_lines.append(text.strip())
+
+    statements: list[str] = []
+    current: list[str] = []
+    for text in control_lines:
+        if re.match(r"^SELECT\\b", text, re.IGNORECASE):
+            if current:
+                statements.append(" ".join(current))
+            current = [text]
+        elif current:
+            current.append(text)
+        if current and text.rstrip().endswith("."):
+            statements.append(" ".join(current))
+            current = []
+    if current:
+        statements.append(" ".join(current))
+
+    specs: dict[str, dict[str, Optional[str]]] = {}
+    for statement in statements:
+        selected = re.search(r"\\bSELECT\\s+([A-Za-z0-9-]+)", statement, re.IGNORECASE)
+        if not selected:
+            continue
+        name = selected.group(1).upper()
+        assigned = re.search(
+            r"""\\bASSIGN(?:\\s+TO)?\\s+(?:"((?:[^"]|"")*)"|'((?:[^']|'')*)'|([A-Za-z0-9-]+))""",
+            statement,
+            re.IGNORECASE,
+        )
+        raw_path = next((value for value in assigned.groups() if value is not None), None) if assigned else None
+        if raw_path is not None:
+            quote = '"' if assigned.group(1) is not None else ("'" if assigned.group(2) is not None else "")
+            if quote:
+                raw_path = raw_path.replace(quote + quote, quote)
+        organization = re.search(
+            r"\\bORGANIZATION\\s+(?:IS\\s+)?(LINE\\s+SEQUENTIAL|SEQUENTIAL|INDEXED|RELATIVE)\\b",
+            statement,
+            re.IGNORECASE,
+        )
+        status = re.search(r"\\bFILE\\s+STATUS\\s+(?:IS\\s+)?([A-Za-z0-9-]+)", statement, re.IGNORECASE)
+        specs[name] = {
+            "assign": raw_path,
+            "organization": re.sub(r"\\s+", " ", organization.group(1).upper()) if organization else None,
+            "status": status.group(1).upper() if status else None,
+            "record": None,
+        }
+
+    in_file_section = False
+    current_file: Optional[str] = None
+    for _line_number, text in lines:
+        upper = text.upper().strip()
+        if re.search(r"\\bFILE\\s+SECTION\\b", upper):
+            in_file_section = True
+            current_file = None
+            continue
+        if re.search(r"\\b[A-Z0-9-]+\\s+SECTION\\b", upper) and "FILE SECTION" not in upper:
+            in_file_section = False
+            current_file = None
+        if not in_file_section:
+            continue
+        descriptor = re.match(r"^\\s*FD\\s+([A-Za-z0-9-]+)\\b", text, re.IGNORECASE)
+        if descriptor:
+            current_file = descriptor.group(1).upper()
+            continue
+        if current_file and current_file in specs:
+            declaration = RE_VAR.match(text)
+            if declaration and int(declaration.group(1)) == 1:
+                specs[current_file]["record"] = declaration.group(2).upper()
+                current_file = None
+    return specs
+
+
 def parse_cobol(
     source: str,
     source_format: str = "auto",
@@ -1077,6 +1161,7 @@ def parse_cobol(
     prog = Program()
     prog.unresolved_copybooks = unresolved_copybooks
     prog.raw_lines = lines
+    prog.file_specs = parse_file_specs(lines)
 
     idx_ident = idx_data = idx_proc = -1
     for i, (_, t) in enumerate(lines):
