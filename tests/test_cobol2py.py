@@ -4150,7 +4150,7 @@ class UnstringMultipleDelimitersCurrentMainTests(unittest.TestCase):
             "ws_source": "A,B;C   ", "ws_a": "   ", "ws_b": "   ",
             "ws_c": "   ", "ws_tally": 0,
         }
-        exec("\\n".join(code or []), namespace)
+        exec("\n".join(code or []), namespace)
         self.assertEqual(
             (namespace["ws_a"], namespace["ws_b"], namespace["ws_c"], namespace["ws_tally"]),
             ("A  ", "B  ", "C  ", 3),
@@ -4170,5 +4170,5 @@ class UnstringMultipleDelimitersCurrentMainTests(unittest.TestCase):
             set(), variables,
         )
         namespace = {"ws_source": "A OR B;C   ", "ws_a": "     ", "ws_b": "     "}
-        exec("\\n".join(code or []), namespace)
+        exec("\n".join(code or []), namespace)
         self.assertEqual((namespace["ws_a"], namespace["ws_b"]), ("A    ", "B    "))
