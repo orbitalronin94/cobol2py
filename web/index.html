@@ -222,6 +222,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+RE_COBOL_IDENTIFIERS = re.compile(r"[A-Za-z][A-Za-z0-9-]*")
+
 
 # ============================================================================
 # 1. PREPROCESADO
@@ -540,7 +542,7 @@ def _parse_indexed_by_names(rest: str) -> list[str]:
     )
     if not match:
         return []
-    return list(dict.fromkeys(name.upper() for name in re.findall(r"[A-Za-z][A-Za-z0-9-]*", match.group(1))))
+    return list(dict.fromkeys(name.upper() for name in RE_COBOL_IDENTIFIERS.findall(match.group(1))))
 
 
 def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
