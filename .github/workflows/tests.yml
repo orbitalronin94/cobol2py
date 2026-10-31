@@ -118,6 +118,18 @@ jobs:
           python /tmp/group_semantics.py > /tmp/group-python.out
           diff -u /tmp/group-cobol.out /tmp/group-python.out
 
+      - name: Compile and differentially score the 50 COBOL edge cases
+        run: |
+          mkdir -p /tmp/cobol2py-edge-cases
+          python benchmarks/run_edge_cases.py --translator cobol2py.py --source-dir benchmarks/edge_cases --output /tmp/cobol2py-edge-cases/edge_cases_report.json
+      - name: Publish edge-case scorecard
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobol2py-edge-cases
+          path: /tmp/cobol2py-edge-cases/
+          if-no-files-found: warn
+          retention-days: 30
 
   java-backend:
     runs-on: ubuntu-latest
