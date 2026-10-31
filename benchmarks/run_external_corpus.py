@@ -9,6 +9,8 @@ import argparse, hashlib, json, os, re, shutil, signal, subprocess, tempfile, th
 from pathlib import Path, PurePosixPath
 from typing import Any, Optional
 
+from ronin.compiler_guided_repair import repair_python_source
+
 # Bound captured output from untrusted corpus programs. Reader threads keep
 # draining pipes after the limit so children cannot block on a full pipe.
 MAX_CAPTURE_BYTES = 1_000_000
@@ -341,8 +343,16 @@ def main() -> int:
                     result.update({"status": "failed", "reason": reason})
                 else:
                     generated = candidate_work / "translated.py"
-                    generated.write_text(translated["stdout"], encoding="utf-8")
-                    try: compile(translated["stdout"], str(generated), "exec")
+                    # First isolated stage: compiler-guided syntax repair only.
+                    # SMT and symbolic repair remain opt-in until tied to source
+                    # spans and validated without changing the corpus.
+                    compiler_repair = repair_python_source(translated["stdout"], max_iterations=2)
+                    candidate_source = compiler_repair.source if compiler_repair.compiled else translated["stdout"]
+                    result["compiler_repair_applied"] = candidate_source != translated["stdout"]
+                    result["compiler_repair_status"] = compiler_repair.status
+                    result["compiler_repair_iterations"] = compiler_repair.iterations
+                    generated.write_text(candidate_source, encoding="utf-8")
+                    try: compile(candidate_source, str(generated), "exec")
                     except SyntaxError as error:
                         generated_lines = translated["stdout"].splitlines()
                         offending_line = generated_lines[error.lineno - 1].strip() if error.lineno and error.lineno <= len(generated_lines) else ""
