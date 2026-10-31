@@ -4080,6 +4080,26 @@ def translate_nodes(
                     line_indent = indent + 1 if opens_block and i > 0 else indent
                     out.append("    " * line_indent + line.strip())
 
+        elif node.kind == "read":
+            read_match = re.match(r"^READ\s+([A-Za-z0-9-]+)", node.text, re.IGNORECASE)
+            if not read_match:
+                out.append("    " * indent + f"# READ no traducido: {node.text}")
+                continue
+            file_name = read_match.group(1).upper()
+            into_match = re.search(r"\bINTO\s+([A-Za-z0-9-]+)", node.text, re.IGNORECASE)
+            into_arg = repr(into_match.group(1).upper()) if into_match else "None"
+            prefix = "    " * indent
+            out.append(prefix + f"if _cobol_read({file_name!r}, {into_arg}):")
+            success_body = translate_nodes(node.then_branch, paragraphs, indent + 1, variables, current_paragraph, condition_names)
+            if not success_body or all(not line.strip() or line.strip().startswith("#") for line in success_body):
+                success_body = ["    " * (indent + 1) + "pass"]
+            out.extend(success_body)
+            out.append(prefix + "else:")
+            at_end_body = translate_nodes(node.else_branch, paragraphs, indent + 1, variables, current_paragraph, condition_names)
+            if not at_end_body or all(not line.strip() or line.strip().startswith("#") for line in at_end_body):
+                at_end_body = ["    " * (indent + 1) + "pass"]
+            out.extend(at_end_body)
+
         elif node.kind == "if":
             m = RE_IF_OPEN.match(node.text)
             if not m:
