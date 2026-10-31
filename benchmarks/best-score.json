@@ -4,15 +4,31 @@
   "sample_size": 500,
   "holdout_size": 500,
   "exact_match": "stdout-byte-for-byte-and-exit-code",
+  "acceptance_target_each_sample": 375,
+  "history": [
+    {
+      "score": 411,
+      "primary": 197,
+      "holdout": 214,
+      "percent": 41.1,
+      "measured_sha": "ef63c72c14b0fc35d90cd43a9038dd5531a3d3f3",
+      "measured_branch": "experiment/debug-contents",
+      "merged_commit": "06acd347caf18e776af241e83f7a35d8164c3e0f",
+      "source_pr": 61,
+      "benchmark_run": 41107706787,
+      "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41107706787"
+    }
+  ],
   "best": {
-    "score": 411,
+    "score": 414,
     "primary": 197,
-    "holdout": 214,
-    "percent": 41.1,
-    "measured_sha": "ef63c72c14b0fc35d90cd43a9038dd5531a3d3f3",
-    "merged_commit": "06acd347caf18e776af241e83f7a35d8164c3e0f0",
-    "source_pr": 61,
-    "benchmark_run": 41107706787
-  },
-  "acceptance_target_each_sample": 375
+    "holdout": 217,
+    "percent": 41.4,
+    "measured_sha": "aef0e9b29142fdfdd4003884105bd88178a376aa",
+    "measured_branch": "incremental/multiple-indexed-on-debug-contents",
+    "merged_commit": "77288d229fd6d018690a55ca3496eff9f215b9fb",
+    "source_pr": null,
+    "benchmark_run": 41126266093,
+    "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41126266093"
+  }
 }
