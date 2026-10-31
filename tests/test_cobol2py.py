@@ -196,6 +196,15 @@ class TranslationTests(unittest.TestCase):
         self.assertTrue(eval(negative, {"ws_n": -1}))
         self.assertTrue(eval(zero, {"ws_n": 0}))
 
+    def test_is_prefix_in_hyphenated_data_name_is_not_relation_word(self):
+        variable = cobol2py.CobolVar(level=77, name="IS-LOW", pic="9")
+        translated = cobol2py.translate_condition(
+            "IS-LOW = 1",
+            variables={"IS-LOW": variable},
+        )
+        self.assertTrue(eval(translated, {"is_low": 1}), translated)
+        self.assertFalse(eval(translated, {"is_low": 0}), translated)
+
     def test_qualified_level_88_condition_consumes_parent_qualifier(self):
         variable = cobol2py.CobolVar(level=77, name="WS-D33", pic="X(4)")
         translated = cobol2py.translate_condition(
