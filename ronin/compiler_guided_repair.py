@@ -47,7 +47,7 @@ def _local_repair(source: str, diagnostic: dict) -> str | None:
     offending = lines[line - 1]
     # A common invalid generated form: print(x = value), where the intent is
     # assignment followed by output. Keep the rewrite restricted to this shape.
-    match = re.fullmatch(r"(\s*)print\(\s*([A-Za-z_]\w*)\s*=\s*([^()]*)\s*\)\s*", offending)
+    match = re.fullmatch(r"(\s*)print\(\s*([A-Za-z_]\w*)\s*=\s*([^()]*)\s*\)?\s*", offending)
     if match:
         indent, name, value = match.groups()
         lines[line - 1:line] = [f"{indent}{name} = {value}", f"{indent}print({name})"]
