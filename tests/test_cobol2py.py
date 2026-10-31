@@ -4122,6 +4122,13 @@ class MoveFigurativeQuoteRegressionTests(unittest.TestCase):
         self.assertEqual(namespace["ws_group"]["ws_field"], '"""')
 
 
+class CandidateNumericClassTests(unittest.TestCase):
+    def test_is_numeric_rejects_decimal_and_sign_text(self):
+        v={"WS-T":cobol2py.CobolVar(level=1,name="WS-T",pic="X(4)")}
+        cond=cobol2py.translate_condition("WS-T IS NUMERIC",v)
+        self.assertFalse(eval(cond,{"ws_t":"-1.2"})); self.assertTrue(eval(cond,{"ws_t":"1234"}))
+
+
 class CandidateUnstringZeroTests(unittest.TestCase):
     def test_unstring_zero_delimits_on_digit_zero(self):
         v={"WS-S":cobol2py.CobolVar(level=1,name="WS-S",pic="X(5)"),"WS-A":cobol2py.CobolVar(level=1,name="WS-A",pic="X(2)"),"WS-B":cobol2py.CobolVar(level=1,name="WS-B",pic="X(2)")}
