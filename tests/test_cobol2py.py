@@ -368,6 +368,33 @@ MAIN.
         self.assertEqual(contents, "AB\n", generated)
 
 
+class SetIndexArithmeticTests(unittest.TestCase):
+    def test_set_up_and_down_by_update_index_storage(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. SET-INDEX-ARITHMETIC.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-IDX PIC 9(2) VALUE 1.
+PROCEDURE DIVISION.
+MAIN.
+    SET WS-IDX UP BY 2.
+    SET WS-IDX DOWN BY 1.
+    DISPLAY WS-IDX.
+    GOBACK.
+"""
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<set-index-arithmetic>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "02\n", generated)
+
+
 class TranslationTests(unittest.TestCase):
     def test_sign_conditions_handle_positive_negative_and_not(self):
         variable = cobol2py.CobolVar(level=77, name="WS-N", pic="S9(4)")
