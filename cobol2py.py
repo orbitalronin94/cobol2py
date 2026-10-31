@@ -3737,7 +3737,7 @@ def translate_statement(
 
                 sending_items: list[tuple[str, str]] = []
                 item_pattern = re.compile(
-                    r"""(.+?)\s+DELIMITED\s+BY\s+("(?:[^"]|"")*"|'(?:[^']|'')*'|SIZE|SPACES?|ZEROS?|[A-Za-z][A-Za-z0-9-]*)""",
+                    r"""(.+?)\s+DELIMITED\s+BY\s+(?:ALL\s+)?("(?:[^"]|"")*"|'(?:[^']|'')*'|SIZE|SPACES?|ZEROS?|[A-Za-z][A-Za-z0-9-]*)""",
                     re.IGNORECASE,
                 )
                 cursor = 0
