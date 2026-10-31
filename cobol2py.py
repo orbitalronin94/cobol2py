@@ -2924,6 +2924,8 @@ def translate_group_fill_move(source: str, target: str, variables: dict[str, Cob
         "LOW-VALUES": "\x00",
         "HIGH-VALUE": "\xff",
         "HIGH-VALUES": "\xff",
+        "QUOTE": '"',
+        "QUOTES": '"',
         "ZERO": "0",
         "ZEROS": "0",
         "ZEROES": "0",
@@ -3214,6 +3216,8 @@ def translate_move_value(source: str, target: str, variables: dict[str, CobolVar
                     return fit_array(repr((all_literal * width)[:width]))
                 if source.strip().upper() in ("SPACE", "SPACES"):
                     return fit_array(repr(" " * width))
+                if source.strip().upper() in ("QUOTE", "QUOTES"):
+                    return fit_array(repr('"' * width))
                 if source.strip().upper() in ("ZERO", "ZEROS", "ZEROES"):
                     return fit_array(repr("0" * width))
                 if source.strip().upper() in ("LOW-VALUE", "LOW-VALUES"):
