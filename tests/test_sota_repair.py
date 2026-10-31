@@ -22,7 +22,7 @@ class SotaRepairTests(unittest.TestCase):
         self.assertEqual(json.loads(graph.to_json())["schema_version"], 1)
 
     def test_compiler_guided_local_repair(self):
-        result = repair_python_source("print(x = 1)\n")
+        result = repair_python_source("print(x = 1\n")
         self.assertTrue(result.compiled)
         self.assertEqual(result.source, "x = 1\nprint(x)\n")
 
@@ -45,7 +45,7 @@ class SotaRepairTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             report = Path(tmp) / "repair_report.json"
             pipeline = RepairPipeline(report_path=report)
-            result = pipeline.repair_case("syntax-1", "print(x = 1)\n")
+            result = pipeline.repair_case("syntax-1", "print(x = 1\n")
             self.assertTrue(result.repaired)
             payload = json.loads(report.read_text(encoding="utf-8"))
             self.assertEqual(payload["cases"][0]["technique"], "compiler")
