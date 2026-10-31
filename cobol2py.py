@@ -23,6 +23,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+RE_PIC_POSITIONS = re.compile(r"[XA](?:\((\d+)\))?")
+
 
 # ============================================================================
 # 1. PREPROCESADO
@@ -2875,7 +2877,7 @@ def pic_character_count(pic: str) -> int:
     """Count positions in a simple alphanumeric PIC such as X(10) or XX."""
     return sum(
         int(match.group(1)) if match.group(1) else 1
-        for match in re.finditer(r"[XA](?:\((\d+)\))?", pic.upper())
+        for match in RE_PIC_POSITIONS.finditer(pic.upper())
     )
 
 
