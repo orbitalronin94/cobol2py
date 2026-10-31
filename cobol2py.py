@@ -3214,6 +3214,8 @@ def translate_move_value(source: str, target: str, variables: dict[str, CobolVar
                     return fit_array(repr((all_literal * width)[:width]))
                 if source.strip().upper() in ("SPACE", "SPACES"):
                     return fit_array(repr(" " * width))
+                if source.strip().upper() in ("ZERO", "ZEROS", "ZEROES"):
+                    return fit_array(repr("0" * width))
                 if source.strip().upper() in ("LOW-VALUE", "LOW-VALUES"):
                     return fit_array(repr("\x00" * width))
                 if source.strip().upper() in ("HIGH-VALUE", "HIGH-VALUES"):
