@@ -4114,7 +4114,7 @@ class UnstringMultipleDelimitersRegressionTests(unittest.TestCase):
             "ws_c": " " * 3,
             "ws_tally": 0,
         }
-        exec("\\n".join(translated or []), namespace)
+        exec("\n".join(translated or []), namespace)
         self.assertEqual(namespace["ws_a"], "A  ")
         self.assertEqual(namespace["ws_b"], "B  ")
         self.assertEqual(namespace["ws_c"], "C  ")
