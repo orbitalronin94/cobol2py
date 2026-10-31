@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "benchmark": "external-python-corpus",
+  "status": "documented_snapshot_not_fresh_execution",
+  "baseline_commit": "d24760f0148e9be514d69c223f737e88acb7c41e",
+  "source_pr": 177,
+  "combined": {
+    "passed": 480,
+    "total": 1000,
+    "percent": 48
+  },
+  "primary": {
+    "passed": 244,
+    "total": 500,
+    "percent": 48.8
+  },
+  "holdout": {
+    "passed": 236,
+    "total": 500,
+    "percent": 47.2
+  },
+  "canary": {
+    "name": "Maquinas",
+    "expected": [
+      70.5882352941,
+      29.4117647059
+    ],
+    "verified_on_this_branch": false
+  },
+  "provenance": "Best documented baseline from main README and PR #177. Original raw report was not supplied; this is a provenance-labelled snapshot, not a fresh benchmark run.",
+  "acceptance": {
+    "combined_percent_strictly_greater_than": 48,
+    "original_corpus_regressions_allowed": false,
+    "edge_cases_minimum_pass_percent": 60
+  }
+}
