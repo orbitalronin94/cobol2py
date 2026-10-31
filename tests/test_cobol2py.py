@@ -2467,6 +2467,27 @@ class NegatedComparisonAndFigurativeConstantTests(unittest.TestCase):
                 compile(translated, "<figurative-constant>", "eval")
 
 
+class UnstringDelimitedByZeroRegressionTests(unittest.TestCase):
+    def test_unstring_delimited_by_zero_splits_on_character_zero(self):
+        variables = {
+            item.name.upper(): item
+            for item in cobol2py.parse_variables([
+                (1, "01 WS-SOURCE PIC X(3)."),
+                (1, "01 WS-A PIC X."),
+                (1, "01 WS-B PIC X."),
+            ])
+        }
+        translated = cobol2py.translate_statement(
+            "UNSTRING WS-SOURCE DELIMITED BY ZERO INTO WS-A WS-B",
+            set(),
+            variables,
+        )
+        namespace = {"ws_source": "A0B", "ws_a": " ", "ws_b": " "}
+        exec("\\n".join(translated), namespace)
+        self.assertEqual(namespace["ws_a"], "A")
+        self.assertEqual(namespace["ws_b"], "B")
+
+
 class AllFigurativeConstantRegressionTests(unittest.TestCase):
     def test_all_quote_initializes_fixed_width_field_with_quotes(self):
         variable = cobol2py.CobolVar(level=77, name="IF-D5", pic="X(10)", value="ALL QUOTE")
