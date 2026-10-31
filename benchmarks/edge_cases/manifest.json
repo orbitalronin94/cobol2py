@@ -1,0 +1,270 @@
+{
+  "schema_version": 1,
+  "group": "edge_cases",
+  "count": 50,
+  "source_format": "free",
+  "reference_compiler": "GnuCOBOL",
+  "baseline": {
+    "combined_pass": 480,
+    "combined_total": 1000,
+    "percent": 48,
+    "primary_pass": 244,
+    "primary_total": 500,
+    "holdout_pass": 236,
+    "holdout_total": 500,
+    "source": "main README.md / PR #177",
+    "status": "documented snapshot; not fresh run"
+  },
+  "cases": [
+    {
+      "id": "01_op_precedence",
+      "source": "01_op_precedence.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "02_modulo_negativo",
+      "source": "02_modulo_negativo.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "03_power_of_ten",
+      "source": "03_power_of_ten.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "04_nested_parentheses",
+      "source": "04_nested_parentheses.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "05_division_remainder",
+      "source": "05_division_remainder.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "06_compound_conditions",
+      "source": "06_compound_conditions.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "07_arithmetic_overflow",
+      "source": "07_arithmetic_overflow.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "08_exponentiation_float",
+      "source": "08_exponentiation_float.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "09_mixed_types",
+      "source": "09_mixed_types.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "10_unary_operators",
+      "source": "10_unary_operators.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "11_comp3_sum",
+      "source": "11_comp3_sum.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "12_rounding_half_up",
+      "source": "12_rounding_half_up.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "13_truncation_no_round",
+      "source": "13_truncation_no_round.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "14_on_size_error",
+      "source": "14_on_size_error.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "15_negative_comp3",
+      "source": "15_negative_comp3.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "16_decimal_scale",
+      "source": "16_decimal_scale.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "17_multiplication_overflow",
+      "source": "17_multiplication_overflow.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "18_division_precision",
+      "source": "18_division_precision.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "19_abs_function",
+      "source": "19_abs_function.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "20_max_min_functions",
+      "source": "20_max_min_functions.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "21_group_move_padding",
+      "source": "21_group_move_padding.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "22_group_move_truncation",
+      "source": "22_group_move_truncation.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "23_redefines_numeric",
+      "source": "23_redefines_numeric.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "24_redefines_complex",
+      "source": "24_redefines_complex.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "25_justified_right",
+      "source": "25_justified_right.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "26_move_corresponding",
+      "source": "26_move_corresponding.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "27_initialization_group",
+      "source": "27_initialization_group.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "28_blank_when_zero",
+      "source": "28_blank_when_zero.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "29_nested_groups",
+      "source": "29_nested_groups.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "30_occurs_depending",
+      "source": "30_occurs_depending.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "31_string_pointer",
+      "source": "31_string_pointer.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "32_unstring_tallying",
+      "source": "32_unstring_tallying.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "33_inspect_replacing",
+      "source": "33_inspect_replacing.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "34_inspect_tallying",
+      "source": "34_inspect_tallying.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "35_trim_spaces",
+      "source": "35_trim_spaces.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "36_string_overflow",
+      "source": "36_string_overflow.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "37_unstring_multiple",
+      "source": "37_unstring_multiple.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "38_concat_numbers",
+      "source": "38_concat_numbers.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "39_leading_zeros",
+      "source": "39_leading_zeros.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "40_ascii_art",
+      "source": "40_ascii_art.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "41_evaluate_true",
+      "source": "41_evaluate_true.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "42_evaluate_also",
+      "source": "42_evaluate_also.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "43_evaluate_any",
+      "source": "43_evaluate_any.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "44_level88_if",
+      "source": "44_level88_if.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "45_level88_set",
+      "source": "45_level88_set.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "46_level88_evaluate",
+      "source": "46_level88_evaluate.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "47_perform_varying_until",
+      "source": "47_perform_varying_until.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "48_perform_thru",
+      "source": "48_perform_thru.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "49_go_to_loop",
+      "source": "49_go_to_loop.cbl",
+      "status": "pending_reference_compile_and_translation"
+    },
+    {
+      "id": "50_nested_evaluate",
+      "source": "50_nested_evaluate.cbl",
+      "status": "pending_reference_compile_and_translation"
+    }
+  ]
+}

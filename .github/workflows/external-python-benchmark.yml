@@ -5,6 +5,8 @@ on:
     paths:
       - "cobol2py.py"
       - "benchmarks/run_external_corpus.py"
+      - "benchmarks/edge_cases/**"
+      - "benchmarks/run_edge_cases.py"
       - "benchmarks/Dockerfile.external"
       - ".github/workflows/external-python-benchmark.yml"
   workflow_dispatch:
@@ -171,9 +173,10 @@ jobs:
 
           primary = by_skip[0]
           holdout = by_skip[500]
+          # Official best documented baseline: PR #177. Require strict improvement.
           expected = {
-              "primary": (197, 500),
-              "holdout": (217, 500),
+              "primary": (244, 500),
+              "holdout": (236, 500),
           }
           for name, report in (("primary", primary), ("holdout", holdout)):
               if not report.get("archive_md5_verified"):
@@ -191,7 +194,7 @@ jobs:
 
           primary_ok = primary_passed >= expected["primary"][0]
           holdout_ok = holdout_passed >= expected["holdout"][0]
-          total_ok = total_passed > sum(value[0] for value in expected.values())
+          total_ok = total_passed > 480
           reached = primary_ok and holdout_ok and total_ok
 
           summary = [
@@ -199,16 +202,16 @@ jobs:
               "",
               "| Sample | Candidate | Frozen main | Delta |",
               "|---|---:|---:|---:|",
-              f"| Primary | {primary_passed}/500 ({100*primary_passed/500:.2f}%) | 197/500 (39.40%) | {primary_passed-197:+d} |",
-              f"| Holdout | {holdout_passed}/500 ({100*holdout_passed/500:.2f}%) | 217/500 (43.40%) | {holdout_passed-217:+d} |",
-              f"| **Combined** | **{total_passed}/{total_tested} ({total_percent:.2f}%)** | **414/1000 (41.40%)** | **{total_passed-414:+d}** |",
+              f"| Primary | {primary_passed}/500 ({100*primary_passed/500:.2f}%) | 244/500 (48.80%) | {primary_passed-244:+d} |",
+              f"| Holdout | {holdout_passed}/500 ({100*holdout_passed/500:.2f}%) | 236/500 (47.20%) | {holdout_passed-236:+d} |",
+              f"| **Combined** | **{total_passed}/{total_tested} ({total_percent:.2f}%)** | **480/1000 (48.00%)** | **{total_passed-480:+d}** |",
               "",
               f"- Primary did not regress: **{primary_ok}**",
               f"- Holdout did not regress: **{holdout_ok}**",
               f"- Combined score strictly increased: **{total_ok}**",
               f"- **Gate: {'PASS' if reached else 'FAIL'}**",
               "",
-              "A PR is green only when both 500-case samples are complete, neither sample regresses, and the combined exact-match count is strictly greater than 414/1000.",
+              "A PR is green only when both 500-case samples are complete, neither sample regresses, and the combined exact-match count is strictly greater than 480/1000.",
           ]
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
               handle.write("\n".join(summary) + "\n")
