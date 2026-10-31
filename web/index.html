@@ -222,6 +222,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+RE_DECIMAL_LITERAL = re.compile(r"[+-]?\d+(?:\.\d+)?")
+
 
 # ============================================================================
 # 1. PREPROCESADO
@@ -1879,7 +1881,7 @@ def translate_literal(
     parenthesized_number = re.fullmatch(r"\(\s*([+-]?\d+(?:\.\d+)?)\s*\)", t)
     if parenthesized_number:
         return f"({normalize_cobol_number(parenthesized_number.group(1))})"
-    if re.fullmatch(r"[+-]?\d+(?:\.\d+)?", t):
+    if RE_DECIMAL_LITERAL.fullmatch(t):
         return normalize_cobol_number(t)
     if t.upper() in ("SPACES", "SPACE"):
         return json.dumps(" ")
