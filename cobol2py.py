@@ -23,6 +23,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+RE_COBOL_NUMBER = re.compile(r"([+-]?)(\d+)(\.\d+)?")
+
 
 # ============================================================================
 # 1. PREPROCESADO
@@ -1650,7 +1652,7 @@ def normalize_cobol_number(token: str) -> str:
     value while removing redundant leading zeros from the integer part.
     """
     text = token.strip()
-    match = re.fullmatch(r"([+-]?)(\d+)(\.\d+)?", text)
+    match = RE_COBOL_NUMBER.fullmatch(text)
     if not match:
         return text
     sign, integer_part, fractional_part = match.groups()
