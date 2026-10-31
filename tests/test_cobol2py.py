@@ -4087,3 +4087,22 @@ class MoveFigurativeZeroAlphanumericTests(unittest.TestCase):
                 namespace = {"ws_text": "ABCD"}
                 exec("\n".join(translated or []), namespace)
                 self.assertEqual(namespace["ws_text"], "0000")
+
+
+class StringAllDelimiterSyntaxRegressionTests(unittest.TestCase):
+    def test_string_accepts_delimited_by_all_literal(self):
+        variables = {
+            item.name.upper(): item
+            for item in cobol2py.parse_variables([
+                (1, "01 WS-OUT PIC X(5)."),
+            ])
+        }
+        translated = cobol2py.translate_statement(
+            'STRING "A,B" DELIMITED BY ALL "," INTO WS-OUT',
+            set(),
+            variables,
+        )
+        self.assertIsNotNone(translated)
+        namespace = {"ws_out": " " * 5}
+        exec("\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_out"], "A    ")
