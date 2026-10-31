@@ -3664,7 +3664,7 @@ class InspectConvertingRegressionTests(unittest.TestCase):
         )
         self.assertIsNotNone(translated)
         namespace = {"ws_text": "abca!!"}
-        exec("\\n".join(translated or []), namespace)
+        exec("\n".join(translated or []), namespace)
         self.assertEqual(namespace["ws_text"], "XYZX!!")
 
     def test_inspect_converting_preserves_characters_without_mapping(self):
@@ -3678,5 +3678,5 @@ class InspectConvertingRegressionTests(unittest.TestCase):
         )
         self.assertIsNotNone(translated)
         namespace = {"ws_text": "pizza"}
-        exec("\\n".join(translated or []), namespace)
+        exec("\n".join(translated or []), namespace)
         self.assertEqual(namespace["ws_text"], "piZZA")
