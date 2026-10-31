@@ -3447,7 +3447,7 @@ def translate_statement(
     # the character at the same position in the replacement operand. Keep the
     # operation as a translation table so untouched characters remain intact.
     inspect_match = re.fullmatch(
-        rf"INSPECT\\s+({DATA_REF_PATTERN})\\s+CONVERTING\\s+(.+?)\\s+TO\\s+(.+?)(?:\\s+END-INSPECT)?",
+        rf"INSPECT\s+({DATA_REF_PATTERN})\s+CONVERTING\s+(.+?)\s+TO\s+(.+?)(?:\s+END-INSPECT)?",
         s,
         re.IGNORECASE,
     )
