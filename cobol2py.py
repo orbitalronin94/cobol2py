@@ -3607,7 +3607,7 @@ def translate_statement(
         return assignments or [f"# INITIALIZE sin campos traducibles: {s}"]
     # INSPECT CONVERTING applies a positional character map to the receiving field.
     converting_match = re.fullmatch(
-        rf"INSPECT\\s+({DATA_REF_PATTERN})\\s+CONVERTING\\s+(.+?)\\s+TO\\s+(.+?)(?:\\s+END-INSPECT)?",
+        rf"INSPECT\s+({DATA_REF_PATTERN})\s+CONVERTING\s+(.+?)\s+TO\s+(.+?)(?:\s+END-INSPECT)?",
         s,
         re.IGNORECASE,
     )
