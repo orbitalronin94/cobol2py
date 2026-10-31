@@ -4035,3 +4035,34 @@ class InspectTallyingRegressionTests(unittest.TestCase):
         namespace = {"ws_text": "ABC", "ws_count": 2}
         exec("\n".join(translated or []), namespace)
         self.assertEqual(namespace["ws_count"], 2)
+
+
+
+class InspectConvertingRegressionTests(unittest.TestCase):
+    def test_inspect_converting_maps_characters_positionally(self):
+        variables = {
+            "WS-TEXT": cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(6)"),
+        }
+        translated = cobol2py.translate_statement(
+            'INSPECT WS-TEXT CONVERTING "abc" TO "XYZ"',
+            set(),
+            variables,
+        )
+        self.assertIsNotNone(translated)
+        namespace = {"ws_text": "abca!!"}
+        exec("\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_text"], "XYZX!!")
+
+    def test_inspect_converting_preserves_unmapped_characters(self):
+        variables = {
+            "WS-TEXT": cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(5)"),
+        }
+        translated = cobol2py.translate_statement(
+            "INSPECT WS-TEXT CONVERTING 'az' TO 'AZ'",
+            set(),
+            variables,
+        )
+        self.assertIsNotNone(translated)
+        namespace = {"ws_text": "pizza"}
+        exec("\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_text"], "piZZA")
