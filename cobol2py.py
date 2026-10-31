@@ -3706,6 +3706,11 @@ def translate_statement(
                         f"_cobol_unstring_parts = (str({source_expr}).split(str({delimiter_expr})) "
                         f"if str({delimiter_expr}) else [str({source_expr})])"
                     ]
+                    delimiter_values = [part for part in delimiter_parts if part.upper() != "OR"]
+                    if len(delimiter_values) > 1:
+                        delimiter_exprs = [translate_literal(part, variable_map) for part in delimiter_values]
+                        pattern_expr = f"'|'.join(__import__('re').escape(str(_d)) for _d in [{', '.join(delimiter_exprs)}])"
+                        lines = [f"_cobol_unstring_parts = __import__('re').split({pattern_expr}, str({source_expr}))"]
                     for index, target in enumerate(targets):
                         target_base = re.match(r"[A-Za-z0-9-]+", target)
                         target_var = variable_map.get(target_base.group(0).upper()) if target_base else None
