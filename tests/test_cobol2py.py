@@ -3374,6 +3374,20 @@ class InitializeStatementRegressionTests(unittest.TestCase):
         self.assertEqual(translated, ["ws_name = '   '"])
         compile(translated[0], "<initialize-elementary>", "exec")
 
+    def test_initialize_group_skips_filler_unless_with_filler_is_explicit(self):
+        variables = {
+            item.name: item
+            for item in cobol2py.parse_variables([
+                (1, "01 WS-REC."),
+                (2, "05 FILLER PIC X(2) VALUE 'ZZ'."),
+                (3, "05 WS-NAME PIC X(2) VALUE 'AB'."),
+            ])
+        }
+        without_filler = cobol2py.translate_statement("INITIALIZE WS-REC", set(), variables)
+        with_filler = cobol2py.translate_statement("INITIALIZE WS-REC WITH FILLER", set(), variables)
+        self.assertEqual(without_filler, ["ws_rec['ws_name'] = '  '"])
+        self.assertEqual(with_filler, ["ws_rec['filler_2'] = '  '", "ws_rec['ws_name'] = '  '"])
+
     def test_initialize_simple_group_resets_alphanumeric_and_numeric_children(self):
         variables = {
             item.name: item

@@ -3716,6 +3716,8 @@ def translate_statement(
     initialize_prefix = re.match(r"INITIALIZE\s+", s, re.IGNORECASE)
     if initialize_prefix:
         target_and_clauses = s[initialize_prefix.end():].strip()
+        with_filler = bool(re.search(r"\bWITH\s+FILLER\b", target_and_clauses, re.IGNORECASE))
+        target_and_clauses = re.sub(r"\bWITH\s+FILLER\b", "", target_and_clauses, flags=re.IGNORECASE)
         target_and_clauses = re.sub(r"\s+END-INITIALIZE\s*$", "", target_and_clauses, flags=re.IGNORECASE)
         replacing_match = re.search(r"\s+REPLACING\b(.*)$", target_and_clauses, re.IGNORECASE)
         target = target_and_clauses[:replacing_match.start()].strip() if replacing_match else target_and_clauses
@@ -3775,6 +3777,9 @@ def translate_statement(
                     if child.parent_name and child.parent_name.upper() == group.name.upper()
                 ]
                 for child in children:
+                    # COBOL INITIALIZE skips FILLER unless WITH FILLER is explicit.
+                    if child.name.upper().startswith("FILLER-") and not with_filler:
+                        continue
                     child_expr = f"{group_expr}[{normalize_name(child.name)!r}]"
                     if child.is_group:
                         if child.is_array:
