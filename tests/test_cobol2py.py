@@ -2467,6 +2467,24 @@ class NegatedComparisonAndFigurativeConstantTests(unittest.TestCase):
                 compile(translated, "<figurative-constant>", "eval")
 
 
+class StringAllDelimiterSyntaxRegressionTests(unittest.TestCase):
+    def test_string_accepts_delimited_by_all_literal(self):
+        variables = {
+            item.name.upper(): item
+            for item in cobol2py.parse_variables([
+                (1, "01 WS-OUT PIC X(5)."),
+            ])
+        }
+        translated = cobol2py.translate_statement(
+            'STRING "A,B" DELIMITED BY ALL "," INTO WS-OUT',
+            set(),
+            variables,
+        )
+        namespace = {"ws_out": " " * 5}
+        exec("\n".join(translated), namespace)
+        self.assertEqual(namespace["ws_out"], "A    ")
+
+
 class AllFigurativeConstantRegressionTests(unittest.TestCase):
     def test_all_quote_initializes_fixed_width_field_with_quotes(self):
         variable = cobol2py.CobolVar(level=77, name="IF-D5", pic="X(10)", value="ALL QUOTE")
