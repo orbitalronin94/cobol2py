@@ -4128,3 +4128,23 @@ class CandidateUnstringZeroTests(unittest.TestCase):
         code=cobol2py.translate_statement("UNSTRING WS-S DELIMITED BY ZERO INTO WS-A WS-B",set(),v)
         ns={"ws_s":"A0B  ","ws_a":"  ","ws_b":"  "}; exec("\n".join(code or []),ns)
         self.assertEqual((ns["ws_a"],ns["ws_b"]),("A ","B "))
+
+
+class StringFigurativeZeroDelimiterCurrentMainTests(unittest.TestCase):
+    def test_string_zero_figuratives_delimit_on_digit_zero(self):
+        variables = {
+            item.name.upper(): item
+            for item in cobol2py.parse_variables([
+                (1, "01 WS-SOURCE PIC X(5)."),
+                (1, "01 WS-OUT PIC X(4)."),
+            ])
+        }
+        for figurative in ("ZERO", "ZEROS", "ZEROES"):
+            with self.subTest(figurative=figurative):
+                code = cobol2py.translate_statement(
+                    f'STRING WS-SOURCE DELIMITED BY {figurative} INTO WS-OUT',
+                    set(), variables,
+                )
+                namespace = {"ws_source": "A0B  ", "ws_out": " " * 4}
+                exec("\\n".join(code or []), namespace)
+                self.assertEqual(namespace["ws_out"], "A   ")
