@@ -518,7 +518,7 @@ RE_PROGRAM_ID = re.compile(r"PROGRAM-ID\.\s*([A-Za-z0-9\-]+)", re.IGNORECASE)
 RE_WORKING_STORAGE = re.compile(r"WORKING-STORAGE\s+SECTION", re.IGNORECASE)
 RE_STORAGE_SECTION = re.compile(r"(?:WORKING-STORAGE|LOCAL-STORAGE|LINKAGE)\s+SECTION", re.IGNORECASE)
 RE_VAR = re.compile(r"^\s*(\d{1,2})\s+([A-Za-z0-9\-]+)\s*(.*?)(?:\.\s*)?$", re.IGNORECASE)
-RE_PIC = re.compile(r"PIC(?:TURE)?\s+(?:IS\s+)?([A-Za-z0-9().,/+$*-]+)", re.IGNORECASE)
+RE_PIC = re.compile(r"PIC(?:TURE)?\s+(?:IS\s+)?((?:[A-Za-z0-9(),/+$*-]|\.(?=\d))+)", re.IGNORECASE)
 RE_VALUE = re.compile(
     # The optional IS is a clause keyword, never a VALUE literal. Keep the
     # negative lookahead after the optional keyword so regex backtracking
