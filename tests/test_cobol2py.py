@@ -2483,7 +2483,7 @@ class UnstringDelimitedByZeroRegressionTests(unittest.TestCase):
             variables,
         )
         namespace = {"ws_source": "A0B", "ws_a": " ", "ws_b": " "}
-        exec("\\n".join(translated), namespace)
+        exec("\n".join(translated), namespace)
         self.assertEqual(namespace["ws_a"], "A")
         self.assertEqual(namespace["ws_b"], "B")
 
