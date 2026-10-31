@@ -3517,9 +3517,17 @@ def translate_statement(
                     else:
                         delimiter_expr = translate_literal(delimiter, variable_map)
                     source_expr = translate_literal(source, variable_map)
+                    pointer_expr = (
+                        normalize_data_reference(pointer_match.group(1), variable_map)
+                        if pointer_match else "1"
+                    )
                     lines = [
-                        f"_cobol_unstring_parts = (str({source_expr}).split(str({delimiter_expr})) "
-                        f"if str({delimiter_expr}) else [str({source_expr})])"
+                        f"_cobol_unstring_source = str({source_expr})",
+                        f"_cobol_unstring_delimiter = str({delimiter_expr})",
+                        f"_cobol_unstring_start = max(1, int({pointer_expr}))",
+                        "_cobol_unstring_rest = _cobol_unstring_source[_cobol_unstring_start - 1:]",
+                        "_cobol_unstring_parts = (_cobol_unstring_rest.split(_cobol_unstring_delimiter) "
+                        "if _cobol_unstring_delimiter else [_cobol_unstring_rest])",
                     ]
                     for index, target in enumerate(targets):
                         target_base = re.match(r"[A-Za-z0-9-]+", target)
@@ -3533,9 +3541,17 @@ def translate_statement(
                             elif "9" in pic:
                                 value = f"(int(float({value})) if str({value}).strip() else 0)"
                         lines.append(emit_assignment(target, value, variable_map))
+                    extracted_count = min(len(_cobol_unstring_parts), len(targets))
                     if tally_match:
                         tally = normalize_data_reference(tally_match.group(1), variable_map)
-                        lines.append(f"{tally} = min(len(_cobol_unstring_parts), {len(targets)})")
+                        lines.append(f"{tally} = {tally} + {extracted_count}")
+                    if pointer_match:
+                        lines.append(
+                            f"{pointer_expr} = (_cobol_unstring_start + "
+                            f"sum(len(_part) for _part in _cobol_unstring_parts[:{len(targets)}]) + "
+                            f"len(_cobol_unstring_delimiter) * min({len(targets)}, "
+                            "max(0, len(_cobol_unstring_parts) - 1)) + 1)"
+                        )
                     return lines
         return [f"# UNSTRING no traducido: {s}"]
 
