@@ -283,6 +283,53 @@ MAIN.
         self.assertEqual(raised.exception.code, 1)
 
 
+class CobolSequentialReadTests(unittest.TestCase):
+    def test_read_at_end_and_not_at_end_execute_the_correct_branch(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. READ-BRANCHES.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT INPUT-FILE ASSIGN TO "records.dat"
+        ORGANIZATION IS LINE SEQUENTIAL
+        FILE STATUS IS WS-STATUS.
+DATA DIVISION.
+FILE SECTION.
+FD INPUT-FILE.
+01 INPUT-RECORD PIC X(4).
+WORKING-STORAGE SECTION.
+01 WS-STATUS PIC XX.
+01 WS-EOF PIC X.
+PROCEDURE DIVISION.
+MAIN.
+    OPEN INPUT INPUT-FILE.
+    READ INPUT-FILE
+        AT END MOVE "Y" TO WS-EOF
+        NOT AT END DISPLAY INPUT-RECORD
+    END-READ.
+    CLOSE INPUT-FILE.
+    GOBACK.
+"""
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<read-at-end>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        previous = Path.cwd()
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "records.dat").write_text("AB\n", encoding="latin-1")
+            try:
+                os.chdir(directory)
+                with redirect_stdout(output):
+                    namespace["main"]()
+            finally:
+                os.chdir(previous)
+        self.assertEqual(output.getvalue(), "AB  \n", generated)
+        self.assertEqual(namespace["ws_eof"], " ")
+
 class TranslationTests(unittest.TestCase):
     def test_sign_conditions_handle_positive_negative_and_not(self):
         variable = cobol2py.CobolVar(level=77, name="WS-N", pic="S9(4)")
