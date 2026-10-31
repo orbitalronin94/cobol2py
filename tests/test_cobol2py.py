@@ -998,14 +998,14 @@ class CopybookTests(unittest.TestCase):
             # OUTER is found in parent_root, but an earlier configured root
             # contains a conflicting INNER. Nested COPY must prefer the
             # directory containing OUTER, not the global search order.
-            (parent_root / "OUTER.cpy").write_text("COPY INNER.\\n", encoding="utf-8")
+            (parent_root / "OUTER.cpy").write_text("COPY INNER.\n", encoding="utf-8")
             (parent_root / "INNER.cpy").write_text(
-                "01 WS-CHOSEN PIC X(3) VALUE \"PAR\".\\n", encoding="utf-8"
+                "01 WS-CHOSEN PIC X(3) VALUE \"PAR\".\n", encoding="utf-8"
             )
             (first_root / "INNER.cpy").write_text(
-                "01 WS-WRONG PIC X(3) VALUE \"BAD\".\\n", encoding="utf-8"
+                "01 WS-WRONG PIC X(3) VALUE \"BAD\".\n", encoding="utf-8"
             )
-            source = "\\n".join([
+            source = "\n".join([
                 "DATA DIVISION.",
                 "WORKING-STORAGE SECTION.",
                 "COPY OUTER.",
@@ -1028,8 +1028,8 @@ class CopybookTests(unittest.TestCase):
 
         with TemporaryDirectory() as temp:
             root = Path(temp)
-            (root / "SELF.cpy").write_text("COPY SELF.\\n", encoding="utf-8")
-            source = "\\n".join([
+            (root / "SELF.cpy").write_text("COPY SELF.\n", encoding="utf-8")
+            source = "\n".join([
                 "DATA DIVISION.",
                 "WORKING-STORAGE SECTION.",
                 "COPY SELF.",
@@ -2361,7 +2361,7 @@ class DisplayOperandSplittingRegressionTests(unittest.TestCase):
     def test_parenthesized_numeric_display_generates_valid_python(self):
         translated = cobol2py.translate_statement("DISPLAY (01) (01) ERASE", set(), {})
         self.assertIsNotNone(translated)
-        compile("\\n".join(translated or []), "<display-operands>", "exec")
+        compile("\n".join(translated or []), "<display-operands>", "exec")
 
 
 class ComputeSizeErrorClauseRegressionTests(unittest.TestCase):
@@ -2373,7 +2373,7 @@ class ComputeSizeErrorClauseRegressionTests(unittest.TestCase):
         )
         self.assertIsNotNone(translated)
         self.assertEqual(translated, ["ws_total = ws_left + ws_right"])
-        compile("\\n".join(translated or []), "<compute-size-error>", "exec")
+        compile("\n".join(translated or []), "<compute-size-error>", "exec")
 
 
 class FigurativeConstantIdentifierBoundaryTests(unittest.TestCase):
@@ -2677,7 +2677,7 @@ class HexadecimalLiteralRegressionTests(unittest.TestCase):
         items = cobol2py.split_cobol_items('X"0D" ERASE')
         self.assertEqual(items, ['X"0D"', "ERASE"])
         translated = cobol2py.translate_statement('DISPLAY X"0D" ERASE', set(), {})
-        compile("\\n".join(translated or []), "<hex-display>", "exec")
+        compile("\n".join(translated or []), "<hex-display>", "exec")
 
 
 class ParenthesizedDisplayListRegressionTests(unittest.TestCase):
@@ -2685,7 +2685,7 @@ class ParenthesizedDisplayListRegressionTests(unittest.TestCase):
         self.assertEqual(cobol2py.split_cobol_items("(01, 01) ERASE"), ["01", "01", "ERASE"])
         translated = cobol2py.translate_statement("DISPLAY (01, 01) ERASE", set(), {})
         self.assertIsNotNone(translated)
-        compile("\\n".join(translated or []), "<parenthesized-display-list>", "exec")
+        compile("\n".join(translated or []), "<parenthesized-display-list>", "exec")
 
 
 class CobolAcceptEofRegressionTests(unittest.TestCase):
