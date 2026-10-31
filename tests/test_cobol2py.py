@@ -4122,6 +4122,14 @@ class MoveFigurativeQuoteRegressionTests(unittest.TestCase):
         self.assertEqual(namespace["ws_group"]["ws_field"], '"""')
 
 
+class CandidateUnstringMultipleDelimiterTests(unittest.TestCase):
+    def test_unstring_multiple_delimiter_literals_split(self):
+        v={"WS-S":cobol2py.CobolVar(level=1,name="WS-S",pic="X(8)"),"WS-A":cobol2py.CobolVar(level=1,name="WS-A",pic="X(2)"),"WS-B":cobol2py.CobolVar(level=1,name="WS-B",pic="X(2)")}
+        code=cobol2py.translate_statement('UNSTRING WS-S DELIMITED BY "," OR ";" INTO WS-A WS-B',set(),v)
+        ns={"ws_s":"A;B     ","ws_a":"  ","ws_b":"  "}; exec("\\n".join(code or []),ns)
+        self.assertEqual((ns["ws_a"],ns["ws_b"]),("A ","B "))
+
+
 class CandidateUnstringZeroTests(unittest.TestCase):
     def test_unstring_zero_delimits_on_digit_zero(self):
         v={"WS-S":cobol2py.CobolVar(level=1,name="WS-S",pic="X(5)"),"WS-A":cobol2py.CobolVar(level=1,name="WS-A",pic="X(2)"),"WS-B":cobol2py.CobolVar(level=1,name="WS-B",pic="X(2)")}
