@@ -1,6 +1,6 @@
 # cobol2py
 
-> **Directriz de desarrollo hacia v1.0 (2026-10-31):** la referencia principal vigente es **480/1.000 (48,00 %)**, máximo validado en la PR [#177](https://github.com/orbitalronin94/cobol2py/pull/177), ya integrada en `main` (244/500 primaria + 236/500 holdout). Toda mejora de traducción compite contra esta base, no contra cifras antiguas. Solo se fusiona si el SHA exacto supera los tests y el benchmark externo completo de 500 + 500 casos, sin regresiones por muestra; el gate congelado no se debilita. Las PR candidatas #184–#193 están aisladas para comparar vías distintas sobre esta base. Se prioriza precisión; las optimizaciones de tiempo se evalúan aparte y no cuentan como mejora de porcentaje.
+> **Directriz de evaluación (2026-10-31):** la referencia histórica validada en la PR [#177](https://github.com/orbitalronin94/cobol2py/pull/177) es 480/1.000 (244/500 primaria + 236/500 segunda mitad). Por coste de cómputo, la evaluación iterativa pasa a ejecutar únicamente esos 500 programas de la segunda mitad, con línea base congelada de **236/500 (47,20 %)**. La mitad primaria deja de ejecutarse en el ciclo de optimización. Importante: al observar repetidamente la segunda mitad durante el desarrollo, ya no debe llamarse *holdout intacto* ni considerarse una estimación independiente de generalización; en esta fase es el **corpus fijo de evaluación**. El gate exige superar estrictamente 236/500 en el SHA exacto, con corpus, selección, denominador y criterio de stdout/código de retorno inalterados.
 
 > Traductor COBOL a Python, con prototipos experimentales a C y Rust. El núcleo de análisis COBOL se comparte; los backends nativos tienen cobertura limitada y no prometen equivalencia general.
 
@@ -14,14 +14,13 @@ Este es el roadmap de producto canónico: **el objetivo vigente es v1.0**. Los h
 
 ### Métrica de aceptación de v1.0
 
-**Objetivo: al menos 375/500 (75 %) coincidencias exactas tanto en la muestra primaria como en un holdout disjunto de 500 programas.** Cada coincidencia exige que la traducción termine y que stdout y código de retorno sean idénticos a GnuCOBOL.
+**Objetivo de producto:** alcanzar al menos un 75 % de coincidencias exactas en cada muestra de 500 programas. Cada coincidencia exige que la traducción termine y que stdout y código de retorno sean idénticos a GnuCOBOL.
 
-- **Línea base externa inicial:** 53/500 (10,60 %).
-- **Mejor resultado externo validado hasta ahora:** **480/1.000 (48,00 %)** en la PR [#177](https://github.com/orbitalronin94/cobol2py/pull/177), con **244/500 primaria (48,80 %)** y **236/500 holdout (47,20 %)**. Es la referencia principal y ya está integrada en `main`; todas las candidatas deben compararse con ella sobre el mismo corpus y los mismos criterios.
-- **Candidatas activas:** [#184–#193](https://github.com/orbitalronin94/cobol2py/pulls) exploran correcciones semánticas aisladas. No se declara ganadora hasta tener la scorecard completa del SHA exacto; checks parciales o verde de CI no equivalen a una mejora de porcentaje.
-- **Histórico:** las cifras de las PR #138 y #177 son resultados de SHAs medidos, no una garantía de puntuación para cualquier commit posterior. El benchmark del SHA evaluado es la autoridad.
-- **Objetivo v1.0 y brecha:** la puerta de release sigue siendo ≥375/500 (75 %) en primaria y ≥375/500 (75 %) en holdout, con muestras disjuntas. La v1.0 sigue bloqueada hasta cumplir ambas metas y la validación completa.
-- **Siguiente iteración:** seguir el [roadmap operativo del benchmark externo](docs/EXTERNAL_BENCHMARK_ITERATION_ROADMAP.md), el [análisis actualizado de fallos](docs/EXTERNAL_BENCHMARK_FAILURE_ANALYSIS.md) y la [investigación de arquitecturas open source](docs/OPEN_SOURCE_COMPILER_RESEARCH.md). No atribuir una puntuación a un SHA distinto del medido.
+- **Referencia histórica:** 480/1.000 (48,00 %) en la PR [#177](https://github.com/orbitalronin94/cobol2py/pull/177): 244/500 en la primaria y 236/500 en la segunda mitad.
+- **Política de evaluación iterativa desde 2026-10-31:** ejecutar solo la segunda mitad (skip=500, target=500) para reducir el gasto de cómputo. La línea base para esta evaluación es 236/500 (47,20 %) y la puerta exige una mejora estricta.
+- **Riesgo metodológico:** como el corpus fijo se consulta durante el desarrollo, la puntuación puede sobreajustarse a él. La puntuación sirve para comparar candidatos en ese corpus, no para afirmar generalización estadística. No alterar selección, denominador, timeout, ni criterio de equivalencia.
+- **Objetivo de release v1.0:** el umbral de producto de 75 % en ambas mitades sigue siendo una aspiración histórica; con la política de coste actual, la mitad primaria no se ejecuta en el ciclo normal y no se puede declarar validado ese objetivo completo usando solo la mitad de evaluación. Documentar esta limitación en cualquier anuncio de release.
+- **Candidatas:** las PR deben adjuntar la scorecard completa del SHA exacto; CI verde o tests unitarios por sí solos no prueban mejora de porcentaje.
 - **Límites:** la métrica mide stdout y código de retorno de programas ejecutables del dataset, no equivalencia de archivos, bases de datos, transacciones, interacciones ni todos los dialectos.
 
 ### Hitos de versión
