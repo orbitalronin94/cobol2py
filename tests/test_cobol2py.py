@@ -3650,3 +3650,11 @@ class DebugContentsSpecialRegisterCandidateTests(unittest.TestCase):
         generated = cobol2py.emit_python(program)
         self.assertIn("debug_contents", generated)
         compile(generated, "<debug-contents-register>", "exec")
+
+
+class ExitParagraphRegressionTests(unittest.TestCase):
+    def test_exit_paragraph_emits_return_not_noop(self):
+        emitted = cobol2py.translate_statement("EXIT PARAGRAPH", set())
+        self.assertEqual(emitted, ["return"])
+        compile("def paragraph():\\n    " + emitted[0] + "\\n", "<exit-paragraph>", "exec")
+
