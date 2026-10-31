@@ -1082,7 +1082,7 @@ def parse_file_specs(lines: list[tuple[int, str]]) -> dict[str, dict[str, Option
     statements: list[str] = []
     current: list[str] = []
     for text in control_lines:
-        if re.match(r"^SELECT\\b", text, re.IGNORECASE):
+        if re.match(r"^SELECT\b", text, re.IGNORECASE):
             if current:
                 statements.append(" ".join(current))
             current = [text]
@@ -1096,12 +1096,12 @@ def parse_file_specs(lines: list[tuple[int, str]]) -> dict[str, dict[str, Option
 
     specs: dict[str, dict[str, Optional[str]]] = {}
     for statement in statements:
-        selected = re.search(r"\\bSELECT\\s+([A-Za-z0-9-]+)", statement, re.IGNORECASE)
+        selected = re.search(r"\bSELECT\s+([A-Za-z0-9-]+)", statement, re.IGNORECASE)
         if not selected:
             continue
         name = selected.group(1).upper()
         assigned = re.search(
-            r"""\\bASSIGN(?:\\s+TO)?\\s+(?:"((?:[^"]|"")*)"|'((?:[^']|'')*)'|([A-Za-z0-9-]+))""",
+            r"""\bASSIGN(?:\s+TO)?\s+(?:"((?:[^"]|"")*)"|'((?:[^']|'')*)'|([A-Za-z0-9-]+))""",
             statement,
             re.IGNORECASE,
         )
@@ -1111,14 +1111,14 @@ def parse_file_specs(lines: list[tuple[int, str]]) -> dict[str, dict[str, Option
             if quote:
                 raw_path = raw_path.replace(quote + quote, quote)
         organization = re.search(
-            r"\\bORGANIZATION\\s+(?:IS\\s+)?(LINE\\s+SEQUENTIAL|SEQUENTIAL|INDEXED|RELATIVE)\\b",
+            r"\bORGANIZATION\s+(?:IS\s+)?(LINE\s+SEQUENTIAL|SEQUENTIAL|INDEXED|RELATIVE)\b",
             statement,
             re.IGNORECASE,
         )
-        status = re.search(r"\\bFILE\\s+STATUS\\s+(?:IS\\s+)?([A-Za-z0-9-]+)", statement, re.IGNORECASE)
+        status = re.search(r"\bFILE\s+STATUS\s+(?:IS\s+)?([A-Za-z0-9-]+)", statement, re.IGNORECASE)
         specs[name] = {
             "assign": raw_path,
-            "organization": re.sub(r"\\s+", " ", organization.group(1).upper()) if organization else None,
+            "organization": re.sub(r"\s+", " ", organization.group(1).upper()) if organization else None,
             "status": status.group(1).upper() if status else None,
             "record": None,
         }
@@ -1127,16 +1127,16 @@ def parse_file_specs(lines: list[tuple[int, str]]) -> dict[str, dict[str, Option
     current_file: Optional[str] = None
     for _line_number, text in lines:
         upper = text.upper().strip()
-        if re.search(r"\\bFILE\\s+SECTION\\b", upper):
+        if re.search(r"\bFILE\s+SECTION\b", upper):
             in_file_section = True
             current_file = None
             continue
-        if re.search(r"\\b[A-Z0-9-]+\\s+SECTION\\b", upper) and "FILE SECTION" not in upper:
+        if re.search(r"\b[A-Z0-9-]+\s+SECTION\b", upper) and "FILE SECTION" not in upper:
             in_file_section = False
             current_file = None
         if not in_file_section:
             continue
-        descriptor = re.match(r"^\\s*FD\\s+([A-Za-z0-9-]+)\\b", text, re.IGNORECASE)
+        descriptor = re.match(r"^\s*FD\s+([A-Za-z0-9-]+)\b", text, re.IGNORECASE)
         if descriptor:
             current_file = descriptor.group(1).upper()
             continue
