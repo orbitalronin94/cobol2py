@@ -50,7 +50,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/COBOL_Files.zip
-          key: x-cobol-v2-${{ github.workflow }}-${{ matrix.sample.name }}-cbd974caed72b0836777dc2305928ed3
+          key: x-cobol-v2-cbd974caed72b0836777dc2305928ed3
 
       - name: Download and verify pinned X-COBOL v2 archive
         shell: bash
@@ -69,7 +69,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ${{ runner.temp }}/COBOL_Files.zip
-          key: x-cobol-v2-${{ github.workflow }}-${{ matrix.sample.name }}-cbd974caed72b0836777dc2305928ed3
+          key: x-cobol-v2-cbd974caed72b0836777dc2305928ed3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
