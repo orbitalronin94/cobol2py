@@ -2887,7 +2887,7 @@ def translate_condition(
             operand = translate_expr(match.group(1), variables)
             class_name = match.group(3).upper()
             if class_name == "NUMERIC":
-                numeric_pattern = r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)"
+                numeric_pattern = r"\d+"
                 expression = (
                     f"(__import__('re').fullmatch({numeric_pattern!r}, "
                     f"str({operand}).strip()) is not None)"
