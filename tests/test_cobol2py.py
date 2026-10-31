@@ -982,6 +982,70 @@ class CopybookTests(unittest.TestCase):
             ))
             self.assertIn("COPYBOOK RESOLUTION WARNING", cobol2py.emit_python(program))
 
+    def test_nested_copybook_prefers_parent_directory_over_earlier_root(self):
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as temp:
+            root = Path(temp)
+            source_dir = root / "src"
+            first_root = root / "copybooks-first"
+            parent_root = root / "copybooks-parent"
+            source_dir.mkdir()
+            first_root.mkdir()
+            parent_root.mkdir()
+
+            # OUTER is found in parent_root, but an earlier configured root
+            # contains a conflicting INNER. Nested COPY must prefer the
+            # directory containing OUTER, not the global search order.
+            (parent_root / "OUTER.cpy").write_text("COPY INNER.\n", encoding="utf-8")
+            (parent_root / "INNER.cpy").write_text(
+                "01 WS-CHOSEN PIC X(3) VALUE \"PAR\".\n", encoding="utf-8"
+            )
+            (first_root / "INNER.cpy").write_text(
+                "01 WS-WRONG PIC X(3) VALUE \"BAD\".\n", encoding="utf-8"
+            )
+            source = "\n".join([
+                "DATA DIVISION.",
+                "WORKING-STORAGE SECTION.",
+                "COPY OUTER.",
+                "PROCEDURE DIVISION.",
+                "MAIN.",
+                "STOP RUN.",
+            ])
+            program = cobol2py.parse_cobol(
+                source,
+                source_format="free",
+                copybook_paths=[first_root, parent_root],
+                source_path=source_dir / "main.cbl",
+            )
+            self.assertEqual([v.name for v in program.variables], ["WS-CHOSEN"])
+            self.assertEqual(program.unresolved_copybooks, [])
+
+    def test_direct_copybook_cycle_is_reported_without_recursion(self):
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "SELF.cpy").write_text("COPY SELF.\n", encoding="utf-8")
+            source = "\n".join([
+                "DATA DIVISION.",
+                "WORKING-STORAGE SECTION.",
+                "COPY SELF.",
+                "PROCEDURE DIVISION.",
+                "MAIN.",
+                "STOP RUN.",
+            ])
+            program = cobol2py.parse_cobol(
+                source, source_format="free", copybook_paths=[root]
+            )
+            self.assertTrue(any(
+                "COPYBOOK CYCLE: SELF.cpy -> SELF.cpy" in item
+                for item in program.unresolved_copybooks
+            ))
+            self.assertIn("COPYBOOK RESOLUTION WARNING", cobol2py.emit_python(program))
+
     def test_resolves_nested_copybooks_and_reports_cycles(self):
         from pathlib import Path
         from tempfile import TemporaryDirectory
