@@ -34,9 +34,10 @@ jobs:
     if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'experiment/')
     strategy:
       fail-fast: false
+      # Use only the fixed second half for iterative candidate evaluation.
+      # Repeated tuning means this is not an untouched statistical holdout.
       matrix:
         sample:
-          - { name: primary, skip: 0 }
           - { name: holdout, skip: 500 }
     runs-on: ubuntu-latest
     timeout-minutes: 90
