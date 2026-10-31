@@ -4120,3 +4120,11 @@ class MoveFigurativeQuoteRegressionTests(unittest.TestCase):
         namespace = {"ws_group": {"ws_field": "abc"}}
         exec("\n".join(translated or []), namespace)
         self.assertEqual(namespace["ws_group"]["ws_field"], '"""')
+
+
+class CandidateStringZeroTests(unittest.TestCase):
+    def test_string_zero_delimits_on_digit_zero(self):
+        v={"WS-S":cobol2py.CobolVar(level=1,name="WS-S",pic="X(4)"),"WS-T":cobol2py.CobolVar(level=1,name="WS-T",pic="X(4)")}
+        code=cobol2py.translate_statement("STRING WS-S DELIMITED BY ZERO INTO WS-T",set(),v)
+        ns={"ws_s":"A0BC","ws_t":"    "}; exec("\\n".join(code or []),ns)
+        self.assertEqual(ns["ws_t"],"A   ")
