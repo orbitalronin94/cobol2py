@@ -4094,7 +4094,7 @@ class UnstringMultipleDelimitersRegressionTests(unittest.TestCase):
         variables = {
             item.name.upper(): item
             for item in cobol2py.parse_variables([
-                (1, "01 WS-SOURCE PIC X(5)."),
+                (1, "01 WS-SOURCE PIC X(6)."),
                 (1, "01 WS-A PIC X(3)."),
                 (1, "01 WS-B PIC X(3)."),
                 (1, "01 WS-C PIC X(3)."),
