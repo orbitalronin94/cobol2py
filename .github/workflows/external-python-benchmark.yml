@@ -114,7 +114,7 @@ jobs:
       - name: Publish exact-match scorecard
         if: always()
         run: |
-          file="$RUNNER_TEMP/external-python-artifacts/$SAMPLE_NAME/external-corpus-report.md"
+          file="$RUNNER_TEMP/external-python-artifacts/${{ matrix.sample.name }}/external-corpus-report.md"
           started="$(cat "$RUNNER_TEMP/external-python-start-time" 2>/dev/null || date +%s)"
           finished="$(date +%s)"
           elapsed="$((finished - started))"
