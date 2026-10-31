@@ -273,3 +273,129 @@ Prioridad inmediata: representar todos los nombres declarados por `INDEXED BY`, 
 ### Siguiente familia separada: nivel 66 RENAMES
 
 Hay dos candidatos compilables del holdout con referencias no resueltas: `CBL0302v01DataLayoutRenames` y `nivel`. Mantenerlos separados de la corrección de índices para poder atribuir ganancias/regresiones con claridad.
+
+
+## 8. Mapa de causas raíz — scorecard PR-candidate #41133144593 (2026-10-31)
+
+### Base y método
+
+Esta sección sustituye las prioridades anteriores cuando se decide qué familia atacar a continuación. Se inspeccionaron los dos artefactos de `main` de la ejecución [#41133144593](https://github.com/orbitalronin94/cobol2py/actions/runs/41133144593), con SHA `c0b318955967cf8cfd80ff13ee25107f0a5b6daf`. Ambos informes declaran `archive_md5_verified: true`, `tested: 500` y el mismo criterio de equivalencia exacta (stdout completo + código de retorno).
+
+| Muestra | Aciertos | Fallos | Exactitud |
+|---|---:|---:|---:|
+| Primaria | 197/500 | 303 | 39,4 % |
+| Holdout | 216/500 | 284 | 43,2 % |
+| **Total** | **413/1.000** | **587** | **41,3 %** |
+
+La ejecución falló únicamente en el trabajo agregador posterior a los artefactos; los doce artefactos individuales de la competición estaban completos. Esta clasificación se reconstruyó desde `external-corpus-report.json` de los dos artefactos baseline, no desde el agregador. Por tanto, el fallo de agregación no invalida los 1.000 resultados individuales.
+
+Las categorías siguientes son mutuamente excluyentes y suman los 587 fallos:
+
+| Resultado final del caso | Casos | % de los fallos | Techo aritmético sobre 1.000 |
+|---|---:|---:|---:|
+| Código de retorno distinto | 267 | 45,5 % | 26,7 puntos |
+| stdout distinto, mismo código de retorno | 143 | 24,4 % | 14,3 puntos |
+| Timeout del programa traducido | 99 | 16,9 % | 9,9 puntos |
+| Python generado no compila | 67 | 11,4 % | 6,7 puntos |
+| Timeout del traductor | 3 | 0,5 % | 0,3 puntos |
+| Límite de captura de salida del traductor | 6 | 1,0 % | 0,6 puntos |
+| Excepción de recursión en el traductor | 2 | 0,3 % | 0,2 puntos |
+
+Los techos son límites matemáticos, no previsiones de recuperación. Cada programa solo puede recuperarse una vez y las causas pueden compartir una misma corrección.
+
+**Limitación del artefacto:** el informe enumera los 1.000 resultados, pero los archivos fuente y Python generado se adjuntan principalmente para casos fallidos. No se puede calcular honestamente una tasa de fallo condicionada a cada verbo COBOL ni una correlación fallo/éxito por característica sin recuperar también las fuentes de los casos aprobados. Los recuentos de verbos de esta sección se refieren exclusivamente a cohortes fallidas.
+
+### P0 — I/O de archivos sin semántica ejecutable y control de flujo roto
+
+Es la oportunidad más fuerte y mejor respaldada por el código generado. En los 99 timeouts del programa traducido:
+
+- 96 incluyen `OPEN` en el fuente y emiten `# COBOL no traducido: OPEN`.
+- 89 incluyen `WRITE` y emiten la sentencia como no traducida.
+- 43 incluyen `READ`; 36 lo emiten como no traducido.
+- 96 incluyen `CLOSE`; 34 lo emiten como no traducido.
+- 90 de los 99 Python generados contienen marcadores `COBOL estructura malformada`.
+
+Los recuentos se solapan. La evidencia no es solo la presencia de verbos: los artefactos muestran bucles que siguen ejecutándose después de que `READ` no haya actualizado el registro ni el estado EOF. En `seqfileexample-697bdaacde`, por ejemplo, el `READ` queda comentado y el programa traducido asigna repetidamente el centinela `'ÿ'`; en `FP201612`, el `OPEN` y el `READ` quedan sin ejecutar, pero la lógica posterior consulta un FILE STATUS que nunca se actualizó. Hay casos que generan cientos de MB o más de 1 GB de stdout antes del timeout.
+
+Hay otros 120 casos en los que Python termina con código 0 mientras GnuCOBOL termina con código 1. En esta cohorte, el Python generado deja sin ejecutar `OPEN` en 84 casos, `READ` en 72, `CLOSE` en 67 y `WRITE` en 52. Los stderr de referencia muestran, entre otros, 57 errores de archivo inexistente, 21 avisos de cierre implícito, 9 errores permanentes de archivo, 5 errores de terminal y 5 errores de `READ/START` sobre archivos no abiertos para input. El candidato no emite stderr en esos 120 casos.
+
+Además, dentro de los 143 casos con stdout distinto y código de retorno igual, 15 contienen al menos un verbo de archivo emitido como comentario no traducido (15 `OPEN`, 12 `READ`, 7 `WRITE`, 15 `CLOSE`; los recuentos por verbo se solapan).
+
+**Cohorte expuesta a esta familia: al menos 234 casos distintos** (99 timeouts + 120 códigos de retorno distintos por el lado de GnuCOBOL + 15 diferencias de stdout con I/O omitida). Esto equivale a un techo de exposición de 23,4 puntos porcentuales, no a una promesa de recuperación. Para convertirlo en mejora real hay que reproducir y corregir cada comportamiento.
+
+Trabajo recomendado:
+1. Modelar `SELECT`, `ASSIGN`, `ORGANIZATION`, `ACCESS MODE`, `RECORD KEY`, `FILE STATUS` y las declaraciones `FD` como un modelo de archivo explícito.
+2. Implementar un runtime de archivos que respete `OPEN`, `READ`, `WRITE`, `REWRITE`, `START`, `CLOSE`, EOF, `AT END`, `INVALID KEY` y estados de archivo.
+3. Empezar por `LINE SEQUENTIAL` y `SEQUENTIAL`; abordar `INDEXED/DYNAMIC` con claves y duplicados como iteración separada.
+4. Hacer que un I/O no soportado produzca un diagnóstico explícito, nunca un comentario silencioso que permita continuar con variables/estados ficticios.
+5. Añadir fixtures de archivo existente, archivo ausente, EOF, clave inválida, cierre implícito y modo de acceso incompatible. Comparar stdout y return code con GnuCOBOL.
+6. Corregir el parser de bloques para que `AT END` y `NOT AT END` queden asociados al `READ` correcto y no generen bloques malformados.
+
+### P1 — Resolución de nombres, layouts, índices y conversiones
+
+Los 267 fallos de código de retorno se descomponen en 140 casos donde Python termina con código 1 y GnuCOBOL con 0, 120 casos en sentido inverso y 7 diferencias restantes de código (códigos de referencia 11/16). Los 140 errores del candidato tienen traceback. Sus excepciones son:
+
+| Excepción final | Casos |
+|---|---:|
+| `NameError` | 45 |
+| `ValueError` | 37 |
+| `TypeError` | 29 |
+| `KeyError` | 19 |
+| `IndexError` | 3 |
+| `AttributeError` | 3 |
+| `UnboundLocalError` | 3 |
+| `ZeroDivisionError` | 1 |
+
+Pistas concretas:
+- `NameError`: nombres de campos/registros o índices que no se declaran/resuelven (`cobol_as_dd1_rec`, `loop_count`, `rdf3_5_16`, `debug_sub_1`, `idx_5`).
+- `ValueError`: conversión de espacios a entero, conversiones numéricas y número incorrecto de subíndices en campos overlay.
+- `TypeError`: acceso a un entero como tabla, índices de cadena tratados como nombres de campo, comparación de string con entero y llamadas a helpers con aridad incorrecta.
+- `KeyError`: claves de grupo/tabla ausentes, incluidas `0` y `computed_a`.
+
+Trabajo recomendado:
+1. Seguir cada referencia desde declaración COBOL → jerarquía de datos → resolución de nombre → expresión Python.
+2. Agrupar `NameError` y `KeyError` por símbolo raíz y origen (COPY, FD, nivel 88, índice, campo cualificado).
+3. Tratar PIC, espacios, escala y signo como semántica COBOL; no resolver `ValueError` con conversiones permisivas indiscriminadas.
+4. Crear fixtures separados para overlays, MOVE de grupos, OCCURS multidimensional, índices declarados en grupos y campos numéricos inicializados con espacios.
+
+### P2 — Correctitud sintáctica del Python generado
+
+Los 67 casos sintácticos se distribuyen así:
+
+| Patrón | Casos |
+|---|---:|
+| Expresión/tokenización inválida | 47 |
+| Indentación inesperada | 10 |
+| Literal de texto sin cerrar | 3 |
+| Literal numérico/identificador mal formado | 3 |
+| Delimitadores desbalanceados | 2 |
+| L-value no asignable | 1 |
+| Expresión condicional incompleta | 1 |
+
+Los ejemplos apuntan a causas distintas, no a una sola limpieza final: tokens COBOL residuales (`TRUE COBOL NOT AT END`, `ZEROES TO ...`), condiciones abreviadas, nombres reservados (`VALUE`, `OF`, `FILE-ID`), índices concatenados, referencias multidimensionales y salida de bloques vacíos con indentación incorrecta.
+
+Trabajo recomendado:
+1. Ejecutar `compile(generated, filename, "exec")` inmediatamente después de generar Python.
+2. Registrar el nodo/statement COBOL que originó la línea inválida.
+3. Corregir el parser o generador en el límite COBOL→IR→Python; no aplicar reemplazos globales sobre Python ya generado.
+4. Convertir cada una de las 67 muestras en una regresión o agruparlas solo cuando se demuestre una regla común.
+
+### P3 — Diferencias de stdout con código de retorno igual
+
+Los 143 casos que terminan con el mismo return code siguen siendo fallos exactos. Dentro de esta cohorte:
+- 66 fuentes contienen `ACCEPT`.
+- 49 Python generados contienen marcadores de estructura de control malformada.
+- 15 tienen al menos un verbo de archivo emitido como comentario.
+- Entre los 131 casos con stdout de referencia no vacío, 38 producen menos del 1 % de la longitud esperada, mientras que 46 quedan entre el 90 % y el 110 %. La longitud parecida no implica igualdad: se compara byte a byte.
+
+Priorizar la asociación correcta de `ACCEPT` con pantalla/terminal y la estructura de `IF/EVALUATE/PERFORM`, después agrupar diffs byte a byte por padding, formato numérico, espacios, codificación, campos editados y orden de salida. No normalizar stdout.
+
+### Orden de ataque revisado
+
+1. **Runtime de archivos + EOF/FILE STATUS + bloques AT END**, porque hay una cohorte observada de 234 casos expuestos y evidencia directa de operaciones convertidas en comentarios.
+2. **Resolución de nombres y representación de datos**, empezando por los 140 tracebacks del candidato y separando símbolos, tablas/índices, overlays y conversiones.
+3. **Validador de sintaxis Python y reducción de los 67 casos**, para convertir fallos de generación en fixtures pequeños.
+4. **ACCEPT, pantalla y diferencias de salida**, con diffs agrupados por causa, no por programa.
+5. Mantener la comparación primaria/holdout y el análisis por ID. No modificar corpus, stdin, timeout, captura, stdout ni criterio de equivalencia para mejorar el score.
+
+La primera iteración técnica debería ser una prueba mínima de `OPEN INPUT` + `READ AT END` + `FILE STATUS`, y otra de `OPEN OUTPUT` + `WRITE` + `CLOSE`. Si no pasan contra GnuCOBOL, no se amplía a organizaciones indexadas. La aceptación exige suite, regresiones, primaria y holdout completos sobre el mismo SHA, con ganancias y pérdidas por ID.

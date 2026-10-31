@@ -152,3 +152,26 @@ Se inició la iteración B antes de que finalizara el workflow dedicado #17 de l
 5. Separar el soporte de nivel 66 `RENAMES` como una iteración posterior con los casos compilables `CBL0302v01DataLayoutRenames` y `nivel`.
 
 El objetivo aspiracional sigue siendo **425/1.000 (42,50 %)**: el máximo observado 408/1.000 deja 17 aciertos. La aceptación v1.0 sigue exigiendo 375/500 en cada muestra, validación reproducible y revisión de regresiones.
+
+
+## Repriorización basada en la scorecard #41133144593 — 2026-10-31
+
+La nueva base de `main` es SHA `c0b318955967cf8cfd80ff13ee25107f0a5b6daf`: 197/500 primaria + 216/500 holdout = **413/1.000 (41,30 %)**. Los artefactos individuales están completos y sus MD5 verificados; el fallo del run ocurrió en el agregador, no en las muestras. El desglose de causas y sus límites de atribución está en [`docs/EXTERNAL_BENCHMARK_FAILURE_ANALYSIS.md`](EXTERNAL_BENCHMARK_FAILURE_ANALYSIS.md), sección 8.
+
+La evidencia desplaza la siguiente iteración: **I/O de archivos y asociación de bloques EOF/AT END antes de seguir ampliando soporte aislado de índices**.
+
+- 99 programas traducidos agotan el tiempo. En esa cohorte, 96 emiten `OPEN` como comentario no traducido, 89 hacen lo mismo con `WRITE`, 36 con `READ`, 34 con `CLOSE`; 90 generan además marcadores de estructura malformada. Los recuentos se solapan.
+- Otros 120 casos devuelven código 0 en Python cuando GnuCOBOL devuelve 1; 84 omiten `OPEN`, 72 `READ`, 67 `CLOSE` y 52 `WRITE`. El stderr de referencia registra errores de archivo inexistente, errores permanentes, cierres implícitos y errores de terminal.
+- Hay 15 diferencias adicionales de stdout/código igual con al menos un verbo de archivo omitido.
+- La cohorte expuesta suma 234 casos distintos como techo de investigación, no como ganancia esperada.
+
+### Próxima iteración técnica
+
+1. Construir fixtures mínimos diferenciales para `OPEN INPUT` + `READ AT END` + `FILE STATUS`, y `OPEN OUTPUT` + `WRITE` + `CLOSE`.
+2. Definir el modelo de `SELECT/ASSIGN/ORGANIZATION/ACCESS MODE/RECORD KEY/FD` y un runtime explícito de archivos.
+3. Implementar primero `LINE SEQUENTIAL` y `SEQUENTIAL`; después `INDEXED/DYNAMIC`, claves y duplicados.
+4. Corregir la asociación sintáctica de `AT END`/`NOT AT END` con el `READ` correspondiente y evitar emitir estructuras malformadas.
+5. Mantener los errores no soportados explícitos: nunca convertir una operación de archivo en comentario y dejar que el resto del programa continúe con FILE STATUS/EOF ficticios.
+6. Medir primero los fixtures y todos los casos afectados por ID; después ejecutar suite, primaria y holdout sobre el mismo SHA. No ampliar el alcance si el caso mínimo no coincide con GnuCOBOL.
+
+La familia de nombres/índices/overlays sigue siendo P1: hay 140 tracebacks de ejecución (45 `NameError`, 37 `ValueError`, 29 `TypeError`, 19 `KeyError`, y otros 10). Los 67 errores de sintaxis generada también se mantienen como una línea separada. No mezclar estas tres familias en una sola PR funcional.
