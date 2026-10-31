@@ -1,0 +1,7 @@
+{
+  "source_pr": 62,
+  "source_sha": "b59b322fe587c2b135a86a9afb220f815d1e4c35",
+  "baseline_branch": "benchmark/best-score-414",
+  "baseline_score": 414,
+  "gate": "primary>=197,holdout>=217,total>414; tests green"
+}
