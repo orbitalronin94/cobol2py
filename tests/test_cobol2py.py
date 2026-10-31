@@ -4087,3 +4087,32 @@ class MoveFigurativeZeroAlphanumericTests(unittest.TestCase):
                 namespace = {"ws_text": "ABCD"}
                 exec("\n".join(translated or []), namespace)
                 self.assertEqual(namespace["ws_text"], "0000")
+
+
+class InspectConvertingRegressionTests(unittest.TestCase):
+    def test_inspect_converting_maps_characters_positionally(self):
+        variables = {
+            "WS-TEXT": cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(5)"),
+        }
+        translated = cobol2py.translate_statement(
+            'INSPECT WS-TEXT CONVERTING "ABC" TO "XYZ"',
+            set(),
+            variables,
+        )
+        self.assertIsNotNone(translated)
+        namespace = {"ws_text": "CABBA"}
+        exec("\\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_text"], "ZXY Y".replace(" ", ""))
+
+    def test_inspect_converting_leaves_unmapped_characters_unchanged(self):
+        variables = {
+            "WS-TEXT": cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(4)"),
+        }
+        translated = cobol2py.translate_statement(
+            'INSPECT WS-TEXT CONVERTING "AB" TO "12"',
+            set(),
+            variables,
+        )
+        namespace = {"ws_text": "BACA"}
+        exec("\\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_text"], "2 1 2 A".replace(" ", ""))
