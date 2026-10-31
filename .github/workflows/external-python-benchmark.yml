@@ -5,6 +5,8 @@ on:
     paths:
       - "cobol2py.py"
       - "benchmarks/run_external_corpus.py"
+      - "benchmarks/edge_cases/**"
+      - "benchmarks/run_edge_cases.py"
       - "benchmarks/Dockerfile.external"
       - ".github/workflows/external-python-benchmark.yml"
   workflow_dispatch:
