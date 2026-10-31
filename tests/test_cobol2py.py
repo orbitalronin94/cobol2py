@@ -4128,3 +4128,47 @@ class CandidateUnstringZeroTests(unittest.TestCase):
         code=cobol2py.translate_statement("UNSTRING WS-S DELIMITED BY ZERO INTO WS-A WS-B",set(),v)
         ns={"ws_s":"A0B  ","ws_a":"  ","ws_b":"  "}; exec("\n".join(code or []),ns)
         self.assertEqual((ns["ws_a"],ns["ws_b"]),("A ","B "))
+
+
+class UnstringMultipleDelimitersCurrentMainTests(unittest.TestCase):
+    def test_unstring_splits_on_multiple_delimiters_and_counts_receivers(self):
+        variables = {
+            item.name.upper(): item
+            for item in cobol2py.parse_variables([
+                (1, "01 WS-SOURCE PIC X(8)."),
+                (1, "01 WS-A PIC X(3)."),
+                (1, "01 WS-B PIC X(3)."),
+                (1, "01 WS-C PIC X(3)."),
+                (1, "01 WS-TALLY PIC 9(2)."),
+            ])
+        }
+        code = cobol2py.translate_statement(
+            'UNSTRING WS-SOURCE DELIMITED BY "," OR ";" INTO WS-A WS-B WS-C TALLYING IN WS-TALLY',
+            set(), variables,
+        )
+        namespace = {
+            "ws_source": "A,B;C   ", "ws_a": "   ", "ws_b": "   ",
+            "ws_c": "   ", "ws_tally": 0,
+        }
+        exec("\\n".join(code or []), namespace)
+        self.assertEqual(
+            (namespace["ws_a"], namespace["ws_b"], namespace["ws_c"], namespace["ws_tally"]),
+            ("A  ", "B  ", "C  ", 3),
+        )
+
+    def test_or_inside_quoted_delimiter_is_not_a_separator(self):
+        variables = {
+            item.name.upper(): item
+            for item in cobol2py.parse_variables([
+                (1, "01 WS-SOURCE PIC X(8)."),
+                (1, "01 WS-A PIC X(5)."),
+                (1, "01 WS-B PIC X(5)."),
+            ])
+        }
+        code = cobol2py.translate_statement(
+            'UNSTRING WS-SOURCE DELIMITED BY " OR " OR ";" INTO WS-A WS-B',
+            set(), variables,
+        )
+        namespace = {"ws_source": "A OR B;C   ", "ws_a": "     ", "ws_b": "     "}
+        exec("\\n".join(code or []), namespace)
+        self.assertEqual((namespace["ws_a"], namespace["ws_b"]), ("A    ", "B    "))
