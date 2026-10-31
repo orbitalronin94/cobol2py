@@ -3888,17 +3888,20 @@ def translate_statement(
                 targets = split_cobol_items(targets_text)
                 if targets:
                     variable_map = variables or {}
-                    delimiter_specs = [
-                        part.strip()
-                        for part in re.split(
-                            r"\s+OR\s+",
-                            re.sub(r"^\s*ALL\s+", "", delimiter_text, flags=re.IGNORECASE),
-                            flags=re.IGNORECASE,
-                        )
-                        if part.strip()
-                    ]
+                    delimiter_clause = re.sub(
+                        r"^\s*ALL\s+", "", delimiter_text, flags=re.IGNORECASE
+                    ).strip()
+                    delimiter_tokens = re.findall(
+                        r"""(?:"(?:[^"]|"")*"|'(?:[^']|'')*'|[^\s]+)""",
+                        delimiter_clause,
+                    )
+                    delimiter_specs = []
+                    for token in delimiter_tokens:
+                        if token.upper() == "OR":
+                            continue
+                        delimiter_specs.append(token)
                     if not delimiter_specs:
-                        delimiter_specs = [delimiter_text]
+                        delimiter_specs = [delimiter_clause]
                     delimiter_exprs = []
                     for delimiter in delimiter_specs:
                         if delimiter.upper() in ("SPACE", "SPACES"):
