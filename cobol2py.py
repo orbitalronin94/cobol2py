@@ -4953,6 +4953,30 @@ def emit_python(prog: Program) -> str:
         record_variable = variables_by_name.get(record_name.upper()) if record_name else None
         runtime_spec["record_width"] = (_simple_storage_width(record_variable, variables_by_name) or 0) if record_variable else 0
         runtime_spec["record_python_name"] = normalize_name(record_name) if record_name else None
+        record_layout: list[dict[str, object]] = []
+        if record_variable is not None:
+            def add_record_fields(variable: CobolVar, path: list[str]) -> None:
+                if variable.is_group:
+                    for child in variables_by_name.values():
+                        if child.parent_name and child.parent_name.upper() == variable.name.upper():
+                            add_record_fields(child, path + [normalize_name(child.name)])
+                    return
+                pic = (variable.pic or "").upper()
+                width = pic_character_count(pic) if any(char in pic for char in "XA") else pic_digit_count(pic)
+                if width <= 0:
+                    return
+                scale = pic_digit_count(pic.split("V", 1)[1]) if "V" in pic else 0
+                record_layout.append({
+                    "path": path,
+                    "width": width,
+                    "numeric": bool("9" in pic and not any(char in pic for char in "XA")),
+                    "scale": scale,
+                })
+            if record_variable.is_group:
+                add_record_fields(record_variable, [])
+            else:
+                add_record_fields(record_variable, [])
+        runtime_spec["record_layout"] = record_layout
         runtime_file_specs[file_name] = runtime_spec
     lines.append("_cobol_file_specs = " + repr(runtime_file_specs))
     lines.append("_cobol_open_files = {}")
@@ -5005,9 +5029,34 @@ def emit_python(prog: Program) -> str:
     lines.append("        return False")
     lines.append("    record_name = spec.get('record')")
     lines.append("    if record_name:")
-    lines.append("        record_value = raw.rstrip(chr(10)).rstrip(chr(13))")
-    lines.append("        record_width = int(spec.get('record_width') or len(record_value))")
-    lines.append("        record_value = record_value[:record_width].ljust(record_width)")
+    lines.append("        raw_record = raw.rstrip(chr(10)).rstrip(chr(13))")
+    lines.append("        record_width = int(spec.get('record_width') or len(raw_record))")
+    lines.append("        raw_record = raw_record[:record_width].ljust(record_width)")
+    lines.append("        layout = spec.get('record_layout') or []")
+    lines.append("        if layout:")
+    lines.append("            record_value = {}")
+    lines.append("            offset = 0")
+    lines.append("            for field in layout:")
+    lines.append("                width = int(field['width'])")
+    lines.append("                piece = raw_record[offset:offset + width].ljust(width)")
+    lines.append("                offset += width")
+    lines.append("                if field.get('numeric'):")
+    lines.append("                    value = int(piece.strip() or '0')")
+    lines.append("                    scale = int(field.get('scale') or 0)")
+    lines.append("                    if scale:")
+    lines.append("                        value = value / (10 ** scale)")
+    lines.append("                else:")
+    lines.append("                    value = piece")
+    lines.append("                path = field.get('path') or []")
+    lines.append("                target = record_value")
+    lines.append("                for key_part in path[:-1]:")
+    lines.append("                    target = target.setdefault(key_part, {})")
+    lines.append("                if path:")
+    lines.append("                    target[path[-1]] = value")
+    lines.append("                else:")
+    lines.append("                    record_value = value")
+    lines.append("        else:")
+    lines.append("            record_value = raw_record")
     lines.append("        globals()[spec['record_python_name']] = record_value")
     lines.append("        if into:")
     lines.append("            globals()[into] = __import__('copy').deepcopy(record_value)")
