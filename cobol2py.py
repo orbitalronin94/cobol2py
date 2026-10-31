@@ -3442,6 +3442,18 @@ def translate_statement(
 
     if upper in ("STOP RUN", "STOP RUN."):
         return ["raise _CobolStopRun"]
+    open_match = re.fullmatch(r"OPEN\\s+(INPUT|OUTPUT|EXTEND|I-O)\\s+(.+)", s, re.IGNORECASE)
+    if open_match:
+        mode, names = open_match.groups()
+        file_names = re.findall(r"[A-Za-z0-9-]+", names)
+        if file_names:
+            return [f"_cobol_open({name.upper()!r}, {mode.upper()!r})" for name in file_names]
+    close_match = re.fullmatch(r"CLOSE\\s+(.+)", s, re.IGNORECASE)
+    if close_match:
+        file_names = re.findall(r"[A-Za-z0-9-]+", close_match.group(1))
+        if file_names:
+            return [f"_cobol_close({name.upper()!r})" for name in file_names]
+
 
     # INITIALIZE resets elementary storage by category, not to its VALUE clause.
     initialize_prefix = re.match(r"INITIALIZE\s+", s, re.IGNORECASE)
@@ -4880,6 +4892,68 @@ def emit_python(prog: Program) -> str:
     lines.append("    text = text.replace(',', '')")
     lines.append("    number = float(text or '0')")
     lines.append("    return -number if negative else number")
+    runtime_file_specs: dict[str, dict[str, object]] = {}
+    for file_name, file_spec in prog.file_specs.items():
+        runtime_spec: dict[str, object] = dict(file_spec)
+        status_name = file_spec.get("status")
+        status_variable = variables_by_name.get(status_name.upper()) if status_name else None
+        status_pic = (status_variable.pic or "").upper() if status_variable else ""
+        runtime_spec["status_numeric"] = bool(status_pic and "9" in status_pic and not any(char in status_pic for char in "XA"))
+        runtime_spec["status_width"] = (
+            pic_digit_count(status_pic) if runtime_spec["status_numeric"]
+            else pic_character_count(status_pic) if status_pic else 0
+        )
+        runtime_file_specs[file_name] = runtime_spec
+    lines.append("_cobol_file_specs = " + repr(runtime_file_specs))
+    lines.append("_cobol_open_files = {}")
+    lines.append("")
+    lines.append("def _cobol_set_file_status(spec, status):")
+    lines.append("    name = spec.get('status')")
+    lines.append("    if not name:")
+    lines.append("        return")
+    lines.append("    width = int(spec.get('status_width') or 0)")
+    lines.append("    text = str(status)")
+    lines.append("    if width:")
+    lines.append("        text = text[-width:] if spec.get('status_numeric') else text[:width].ljust(width)")
+    lines.append("    globals()[normalize_name(name)] = int(text or '0') if spec.get('status_numeric') else text")
+    lines.append("")
+    lines.append("def _cobol_open(name, mode):")
+    lines.append("    key = name.upper()")
+    lines.append("    spec = _cobol_file_specs.get(key)")
+    lines.append("    if spec is None:")
+    lines.append("        raise SystemExit(1)")
+    lines.append("    path = spec.get('assign') or name")
+    lines.append("    python_mode = {'INPUT': 'r', 'OUTPUT': 'w', 'EXTEND': 'a', 'I-O': 'r+'}.get(mode.upper())")
+    lines.append("    if python_mode is None:")
+    lines.append("        if spec.get('status'):")
+    lines.append("            _cobol_set_file_status(spec, '30')")
+    lines.append("            return '30'")
+    lines.append("        raise SystemExit(1)")
+    lines.append("    try:")
+    lines.append("        handle = open(path, python_mode, encoding='latin-1', newline='')")
+    lines.append("    except OSError:")
+    lines.append("        status = '35' if mode.upper() in ('INPUT', 'EXTEND', 'I-O') else '30'")
+    lines.append("        if spec.get('status'):")
+    lines.append("            _cobol_set_file_status(spec, status)")
+    lines.append("            return status")
+    lines.append("        raise SystemExit(1)")
+    lines.append("    _cobol_open_files[key] = handle")
+    lines.append("    _cobol_set_file_status(spec, '00')")
+    lines.append("    return '00'")
+    lines.append("")
+    lines.append("def _cobol_close(name):")
+    lines.append("    key = name.upper()")
+    lines.append("    spec = _cobol_file_specs.get(key, {})")
+    lines.append("    handle = _cobol_open_files.pop(key, None)")
+    lines.append("    if handle is None:")
+    lines.append("        if spec.get('status'):")
+    lines.append("            _cobol_set_file_status(spec, '42')")
+    lines.append("            return '42'")
+    lines.append("        raise SystemExit(1)")
+    lines.append("    handle.close()")
+    lines.append("    _cobol_set_file_status(spec, '00')")
+    lines.append("    return '00'")
+    lines.append("")
     lines.append("")
     lines.append("def _cobol_test_after(condition, action):")
     lines.append("    action()")
