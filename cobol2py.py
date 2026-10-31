@@ -4318,6 +4318,9 @@ def translate_nodes(
             temp_name = f"_cobol_evaluate_{node.line}"
             if not is_boolean:
                 out.append("    " * indent + f"{temp_name} = {translate_expr(subject, variables)}")
+            subject_base = re.match(r"[A-Za-z][A-Za-z0-9-]*", subject)
+            subject_var = (variables or {}).get(subject_base.group(0).upper()) if subject_base else None
+            subject_width = pic_character_count(subject_var.pic) if subject_var and subject_var.pic and any(ch in subject_var.pic.upper() for ch in ("X", "A")) else 0
             emitted = 0
             for branch in node.body:
                 if branch.kind != "when":
@@ -4357,7 +4360,12 @@ def translate_nodes(
                             ),
                         )
                     else:
-                        condition = f"{temp_name} == {translate_literal(choice, variables)}"
+                        choice_value = decode_cobol_quoted_literal(choice)
+                        if subject_width and choice_value is not None:
+                            width = max(subject_width, len(choice_value))
+                            condition = f"str({temp_name}).ljust({width}) == {choice_value.ljust(width)!r}"
+                        else:
+                            condition = f"{temp_name} == {translate_literal(choice, variables)}"
                     prefix = ("if " if emitted == 0 else "elif ") + condition + ":"
                 out.append("    " * indent + prefix)
                 branch_body = translate_nodes(branch.then_branch, paragraphs, indent + 1, variables, current_paragraph, condition_names)
