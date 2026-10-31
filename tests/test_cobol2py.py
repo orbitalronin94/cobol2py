@@ -4087,3 +4087,35 @@ class MoveFigurativeZeroAlphanumericTests(unittest.TestCase):
                 namespace = {"ws_text": "ABCD"}
                 exec("\n".join(translated or []), namespace)
                 self.assertEqual(namespace["ws_text"], "0000")
+
+
+class UnstringMultipleDelimitersRegressionTests(unittest.TestCase):
+    def test_unstring_splits_on_each_delimiter_and_updates_tally(self):
+        variables = {
+            item.name.upper(): item
+            for item in cobol2py.parse_variables([
+                (1, "01 WS-SOURCE PIC X(5)."),
+                (1, "01 WS-A PIC X(3)."),
+                (1, "01 WS-B PIC X(3)."),
+                (1, "01 WS-C PIC X(3)."),
+                (1, "01 WS-TALLY PIC 9(2)."),
+            ])
+        }
+        translated = cobol2py.translate_statement(
+            'UNSTRING WS-SOURCE DELIMITED BY "," OR ";" INTO WS-A WS-B WS-C TALLYING IN WS-TALLY',
+            set(),
+            variables,
+        )
+        self.assertIsNotNone(translated)
+        namespace = {
+            "ws_source": "A,B;C ",
+            "ws_a": " " * 3,
+            "ws_b": " " * 3,
+            "ws_c": " " * 3,
+            "ws_tally": 0,
+        }
+        exec("\\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_a"], "A  ")
+        self.assertEqual(namespace["ws_b"], "B  ")
+        self.assertEqual(namespace["ws_c"], "C  ")
+        self.assertEqual(namespace["ws_tally"], 3)
