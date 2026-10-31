@@ -66,9 +66,11 @@ jobs:
       - name: Build isolated benchmark image with layer cache
         env:
           CACHE_SCOPE: external-benchmark-${{ github.workflow }}-${{ matrix.sample.name }}
+          CACHE_PEER_SCOPE: external-benchmark-${{ github.workflow }}-${{ matrix.sample.name == 'primary' && 'holdout' || 'primary' }}
         run: |
           docker buildx build --load \
             --cache-from "type=gha,scope=$CACHE_SCOPE" \
+            --cache-from "type=gha,scope=$CACHE_PEER_SCOPE" \
             --cache-to "type=gha,mode=max,scope=$CACHE_SCOPE" \
             -f benchmarks/Dockerfile.external \
             -t cobol2py-external-benchmark .
