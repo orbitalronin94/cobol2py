@@ -628,7 +628,7 @@ STATEMENT_VERBS = frozenset({
 
 SCOPE_END_NOOPS = frozenset({
     "END-ADD", "END-SUBTRACT", "END-MULTIPLY", "END-DIVIDE", "END-STRING",
-    "END-UNSTRING", "END-READ", "END-WRITE", "END-REWRITE", "END-DELETE",
+    "END-UNSTRING", "END-WRITE", "END-REWRITE", "END-DELETE",
     "END-START", "END-ACCEPT", "END-DISPLAY", "END-COMPUTE", "END-CALL",
     "END-RETURN", "END-RECEIVE", "END-SEND", "END-JSON", "END-XML",
 })
@@ -702,7 +702,7 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
 
         # Scope terminators must be standalone parser units. Otherwise a
         # preceding DISPLAY without a period can absorb END-IF as an operand.
-        if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH") or upper in SCOPE_END_NOOPS or upper.startswith("AT END") or upper.startswith("SEARCH ALL "):
+        if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH") or upper in SCOPE_END_NOOPS or upper.startswith("AT END") or upper.startswith("NOT AT END") or upper.startswith("SEARCH ALL "):
             flush()
             units.append((num, upper if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH") or upper in SCOPE_END_NOOPS else text.strip()))
             continue
@@ -717,6 +717,7 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
             or upper in SCOPE_END_NOOPS
             or upper.startswith("SEARCH ALL ")
             or upper.startswith("AT END")
+            or upper.startswith("NOT AT END")
             or upper.endswith("THEN")
             or upper.startswith("EVALUATE")
             or upper.startswith("WHEN ")
@@ -760,20 +761,36 @@ def build_tree(units: list[tuple[int, str]]) -> list[Node]:
             continue
 
         if upper.startswith("AT END"):
-            if stack and stack[-1][0] == "search_all":
+            if stack and stack[-1][0] == "read":
+                current_list = stack[-1][1].else_branch
+                action = normalized[len("AT END"):].strip()
+                if action:
+                    current_list.append(Node(kind="stmt", text=action, line=line))
+            elif stack and stack[-1][0] == "search_all":
                 branch = Node(kind="when", text="AT END", line=line)
                 stack[-1][1].body.append(branch)
                 current_list = branch.then_branch
             else:
-                current_list.append(Node(kind="malformed", text=f"{normalized} without matching SEARCH ALL", line=line))
+                current_list.append(Node(kind="malformed", text=f"{normalized} without matching READ/SEARCH ALL", line=line))
             continue
 
-        if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH"):
+        if upper.startswith("NOT AT END"):
+            if stack and stack[-1][0] == "read":
+                current_list = stack[-1][1].then_branch
+                action = normalized[len("NOT AT END"):].strip()
+                if action:
+                    current_list.append(Node(kind="stmt", text=action, line=line))
+            else:
+                current_list.append(Node(kind="malformed", text=f"{normalized} without matching READ", line=line))
+            continue
+
+        if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH", "END-READ"):
             expected = {
                 "END-IF": "if",
                 "END-PERFORM": "perform",
                 "END-EVALUATE": "evaluate",
                 "END-SEARCH": "search_all",
+                "END-READ": "read",
             }[upper]
             if stack and stack[-1][0] == expected:
                 _, _, parent_list = stack.pop()
@@ -838,6 +855,14 @@ def build_tree(units: list[tuple[int, str]]) -> list[Node]:
             current_list.append(node)
             stack.append(("perform", node, current_list))
             current_list = node.body
+            continue
+
+        if upper.startswith("READ "):
+            node = Node(kind="read", text=normalized, line=line)
+            current_list.append(node)
+            if not normalized.endswith(".") and "END-READ" not in upper:
+                stack.append(("read", node, current_list))
+                current_list = node.then_branch
             continue
 
         if upper.startswith("SEARCH ALL "):
