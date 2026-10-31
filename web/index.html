@@ -3899,7 +3899,7 @@ def translate_statement(
                     if len(delimiter_exprs) > 1:
                         pattern_items = ", ".join(delimiter_exprs)
                         lines = [
-                            f"_cobol_unstring_parts = re.split('|'.join(re.escape(str(_d)) for _d in [{pattern_items}]), "
+                            f"_cobol_unstring_parts = __import__('re').split('|'.join(__import__('re').escape(str(_d)) for _d in [{pattern_items}]), "
                             f"str({source_expr}))"
                         ]
                     else:
