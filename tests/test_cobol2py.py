@@ -4120,3 +4120,8 @@ class MoveFigurativeQuoteRegressionTests(unittest.TestCase):
         namespace = {"ws_group": {"ws_field": "abc"}}
         exec("\n".join(translated or []), namespace)
         self.assertEqual(namespace["ws_group"]["ws_field"], '"""')
+
+
+class CandidateExitParagraphTests(unittest.TestCase):
+    def test_exit_paragraph_emits_return(self):
+        self.assertEqual(cobol2py.translate_statement("EXIT PARAGRAPH",set()),["return"])
