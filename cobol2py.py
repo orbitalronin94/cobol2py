@@ -3670,6 +3670,7 @@ def translate_statement(
                 into_start = delimiter_match.end() + into_match.start()
                 source = unstring_text[len("UNSTRING "):delimiter_match.start()].strip()
                 delimiter_text = unstring_text[delimiter_match.end():into_start].strip()
+                all_delimited = bool(re.match(r"^\s*ALL\s+", delimiter_text, re.IGNORECASE))
                 targets_and_options = unstring_text[into_start + into_match.end() - into_match.start():].strip()
                 tally_match = re.search(rf"\bTALLYING\s+IN\s+({DATA_REF_PATTERN})", targets_and_options, re.IGNORECASE)
                 pointer_match = re.search(rf"\bWITH\s+POINTER\s+({DATA_REF_PATTERN})", targets_and_options, re.IGNORECASE)
@@ -3691,10 +3692,17 @@ def translate_statement(
                     else:
                         delimiter_expr = translate_literal(delimiter, variable_map)
                     source_expr = translate_literal(source, variable_map)
-                    lines = [
-                        f"_cobol_unstring_parts = (str({source_expr}).split(str({delimiter_expr})) "
-                        f"if str({delimiter_expr}) else [str({source_expr})])"
-                    ]
+                    if all_delimited:
+                        lines = [
+                            f"_cobol_unstring_parts = (re.sub(r'(?:' + re.escape(str({delimiter_expr})) + r')+', "
+                            f"str({delimiter_expr}), str({source_expr})).split(str({delimiter_expr})) "
+                            f"if str({delimiter_expr}) else [str({source_expr})])"
+                        ]
+                    else:
+                        lines = [
+                            f"_cobol_unstring_parts = (str({source_expr}).split(str({delimiter_expr})) "
+                            f"if str({delimiter_expr}) else [str({source_expr})])"
+                        ]
                     for index, target in enumerate(targets):
                         target_base = re.match(r"[A-Za-z0-9-]+", target)
                         target_var = variable_map.get(target_base.group(0).upper()) if target_base else None
