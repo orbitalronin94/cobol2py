@@ -2688,7 +2688,12 @@ def translate_condition(
             operand = translate_expr(match.group(1), variables)
             class_name = match.group(3).upper()
             if class_name == "NUMERIC":
-                numeric_pattern = r"\d+"
+                raw_operand = match.group(1).strip()
+                variable = (variables or {}).get(raw_operand.upper())
+                picture = (getattr(variable, "pic", "") or "").strip().upper()
+                # Alphanumeric items must contain digits only; preserve the
+                # existing signed-decimal behavior for undeclared/numeric items.
+                numeric_pattern = r"\d+" if picture.startswith(("X", "A")) else r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)"
                 expression = (
                     f"(__import__('re').fullmatch({numeric_pattern!r}, "
                     f"str({operand}).strip()) is not None)"
