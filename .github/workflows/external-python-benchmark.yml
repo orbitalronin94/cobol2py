@@ -133,7 +133,7 @@ jobs:
           holdout = by_skip[500]
           expected = {
               "primary": (197, 500),
-              "holdout": (216, 500),
+              "holdout": (217, 500),
           }
           for name, report in (("primary", primary), ("holdout", holdout)):
               if not report.get("archive_md5_verified"):
@@ -160,15 +160,15 @@ jobs:
               "| Sample | Candidate | Frozen main | Delta |",
               "|---|---:|---:|---:|",
               f"| Primary | {primary_passed}/500 ({100*primary_passed/500:.2f}%) | 197/500 (39.40%) | {primary_passed-197:+d} |",
-              f"| Holdout | {holdout_passed}/500 ({100*holdout_passed/500:.2f}%) | 216/500 (43.20%) | {holdout_passed-216:+d} |",
-              f"| **Combined** | **{total_passed}/{total_tested} ({total_percent:.2f}%)** | **413/1000 (41.30%)** | **{total_passed-413:+d}** |",
+              f"| Holdout | {holdout_passed}/500 ({100*holdout_passed/500:.2f}%) | 217/500 (43.40%) | {holdout_passed-217:+d} |",
+              f"| **Combined** | **{total_passed}/{total_tested} ({total_percent:.2f}%)** | **414/1000 (41.40%)** | **{total_passed-414:+d}** |",
               "",
               f"- Primary did not regress: **{primary_ok}**",
               f"- Holdout did not regress: **{holdout_ok}**",
               f"- Combined score strictly increased: **{total_ok}**",
               f"- **Gate: {'PASS' if reached else 'FAIL'}**",
               "",
-              "A PR is green only when both 500-case samples are complete, neither sample regresses, and the combined exact-match count is strictly greater than 413/1000.",
+              "A PR is green only when both 500-case samples are complete, neither sample regresses, and the combined exact-match count is strictly greater than 414/1000.",
           ]
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
               handle.write("\n".join(summary) + "\n")
