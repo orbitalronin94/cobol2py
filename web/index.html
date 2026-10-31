@@ -222,6 +222,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+RE_SUBSCRIPT_IDENTIFIER = re.compile(r"[A-Za-z][A-Za-z0-9_-]*")
+
 
 # ============================================================================
 # 1. PREPROCESADO
@@ -1648,7 +1650,7 @@ def normalize_data_reference(
     def index_expression(subscript: str) -> str:
         if subscript.isdigit():
             return str(int(subscript) - 1)
-        if re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*", subscript):
+        if RE_SUBSCRIPT_IDENTIFIER.fullmatch(subscript):
             # A subscript is a COBOL data reference too: it may be nested in a
             # group (e.g. S1 under GRP-SUB), so resolve its storage path before
             # coercing it to an integer for Python's zero-based indexing.
