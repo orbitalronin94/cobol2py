@@ -3678,6 +3678,11 @@ def translate_statement(
         return [f"# COBOL no traducido: {s}"]
     if upper.startswith("EXIT PROGRAM") or upper == "GOBACK":
         return ["return"]
+    # EXIT PARAGRAPH terminates only the current paragraph invocation.
+    # EXIT SECTION is deliberately not collapsed here: section-level control
+    # flow needs section boundaries in the parsed program model.
+    if upper == "EXIT PARAGRAPH":
+        return ["return"]
     if upper in ("CONTINUE", "EXIT"):
         return ["pass"]
 
@@ -5625,6 +5630,7 @@ if __name__ == "__main__":
 # External benchmark revalidation marker; no runtime behavior change.
 
 # External benchmark revalidation: arithmetic subscripts, ALL group MOVE, and nested qualification.
+
 </script>
 </body>
 </html>
