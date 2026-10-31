@@ -222,6 +222,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+RE_PERFORM_TIMES = re.compile(r"^PERFORM\s+(\d+)\s+TIMES$")
+
 
 # ============================================================================
 # 1. PREPROCESADO
@@ -1039,7 +1041,7 @@ def build_tree(units: list[tuple[int, str]]) -> list[Node]:
             current_list = node.body
             continue
 
-        inline_times = re.match(r"^PERFORM\s+(\d+)\s+TIMES$", upper)
+        inline_times = RE_PERFORM_TIMES.match(upper)
         if inline_times:
             node = Node(kind="perform_times_inline", text=normalized, line=line)
             current_list.append(node)
