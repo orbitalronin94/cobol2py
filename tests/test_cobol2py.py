@@ -4122,6 +4122,14 @@ class MoveFigurativeQuoteRegressionTests(unittest.TestCase):
         self.assertEqual(namespace["ws_group"]["ws_field"], '"""')
 
 
+class CandidateEvaluateAlphaPaddingTests(unittest.TestCase):
+    def test_evaluate_pads_short_literal(self):
+        v={"WS-C":cobol2py.CobolVar(level=1,name="WS-C",pic="X(3)")}
+        n=cobol2py.Node(kind="evaluate",text="EVALUATE WS-C",line=1,body=[cobol2py.Node(kind="when",text='"A"',line=2,then_branch=[cobol2py.Node(kind="stmt",text='DISPLAY "YES"',line=2)]),cobol2py.Node(kind="when",text="OTHER",line=3,then_branch=[cobol2py.Node(kind="stmt",text='DISPLAY "NO"',line=3)])])
+        generated="\\n".join(cobol2py.translate_nodes([n],set(),0,v))
+        self.assertIn("'A  '",generated); compile(generated,"<eval-pad>","exec")
+
+
 class CandidateUnstringZeroTests(unittest.TestCase):
     def test_unstring_zero_delimits_on_digit_zero(self):
         v={"WS-S":cobol2py.CobolVar(level=1,name="WS-S",pic="X(5)"),"WS-A":cobol2py.CobolVar(level=1,name="WS-A",pic="X(2)"),"WS-B":cobol2py.CobolVar(level=1,name="WS-B",pic="X(2)")}
