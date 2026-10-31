@@ -500,6 +500,7 @@ class Program:
     raw_lines: list[tuple[int, str]] = field(default_factory=list)
     unresolved_copybooks: list[str] = field(default_factory=list)
     condition_names: dict[str, tuple[str, list[tuple[str, Optional[str]]]]] = field(default_factory=dict)
+    file_specs: dict[str, dict[str, Optional[str]]] = field(default_factory=dict)
 
 
 # ============================================================================
@@ -826,7 +827,7 @@ STATEMENT_VERBS = frozenset({
 
 SCOPE_END_NOOPS = frozenset({
     "END-ADD", "END-SUBTRACT", "END-MULTIPLY", "END-DIVIDE", "END-STRING",
-    "END-UNSTRING", "END-READ", "END-WRITE", "END-REWRITE", "END-DELETE",
+    "END-UNSTRING", "END-WRITE", "END-REWRITE", "END-DELETE",
     "END-START", "END-ACCEPT", "END-DISPLAY", "END-COMPUTE", "END-CALL",
     "END-RETURN", "END-RECEIVE", "END-SEND", "END-JSON", "END-XML",
 })
@@ -900,9 +901,9 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
 
         # Scope terminators must be standalone parser units. Otherwise a
         # preceding DISPLAY without a period can absorb END-IF as an operand.
-        if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH") or upper in SCOPE_END_NOOPS or upper.startswith("AT END") or upper.startswith("SEARCH ALL "):
+        if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH", "END-READ") or upper in SCOPE_END_NOOPS or upper.startswith("AT END") or upper.startswith("NOT AT END") or upper.startswith("SEARCH ALL "):
             flush()
-            units.append((num, upper if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH") or upper in SCOPE_END_NOOPS else text.strip()))
+            units.append((num, upper if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH", "END-READ") or upper in SCOPE_END_NOOPS else text.strip()))
             continue
 
         if not buffer:
@@ -911,10 +912,11 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
 
         ends_unit = (
             text.endswith(".")
-            or upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH")
+            or upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH", "END-READ")
             or upper in SCOPE_END_NOOPS
             or upper.startswith("SEARCH ALL ")
             or upper.startswith("AT END")
+            or upper.startswith("NOT AT END")
             or upper.endswith("THEN")
             or upper.startswith("EVALUATE")
             or upper.startswith("WHEN ")
@@ -958,20 +960,36 @@ def build_tree(units: list[tuple[int, str]]) -> list[Node]:
             continue
 
         if upper.startswith("AT END"):
-            if stack and stack[-1][0] == "search_all":
+            if stack and stack[-1][0] == "read":
+                current_list = stack[-1][1].else_branch
+                action = normalized[len("AT END"):].strip()
+                if action:
+                    current_list.append(Node(kind="stmt", text=action, line=line))
+            elif stack and stack[-1][0] == "search_all":
                 branch = Node(kind="when", text="AT END", line=line)
                 stack[-1][1].body.append(branch)
                 current_list = branch.then_branch
             else:
-                current_list.append(Node(kind="malformed", text=f"{normalized} without matching SEARCH ALL", line=line))
+                current_list.append(Node(kind="malformed", text=f"{normalized} without matching READ/SEARCH ALL", line=line))
             continue
 
-        if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH"):
+        if upper.startswith("NOT AT END"):
+            if stack and stack[-1][0] == "read":
+                current_list = stack[-1][1].then_branch
+                action = normalized[len("NOT AT END"):].strip()
+                if action:
+                    current_list.append(Node(kind="stmt", text=action, line=line))
+            else:
+                current_list.append(Node(kind="malformed", text=f"{normalized} without matching READ", line=line))
+            continue
+
+        if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH", "END-READ"):
             expected = {
                 "END-IF": "if",
                 "END-PERFORM": "perform",
                 "END-EVALUATE": "evaluate",
                 "END-SEARCH": "search_all",
+                "END-READ": "read",
             }[upper]
             if stack and stack[-1][0] == expected:
                 _, _, parent_list = stack.pop()
@@ -1036,6 +1054,14 @@ def build_tree(units: list[tuple[int, str]]) -> list[Node]:
             current_list.append(node)
             stack.append(("perform", node, current_list))
             current_list = node.body
+            continue
+
+        if upper.startswith("READ "):
+            node = Node(kind="read", text=normalized, line=line)
+            current_list.append(node)
+            if not normalized.endswith(".") and "END-READ" not in upper:
+                stack.append(("read", node, current_list))
+                current_list = node.then_branch
             continue
 
         if upper.startswith("SEARCH ALL "):
@@ -1263,6 +1289,89 @@ def parse_condition_names(lines: list[tuple[int, str]]) -> dict[str, tuple[str, 
     return result
 
 
+def parse_file_specs(lines: list[tuple[int, str]]) -> dict[str, dict[str, Optional[str]]]:
+    """Parse the common SELECT/FD metadata needed by the Python file runtime."""
+    control_lines: list[str] = []
+    in_file_control = False
+    for _line_number, text in lines:
+        upper = text.upper()
+        if "FILE-CONTROL" in upper:
+            in_file_control = True
+            continue
+        if "DATA DIVISION" in upper:
+            break
+        if in_file_control:
+            control_lines.append(text.strip())
+
+    statements: list[str] = []
+    current: list[str] = []
+    for text in control_lines:
+        if re.match(r"^SELECT\b", text, re.IGNORECASE):
+            if current:
+                statements.append(" ".join(current))
+            current = [text]
+        elif current:
+            current.append(text)
+        if current and text.rstrip().endswith("."):
+            statements.append(" ".join(current))
+            current = []
+    if current:
+        statements.append(" ".join(current))
+
+    specs: dict[str, dict[str, Optional[str]]] = {}
+    for statement in statements:
+        selected = re.search(r"\bSELECT\s+([A-Za-z0-9-]+)", statement, re.IGNORECASE)
+        if not selected:
+            continue
+        name = selected.group(1).upper()
+        assigned = re.search(
+            r"""\bASSIGN(?:\s+TO)?\s+(?:"((?:[^"]|"")*)"|'((?:[^']|'')*)'|([A-Za-z0-9-]+))""",
+            statement,
+            re.IGNORECASE,
+        )
+        raw_path = next((value for value in assigned.groups() if value is not None), None) if assigned else None
+        if raw_path is not None:
+            quote = '"' if assigned.group(1) is not None else ("'" if assigned.group(2) is not None else "")
+            if quote:
+                raw_path = raw_path.replace(quote + quote, quote)
+        organization = re.search(
+            r"\bORGANIZATION\s+(?:IS\s+)?(LINE\s+SEQUENTIAL|SEQUENTIAL|INDEXED|RELATIVE)\b",
+            statement,
+            re.IGNORECASE,
+        )
+        status = re.search(r"\bFILE\s+STATUS\s+(?:IS\s+)?([A-Za-z0-9-]+)", statement, re.IGNORECASE)
+        specs[name] = {
+            "assign": raw_path,
+            "organization": re.sub(r"\s+", " ", organization.group(1).upper()) if organization else None,
+            "status": status.group(1).upper() if status else None,
+            "record": None,
+        }
+
+    in_file_section = False
+    current_file: Optional[str] = None
+    for _line_number, text in lines:
+        upper = text.upper().strip()
+        if re.search(r"\bFILE\s+SECTION\b", upper):
+            in_file_section = True
+            current_file = None
+            continue
+        if re.search(r"\b[A-Z0-9-]+\s+SECTION\b", upper) and "FILE SECTION" not in upper:
+            in_file_section = False
+            current_file = None
+        if not in_file_section:
+            continue
+        descriptor = re.match(r"^\s*FD\s+([A-Za-z0-9-]+)\b", text, re.IGNORECASE)
+        if descriptor:
+            current_file = descriptor.group(1).upper()
+            continue
+        if current_file and current_file in specs:
+            declaration = RE_VAR.match(text)
+            if declaration and int(declaration.group(1)) == 1:
+                specs[current_file]["record"] = declaration.group(2).upper()
+                current_file = None
+    return specs
+
+
 def parse_cobol(
     source: str,
     source_format: str = "auto",
@@ -1276,6 +1385,7 @@ def parse_cobol(
     prog = Program()
     prog.unresolved_copybooks = unresolved_copybooks
     prog.raw_lines = lines
+    prog.file_specs = parse_file_specs(lines)
 
     idx_ident = idx_data = idx_proc = -1
     for i, (_, t) in enumerate(lines):
@@ -2805,7 +2915,7 @@ def translate_condition(
         c = re.sub(r"\bEQUALS?\s+TO\b", "==", c, flags=re.IGNORECASE)
         c = re.sub(r"\bEQUALS?\b", "==", c, flags=re.IGNORECASE)
         c = re.sub(r"\bNOT\b", "not", c, flags=re.IGNORECASE)
-        c = re.sub(r"\bIS\b", "==", c, flags=re.IGNORECASE)
+        c = re.sub(r"(?<![A-Za-z0-9-])IS(?![A-Za-z0-9-])", "==", c, flags=re.IGNORECASE)
         c = re.sub(r"(?<![!<>=])=(?!=)", "==", c)
         c = c.replace("<>", "!=")
         # Some legacy sources express a compound relation with an equality
@@ -3556,6 +3666,18 @@ def translate_statement(
 
     if upper in ("STOP RUN", "STOP RUN."):
         return ["raise _CobolStopRun"]
+    open_match = re.fullmatch(r"OPEN\s+(INPUT|OUTPUT|EXTEND|I-O)\s+(.+)", s, re.IGNORECASE)
+    if open_match:
+        mode, names = open_match.groups()
+        file_names = re.findall(r"[A-Za-z0-9-]+", names)
+        if file_names:
+            return [f"_cobol_open({name.upper()!r}, {mode.upper()!r})" for name in file_names]
+    close_match = re.fullmatch(r"CLOSE\s+(.+)", s, re.IGNORECASE)
+    if close_match:
+        file_names = re.findall(r"[A-Za-z0-9-]+", close_match.group(1))
+        if file_names:
+            return [f"_cobol_close({name.upper()!r})" for name in file_names]
+
 
     # INITIALIZE resets elementary storage by category, not to its VALUE clause.
     initialize_prefix = re.match(r"INITIALIZE\s+", s, re.IGNORECASE)
@@ -4156,6 +4278,26 @@ def translate_nodes(
                 for i, line in enumerate(lines):
                     line_indent = indent + 1 if opens_block and i > 0 else indent
                     out.append("    " * line_indent + line.strip())
+
+        elif node.kind == "read":
+            read_match = re.match(r"^READ\s+([A-Za-z0-9-]+)", node.text, re.IGNORECASE)
+            if not read_match:
+                out.append("    " * indent + f"# READ no traducido: {node.text}")
+                continue
+            file_name = read_match.group(1).upper()
+            into_match = re.search(r"\bINTO\s+([A-Za-z0-9-]+)", node.text, re.IGNORECASE)
+            into_arg = repr(into_match.group(1).upper()) if into_match else "None"
+            prefix = "    " * indent
+            out.append(prefix + f"if _cobol_read({file_name!r}, {into_arg}):")
+            success_body = translate_nodes(node.then_branch, paragraphs, indent + 1, variables, current_paragraph, condition_names)
+            if not success_body or all(not line.strip() or line.strip().startswith("#") for line in success_body):
+                success_body = ["    " * (indent + 1) + "pass"]
+            out.extend(success_body)
+            out.append(prefix + "else:")
+            at_end_body = translate_nodes(node.else_branch, paragraphs, indent + 1, variables, current_paragraph, condition_names)
+            if not at_end_body or all(not line.strip() or line.strip().startswith("#") for line in at_end_body):
+                at_end_body = ["    " * (indent + 1) + "pass"]
+            out.extend(at_end_body)
 
         elif node.kind == "if":
             m = RE_IF_OPEN.match(node.text)
@@ -4994,6 +5136,94 @@ def emit_python(prog: Program) -> str:
     lines.append("    text = text.replace(',', '')")
     lines.append("    number = float(text or '0')")
     lines.append("    return -number if negative else number")
+    runtime_file_specs: dict[str, dict[str, object]] = {}
+    for file_name, file_spec in prog.file_specs.items():
+        runtime_spec: dict[str, object] = dict(file_spec)
+        status_name = file_spec.get("status")
+        status_variable = variables_by_name.get(status_name.upper()) if status_name else None
+        status_pic = (status_variable.pic or "").upper() if status_variable else ""
+        runtime_spec["status_numeric"] = bool(status_pic and "9" in status_pic and not any(char in status_pic for char in "XA"))
+        runtime_spec["status_width"] = (
+            pic_digit_count(status_pic) if runtime_spec["status_numeric"]
+            else pic_character_count(status_pic) if status_pic else 0
+        )
+        record_name = file_spec.get("record")
+        record_variable = variables_by_name.get(record_name.upper()) if record_name else None
+        runtime_spec["record_width"] = (_simple_storage_width(record_variable, variables_by_name) or 0) if record_variable else 0
+        runtime_file_specs[file_name] = runtime_spec
+    lines.append("_cobol_file_specs = " + repr(runtime_file_specs))
+    lines.append("_cobol_open_files = {}")
+    lines.append("")
+    lines.append("def _cobol_set_file_status(spec, status):")
+    lines.append("    name = spec.get('status')")
+    lines.append("    if not name:")
+    lines.append("        return")
+    lines.append("    width = int(spec.get('status_width') or 0)")
+    lines.append("    text = str(status)")
+    lines.append("    if width:")
+    lines.append("        text = text[-width:] if spec.get('status_numeric') else text[:width].ljust(width)")
+    lines.append("    globals()[normalize_name(name)] = int(text or '0') if spec.get('status_numeric') else text")
+    lines.append("")
+    lines.append("def _cobol_open(name, mode):")
+    lines.append("    key = name.upper()")
+    lines.append("    spec = _cobol_file_specs.get(key)")
+    lines.append("    if spec is None:")
+    lines.append("        raise SystemExit(1)")
+    lines.append("    path = spec.get('assign') or name")
+    lines.append("    python_mode = {'INPUT': 'r', 'OUTPUT': 'w', 'EXTEND': 'a', 'I-O': 'r+'}.get(mode.upper())")
+    lines.append("    if python_mode is None:")
+    lines.append("        if spec.get('status'):")
+    lines.append("            _cobol_set_file_status(spec, '30')")
+    lines.append("            return '30'")
+    lines.append("        raise SystemExit(1)")
+    lines.append("    try:")
+    lines.append("        handle = open(path, python_mode, encoding='latin-1', newline='')")
+    lines.append("    except OSError:")
+    lines.append("        status = '35' if mode.upper() in ('INPUT', 'EXTEND', 'I-O') else '30'")
+    lines.append("        if spec.get('status'):")
+    lines.append("            _cobol_set_file_status(spec, status)")
+    lines.append("            return status")
+    lines.append("        raise SystemExit(1)")
+    lines.append("    _cobol_open_files[key] = handle")
+    lines.append("    _cobol_set_file_status(spec, '00')")
+    lines.append("    return '00'")
+    lines.append("")
+    lines.append("def _cobol_read(name, into=None):")
+    lines.append("    key = name.upper()")
+    lines.append("    spec = _cobol_file_specs.get(key, {})")
+    lines.append("    handle = _cobol_open_files.get(key)")
+    lines.append("    if handle is None:")
+    lines.append("        if spec.get('status'):")
+    lines.append("            return False")
+    lines.append("        raise SystemExit(1)")
+    lines.append("    raw = handle.readline()")
+    lines.append("    if raw == '':")
+    lines.append("        _cobol_set_file_status(spec, '10')")
+    lines.append("        return False")
+    lines.append("    record_name = spec.get('record')")
+    lines.append("    if record_name:")
+    lines.append("        record_value = raw.rstrip(chr(10)).rstrip(chr(13))")
+    lines.append("        record_width = int(spec.get('record_width') or len(record_value))")
+    lines.append("        record_value = record_value[:record_width].ljust(record_width)")
+    lines.append("        globals()[normalize_name(record_name)] = record_value")
+    lines.append("        if into:")
+    lines.append("            globals()[normalize_name(into)] = __import__('copy').deepcopy(record_value)")
+    lines.append("    _cobol_set_file_status(spec, '00')")
+    lines.append("    return True")
+    lines.append("")
+    lines.append("def _cobol_close(name):")
+    lines.append("    key = name.upper()")
+    lines.append("    spec = _cobol_file_specs.get(key, {})")
+    lines.append("    handle = _cobol_open_files.pop(key, None)")
+    lines.append("    if handle is None:")
+    lines.append("        if spec.get('status'):")
+    lines.append("            _cobol_set_file_status(spec, '42')")
+    lines.append("            return '42'")
+    lines.append("        raise SystemExit(1)")
+    lines.append("    handle.close()")
+    lines.append("    _cobol_set_file_status(spec, '00')")
+    lines.append("    return '00'")
+    lines.append("")
     lines.append("")
     lines.append("def _cobol_test_after(condition, action):")
     lines.append("    action()")
