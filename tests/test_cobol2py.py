@@ -4087,3 +4087,36 @@ class MoveFigurativeZeroAlphanumericTests(unittest.TestCase):
                 namespace = {"ws_text": "ABCD"}
                 exec("\n".join(translated or []), namespace)
                 self.assertEqual(namespace["ws_text"], "0000")
+
+
+class MoveFigurativeQuoteRegressionTests(unittest.TestCase):
+    def test_move_quote_and_quotes_fill_alphanumeric_receiver(self):
+        variables = {
+            "WS-TEXT": cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(4)"),
+        }
+        for source in ("QUOTE", "QUOTES"):
+            with self.subTest(source=source):
+                translated = cobol2py.translate_statement(
+                    f"MOVE {source} TO WS-TEXT", set(), variables
+                )
+                self.assertIsNotNone(translated)
+                namespace = {"ws_text": "ABCD"}
+                exec("\n".join(translated or []), namespace)
+                self.assertEqual(namespace["ws_text"], '""""')
+
+    def test_move_quotes_fills_group_elementary_fields(self):
+        variables = {
+            "WS-GROUP": cobol2py.CobolVar(
+                level=1, name="WS-GROUP", is_group=True
+            ),
+            "WS-FIELD": cobol2py.CobolVar(
+                level=5, name="WS-FIELD", pic="X(3)", parent_name="WS-GROUP"
+            ),
+        }
+        translated = cobol2py.translate_statement(
+            "MOVE QUOTES TO WS-GROUP", set(), variables
+        )
+        self.assertIsNotNone(translated)
+        namespace = {"ws_group": {"ws_field": "abc"}}
+        exec("\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_group"]["ws_field"], '"""')
