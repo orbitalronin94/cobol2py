@@ -3677,6 +3677,11 @@ def translate_statement(
         file_names = re.findall(r"[A-Za-z0-9-]+", close_match.group(1))
         if file_names:
             return [f"_cobol_close({name.upper()!r})" for name in file_names]
+    write_match = re.fullmatch(r"WRITE\s+([A-Za-z0-9-]+)(?:\s+FROM\s+([A-Za-z0-9-]+))?", s, re.IGNORECASE)
+    if write_match:
+        record_name, from_name = write_match.groups()
+        return [f"_cobol_write({record_name.upper()!r}, {normalize_name(from_name) if from_name else None!r})"]
+
 
 
     # INITIALIZE resets elementary storage by category, not to its VALUE clause.
@@ -5152,6 +5157,30 @@ def emit_python(prog: Program) -> str:
         record_variable = variables_by_name.get(record_name.upper()) if record_name else None
         runtime_spec["record_width"] = (_simple_storage_width(record_variable, variables_by_name) or 0) if record_variable else 0
         runtime_spec["record_python_name"] = normalize_name(record_name) if record_name else None
+        record_layout: list[dict[str, object]] = []
+        if record_variable is not None:
+            def add_record_fields(variable: CobolVar, path: list[str]) -> None:
+                if variable.is_group:
+                    for child in variables_by_name.values():
+                        if child.parent_name and child.parent_name.upper() == variable.name.upper():
+                            add_record_fields(child, path + [normalize_name(child.name)])
+                    return
+                pic = (variable.pic or "").upper()
+                width = pic_character_count(pic) if any(char in pic for char in "XA") else pic_digit_count(pic)
+                if width <= 0:
+                    return
+                scale = pic_digit_count(pic.split("V", 1)[1]) if "V" in pic else 0
+                record_layout.append({
+                    "path": path,
+                    "width": width,
+                    "numeric": bool("9" in pic and not any(char in pic for char in "XA")),
+                    "scale": scale,
+                })
+            if record_variable.is_group:
+                add_record_fields(record_variable, [])
+            else:
+                add_record_fields(record_variable, [])
+        runtime_spec["record_layout"] = record_layout
         runtime_file_specs[file_name] = runtime_spec
     lines.append("_cobol_file_specs = " + repr(runtime_file_specs))
     lines.append("_cobol_open_files = {}")
@@ -5204,12 +5233,73 @@ def emit_python(prog: Program) -> str:
     lines.append("        return False")
     lines.append("    record_name = spec.get('record')")
     lines.append("    if record_name:")
-    lines.append("        record_value = raw.rstrip(chr(10)).rstrip(chr(13))")
-    lines.append("        record_width = int(spec.get('record_width') or len(record_value))")
-    lines.append("        record_value = record_value[:record_width].ljust(record_width)")
+    lines.append("        raw_record = raw.rstrip(chr(10)).rstrip(chr(13))")
+    lines.append("        record_width = int(spec.get('record_width') or len(raw_record))")
+    lines.append("        raw_record = raw_record[:record_width].ljust(record_width)")
+    lines.append("        layout = spec.get('record_layout') or []")
+    lines.append("        if layout:")
+    lines.append("            record_value = {}")
+    lines.append("            offset = 0")
+    lines.append("            for field in layout:")
+    lines.append("                width = int(field['width'])")
+    lines.append("                piece = raw_record[offset:offset + width].ljust(width)")
+    lines.append("                offset += width")
+    lines.append("                if field.get('numeric'):")
+    lines.append("                    value = int(piece.strip() or '0')")
+    lines.append("                    scale = int(field.get('scale') or 0)")
+    lines.append("                    if scale:")
+    lines.append("                        value = value / (10 ** scale)")
+    lines.append("                else:")
+    lines.append("                    value = piece")
+    lines.append("                path = field.get('path') or []")
+    lines.append("                target = record_value")
+    lines.append("                for key_part in path[:-1]:")
+    lines.append("                    target = target.setdefault(key_part, {})")
+    lines.append("                if path:")
+    lines.append("                    target[path[-1]] = value")
+    lines.append("                else:")
+    lines.append("                    record_value = value")
+    lines.append("        else:")
+    lines.append("            record_value = raw_record")
     lines.append("        globals()[spec['record_python_name']] = record_value")
     lines.append("        if into:")
     lines.append("            globals()[into] = __import__('copy').deepcopy(record_value)")
+    lines.append("    _cobol_set_file_status(spec, '00')")
+    lines.append("    return True")
+    lines.append("")
+    lines.append("def _cobol_write(record_name, from_name=None):")
+    lines.append("    spec = next((item for item in _cobol_file_specs.values() if item.get('record') == record_name.upper()), None)")
+    lines.append("    if spec is None:")
+    lines.append("        raise SystemExit(1)")
+    lines.append("    file_name = next(name for name, item in _cobol_file_specs.items() if item is spec)")
+    lines.append("    handle = _cobol_open_files.get(file_name)")
+    lines.append("    if handle is None:")
+    lines.append("        if spec.get('status'):")
+    lines.append("            _cobol_set_file_status(spec, '42')")
+    lines.append("            return False")
+    lines.append("        raise SystemExit(1)")
+    lines.append("    source_name = from_name or spec.get('record_python_name')")
+    lines.append("    record = globals()[source_name]")
+    lines.append("    layout = spec.get('record_layout') or []")
+    lines.append("    pieces = []")
+    lines.append("    for field in layout:")
+    lines.append("        value = record")
+    lines.append("        for key_part in (field.get('path') or []):")
+    lines.append("            value = value[key_part]")
+    lines.append("        width = int(field['width'])")
+    lines.append("        if field.get('numeric'):")
+    lines.append("            scale = int(field.get('scale') or 0)")
+    lines.append("            number = int(round(float(value) * (10 ** scale)))")
+    lines.append("            piece = str(abs(number)).zfill(width)[-width:]")
+    lines.append("        else:")
+    lines.append("            piece = str(value)[:width].ljust(width)")
+    lines.append("        pieces.append(piece)")
+    lines.append("    raw_record = ''.join(pieces) if layout else str(record)")
+    lines.append("    if spec.get('organization') == 'LINE SEQUENTIAL':")
+    lines.append("        handle.write(raw_record.rstrip() + chr(10))")
+    lines.append("    else:")
+    lines.append("        handle.write(raw_record)")
+    lines.append("    handle.flush()")
     lines.append("    _cobol_set_file_status(spec, '00')")
     lines.append("    return True")
     lines.append("")
