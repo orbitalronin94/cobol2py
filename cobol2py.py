@@ -4087,7 +4087,7 @@ def translate_nodes(
                 continue
             file_name = read_match.group(1).upper()
             into_match = re.search(r"\bINTO\s+([A-Za-z0-9-]+)", node.text, re.IGNORECASE)
-            into_arg = repr(into_match.group(1).upper()) if into_match else "None"
+            into_arg = repr(normalize_name(into_match.group(1))) if into_match else "None"
             prefix = "    " * indent
             out.append(prefix + f"if _cobol_read({file_name!r}, {into_arg}):")
             success_body = translate_nodes(node.then_branch, paragraphs, indent + 1, variables, current_paragraph, condition_names)
@@ -4948,9 +4948,11 @@ def emit_python(prog: Program) -> str:
             pic_digit_count(status_pic) if runtime_spec["status_numeric"]
             else pic_character_count(status_pic) if status_pic else 0
         )
+        runtime_spec["status_python_name"] = normalize_name(status_name) if status_name else None
         record_name = file_spec.get("record")
         record_variable = variables_by_name.get(record_name.upper()) if record_name else None
         runtime_spec["record_width"] = (_simple_storage_width(record_variable, variables_by_name) or 0) if record_variable else 0
+        runtime_spec["record_python_name"] = normalize_name(record_name) if record_name else None
         runtime_file_specs[file_name] = runtime_spec
     lines.append("_cobol_file_specs = " + repr(runtime_file_specs))
     lines.append("_cobol_open_files = {}")
@@ -4963,7 +4965,7 @@ def emit_python(prog: Program) -> str:
     lines.append("    text = str(status)")
     lines.append("    if width:")
     lines.append("        text = text[-width:] if spec.get('status_numeric') else text[:width].ljust(width)")
-    lines.append("    globals()[normalize_name(name)] = int(text or '0') if spec.get('status_numeric') else text")
+    lines.append("    globals()[spec['status_python_name']] = int(text or '0') if spec.get('status_numeric') else text")
     lines.append("")
     lines.append("def _cobol_open(name, mode):")
     lines.append("    key = name.upper()")
@@ -5006,9 +5008,9 @@ def emit_python(prog: Program) -> str:
     lines.append("        record_value = raw.rstrip(chr(10)).rstrip(chr(13))")
     lines.append("        record_width = int(spec.get('record_width') or len(record_value))")
     lines.append("        record_value = record_value[:record_width].ljust(record_width)")
-    lines.append("        globals()[normalize_name(record_name)] = record_value")
+    lines.append("        globals()[spec['record_python_name']] = record_value")
     lines.append("        if into:")
-    lines.append("            globals()[normalize_name(into)] = __import__('copy').deepcopy(record_value)")
+    lines.append("            globals()[into] = __import__('copy').deepcopy(record_value)")
     lines.append("    _cobol_set_file_status(spec, '00')")
     lines.append("    return True")
     lines.append("")
