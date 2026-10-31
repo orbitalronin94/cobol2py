@@ -21,9 +21,14 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install Playwright
-        run: |
-          python -m pip install playwright==1.56.0
-          python -m playwright install --with-deps chromium
+        run: python -m pip install playwright==1.56.0
+      - name: Restore Playwright browser cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-1.56.0-ubuntu-${{ runner.arch }}
+      - name: Install Chromium and system dependencies
+        run: python -m playwright install --with-deps chromium
       - name: Exercise the standalone translator in Chromium
         run: python tests/browser_smoke.py
 
