@@ -126,6 +126,7 @@ jobs:
           path: ${{ runner.temp }}/external-python-artifacts/${{ matrix.sample.name }}/
           if-no-files-found: warn
           retention-days: 90
+          compression-level: 1
 
   aggregate-scorecard:
     if: always() && (github.event_name != 'pull_request' || !startsWith(github.head_ref, 'experiment/'))
