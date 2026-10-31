@@ -1,0 +1,114 @@
+name: external-cobol-corpus
+
+on:
+  # This full external-corpus sweep is expensive; run it on PRs or explicitly
+  # via workflow_dispatch rather than on every direct commit to main.
+  pull_request:
+    paths:
+      - ".github/workflows/external-cobol-corpus.yml"
+      - "cobol2py.py"
+      - "tests/test_cobol2py.py"
+      - "web/index.html"
+      - "benchmarks/Dockerfile.external"
+      - "benchmarks/run_external_corpus.py"
+      - "benchmarks/run_external_multilang.py"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Number of standalone COBOL programs to compare against GnuCOBOL"
+        required: true
+        default: "500"
+        type: string
+
+permissions:
+  contents: read
+
+# The benchmark is expensive, but a stale run can otherwise block validation
+# of a newer translator revision for most of the 90-minute job timeout.
+# Keep only the newest revision's external measurement active.
+concurrency:
+  group: external-cobol-corpus-v2-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  external-corpus:
+    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'experiment/')
+    strategy:
+      fail-fast: false
+      matrix:
+        sample:
+          - { name: primary, skip: 0 }
+          - { name: holdout, skip: 500 }
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout tested revision
+        uses: actions/checkout@v4
+
+      - name: Download pinned X-COBOL v2 archive
+        run: |
+          curl --fail --location --retry 3 --retry-delay 2 \
+            "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" \
+            --output /tmp/COBOL_Files.zip
+          ls -lh /tmp/COBOL_Files.zip
+
+      - name: Build isolated benchmark image
+        run: docker build -f benchmarks/Dockerfile.external -t cobol2py-external-benchmark .
+
+      - name: Run benchmark without network access
+        env:
+          TARGET: ${{ inputs.target || '500' }}
+          CONTAINER_NAME: cobol2py-external-${{ github.run_id }}
+          OUTPUT_DIR: ${{ runner.temp }}/external-corpus-artifacts
+          SAMPLE_NAME: ${{ matrix.sample.name }}
+          SKIP: ${{ matrix.sample.skip }}
+        shell: bash
+        run: |
+          set +e
+          mkdir -p "$OUTPUT_DIR/$SAMPLE_NAME"
+          # The benchmark container runs as UID 65534 and must be able to
+          # write only into this dedicated artifact directory.
+          chmod 0777 "$OUTPUT_DIR" "$OUTPUT_DIR/$SAMPLE_NAME"
+          docker run --name "$CONTAINER_NAME" \
+            --network none \
+            --cap-drop=ALL \
+            --security-opt=no-new-privileges \
+            --pids-limit=128 \
+            --memory=4g \
+            --cpus=2 \
+            --read-only \
+            --tmpfs /tmp:rw,exec,nosuid,nodev,size=3g \
+            --mount "type=bind,source=$GITHUB_WORKSPACE,target=/workspace,readonly" \
+            --mount "type=bind,source=/tmp/COBOL_Files.zip,target=/input.zip,readonly" \
+            --mount "type=bind,source=$OUTPUT_DIR,target=/output" \
+            --workdir /workspace \
+            cobol2py-external-benchmark \
+            benchmarks/run_external_multilang.py \
+            --archive /input.zip \
+            --output "/output/$SAMPLE_NAME" \
+            --target "$TARGET" \
+            --skip "$SKIP"
+          benchmark_status=$?
+          docker rm "$CONTAINER_NAME" >/dev/null 2>&1
+          exit "$benchmark_status"
+
+      - name: Publish benchmark summary
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/external-corpus-artifacts/$SAMPLE_NAME/external-multilang-report.md" ]; then
+            echo "## $SAMPLE_NAME sample" >> "$GITHUB_STEP_SUMMARY"
+            cat "$RUNNER_TEMP/external-corpus-artifacts/$SAMPLE_NAME/external-multilang-report.md" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No benchmark report was produced; inspect the container and download logs." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload benchmark report (no source corpus)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: external-multilang-cobol-corpus-${{ matrix.sample.name }}-${{ github.run_number }}
+          path: ${{ runner.temp }}/external-corpus-artifacts/${{ matrix.sample.name }}/
+          if-no-files-found: warn
+          retention-days: 90
+
+# Candidate evaluation tracking: source PR #23; frozen reference is benchmark/best-score-414.
