@@ -3777,8 +3777,9 @@ def translate_statement(
                     if child.parent_name and child.parent_name.upper() == group.name.upper()
                 ]
                 for child in children:
-                    // COBOL INITIALIZE skips FILLER unless WITH FILLER is explicit.
-                    if (child.name.toUpperCase().startsWith("FILLER-") && !with_filler) continue;
+                    # COBOL INITIALIZE skips FILLER unless WITH FILLER is explicit.
+                    if child.name.upper().startswith("FILLER-") and not with_filler:
+                        continue
                     child_expr = f"{group_expr}[{normalize_name(child.name)!r}]"
                     if child.is_group:
                         if child.is_array:
