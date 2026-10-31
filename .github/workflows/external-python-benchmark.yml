@@ -33,9 +33,12 @@ jobs:
       # observed evaluation set, not an untouched statistical holdout.
       matrix:
         sample:
-          - { name: holdout, skip: 500 }
+          - { name: holdout-0, skip: 500, target: 125 }
+          - { name: holdout-1, skip: 625, target: 125 }
+          - { name: holdout-2, skip: 750, target: 125 }
+          - { name: holdout-3, skip: 875, target: 125 }
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: Restore pinned X-COBOL v2 archive cache
@@ -82,7 +85,7 @@ jobs:
             -t cobol2py-external-benchmark .
       - name: Run the reference-comparable Python benchmark
         env:
-          TARGET: ${{ inputs.target || '500' }}
+          TARGET: ${{ matrix.sample.target }}
           OUTPUT_DIR: ${{ runner.temp }}/external-python-artifacts
           SAMPLE_NAME: ${{ matrix.sample.name }}
           SKIP: ${{ matrix.sample.skip }}
@@ -165,40 +168,43 @@ jobs:
               with filename.open(encoding="utf-8") as handle:
                   reports.append(json.load(handle))
 
+          expected_skips = {500, 625, 750, 875}
           by_skip = {int(report.get("skip", -1)): report for report in reports}
-          if set(by_skip) != {500} or len(reports) != 1:
+          if set(by_skip) != expected_skips or len(reports) != 4:
               raise SystemExit(
-                  f"Expected exactly one holdout report (skip=500); "
-                  f"found {[(r.get('skip'), r.get('tested')) for r in reports]}"
+                  f"Expected four holdout shards {sorted(expected_skips)}; "
+                  f"found {[(r.get('skip'), r.get('target'), r.get('tested')) for r in reports]}"
               )
 
-          holdout = by_skip[500]
-          if not holdout.get("archive_md5_verified"):
-              raise SystemExit("Holdout: X-COBOL v2 archive checksum was not verified")
-          if not holdout.get("sample_complete") or int(holdout.get("tested", 0)) != 500:
-              raise SystemExit("Holdout: expected a complete 500-program sample")
-          if int(holdout.get("target", 0)) != 500:
-              raise SystemExit("Holdout: benchmark target was not 500")
+          for skip in sorted(expected_skips):
+              shard = by_skip[skip]
+              if not shard.get("archive_md5_verified"):
+                  raise SystemExit(f"Shard skip={skip}: X-COBOL v2 archive checksum was not verified")
+              if not shard.get("sample_complete") or int(shard.get("tested", 0)) != 125:
+                  raise SystemExit(f"Shard skip={skip}: expected a complete 125-program shard")
+              if int(shard.get("target", 0)) != 125:
+                  raise SystemExit(f"Shard skip={skip}: benchmark target was not 125")
 
-          passed = int(holdout.get("passed", 0))
+          passed = sum(int(by_skip[skip].get("passed", 0)) for skip in expected_skips)
+          tested = sum(int(by_skip[skip].get("tested", 0)) for skip in expected_skips)
           baseline = 236
           delta = passed - baseline
-          percent = 100.0 * passed / 500
+          percent = 100.0 * passed / tested
           reached = passed > baseline
 
           summary = [
-              "## X-COBOL v2 holdout-only evaluation gate",
+              "## X-COBOL v2 holdout-only evaluation gate — 4-way matrix",
               "",
               "| Fixed evaluation corpus | Candidate | Frozen reference | Delta |",
               "|---|---:|---:|---:|",
-              f"| Holdout half | {passed}/500 ({percent:.2f}%) | 236/500 (47.20%) | {delta:+d} |",
+              f"| Holdout half | {passed}/{tested} ({percent:.2f}%) | 236/500 (47.20%) | {delta:+d} |",
               "",
+              "- Shards: **4 × 125**, all complete and checksum-verified",
               "- Primary half: **not run and not used for candidate tuning/gating**",
-              "- Complete 500-case report with verified archive checksum: **True**",
-              f"- Score strictly above frozen reference: **{reached}**",
+              f"- Strict improvement over frozen reference: **{reached}**",
               f"- **Gate: {'PASS' if reached else 'FAIL'}**",
               "",
-              "Design decision (2026-10-31): optimize compute cost by evaluating candidates only on the fixed second 500-case half. Since this set is observed repeatedly during development, it is an evaluation set and must not be described as an untouched holdout. Keep the 236/500 reference frozen; do not change selection, denominator, or exclusions to inflate the score.",
+              "Design decision (2026-10-31): evaluate only the fixed second 500-case half to reduce wall-clock time. Repeated tuning on this set means it is an evaluation set, not an untouched statistical holdout. Preserve selection, denominator, and exclusions.",
           ]
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
               handle.write("\n".join(summary) + "\n")
