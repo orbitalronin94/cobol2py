@@ -1850,6 +1850,48 @@ class DataReferenceResolutionTests(unittest.TestCase):
         self.assertEqual(translated, "record_b['group']['field']")
         compile(translated, "<qualified-duplicate-group>", "eval")
 
+    def test_two_part_qualifier_subscript_targets_occurs_field(self):
+        variables = {
+            "TABLE1": cobol2py.CobolVar(level=1, name="TABLE1", is_group=True),
+            "RECORD2": cobol2py.CobolVar(
+                level=2, name="RECORD2", pic="9(2)", is_array=True,
+                occurs=2, parent_name="TABLE1"
+            ),
+        }
+
+        translated = cobol2py.normalize_data_reference("RECORD2 OF TABLE1(1)", variables)
+        self.assertEqual(translated, "table1['record2'][0]")
+        compile(translated, "<two-part-qualified-occurs>", "eval")
+        self.assertEqual(
+            eval(translated, {"table1": {"record2": [11, 22]}}),
+            11,
+        )
+
+    def test_subscript_on_non_table_qualifier_targets_occurs_field(self):
+        variables = {
+            "TABLE1": cobol2py.CobolVar(level=1, name="TABLE1", is_group=True),
+            "RECORD2": cobol2py.CobolVar(
+                level=5, name="RECORD2", is_group=True, is_array=True,
+                occurs=2, parent_name="TABLE1"
+            ),
+            "FIELD": cobol2py.CobolVar(
+                level=10, name="FIELD", pic="9", parent_name="RECORD2"
+            ),
+        }
+
+        translated = cobol2py.normalize_data_reference(
+            "FIELD OF RECORD2 OF TABLE1(2)", variables
+        )
+        self.assertEqual(
+            translated,
+            "table1['record2'][1]['field']"
+        )
+        compile(translated, "<qualified-occurs-reference>", "eval")
+        namespace = {
+            "table1": {"record2": [{"field": 3}, {"field": 7}]}
+        }
+        self.assertEqual(eval(translated, namespace), 7)
+
     def test_cyclic_group_metadata_does_not_recurse_forever(self):
         variables = {
             "GROUP-A": cobol2py.CobolVar(level=1, name="GROUP-A", is_group=True, parent_name="GROUP-B"),
