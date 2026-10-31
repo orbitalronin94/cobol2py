@@ -4122,6 +4122,14 @@ class MoveFigurativeQuoteRegressionTests(unittest.TestCase):
         self.assertEqual(namespace["ws_group"]["ws_field"], '"""')
 
 
+class CandidateInspectReplacingTests(unittest.TestCase):
+    def test_inspect_replacing_all(self):
+        v={"WS-T":cobol2py.CobolVar(level=1,name="WS-T",pic="X(6)")}
+        code=cobol2py.translate_statement('INSPECT WS-T REPLACING ALL "A" BY "Z"',set(),v)
+        ns={"ws_t":"ABAC  "}; exec("\\n".join(code or []),ns)
+        self.assertEqual(ns["ws_t"],"ZBZC  ")
+
+
 class CandidateUnstringZeroTests(unittest.TestCase):
     def test_unstring_zero_delimits_on_digit_zero(self):
         v={"WS-S":cobol2py.CobolVar(level=1,name="WS-S",pic="X(5)"),"WS-A":cobol2py.CobolVar(level=1,name="WS-A",pic="X(2)"),"WS-B":cobol2py.CobolVar(level=1,name="WS-B",pic="X(2)")}
