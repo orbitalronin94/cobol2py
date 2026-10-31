@@ -3605,6 +3605,35 @@ def translate_statement(
             else:
                 initialize_group(root, target_expr, set())
         return assignments or [f"# INITIALIZE sin campos traducibles: {s}"]
+    # INSPECT CONVERTING applies a positional character map to the receiving field.
+    converting_match = re.fullmatch(
+        rf"INSPECT\\s+({DATA_REF_PATTERN})\\s+CONVERTING\\s+(.+?)\\s+TO\\s+(.+?)(?:\\s+END-INSPECT)?",
+        s,
+        re.IGNORECASE,
+    )
+    if converting_match:
+        source, sending, receiving = (part.strip() for part in converting_match.groups())
+        variable_map = variables or {}
+        source_expr = translate_literal(source, variable_map)
+        sending_expr = translate_literal(sending, variable_map)
+        receiving_expr = translate_literal(receiving, variable_map)
+        target_expr = normalize_data_reference(source, variable_map)
+        mapping_expr = (
+            f"str.maketrans(str({sending_expr})[:min(len(str({sending_expr})), "
+            f"len(str({receiving_expr})))], str({receiving_expr})[:min("
+            f"len(str({sending_expr})), len(str({receiving_expr})))])"
+        )
+        converted_expr = f"str({source_expr}).translate({mapping_expr})"
+        source_base = re.match(r"[A-Za-z0-9-]+", source)
+        source_var = variable_map.get(source_base.group(0).upper()) if source_base else None
+        if source_var is not None and source_var.pic:
+            pic = source_var.pic.upper()
+            if "X" in pic or "A" in pic:
+                width = pic_character_count(pic)
+                if width:
+                    converted_expr = f"({converted_expr})[:{width}].ljust({width})"
+        return [emit_assignment(target_expr, converted_expr, set())]
+
     # INSPECT TALLYING FOR ALL counts non-overlapping occurrences of one
     # operand and adds that count to the receiving numeric item.
     tally_match = re.fullmatch(
