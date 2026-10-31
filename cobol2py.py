@@ -23,6 +23,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+RE_SIMPLE_SUBSCRIPT = re.compile(r"\(([A-Za-z0-9_-]+)\)")
+
 
 # ============================================================================
 # 1. PREPROCESADO
@@ -1323,7 +1325,7 @@ def normalize_java_name(name: str) -> str:
         if subscript.isdigit():
             return f"[{int(subscript) - 1}]"
         return f"[{normalize_java_identifier(subscript)} - 1]"
-    return re.sub(r"\(([A-Za-z0-9_-]+)\)", normalize_subscript, normalized)
+    return RE_SIMPLE_SUBSCRIPT.sub(normalize_subscript, normalized)
 
 
 def normalize_name(name: str) -> str:
