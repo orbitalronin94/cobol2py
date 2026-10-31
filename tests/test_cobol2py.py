@@ -1,5 +1,7 @@
 """Regression tests for cobol2py. Run with: python -m unittest discover -s tests -v."""
 import ast
+import os
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -180,6 +182,242 @@ class PreprocessTests(unittest.TestCase):
         self.assertEqual(variables["INPUT-AMOUNT"].parent_name, "INPUT-RECORD")
 
 
+    def test_select_and_fd_file_metadata_are_preserved(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. FILE-METADATA.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT INPUT-FILE ASSIGN TO "../database.dat"
+        ORGANIZATION IS LINE SEQUENTIAL
+        FILE STATUS IS WS-FILE-STATUS.
+DATA DIVISION.
+FILE SECTION.
+FD INPUT-FILE.
+01 INPUT-RECORD PIC X(100).
+WORKING-STORAGE SECTION.
+01 WS-FILE-STATUS PIC XX.
+PROCEDURE DIVISION.
+STOP RUN.
+"""
+        program = cobol2py.parse_cobol(source, source_format="free")
+        self.assertEqual(
+            program.file_specs["INPUT-FILE"],
+            {
+                "assign": "../database.dat",
+                "organization": "LINE SEQUENTIAL",
+                "status": "WS-FILE-STATUS",
+                "record": "INPUT-RECORD",
+            },
+        )
+
+
+class CobolFileOpenRuntimeTests(unittest.TestCase):
+    def test_open_missing_input_sets_declared_file_status(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. OPEN-MISSING-STATUS.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT INPUT-FILE ASSIGN TO "missing-input.dat"
+        ORGANIZATION IS LINE SEQUENTIAL
+        FILE STATUS IS WS-STATUS.
+DATA DIVISION.
+FILE SECTION.
+FD INPUT-FILE.
+01 INPUT-RECORD PIC X(10).
+WORKING-STORAGE SECTION.
+01 WS-STATUS PIC XX.
+PROCEDURE DIVISION.
+MAIN.
+    OPEN INPUT INPUT-FILE.
+    DISPLAY WS-STATUS.
+    GOBACK.
+"""
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        namespace = {"__name__": "generated_test"}
+        compile(generated, "<open-missing-status>", "exec")
+        exec(generated, namespace)
+        output = StringIO()
+        previous = Path.cwd()
+        with tempfile.TemporaryDirectory() as directory:
+            try:
+                os.chdir(directory)
+                with redirect_stdout(output):
+                    namespace["main"]()
+            finally:
+                os.chdir(previous)
+        self.assertEqual(output.getvalue(), "35\n", generated)
+
+    def test_open_missing_input_without_file_status_exits_nonzero(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. OPEN-MISSING-ERROR.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT INPUT-FILE ASSIGN TO "missing-input.dat".
+DATA DIVISION.
+FILE SECTION.
+FD INPUT-FILE.
+01 INPUT-RECORD PIC X(10).
+PROCEDURE DIVISION.
+MAIN.
+    OPEN INPUT INPUT-FILE.
+    GOBACK.
+"""
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        namespace = {"__name__": "generated_test"}
+        compile(generated, "<open-missing-error>", "exec")
+        exec(generated, namespace)
+        previous = Path.cwd()
+        with tempfile.TemporaryDirectory() as directory:
+            try:
+                os.chdir(directory)
+                with self.assertRaises(SystemExit) as raised:
+                    namespace["main"]()
+            finally:
+                os.chdir(previous)
+        self.assertEqual(raised.exception.code, 1)
+
+
+class CobolSequentialReadTests(unittest.TestCase):
+    def test_read_at_end_and_not_at_end_execute_the_correct_branch(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. READ-BRANCHES.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT INPUT-FILE ASSIGN TO "records.dat"
+        ORGANIZATION IS LINE SEQUENTIAL
+        FILE STATUS IS WS-STATUS.
+DATA DIVISION.
+FILE SECTION.
+FD INPUT-FILE.
+01 INPUT-RECORD PIC X(4).
+WORKING-STORAGE SECTION.
+01 WS-STATUS PIC XX.
+01 WS-EOF PIC X.
+PROCEDURE DIVISION.
+MAIN.
+    OPEN INPUT INPUT-FILE.
+    READ INPUT-FILE
+        AT END MOVE "Y" TO WS-EOF
+        NOT AT END DISPLAY INPUT-RECORD
+    END-READ.
+    CLOSE INPUT-FILE.
+    GOBACK.
+"""
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<read-at-end>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        previous = Path.cwd()
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "records.dat").write_text("AB\n", encoding="latin-1")
+            try:
+                os.chdir(directory)
+                with redirect_stdout(output):
+                    namespace["main"]()
+            finally:
+                os.chdir(previous)
+        self.assertEqual(output.getvalue(), "AB  \n", generated)
+        self.assertEqual(namespace["ws_eof"], " ")
+
+class CobolSequentialWriteTests(unittest.TestCase):
+    def test_open_output_write_and_close_emit_line_sequential_record(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. WRITE-RECORD.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT OUTPUT-FILE ASSIGN TO "output.dat"
+        ORGANIZATION IS LINE SEQUENTIAL.
+DATA DIVISION.
+FILE SECTION.
+FD OUTPUT-FILE.
+01 OUTPUT-RECORD PIC X(4).
+WORKING-STORAGE SECTION.
+01 WS-TEXT PIC X(4) VALUE "AB".
+PROCEDURE DIVISION.
+MAIN.
+    OPEN OUTPUT OUTPUT-FILE.
+    MOVE WS-TEXT TO OUTPUT-RECORD.
+    WRITE OUTPUT-RECORD.
+    CLOSE OUTPUT-FILE.
+    GOBACK.
+"""
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<write-record>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        previous = Path.cwd()
+        with tempfile.TemporaryDirectory() as directory:
+            try:
+                os.chdir(directory)
+                namespace["main"]()
+                contents = Path("output.dat").read_text(encoding="latin-1")
+            finally:
+                os.chdir(previous)
+        self.assertEqual(contents, "AB\n", generated)
+
+
+class SetIndexArithmeticTests(unittest.TestCase):
+    def test_set_up_and_down_by_update_index_storage(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. SET-INDEX-ARITHMETIC.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-IDX PIC 9(2) VALUE 1.
+PROCEDURE DIVISION.
+MAIN.
+    SET WS-IDX UP BY 2.
+    SET WS-IDX DOWN BY 1.
+    DISPLAY WS-IDX.
+    GOBACK.
+"""
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<set-index-arithmetic>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "02\n", generated)
+
+
+class DisplayNoAdvancingTests(unittest.TestCase):
+    def test_display_no_advancing_without_with_concatenates_output(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. DISPLAY-NO-ADVANCING.
+PROCEDURE DIVISION.
+MAIN.
+    DISPLAY "A" NO ADVANCING.
+    DISPLAY "B".
+    GOBACK.
+"""
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<display-no-advancing>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "AB\n", generated)
+
+
 class TranslationTests(unittest.TestCase):
     def test_sign_conditions_handle_positive_negative_and_not(self):
         variable = cobol2py.CobolVar(level=77, name="WS-N", pic="S9(4)")
@@ -195,6 +433,15 @@ class TranslationTests(unittest.TestCase):
         self.assertFalse(eval(positive, {"ws_n": 0}))
         self.assertTrue(eval(negative, {"ws_n": -1}))
         self.assertTrue(eval(zero, {"ws_n": 0}))
+
+    def test_is_prefix_in_hyphenated_data_name_is_not_relation_word(self):
+        variable = cobol2py.CobolVar(level=77, name="IS-LOW", pic="9")
+        translated = cobol2py.translate_condition(
+            "IS-LOW = 1",
+            variables={"IS-LOW": variable},
+        )
+        self.assertTrue(eval(translated, {"is_low": 1}), translated)
+        self.assertFalse(eval(translated, {"is_low": 0}), translated)
 
     def test_qualified_level_88_condition_consumes_parent_qualifier(self):
         variable = cobol2py.CobolVar(level=77, name="WS-D33", pic="X(4)")
