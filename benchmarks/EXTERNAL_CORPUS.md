@@ -15,7 +15,7 @@ Open-source availability of a dataset does not automatically grant the same lice
 
 ## Run it
 
-On pull requests that change the translator or benchmark, the iterative evaluation workflow runs only the fixed second half (`skip=500`, `target=500`) to reduce compute cost. The policy and its limitations are documented in [HOLDOUT_ONLY_EVALUATION_POLICY.md](../docs/HOLDOUT_ONLY_EVALUATION_POLICY.md). The separate `external-cobol-corpus` workflow may retain historical two-sample behavior; check its workflow definition before assuming it follows this policy. The workflow downloads an external archive and runs programs from third-party repositories.
+On pull requests that change the translator or benchmark, the iterative evaluation workflow runs only the fixed second half (`skip=500`, `target=500`) to reduce compute cost. The policy and its limitations are documented in [HOLDOUT_ONLY_EVALUATION_POLICY.md](../docs/HOLDOUT_ONLY_EVALUATION_POLICY.md). The `external-cobol-corpus` and `external-python-benchmark` workflows both run only this second half during iterative evaluation. The workflow downloads an external archive and runs programs from third-party repositories.
 
 The job builds a small Docker image with Python and GnuCOBOL, then runs the test process with:
 - network disabled;
