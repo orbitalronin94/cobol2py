@@ -107,3 +107,5 @@ jobs:
           path: ${{ runner.temp }}/external-corpus-artifacts/${{ matrix.sample.name }}/
           if-no-files-found: warn
           retention-days: 90
+
+# Candidate evaluation tracking: source PR #35; frozen reference is benchmark/best-score-414.
