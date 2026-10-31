@@ -3650,3 +3650,33 @@ class DebugContentsSpecialRegisterCandidateTests(unittest.TestCase):
         generated = cobol2py.emit_python(program)
         self.assertIn("debug_contents", generated)
         compile(generated, "<debug-contents-register>", "exec")
+
+
+class UnstringPointerRegressionTests(unittest.TestCase):
+    def test_unstring_starts_at_one_based_pointer_and_updates_pointer_and_tally(self):
+        variables = {
+            "WS-SOURCE": cobol2py.CobolVar(level=77, name="WS-SOURCE", pic="X(5)"),
+            "WS-A": cobol2py.CobolVar(level=77, name="WS-A", pic="X(1)"),
+            "WS-B": cobol2py.CobolVar(level=77, name="WS-B", pic="X(1)"),
+            "WS-PTR": cobol2py.CobolVar(level=77, name="WS-PTR", pic="9(2)"),
+            "WS-TALLY": cobol2py.CobolVar(level=77, name="WS-TALLY", pic="9(2)"),
+        }
+        emitted = cobol2py.translate_statement(
+            'UNSTRING WS-SOURCE DELIMITED BY "," INTO WS-A WS-B '
+            'WITH POINTER WS-PTR TALLYING IN WS-TALLY',
+            set(),
+            variables,
+        )
+        self.assertIsNotNone(emitted)
+        namespace = {
+            "ws_source": "A,B,C",
+            "ws_a": " ",
+            "ws_b": " ",
+            "ws_ptr": 3,
+            "ws_tally": 4,
+        }
+        exec("\n".join(emitted or []), namespace)
+        self.assertEqual(namespace["ws_a"], "B")
+        self.assertEqual(namespace["ws_b"], "C")
+        self.assertEqual(namespace["ws_ptr"], 6)
+        self.assertEqual(namespace["ws_tally"], 6)
