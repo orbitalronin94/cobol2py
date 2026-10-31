@@ -53,7 +53,7 @@ class BehavioralSpecGraph:
             for kind, pattern in patterns:
                 match = pattern.search(line)
                 if match:
-                    verb = re.sub(r"\s+", " ", match.group(1).upper())
+                    verb = re.sub(r"\s+", " ", match.group(0).strip().upper())
                     graph.nodes.append(SpecNode(
                         id=f"n{len(graph.nodes) + 1}", kind=kind, line=line_no,
                         source=stripped, attributes={"verb": verb}))
