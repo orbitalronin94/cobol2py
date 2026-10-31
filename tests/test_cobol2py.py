@@ -395,6 +395,29 @@ MAIN.
         self.assertEqual(output.getvalue(), "02\n", generated)
 
 
+class DisplayNoAdvancingTests(unittest.TestCase):
+    def test_display_no_advancing_without_with_concatenates_output(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. DISPLAY-NO-ADVANCING.
+PROCEDURE DIVISION.
+MAIN.
+    DISPLAY "A" NO ADVANCING.
+    DISPLAY "B".
+    GOBACK.
+"""
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<display-no-advancing>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "AB\n", generated)
+
+
 class TranslationTests(unittest.TestCase):
     def test_sign_conditions_handle_positive_negative_and_not(self):
         variable = cobol2py.CobolVar(level=77, name="WS-N", pic="S9(4)")
