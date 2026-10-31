@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - "cobol2py.py"
+      - "ronin/**"
+      - "tests/test_sota_repair.py"
       - "benchmarks/run_external_corpus.py"
       - "benchmarks/Dockerfile.external"
       - ".github/workflows/external-python-benchmark.yml"
