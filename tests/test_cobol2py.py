@@ -2670,7 +2670,7 @@ class DisplayOperandSplittingRegressionTests(unittest.TestCase):
     def test_parenthesized_numeric_display_generates_valid_python(self):
         translated = cobol2py.translate_statement("DISPLAY (01) (01) ERASE", set(), {})
         self.assertIsNotNone(translated)
-        compile("\\n".join(translated or []), "<display-operands>", "exec")
+        compile("\n".join(translated or []), "<display-operands>", "exec")
 
 
 class ComputeSizeErrorClauseRegressionTests(unittest.TestCase):
@@ -2682,7 +2682,7 @@ class ComputeSizeErrorClauseRegressionTests(unittest.TestCase):
         )
         self.assertIsNotNone(translated)
         self.assertEqual(translated, ["ws_total = ws_left + ws_right"])
-        compile("\\n".join(translated or []), "<compute-size-error>", "exec")
+        compile("\n".join(translated or []), "<compute-size-error>", "exec")
 
 
 class FigurativeConstantIdentifierBoundaryTests(unittest.TestCase):
@@ -2986,7 +2986,7 @@ class HexadecimalLiteralRegressionTests(unittest.TestCase):
         items = cobol2py.split_cobol_items('X"0D" ERASE')
         self.assertEqual(items, ['X"0D"', "ERASE"])
         translated = cobol2py.translate_statement('DISPLAY X"0D" ERASE', set(), {})
-        compile("\\n".join(translated or []), "<hex-display>", "exec")
+        compile("\n".join(translated or []), "<hex-display>", "exec")
 
 
 class ParenthesizedDisplayListRegressionTests(unittest.TestCase):
@@ -2994,7 +2994,7 @@ class ParenthesizedDisplayListRegressionTests(unittest.TestCase):
         self.assertEqual(cobol2py.split_cobol_items("(01, 01) ERASE"), ["01", "01", "ERASE"])
         translated = cobol2py.translate_statement("DISPLAY (01, 01) ERASE", set(), {})
         self.assertIsNotNone(translated)
-        compile("\\n".join(translated or []), "<parenthesized-display-list>", "exec")
+        compile("\n".join(translated or []), "<parenthesized-display-list>", "exec")
 
 
 class CobolAcceptEofRegressionTests(unittest.TestCase):
@@ -4126,7 +4126,7 @@ class CandidateEvaluateAlphaPaddingTests(unittest.TestCase):
     def test_evaluate_pads_short_literal(self):
         v={"WS-C":cobol2py.CobolVar(level=1,name="WS-C",pic="X(3)")}
         n=cobol2py.Node(kind="evaluate",text="EVALUATE WS-C",line=1,body=[cobol2py.Node(kind="when",text='"A"',line=2,then_branch=[cobol2py.Node(kind="stmt",text='DISPLAY "YES"',line=2)]),cobol2py.Node(kind="when",text="OTHER",line=3,then_branch=[cobol2py.Node(kind="stmt",text='DISPLAY "NO"',line=3)])])
-        generated="\\n".join(cobol2py.translate_nodes([n],set(),0,v))
+        generated="\n".join(cobol2py.translate_nodes([n],set(),0,v))
         self.assertIn("'A  '",generated); compile(generated,"<eval-pad>","exec")
 
 
