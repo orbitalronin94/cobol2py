@@ -3693,8 +3693,9 @@ def translate_statement(
                     delimiter = delimiter_parts[0] if delimiter_parts else delimiter_text
                     if delimiter.upper() in ("SPACE", "SPACES"):
                         delimiter_expr = repr(" ")
-                    elif delimiter.upper() in ("ZERO", "ZEROS"):
-                        delimiter_expr = repr("\x00")
+                    elif delimiter.upper() in ("ZERO", "ZEROS", "ZEROES"):
+                        # Alphanumeric UNSTRING uses the zero character, not NUL.
+                        delimiter_expr = repr("0")
                     else:
                         delimiter_expr = translate_literal(delimiter, variable_map)
                     source_expr = translate_literal(source, variable_map)
