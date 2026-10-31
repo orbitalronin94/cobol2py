@@ -23,6 +23,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+RE_WHEN_COMPILED = re.compile(r"FUNCTION\s+WHEN-COMPILED", re.IGNORECASE)
+
 
 # ============================================================================
 # 1. PREPROCESADO
@@ -1696,7 +1698,7 @@ def translate_literal(
         return "False"
     if re.fullmatch(r"FUNCTION\s+CURRENT-DATE", t, re.IGNORECASE):
         return "(lambda _dt: _dt.strftime('%Y%m%d%H%M%S') + f'{_dt.microsecond // 10000:02d}' + _dt.strftime('%z'))(__import__('datetime').datetime.now().astimezone())"
-    if re.fullmatch(r"FUNCTION\s+WHEN-COMPILED", t, re.IGNORECASE):
+    if RE_WHEN_COMPILED.fullmatch(t):
         # DISPLAY operands go through translate_literal directly, not always
         # translate_expr, so handle this alphanumeric intrinsic here too.
         return "(lambda _dt: _dt.strftime('%Y%m%d%H%M%S') + f'{_dt.microsecond // 10000:02d}')(__import__('datetime').datetime.now())"
