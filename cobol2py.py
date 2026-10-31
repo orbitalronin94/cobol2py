@@ -3615,7 +3615,7 @@ def translate_statement(
     # receiving data item. Reverse construction makes the first occurrence
     # of a repeated source character win, rather than Python dict's last one.
     converting_match = re.fullmatch(
-        rf"INSPECT\\s+({DATA_REF_PATTERN})\\s+CONVERTING\\s+(.+?)\\s+TO\\s+(.+?)(?:\\s+END-INSPECT)?",
+        rf"INSPECT\s+({DATA_REF_PATTERN})\s+CONVERTING\s+(.+?)\s+TO\s+(.+?)(?:\s+END-INSPECT)?",
         s,
         re.IGNORECASE,
     )
