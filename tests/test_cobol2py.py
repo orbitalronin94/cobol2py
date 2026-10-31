@@ -4107,5 +4107,5 @@ class StringFigurativeZeroDelimiterRegressionTests(unittest.TestCase):
                 )
                 self.assertIsNotNone(translated)
                 namespace = {"ws_source": "A0B", "ws_out": "    "}
-                exec("\\n".join(translated or []), namespace)
+                exec("\n".join(translated or []), namespace)
                 self.assertEqual(namespace["ws_out"], "A   ")
