@@ -702,9 +702,9 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
 
         # Scope terminators must be standalone parser units. Otherwise a
         # preceding DISPLAY without a period can absorb END-IF as an operand.
-        if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH") or upper in SCOPE_END_NOOPS or upper.startswith("AT END") or upper.startswith("NOT AT END") or upper.startswith("SEARCH ALL "):
+        if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH", "END-READ") or upper in SCOPE_END_NOOPS or upper.startswith("AT END") or upper.startswith("NOT AT END") or upper.startswith("SEARCH ALL "):
             flush()
-            units.append((num, upper if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH") or upper in SCOPE_END_NOOPS else text.strip()))
+            units.append((num, upper if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH", "END-READ") or upper in SCOPE_END_NOOPS else text.strip()))
             continue
 
         if not buffer:
@@ -713,7 +713,7 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
 
         ends_unit = (
             text.endswith(".")
-            or upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH")
+            or upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH", "END-READ")
             or upper in SCOPE_END_NOOPS
             or upper.startswith("SEARCH ALL ")
             or upper.startswith("AT END")
@@ -4928,6 +4928,9 @@ def emit_python(prog: Program) -> str:
             pic_digit_count(status_pic) if runtime_spec["status_numeric"]
             else pic_character_count(status_pic) if status_pic else 0
         )
+        record_name = file_spec.get("record")
+        record_variable = variables_by_name.get(record_name.upper()) if record_name else None
+        runtime_spec["record_width"] = (_simple_storage_width(record_variable, variables_by_name) or 0) if record_variable else 0
         runtime_file_specs[file_name] = runtime_spec
     lines.append("_cobol_file_specs = " + repr(runtime_file_specs))
     lines.append("_cobol_open_files = {}")
