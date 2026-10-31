@@ -4119,3 +4119,29 @@ class UnstringMultipleDelimitersRegressionTests(unittest.TestCase):
         self.assertEqual(namespace["ws_b"], "B  ")
         self.assertEqual(namespace["ws_c"], "C  ")
         self.assertEqual(namespace["ws_tally"], 3)
+
+
+class UnstringQuotedOrDelimiterRegressionTests(unittest.TestCase):
+    def test_or_inside_quoted_delimiter_is_not_a_separator(self):
+        variables = {
+            item.name.upper(): item
+            for item in cobol2py.parse_variables([
+                (1, "01 WS-SOURCE PIC X(8)."),
+                (1, "01 WS-A PIC X(5)."),
+                (1, "01 WS-B PIC X(5)."),
+            ])
+        }
+        translated = cobol2py.translate_statement(
+            'UNSTRING WS-SOURCE DELIMITED BY " OR " OR ";" INTO WS-A WS-B',
+            set(),
+            variables,
+        )
+        self.assertIsNotNone(translated)
+        namespace = {
+            "ws_source": "A OR B;C",
+            "ws_a": " " * 5,
+            "ws_b": " " * 5,
+        }
+        exec("\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_a"], "A    ")
+        self.assertEqual(namespace["ws_b"], "B    ")
