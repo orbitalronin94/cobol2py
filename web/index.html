@@ -3892,6 +3892,7 @@ def translate_statement(
                 targets = split_cobol_items(targets_text)
                 if targets:
                     variable_map = variables or {}
+                    all_delimiters = bool(re.match(r"^\s*ALL\s+", delimiter_text, re.IGNORECASE))
                     delimiter_parts = split_cobol_items(re.sub(r"^\s*ALL\s+", "", delimiter_text, flags=re.IGNORECASE))
                     delimiter = delimiter_parts[0] if delimiter_parts else delimiter_text
                     if delimiter.upper() in ("SPACE", "SPACES"):
@@ -3901,10 +3902,10 @@ def translate_statement(
                     else:
                         delimiter_expr = translate_literal(delimiter, variable_map)
                     source_expr = translate_literal(source, variable_map)
-                    lines = [
-                        f"_cobol_unstring_parts = (str({source_expr}).split(str({delimiter_expr})) "
-                        f"if str({delimiter_expr}) else [str({source_expr})])"
-                    ]
+                    if all_delimiters:
+                        lines = [f"_cobol_unstring_parts = (__import__('re').split(__import__('re').escape(str({delimiter_expr})) + r'+', str({source_expr})) if str({delimiter_expr}) else [str({source_expr})])"]
+                    else:
+                        lines = [f"_cobol_unstring_parts = (str({source_expr}).split(str({delimiter_expr})) if str({delimiter_expr}) else [str({source_expr})])"]
                     for index, target in enumerate(targets):
                         target_base = re.match(r"[A-Za-z0-9-]+", target)
                         target_var = variable_map.get(target_base.group(0).upper()) if target_base else None
