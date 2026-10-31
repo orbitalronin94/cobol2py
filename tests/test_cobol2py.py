@@ -4134,7 +4134,7 @@ class InspectConvertingRegressionTests(unittest.TestCase):
     def _run(self, statement, variables, namespace):
         translated = cobol2py.translate_statement(statement, set(), variables)
         self.assertIsNotNone(translated)
-        exec("\\n".join(translated or []), namespace)
+        exec("\n".join(translated or []), namespace)
 
     def test_converts_characters_by_position_and_preserves_spaces(self):
         variables = {
