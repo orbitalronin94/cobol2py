@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -58,7 +59,22 @@ def main() -> int:
                 row.update(status="reference_runtime_failed", reference_stderr=reference.stderr[-4000:])
                 rows.append(row)
                 continue
-            translated = run([sys.executable, str(translator), str(source)], cwd=root)
+            # These fixtures declare free format explicitly. The translator's
+            # auto-detection does not interpret compiler directives, so remove the
+            # directive from a temporary copy and pass --format free explicitly.
+            # Keep the original source untouched for GnuCOBOL/reference provenance.
+            normalized_source = tempdir / f"{source.stem}.translator.cbl"
+            normalized_text = source.read_text(encoding="utf-8", errors="replace")
+            normalized_text = re.sub(
+                r"(?im)^\\s*>>SOURCE\\s+FORMAT\\s+FREE\\s*$\\n?",
+                "",
+                normalized_text,
+            )
+            normalized_source.write_text(normalized_text, encoding="utf-8")
+            translated = run(
+                [sys.executable, str(translator), "--format", "free", str(normalized_source)],
+                cwd=root,
+            )
             if translated.returncode:
                 row.update(status="translation_failed", translator_stderr=translated.stderr[-4000:])
                 rows.append(row)
