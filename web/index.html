@@ -3965,11 +3965,11 @@ def translate_statement(
             flags=re.IGNORECASE,
         ).rstrip()
         no_advancing = bool(
-            re.search(r"\s+WITH\s+NO\s+ADVANCING\s*$", display_operands, re.IGNORECASE)
+            re.search(r"\s+(?:WITH\s+)?NO\s+ADVANCING\s*$", display_operands, re.IGNORECASE)
         )
         if no_advancing:
             display_operands = re.sub(
-                r"\s+WITH\s+NO\s+ADVANCING\s*$", "", display_operands, flags=re.IGNORECASE
+                r"\s+(?:WITH\s+)?NO\s+ADVANCING\s*$", "", display_operands, flags=re.IGNORECASE
             ).rstrip()
         args = split_cobol_items(display_operands)
         # COBOL DISPLAY concatenates operands. Numeric DISPLAY items also
