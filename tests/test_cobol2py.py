@@ -2467,6 +2467,29 @@ class NegatedComparisonAndFigurativeConstantTests(unittest.TestCase):
                 compile(translated, "<figurative-constant>", "eval")
 
 
+class UnstringMultipleDelimiterRegressionTests(unittest.TestCase):
+    def test_unstring_splits_on_either_of_multiple_delimiters(self):
+        variables = {
+            item.name.upper(): item
+            for item in cobol2py.parse_variables([
+                (1, "01 WS-SOURCE PIC X(5)."),
+                (1, "01 WS-A PIC X(2)."),
+                (1, "01 WS-B PIC X(2)."),
+                (1, "01 WS-C PIC X(2)."),
+            ])
+        }
+        translated = cobol2py.translate_statement(
+            'UNSTRING WS-SOURCE DELIMITED BY "," OR ";" INTO WS-A WS-B WS-C',
+            set(),
+            variables,
+        )
+        namespace = {"ws_source": "A,B;C", "ws_a": "  ", "ws_b": "  ", "ws_c": "  "}
+        exec("\n".join(translated), namespace)
+        self.assertEqual(namespace["ws_a"], "A ")
+        self.assertEqual(namespace["ws_b"], "B ")
+        self.assertEqual(namespace["ws_c"], "C ")
+
+
 class AllFigurativeConstantRegressionTests(unittest.TestCase):
     def test_all_quote_initializes_fixed_width_field_with_quotes(self):
         variable = cobol2py.CobolVar(level=77, name="IF-D5", pic="X(10)", value="ALL QUOTE")
