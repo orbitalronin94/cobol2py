@@ -23,6 +23,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+RE_VALUE_IDENTIFIER = re.compile(r"[A-Za-z][A-Za-z0-9-]*")
+
 
 # ============================================================================
 # 1. PREPROCESADO
@@ -244,7 +246,7 @@ class CobolVar:
                         initial = repr("\xff" * width)
                     elif self.value.upper() in ("SPACE", "SPACES"):
                         initial = repr(" " * width)
-                    elif re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", self.value.strip()):
+                    elif RE_VALUE_IDENTIFIER.fullmatch(self.value.strip()):
                         # VALUE clauses are literals, not references to other
                         # data-names. Treat an unquoted alphanumeric token as
                         # text rather than emitting an unbound Python variable.
