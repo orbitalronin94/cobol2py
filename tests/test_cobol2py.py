@@ -1022,6 +1022,30 @@ class CopybookTests(unittest.TestCase):
             self.assertEqual([v.name for v in program.variables], ["WS-CHOSEN"])
             self.assertEqual(program.unresolved_copybooks, [])
 
+    def test_direct_copybook_cycle_is_reported_without_recursion(self):
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "SELF.cpy").write_text("COPY SELF.\\n", encoding="utf-8")
+            source = "\\n".join([
+                "DATA DIVISION.",
+                "WORKING-STORAGE SECTION.",
+                "COPY SELF.",
+                "PROCEDURE DIVISION.",
+                "MAIN.",
+                "STOP RUN.",
+            ])
+            program = cobol2py.parse_cobol(
+                source, source_format="free", copybook_paths=[root]
+            )
+            self.assertTrue(any(
+                "COPYBOOK CYCLE: SELF.cpy -> SELF.cpy" in item
+                for item in program.unresolved_copybooks
+            ))
+            self.assertIn("COPYBOOK RESOLUTION WARNING", cobol2py.emit_python(program))
+
     def test_resolves_nested_copybooks_and_reports_cycles(self):
         from pathlib import Path
         from tempfile import TemporaryDirectory
