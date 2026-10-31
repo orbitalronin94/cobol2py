@@ -28,8 +28,15 @@ jobs:
           curl --fail --location --retry 3 --retry-delay 2 \
             "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" \
             --output /tmp/COBOL_Files.zip
-      - name: Build isolated benchmark image
-        run: docker build -f benchmarks/Dockerfile.external -t cobol2py-external-benchmark .
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build isolated benchmark image with layer cache
+        run: |
+          docker buildx build --load \
+            --cache-from "type=gha,scope=external-cobol-smoke" \
+            --cache-to "type=gha,mode=max,scope=external-cobol-smoke" \
+            -f benchmarks/Dockerfile.external \
+            -t cobol2py-external-benchmark .
       - name: Run deterministic 50-program differential smoke test
         run: |
           mkdir -p "${{ runner.temp }}/external-smoke"
