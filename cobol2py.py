@@ -23,6 +23,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+RE_NORMALIZE_NAME = re.compile(r"(?:[A-Za-z][A-Za-z0-9-]*|[0-9]+[A-Za-z0-9-]*[A-Za-z][A-Za-z0-9-]*)")
+
 
 # ============================================================================
 # 1. PREPROCESADO
@@ -1329,8 +1331,7 @@ def normalize_java_name(name: str) -> str:
 def normalize_name(name: str) -> str:
     # Normalize identifiers for Python only. Java keywords are handled by
     # normalize_java_name so a Java-only keyword cannot rename Python data.
-    normalized = re.sub(
-        r"(?:[A-Za-z][A-Za-z0-9-]*|[0-9]+[A-Za-z0-9-]*[A-Za-z][A-Za-z0-9-]*)",
+    normalized = RE_NORMALIZE_NAME.sub(
         lambda match: normalize_identifier(match.group(0)),
         name,
     )
