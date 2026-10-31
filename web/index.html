@@ -3749,7 +3749,7 @@ def translate_statement(
                             f"{pointer_expr} = (_cobol_unstring_start + "
                             f"sum(len(_part) for _part in _cobol_unstring_parts[:{len(targets)}]) + "
                             f"len(_cobol_unstring_delimiter) * min({len(targets)}, "
-                            "max(0, len(_cobol_unstring_parts) - 1)) + 1)"
+                            "max(0, len(_cobol_unstring_parts) - 1)))"
                         )
                     return lines
         return [f"# UNSTRING no traducido: {s}"]
