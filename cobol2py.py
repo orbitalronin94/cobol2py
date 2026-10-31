@@ -3442,13 +3442,13 @@ def translate_statement(
 
     if upper in ("STOP RUN", "STOP RUN."):
         return ["raise _CobolStopRun"]
-    open_match = re.fullmatch(r"OPEN\\s+(INPUT|OUTPUT|EXTEND|I-O)\\s+(.+)", s, re.IGNORECASE)
+    open_match = re.fullmatch(r"OPEN\s+(INPUT|OUTPUT|EXTEND|I-O)\s+(.+)", s, re.IGNORECASE)
     if open_match:
         mode, names = open_match.groups()
         file_names = re.findall(r"[A-Za-z0-9-]+", names)
         if file_names:
             return [f"_cobol_open({name.upper()!r}, {mode.upper()!r})" for name in file_names]
-    close_match = re.fullmatch(r"CLOSE\\s+(.+)", s, re.IGNORECASE)
+    close_match = re.fullmatch(r"CLOSE\s+(.+)", s, re.IGNORECASE)
     if close_match:
         file_names = re.findall(r"[A-Za-z0-9-]+", close_match.group(1))
         if file_names:
