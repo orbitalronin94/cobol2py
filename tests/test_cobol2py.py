@@ -4290,7 +4290,7 @@ class UnstringPointerTallyAllRegressionTests(unittest.TestCase):
             "ws_c": "z",
             "ws_tally": 2,
         }
-        exec(compile("\\n".join(translated or []), "<unstring-tally-empty>", "exec"), namespace)
+        exec(compile("\n".join(translated or []), "<unstring-tally-empty>", "exec"), namespace)
         self.assertEqual((namespace["ws_a"], namespace["ws_b"], namespace["ws_c"]), ("A", " ", "B"))
         self.assertEqual(namespace["ws_tally"], 5)
 
