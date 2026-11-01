@@ -4143,6 +4143,22 @@ class CandidateExitParagraphTests(unittest.TestCase):
         self.assertEqual(cobol2py.translate_statement("EXIT PARAGRAPH", set()), ["return"])
 
 
+class InitializeNumericReplacementFitTests(unittest.TestCase):
+    def test_initialize_replacing_numeric_respects_receiving_pic_width(self):
+        variables = {
+            "WS-N": cobol2py.CobolVar(level=1, name="WS-N", pic="9(3)"),
+        }
+        translated = cobol2py.translate_statement(
+            "INITIALIZE WS-N REPLACING NUMERIC DATA BY 12345",
+            set(),
+            variables,
+        )
+        self.assertIsNotNone(translated)
+        namespace = {"ws_n": 0}
+        exec("\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_n"], 345)
+
+
 class CandidateUnstringZeroTests(unittest.TestCase):
     def test_unstring_zero_delimits_on_digit_zero(self):
         v={"WS-S":cobol2py.CobolVar(level=1,name="WS-S",pic="X(5)"),"WS-A":cobol2py.CobolVar(level=1,name="WS-A",pic="X(2)"),"WS-B":cobol2py.CobolVar(level=1,name="WS-B",pic="X(2)")}
