@@ -2670,7 +2670,7 @@ class DisplayOperandSplittingRegressionTests(unittest.TestCase):
     def test_parenthesized_numeric_display_generates_valid_python(self):
         translated = cobol2py.translate_statement("DISPLAY (01) (01) ERASE", set(), {})
         self.assertIsNotNone(translated)
-        compile("\\n".join(translated or []), "<display-operands>", "exec")
+        compile("\n".join(translated or []), "<display-operands>", "exec")
 
 
 class ComputeSizeErrorClauseRegressionTests(unittest.TestCase):
@@ -2682,7 +2682,7 @@ class ComputeSizeErrorClauseRegressionTests(unittest.TestCase):
         )
         self.assertIsNotNone(translated)
         self.assertEqual(translated, ["ws_total = ws_left + ws_right"])
-        compile("\\n".join(translated or []), "<compute-size-error>", "exec")
+        compile("\n".join(translated or []), "<compute-size-error>", "exec")
 
 
 class FigurativeConstantIdentifierBoundaryTests(unittest.TestCase):
@@ -2986,7 +2986,7 @@ class HexadecimalLiteralRegressionTests(unittest.TestCase):
         items = cobol2py.split_cobol_items('X"0D" ERASE')
         self.assertEqual(items, ['X"0D"', "ERASE"])
         translated = cobol2py.translate_statement('DISPLAY X"0D" ERASE', set(), {})
-        compile("\\n".join(translated or []), "<hex-display>", "exec")
+        compile("\n".join(translated or []), "<hex-display>", "exec")
 
 
 class ParenthesizedDisplayListRegressionTests(unittest.TestCase):
@@ -2994,7 +2994,7 @@ class ParenthesizedDisplayListRegressionTests(unittest.TestCase):
         self.assertEqual(cobol2py.split_cobol_items("(01, 01) ERASE"), ["01", "01", "ERASE"])
         translated = cobol2py.translate_statement("DISPLAY (01, 01) ERASE", set(), {})
         self.assertIsNotNone(translated)
-        compile("\\n".join(translated or []), "<parenthesized-display-list>", "exec")
+        compile("\n".join(translated or []), "<parenthesized-display-list>", "exec")
 
 
 class CobolAcceptEofRegressionTests(unittest.TestCase):
@@ -4216,7 +4216,7 @@ class UnstringPointerTallyAllRegressionTests(unittest.TestCase):
             "ws_pointer": 1,
             "ws_tally": 4,
         }
-        exec(compile("\\n".join(translated or []), "<unstring-all-pointer>", "exec"), namespace)
+        exec(compile("\n".join(translated or []), "<unstring-all-pointer>", "exec"), namespace)
         self.assertEqual((namespace["ws_a"], namespace["ws_b"]), ("A", "B"))
         self.assertEqual(namespace["ws_c"], "z")
         self.assertEqual(namespace["ws_pointer"], 7)
@@ -4237,7 +4237,7 @@ class UnstringPointerTallyAllRegressionTests(unittest.TestCase):
             "ws_pointer": 3,
             "ws_tally": 2,
         }
-        exec(compile("\\n".join(translated or []), "<unstring-pointer-start>", "exec"), namespace)
+        exec(compile("\n".join(translated or []), "<unstring-pointer-start>", "exec"), namespace)
         self.assertEqual((namespace["ws_a"], namespace["ws_b"]), ("A", "B"))
         self.assertEqual(namespace["ws_pointer"], 6)
         self.assertEqual(namespace["ws_tally"], 4)
@@ -4252,7 +4252,7 @@ class UnstringPointerTallyAllRegressionTests(unittest.TestCase):
             "ws_b": "y",
             "ws_c": "z",
         }
-        exec(compile("\\n".join(translated or []), "<unstring-empty-field>", "exec"), namespace)
+        exec(compile("\n".join(translated or []), "<unstring-empty-field>", "exec"), namespace)
         self.assertEqual((namespace["ws_a"], namespace["ws_b"], namespace["ws_c"]), ("A", " ", "B"))
 
     def test_pointer_past_source_leaves_receivers_and_tally_unchanged(self):
@@ -4270,7 +4270,7 @@ class UnstringPointerTallyAllRegressionTests(unittest.TestCase):
             "ws_pointer": 7,
             "ws_tally": 2,
         }
-        exec(compile("\\n".join(translated or []), "<unstring-pointer-past-end>", "exec"), namespace)
+        exec(compile("\n".join(translated or []), "<unstring-pointer-past-end>", "exec"), namespace)
         self.assertEqual(namespace["ws_a"], "x")
         self.assertEqual(namespace["ws_pointer"], 7)
         self.assertEqual(namespace["ws_tally"], 2)
