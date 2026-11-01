@@ -3781,7 +3781,7 @@ def translate_statement(
 
                 sending_items: list[tuple[str, str]] = []
                 item_pattern = re.compile(
-                    r"""(.+?)\s+DELIMITED\s+BY\s+("(?:[^"]|"")*"|'(?:[^']|'')*'|SIZE|SPACES?|ZEROS?|[A-Za-z][A-Za-z0-9_-]*)""",
+                    r"""(.+?)\s+DELIMITED\s+BY\s+("(?:[^"]|"")*"|'(?:[^']|'')*'|SIZE|SPACES?|ZERO(?:S|ES)?|[A-Za-z][A-Za-z0-9_-]*)""",
                     re.IGNORECASE,
                 )
                 cursor = 0
@@ -3818,8 +3818,9 @@ def translate_statement(
                     else:
                         if delimiter.upper() in ("SPACE", "SPACES"):
                             delimiter_expr = repr(" ")
-                        elif delimiter.upper() in ("ZERO", "ZEROS"):
-                            delimiter_expr = repr("\x00")
+                        elif delimiter.upper() in ("ZERO", "ZEROS", "ZEROES"):
+                            # In an alphanumeric STRING context, COBOL ZERO is the digit character.
+                            delimiter_expr = repr("0")
                         else:
                             delimiter_expr = translate_literal(delimiter, variable_map)
                         pieces.append(
