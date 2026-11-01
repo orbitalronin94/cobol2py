@@ -4165,7 +4165,7 @@ class InspectConvertingRegressionTests(unittest.TestCase):
 
 class UnderscoreDataNameTests(unittest.TestCase):
     def test_underscore_data_names_are_parsed_and_accept_compute_translate(self):
-        source = "\\n".join([
+        source = "\n".join([
             "IDENTIFICATION DIVISION.",
             "PROGRAM-ID. UNDERSCORETEST.",
             "DATA DIVISION.",
