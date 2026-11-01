@@ -2670,7 +2670,7 @@ class DisplayOperandSplittingRegressionTests(unittest.TestCase):
     def test_parenthesized_numeric_display_generates_valid_python(self):
         translated = cobol2py.translate_statement("DISPLAY (01) (01) ERASE", set(), {})
         self.assertIsNotNone(translated)
-        compile("\n".join(translated or []), "<display-operands>", "exec")
+        compile("\\n".join(translated or []), "<display-operands>", "exec")
 
 
 class ComputeSizeErrorClauseRegressionTests(unittest.TestCase):
@@ -2682,7 +2682,7 @@ class ComputeSizeErrorClauseRegressionTests(unittest.TestCase):
         )
         self.assertIsNotNone(translated)
         self.assertEqual(translated, ["ws_total = ws_left + ws_right"])
-        compile("\n".join(translated or []), "<compute-size-error>", "exec")
+        compile("\\n".join(translated or []), "<compute-size-error>", "exec")
 
 
 class FigurativeConstantIdentifierBoundaryTests(unittest.TestCase):
@@ -2986,7 +2986,7 @@ class HexadecimalLiteralRegressionTests(unittest.TestCase):
         items = cobol2py.split_cobol_items('X"0D" ERASE')
         self.assertEqual(items, ['X"0D"', "ERASE"])
         translated = cobol2py.translate_statement('DISPLAY X"0D" ERASE', set(), {})
-        compile("\n".join(translated or []), "<hex-display>", "exec")
+        compile("\\n".join(translated or []), "<hex-display>", "exec")
 
 
 class ParenthesizedDisplayListRegressionTests(unittest.TestCase):
@@ -2994,7 +2994,7 @@ class ParenthesizedDisplayListRegressionTests(unittest.TestCase):
         self.assertEqual(cobol2py.split_cobol_items("(01, 01) ERASE"), ["01", "01", "ERASE"])
         translated = cobol2py.translate_statement("DISPLAY (01, 01) ERASE", set(), {})
         self.assertIsNotNone(translated)
-        compile("\n".join(translated or []), "<parenthesized-display-list>", "exec")
+        compile("\\n".join(translated or []), "<parenthesized-display-list>", "exec")
 
 
 class CobolAcceptEofRegressionTests(unittest.TestCase):
@@ -4184,10 +4184,7 @@ class UnderscoreDataNameTests(unittest.TestCase):
         generated = cobol2py.emit_python(program)
         self.assertNotIn("COBOL no traducido: ACCEPT AREA_QUADRADO", generated)
         self.assertNotIn("COBOL no traducido: COMPUTE RESULTADO", generated)
-        ast.parse(generated)
-
-
-class UnstringPointerTallyAllRegressionTests(unittest.TestCase):
+        ast.parse(generated)\nclass UnstringPointerTallyAllRegressionTests(unittest.TestCase):
     def _variables(self):
         return {
             item.name.upper(): item
@@ -4274,3 +4271,45 @@ class UnstringPointerTallyAllRegressionTests(unittest.TestCase):
         self.assertEqual(namespace["ws_a"], "x")
         self.assertEqual(namespace["ws_pointer"], 7)
         self.assertEqual(namespace["ws_tally"], 2)
+
+
+    def test_tally_counts_empty_fields_between_adjacent_delimiters(self):
+        variables = self._variables()
+        statement = (
+            'UNSTRING WS-SOURCE DELIMITED BY "," INTO WS-A WS-B WS-C '
+            "TALLYING IN WS-TALLY"
+        )
+        translated = cobol2py.translate_statement(statement, set(), variables)
+        namespace = {
+            "ws_source": "A,,B    ",
+            "ws_a": "x",
+            "ws_b": "y",
+            "ws_c": "z",
+            "ws_tally": 2,
+        }
+        exec(compile("\\n".join(translated or []), "<unstring-tally-empty>", "exec"), namespace)
+        self.assertEqual((namespace["ws_a"], namespace["ws_b"], namespace["ws_c"]), ("A", " ", "B"))
+        self.assertEqual(namespace["ws_tally"], 5)
+
+    def test_multiple_delimiters_are_rejected_not_partially_applied(self):
+        variables = self._variables()
+        translated = cobol2py.translate_statement(
+            'UNSTRING WS-SOURCE DELIMITED BY "," OR ";" INTO WS-A WS-B',
+            set(),
+            variables,
+        )
+        self.assertEqual(translated, [
+            '# UNSTRING no traducido: UNSTRING WS-SOURCE DELIMITED BY "," OR ";" INTO WS-A WS-B'
+        ])
+
+    def test_overflow_and_metadata_clauses_fail_closed(self):
+        variables = self._variables()
+        unsupported = [
+            'UNSTRING WS-SOURCE DELIMITED BY "," INTO WS-A ON OVERFLOW DISPLAY "OVER"',
+            'UNSTRING WS-SOURCE DELIMITED BY "," INTO WS-A DELIMITER IN WS-B',
+            'UNSTRING WS-SOURCE DELIMITED BY "," INTO WS-A COUNT IN WS-POINTER',
+        ]
+        for statement in unsupported:
+            with self.subTest(statement=statement):
+                translated = cobol2py.translate_statement(statement, set(), variables)
+                self.assertEqual(translated, [f"# UNSTRING no traducido: {statement}"])
