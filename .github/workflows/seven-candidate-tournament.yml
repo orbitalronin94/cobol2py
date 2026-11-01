@@ -22,13 +22,11 @@ concurrency:
   group: cobol2py-seven-candidate-tournament-v3
   cancel-in-progress: false
 
-# This is a one-shot frozen-baseline tournament. The coordinator is PR #57;
-# all other candidate PRs carry the same workflow but do not start duplicate runs.
-# Final coordinator refresh: all seven candidate branches now have their final patch and workflow SHA.
+# Reusable candidate tournament: run for PRs that touch translator/tests and on manual dispatch.
+# Candidate results are reports only. Never auto-merge based on a tournament artifact.
 
 jobs:
   candidate-tests:
-    if: github.event_name != 'pull_request' || github.event.pull_request.number == 57
     name: Tests — ${{ matrix.candidate.name }}
     runs-on: ubuntu-latest
     strategy:
@@ -198,8 +196,8 @@ jobs:
           retention-days: 90
 
   aggregate:
-    name: Compare all seven candidates against 408/1000
-    if: always() && (github.event_name != 'pull_request' || github.event.pull_request.number == 57)
+    name: Compare all seven candidates against 480/1000
+    if: always()
     needs: [candidate-tests, external-benchmark]
     runs-on: ubuntu-latest
     outputs:
@@ -224,7 +222,7 @@ jobs:
           from pathlib import Path
 
           root = Path(os.environ["REPORT_ROOT"])
-          baseline = 408
+          baseline = 480
           candidates = {
               "multiple-indexed-by": "experiment/multiple-indexed-by",
               "fixed-name-continuations": "experiment/fixed-name-continuations",
@@ -344,7 +342,7 @@ jobs:
                   "",
                   f"**Record breaker:** {winner['candidate']} — **{winner['score']}/1000** "
                   f"(primary {winner['primary']}/500, holdout {winner['holdout']}/500).",
-                  "Auto-merge is requested only after verifying the frozen main baseline and exact PR head SHA.",
+                  "Winner is a candidate for manual review only; this workflow does not merge changes.",
               ]
               output = {
                   "winner": "true",
@@ -353,7 +351,7 @@ jobs:
                   "winner_score": str(winner["score"]),
               }
           else:
-              lines += ["", "**No merge:** no candidate exceeded 408/1000 with complete samples and green tests."]
+              lines += ["", "**No winner:** no candidate exceeded 480/1000 with complete samples and green tests."]
               output = {"winner": "false", "winner_branch": "", "winner_sha": "", "winner_score": "0"}
 
           summary = "\n".join(lines) + "\n"
@@ -365,98 +363,3 @@ jobs:
           print(summary)
           PY
 
-  merge-winner:
-    name: Merge only a verified record-breaker
-    if: needs.aggregate.outputs.winner == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.number == 57)
-    needs: aggregate
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - name: Verify baseline, candidate branch, and open PR
-        id: verify
-        env:
-          GH_TOKEN: ${{ github.token }}
-          WINNER_BRANCH: ${{ needs.aggregate.outputs.winner_branch }}
-          WINNER_SHA: ${{ needs.aggregate.outputs.winner_sha }}
-          WINNER_SCORE: ${{ needs.aggregate.outputs.winner_score }}
-          EXPECTED_MAIN_SHA: "6ba21280cb68848d14996c6d55f8ca64fcf40b09"
-          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
-        run: |
-          set -euo pipefail
-          if [ "$HEAD_REPO" != "$GITHUB_REPOSITORY" ]; then
-            echo "Skip merge: tournament was triggered by a fork PR."
-            exit 1
-          fi
-          case "$WINNER_BRANCH" in
-            experiment/multiple-indexed-by|experiment/fixed-name-continuations|experiment/string-delimited-by|experiment/accept-screen-options|experiment/debug-contents|experiment/inspect-replacing|experiment/accept-from-date) ;;
-            *) echo "Rejected non-candidate branch: $WINNER_BRANCH"; exit 1 ;;
-          esac
-          main_sha=$(gh api "repos/$GITHUB_REPOSITORY/branches/main" --jq .commit.sha)
-          if [ "$main_sha" != "$EXPECTED_MAIN_SHA" ]; then
-            echo "Skip merge: main moved from frozen baseline $EXPECTED_MAIN_SHA to $main_sha."
-            exit 1
-          fi
-          branch_encoded=$(python -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["WINNER_BRANCH"], safe=""))')
-          branch_sha=$(gh api "repos/$GITHUB_REPOSITORY/branches/$branch_encoded" --jq .commit.sha)
-          if [ "$branch_sha" != "$WINNER_SHA" ]; then
-            echo "Skip merge: branch head changed after benchmark."
-            exit 1
-          fi
-          prs=$(gh api --method GET "repos/$GITHUB_REPOSITORY/pulls" -f state=open -f head="$GITHUB_REPOSITORY_OWNER:$WINNER_BRANCH" -f base=main)
-          pr_number=$(echo "$prs" | jq -r --arg sha "$WINNER_SHA" '[.[] | select(.head.sha == $sha and .base.ref == "main" and .draft == false)] | .[0].number // empty')
-          if [ -z "$pr_number" ]; then
-            echo "Skip merge: no open PR matches the exact benchmarked SHA."
-            exit 1
-          fi
-          echo "pr_number=$pr_number" >> "$GITHUB_OUTPUT"
-          echo "Verified winner: PR #$pr_number, $WINNER_SCORE/1000, $WINNER_SHA"
-      - name: Wait for all other PR checks to finish successfully
-        env:
-          GH_TOKEN: ${{ github.token }}
-          WINNER_SHA: ${{ needs.aggregate.outputs.winner_sha }}
-        run: |
-          set -euo pipefail
-          for attempt in $(seq 1 90); do
-            checks=$(gh api "repos/$GITHUB_REPOSITORY/commits/$WINNER_SHA/check-runs?per_page=100")
-            pending=$(echo "$checks" | jq '[.check_runs[]
-              | select((.name | startswith("Tests — ") or startswith("Exact corpus —") or . == "Compare all seven candidates against 408/1000" or . == "Merge only a verified record-breaker") | not)
-              | select(.status != "completed")] | length')
-            failures=$(echo "$checks" | jq '[.check_runs[]
-              | select((.name | startswith("Tests — ") or startswith("Exact corpus —") or . == "Compare all seven candidates against 408/1000" or . == "Merge only a verified record-breaker") | not)
-              | select(.status == "completed")
-              | select(.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")] | length')
-            if [ "$failures" -gt 0 ]; then
-              echo "Refusing merge: $failures non-tournament check(s) failed."
-              echo "$checks" | jq -r '.check_runs[] | select(.status == "completed") | select(.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral") | "- " + .name + ": " + (.conclusion // "unknown")'
-              exit 1
-            fi
-            if [ "$pending" -eq 0 ]; then
-              echo "All non-tournament checks are complete and green."
-              exit 0
-            fi
-            echo "Waiting for $pending other check(s) to complete (attempt $attempt/90)."
-            sleep 30
-          done
-          echo "Refusing merge: other PR checks did not finish before the wait timeout."
-          exit 1
-      - name: Queue auto-merge or perform guarded squash merge
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ steps.verify.outputs.pr_number }}
-          WINNER_SHA: ${{ needs.aggregate.outputs.winner_sha }}
-          WINNER_SCORE: ${{ needs.aggregate.outputs.winner_score }}
-        run: |
-          set -euo pipefail
-          if gh api graphql -f query='mutation($pullRequestId: ID!) { enablePullRequestAutoMerge(input: {pullRequestId: $pullRequestId, mergeMethod: SQUASH}) { pullRequest { number autoMergeRequest { enabledAt } } } }' -F pullRequestId="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq .node_id)" >/tmp/auto-merge.json 2>/tmp/auto-merge.err; then
-            cat /tmp/auto-merge.json
-            echo "Auto-merge queued for PR #$PR_NUMBER at $WINNER_SCORE/1000."
-            exit 0
-          fi
-          echo "Repository auto-merge is disabled or unavailable; attempting a SHA-guarded squash merge."
-          cat /tmp/auto-merge.err
-          result=$(gh api --method PUT "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/merge" -f merge_method=squash -f sha="$WINNER_SHA")
-          echo "$result" | jq -e '.merged == true'
-          echo "Merged PR #$PR_NUMBER at $WINNER_SCORE/1000."
