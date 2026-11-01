@@ -81,7 +81,7 @@ def denormalize_occurs(copybook_lines: list[str]) -> list[dict[str, Any]]:
         match = declaration.match(clean)
         if not match:
             continue
-        level, name, pic, occurs, redefines = match.groups()
+        level, name, redefines, pic, occurs = match.groups()
         count = int(occurs or 1)
         if count > 1 and redefines:
             supported = False
