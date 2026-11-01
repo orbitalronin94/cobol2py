@@ -4161,3 +4161,27 @@ class InspectConvertingRegressionTests(unittest.TestCase):
         namespace = {"ws_text": "ABA"}
         self._run('INSPECT WS-TEXT CONVERTING "ABA" TO "xyz"', variables, namespace)
         self.assertEqual(namespace["ws_text"], "xyx")
+
+
+class UnderscoreDataNameTests(unittest.TestCase):
+    def test_underscore_data_names_are_parsed_and_accept_compute_translate(self):
+        source = "\\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. UNDERSCORETEST.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            "77 AREA_QUADRADO PIC 9(3).",
+            "77 RESULTADO PIC 9(3).",
+            "PROCEDURE DIVISION.",
+            "MAIN-PROCEDURE.",
+            "    ACCEPT AREA_QUADRADO.",
+            "    COMPUTE RESULTADO = AREA_QUADRADO * AREA_QUADRADO.",
+            "    DISPLAY RESULTADO.",
+            "    STOP RUN.",
+        ])
+        program = cobol2py.parse_cobol(source, source_format="free")
+        self.assertIn("AREA_QUADRADO", {variable.name for variable in program.variables})
+        generated = cobol2py.emit_python(program)
+        self.assertNotIn("COBOL no traducido: ACCEPT AREA_QUADRADO", generated)
+        self.assertNotIn("COBOL no traducido: COMPUTE RESULTADO", generated)
+        ast.parse(generated)
