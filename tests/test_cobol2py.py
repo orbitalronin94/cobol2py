@@ -4184,7 +4184,10 @@ class UnderscoreDataNameTests(unittest.TestCase):
         generated = cobol2py.emit_python(program)
         self.assertNotIn("COBOL no traducido: ACCEPT AREA_QUADRADO", generated)
         self.assertNotIn("COBOL no traducido: COMPUTE RESULTADO", generated)
-        ast.parse(generated)\nclass UnstringPointerTallyAllRegressionTests(unittest.TestCase):
+        ast.parse(generated)
+
+
+class UnstringPointerTallyAllRegressionTests(unittest.TestCase):
     def _variables(self):
         return {
             item.name.upper(): item
