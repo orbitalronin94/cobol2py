@@ -11,9 +11,21 @@ from ronin.smt_feedback_loop import propose_local_repair
 from ronin.symbolic_executor import delta_debug_input, generate_path_cases
 from ronin.repair_pipeline import RepairPipeline
 from ronin.translation_cache import TranslationCache
+from ronin.pipeline_router import DEFAULT_CATALOG, compose_route
 
 
 class SotaRepairTests(unittest.TestCase):
+    def test_deterministic_router_selects_ready_stages_only(self):
+        self.assertEqual(compose_route(DEFAULT_CATALOG, set()), ["parse"])
+        self.assertEqual(
+            compose_route(DEFAULT_CATALOG, {"ast_ready:case-1"}, available_artifacts={"ast"}),
+            ["translate"],
+        )
+
+    def test_deterministic_router_rejects_missing_artifacts(self):
+        with self.assertRaisesRegex(ValueError, "unmet stage dependencies"):
+            compose_route(DEFAULT_CATALOG, {"ast_ready"}, available_artifacts=set())
+
     def test_translation_cache_exact_hit_and_fingerprint_invalidation(self):
         with tempfile.TemporaryDirectory() as tmp:
             cache_path = Path(tmp) / "cache.sqlite3"
