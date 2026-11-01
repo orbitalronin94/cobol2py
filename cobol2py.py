@@ -3767,7 +3767,7 @@ def translate_statement(
             target_options = string_text[into_match.end():].strip()
             # Overflow imperative branches are not emitted by this subset.
             # Fail closed instead of silently dropping executable COBOL logic.
-            if re.search(r"\b(?:NOT\s+ON\s+OVERFLOW|ON\s+OVERFLOW)\b", target_options, re.IGNORECASE):
+            if any(re.search(r"\b(?:NOT\s+ON\s+OVERFLOW|ON\s+OVERFLOW)\b", item, re.IGNORECASE) for item in split_cobol_items(target_options)):
                 return [f"# STRING no traducido: {s}"]
             target_match = re.match(rf"({DATA_REF_PATTERN})", target_options, re.IGNORECASE)
             if target_match:
