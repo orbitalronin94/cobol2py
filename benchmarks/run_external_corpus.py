@@ -486,6 +486,10 @@ def main() -> int:
                 report["tested"] += 1
                 if result["status"] == "passed": report["passed"] += 1
                 else: report["failed"] += 1
+    report["translation_cache_hits"] = sum(result.get("translation_cache_hit") is True for result in report["results"])
+    report["translation_cache_misses"] = sum(result.get("translation_cache_hit") is False for result in report["results"])
+    cache_lookups = report["translation_cache_hits"] + report["translation_cache_misses"]
+    report["translation_cache_hit_rate_percent"] = round(100 * report["translation_cache_hits"] / cache_lookups, 2) if cache_lookups else 0.0
     report["sample_complete"] = report["tested"] == args.target
     report["pass_rate_percent"] = round(100 * report["passed"] / report["tested"], 2) if report["tested"] else 0.0
     report["equivalence_threshold_percent"] = 75.0
@@ -507,7 +511,9 @@ def main() -> int:
         f"- Reference runtime exclusions: **{report['reference_runtime_exclusions']}**",
         f"- Differentially tested: **{report['tested']}/{report['target']}**",
         f"- Exact matches: **{report['passed']}/{report['tested']} ({report['pass_rate_percent']:.2f}%)**",
-        f"- Translator mismatches/errors: **{report['failed']}**", f"- Sample complete: **{report['sample_complete']}**",
+        f"- Translator mismatches/errors: **{report['failed']}**",
+        f"- Translation cache: **{report['translation_cache_hits']} hits / {report['translation_cache_misses']} misses ({report['translation_cache_hit_rate_percent']:.2f}% hit rate)**",
+        f"- Sample complete: **{report['sample_complete']}**",
         f"- 75% exact-equivalence gate reached: **{report['equivalence_gate_reached']}**", "",
         "## Per-program results", "", "| Case | Archive path | Status | Detail |", "|---|---|---|---|"]
     for item in report["results"]:
