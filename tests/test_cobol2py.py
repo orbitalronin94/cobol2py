@@ -4221,5 +4221,5 @@ class StringOverflowFailClosedRegressionTests(unittest.TestCase):
             with self.subTest(statement=statement):
                 self.assertEqual(
                     cobol2py.translate_statement(statement, set(), variables),
-                    [f"# STRING no traducido: {statement}"],
+                    [f"# STRING OVERFLOW no soportado: {statement}"],
                 )
