@@ -3563,6 +3563,8 @@ def translate_statement(
                 if any(char in pic for char in ("X", "A")):
                     width = pic_character_count(pic)
                     return f"str({value})[:{width}].ljust({width})" if width else f"str({value})"
+                if "9" in pic and "P" not in pic:
+                    return fit_numeric_expression(value, variable.name, variable_map)
                 return value
             if variable.pic and any(char in variable.pic.upper() for char in ("X", "A")):
                 width = pic_character_count(variable.pic)
