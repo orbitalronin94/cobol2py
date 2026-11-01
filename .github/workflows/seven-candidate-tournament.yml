@@ -91,7 +91,6 @@ jobs:
           retention-days: 30
 
   external-benchmark:
-    if: github.event_name != 'pull_request' || github.event.pull_request.number == 57
     name: Exact corpus — ${{ matrix.candidate.name }} / ${{ matrix.sample.name }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -197,7 +196,7 @@ jobs:
 
   aggregate:
     name: Compare all seven candidates against 480/1000
-    if: always()
+    if: always() && needs.external-benchmark.result != 'skipped'
     needs: [candidate-tests, external-benchmark]
     runs-on: ubuntu-latest
     outputs:
