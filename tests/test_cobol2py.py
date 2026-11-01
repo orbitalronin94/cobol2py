@@ -4156,7 +4156,7 @@ class StringZeroDelimiterRegressionTests(unittest.TestCase):
         )
         self.assertIsNotNone(translated)
         namespace = {"ws_s": "A0B  ", "ws_t": "     "}
-        exec("\\n".join(translated or []), namespace)
+        exec("\n".join(translated or []), namespace)
         self.assertEqual(namespace["ws_t"], "A    ")
 
 class CandidateUnstringZeroTests(unittest.TestCase):
