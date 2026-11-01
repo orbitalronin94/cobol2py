@@ -3893,8 +3893,7 @@ def translate_statement(
         return [f"# COBOL no traducido: {s}"]
     if upper == "EXIT PARAGRAPH":
         return ["return"]
-    if upper == "EXIT SECTION":
-        return ["return"]
+
     if upper.startswith("EXIT PROGRAM") or upper == "GOBACK":
         return ["return"]
     if upper in ("CONTINUE", "EXIT"):
