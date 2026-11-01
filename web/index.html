@@ -2888,7 +2888,12 @@ def translate_condition(
             class_name = match.group(3).upper()
             if class_name == "NUMERIC":
                 raw_operand = match.group(1).strip()
-                variable = (variables or {}).get(raw_operand.upper())
+                # Class conditions may qualify or subscript an alphanumeric item
+                # (FIELD OF RECORD, FIELD(I)). Resolve the declared item from the
+                # leading data-name instead of silently falling back to the broader
+                # signed-decimal pattern for X/A storage.
+                data_name = re.match(r"[A-Za-z][A-Za-z0-9_-]*", raw_operand)
+                variable = (variables or {}).get(data_name.group(0).upper()) if data_name else None
                 picture = (getattr(variable, "pic", "") or "").strip().upper()
                 # Alphanumeric items must contain digits only; preserve the
                 # existing signed-decimal behavior for undeclared/numeric items.
