@@ -4143,6 +4143,26 @@ class CandidateExitParagraphTests(unittest.TestCase):
         self.assertEqual(cobol2py.translate_statement("EXIT PARAGRAPH", set()), ["return"])
 
 
+class UnstringPointerOffsetRegressionTests(unittest.TestCase):
+    def test_unstring_starts_at_pointer_and_advances_it(self):
+        variables = {
+            "WS-S": cobol2py.CobolVar(level=1, name="WS-S", pic="X(5)"),
+            "WS-A": cobol2py.CobolVar(level=1, name="WS-A", pic="X(1)"),
+            "WS-B": cobol2py.CobolVar(level=1, name="WS-B", pic="X(1)"),
+            "WS-P": cobol2py.CobolVar(level=1, name="WS-P", pic="9(2)"),
+        }
+        translated = cobol2py.translate_statement(
+            'UNSTRING WS-S DELIMITED BY "," INTO WS-A WS-B WITH POINTER WS-P',
+            set(),
+            variables,
+        )
+        self.assertIsNotNone(translated)
+        namespace = {"ws_s": "xxA,B", "ws_a": " ", "ws_b": " ", "ws_p": 3}
+        exec("\n".join(translated or []), namespace)
+        self.assertEqual((namespace["ws_a"], namespace["ws_b"]), ("A", "B"))
+        self.assertEqual(namespace["ws_p"], 6)
+
+
 class CandidateUnstringZeroTests(unittest.TestCase):
     def test_unstring_zero_delimits_on_digit_zero(self):
         v={"WS-S":cobol2py.CobolVar(level=1,name="WS-S",pic="X(5)"),"WS-A":cobol2py.CobolVar(level=1,name="WS-A",pic="X(2)"),"WS-B":cobol2py.CobolVar(level=1,name="WS-B",pic="X(2)")}
