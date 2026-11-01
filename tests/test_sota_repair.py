@@ -24,7 +24,7 @@ class SotaRepairTests(unittest.TestCase):
 
     def test_deterministic_router_rejects_missing_artifacts(self):
         with self.assertRaisesRegex(ValueError, "unmet stage dependencies"):
-            compose_route(DEFAULT_CATALOG, {"ast_ready"}, available_artifacts=set())
+            compose_route(DEFAULT_CATALOG, {"ast_ready"}, already_run={"parse"}, available_artifacts=set())
 
     def test_translation_cache_exact_hit_and_fingerprint_invalidation(self):
         with tempfile.TemporaryDirectory() as tmp:
