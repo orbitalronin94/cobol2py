@@ -4143,6 +4143,24 @@ class CandidateExitParagraphTests(unittest.TestCase):
         self.assertEqual(cobol2py.translate_statement("EXIT PARAGRAPH", set()), ["return"])
 
 
+class UnstringZeroesAliasRegressionTests(unittest.TestCase):
+    def test_unstring_zeroes_uses_digit_zero_delimiter(self):
+        variables = {
+            "WS-S": cobol2py.CobolVar(level=1, name="WS-S", pic="X(5)"),
+            "WS-A": cobol2py.CobolVar(level=1, name="WS-A", pic="X(2)"),
+            "WS-B": cobol2py.CobolVar(level=1, name="WS-B", pic="X(2)"),
+        }
+        translated = cobol2py.translate_statement(
+            "UNSTRING WS-S DELIMITED BY ZEROES INTO WS-A WS-B",
+            set(),
+            variables,
+        )
+        self.assertIsNotNone(translated)
+        namespace = {"ws_s": "A0B  ", "ws_a": "  ", "ws_b": "  "}
+        exec("\n".join(translated or []), namespace)
+        self.assertEqual((namespace["ws_a"], namespace["ws_b"]), ("A ", "B "))
+
+
 class CandidateUnstringZeroTests(unittest.TestCase):
     def test_unstring_zero_delimits_on_digit_zero(self):
         v={"WS-S":cobol2py.CobolVar(level=1,name="WS-S",pic="X(5)"),"WS-A":cobol2py.CobolVar(level=1,name="WS-A",pic="X(2)"),"WS-B":cobol2py.CobolVar(level=1,name="WS-B",pic="X(2)")}
