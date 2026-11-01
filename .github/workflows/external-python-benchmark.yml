@@ -243,14 +243,14 @@ jobs:
               "- The 50-case subset is a filter, not a release score; the repeatedly observed fixed corpus is not an untouched statistical holdout.",
           ]
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
-              handle.write("\n".join(summary) + "\\n")
+              handle.write("\n".join(summary) + "\n")
           print("\n".join(summary))
           with open(os.environ["GITHUB_OUTPUT"], "w", encoding="utf-8") as handle:
-              handle.write(f"passed={passed}\\n")
-              handle.write(f"tested={tested}\\n")
-              handle.write(f"best_passed={best_passed}\\n")
-              handle.write(f"best_tested={best_tested}\\n")
-              handle.write(f"reached={'true' if reached else 'false'}\\n")
+              handle.write(f"passed={passed}\n")
+              handle.write(f"tested={tested}\n")
+              handle.write(f"best_passed={best_passed}\n")
+              handle.write(f"best_tested={best_tested}\n")
+              handle.write(f"reached={'true' if reached else 'false'}\n")
           if not reached:
               raise SystemExit(f"Benchmark gate failed: {passed}/{tested}; must strictly beat {best_passed}/{best_tested} ({best_rate*100:.2f}%).")
 
@@ -285,7 +285,7 @@ jobs:
             await github.rest.repos.createOrUpdateFileContents({
               owner, repo, path,
               message: `bench: advance best holdout score to ${passed}/${tested}`,
-              content: Buffer.from(JSON.stringify(next, null, 2) + "\\n").toString("base64"),
+              content: Buffer.from(JSON.stringify(next, null, 2) + "\n").toString("base64"),
               sha: current.data.sha,
               branch: "main"
             });
