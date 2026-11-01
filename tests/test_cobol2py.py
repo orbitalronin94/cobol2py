@@ -4130,6 +4130,19 @@ class CandidateEvaluateAlphaPaddingTests(unittest.TestCase):
         self.assertIn("'A  '",generated); compile(generated,"<eval-pad>","exec")
 
 
+class CandidateNumericClassTests(unittest.TestCase):
+    def test_is_numeric_rejects_decimal_and_sign_text(self):
+        variables = {"WS-T": cobol2py.CobolVar(level=1, name="WS-T", pic="X(4)")}
+        condition = cobol2py.translate_condition("WS-T IS NUMERIC", variables)
+        self.assertFalse(eval(condition, {"ws_t": "-1.2"}))
+        self.assertTrue(eval(condition, {"ws_t": "1234"}))
+
+
+class CandidateExitParagraphTests(unittest.TestCase):
+    def test_exit_paragraph_emits_return(self):
+        self.assertEqual(cobol2py.translate_statement("EXIT PARAGRAPH", set()), ["return"])
+
+
 class CandidateUnstringZeroTests(unittest.TestCase):
     def test_unstring_zero_delimits_on_digit_zero(self):
         v={"WS-S":cobol2py.CobolVar(level=1,name="WS-S",pic="X(5)"),"WS-A":cobol2py.CobolVar(level=1,name="WS-A",pic="X(2)"),"WS-B":cobol2py.CobolVar(level=1,name="WS-B",pic="X(2)")}
