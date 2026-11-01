@@ -4143,6 +4143,25 @@ class CandidateExitParagraphTests(unittest.TestCase):
         self.assertEqual(cobol2py.translate_statement("EXIT PARAGRAPH", set()), ["return"])
 
 
+class UnstringTallyingIncrementRegressionTests(unittest.TestCase):
+    def test_unstring_tallying_increments_existing_counter(self):
+        variables = {
+            "WS-S": cobol2py.CobolVar(level=1, name="WS-S", pic="X(5)"),
+            "WS-A": cobol2py.CobolVar(level=1, name="WS-A", pic="X(2)"),
+            "WS-B": cobol2py.CobolVar(level=1, name="WS-B", pic="X(2)"),
+            "WS-N": cobol2py.CobolVar(level=1, name="WS-N", pic="9(2)"),
+        }
+        translated = cobol2py.translate_statement(
+            'UNSTRING WS-S DELIMITED BY "," INTO WS-A WS-B TALLYING IN WS-N',
+            set(),
+            variables,
+        )
+        self.assertIsNotNone(translated)
+        namespace = {"ws_s": "A,B  ", "ws_a": "  ", "ws_b": "  ", "ws_n": 3}
+        exec("\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_n"], 5)
+
+
 class CandidateUnstringZeroTests(unittest.TestCase):
     def test_unstring_zero_delimits_on_digit_zero(self):
         v={"WS-S":cobol2py.CobolVar(level=1,name="WS-S",pic="X(5)"),"WS-A":cobol2py.CobolVar(level=1,name="WS-A",pic="X(2)"),"WS-B":cobol2py.CobolVar(level=1,name="WS-B",pic="X(2)")}
