@@ -4206,3 +4206,20 @@ class UnderscoreDataNameTests(unittest.TestCase):
         self.assertNotIn("COBOL no traducido: ACCEPT AREA_QUADRADO", generated)
         self.assertNotIn("COBOL no traducido: COMPUTE RESULTADO", generated)
         ast.parse(generated)
+
+class StringOverflowFailClosedRegressionTests(unittest.TestCase):
+    def test_string_overflow_branches_are_not_silently_dropped(self):
+        variables = {
+            "WS-SOURCE": cobol2py.CobolVar(level=1, name="WS-SOURCE", pic="X(4)"),
+            "WS-TARGET": cobol2py.CobolVar(level=1, name="WS-TARGET", pic="X(4)"),
+        }
+        statements = [
+            'STRING WS-SOURCE DELIMITED BY SIZE INTO WS-TARGET ON OVERFLOW DISPLAY "ERR"',
+            'STRING WS-SOURCE DELIMITED BY SIZE INTO WS-TARGET NOT ON OVERFLOW DISPLAY "OK"',
+        ]
+        for statement in statements:
+            with self.subTest(statement=statement):
+                self.assertEqual(
+                    cobol2py.translate_statement(statement, set(), variables),
+                    [f"# STRING no traducido: {statement}"],
+                )
