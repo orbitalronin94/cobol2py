@@ -15,6 +15,7 @@ import sys
 # optional repair module remains importable in the benchmark container.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from ronin.compiler_guided_repair import repair_python_source
+from ronin.translation_cache import TranslationCache
 
 # Bound captured output from untrusted corpus programs. Reader threads keep
 # draining pipes after the limit so children cannot block on a full pipe.
@@ -257,6 +258,7 @@ def main() -> int:
     parser.add_argument("--compile-timeout", type=int, default=8)
     parser.add_argument("--run-timeout", type=int, default=3)
     parser.add_argument("--translator-timeout", type=int, default=20)
+    parser.add_argument("--cache-path", type=Path, default=None, help="Optional persistent exact-match SQLite translation cache")
     parser.add_argument("--diagnostics", action="store_true", help="Preserve complete per-case stdout/stderr byte streams and source/generated code for failed cases")
     args = parser.parse_args()
     if args.target < 1: parser.error("--target must be positive")
@@ -264,6 +266,11 @@ def main() -> int:
     translator = args.translator.resolve()
     if not translator.is_file(): parser.error(f"translator not found: {translator}")
     args.output.mkdir(parents=True, exist_ok=True)
+    translation_cache = None
+    translator_fingerprint = sha256_file(translator)
+    if args.cache_path is not None:
+        args.cache_path.parent.mkdir(parents=True, exist_ok=True)
+        translation_cache = TranslationCache(args.cache_path)
     report: dict[str, Any] = {
         "schema_version": 1, "dataset": "X-COBOL: A Dataset of Open-Source COBOL repositories, v2",
         "dataset_url": "https://zenodo.org/records/14269462", "archive_md5_expected": ARCHIVE_MD5,
@@ -333,10 +340,36 @@ def main() -> int:
                     report["eligible_skipped"] = eligible_seen
                     continue
                 eligible_seen += 1
-                translated = run_process(["python3", "-I", str(translator), str(source), "--format", "auto"],
-                                         candidate_work, args.translator_timeout,
-                                         case_root / "translator.stdout.bin" if args.diagnostics else None,
-                                         case_root / "translator.stderr.bin" if args.diagnostics else None)
+                cache_source = None
+                cached_translation = None
+                if translation_cache is not None:
+                    try:
+                        cache_source = source.read_text(encoding="utf-8")
+                        cached_translation = translation_cache.get(cache_source, translator_fingerprint)
+                    except (OSError, UnicodeError):
+                        cache_source = None
+                if cached_translation is not None:
+                    stdout_bytes = cached_translation.encode("utf-8")
+                    if args.diagnostics:
+                        (case_root / "translator.stdout.bin").write_bytes(stdout_bytes)
+                        (case_root / "translator.stderr.bin").write_bytes(b"")
+                    translated = {
+                        "launched": True, "returncode": 0, "stdout": cached_translation,
+                        "stderr": "", "timeout": False, "stdout_truncated": False,
+                        "stderr_truncated": False, "stdout_sha256": hashlib.sha256(stdout_bytes).hexdigest(),
+                        "stdout_length": len(stdout_bytes),
+                    }
+                    result["translation_cache_hit"] = True
+                else:
+                    translated = run_process(["python3", "-I", str(translator), str(source), "--format", "auto"],
+                                             candidate_work, args.translator_timeout,
+                                             case_root / "translator.stdout.bin" if args.diagnostics else None,
+                                             case_root / "translator.stderr.bin" if args.diagnostics else None)
+                    result["translation_cache_hit"] = False
+                    if (translation_cache is not None and cache_source is not None
+                            and translated["launched"] and not translated["timeout"]
+                            and not translated["stdout_truncated"] and translated["returncode"] == 0):
+                        translation_cache.put(cache_source, translated["stdout"], translator_fingerprint)
                 result["translator_launched"] = translated["launched"]
                 result["translator_timeout"] = translated["timeout"]
                 result["translator_stdout_truncated"] = translated["stdout_truncated"]
