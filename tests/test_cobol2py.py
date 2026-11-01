@@ -4206,3 +4206,134 @@ class UnderscoreDataNameTests(unittest.TestCase):
         self.assertNotIn("COBOL no traducido: ACCEPT AREA_QUADRADO", generated)
         self.assertNotIn("COBOL no traducido: COMPUTE RESULTADO", generated)
         ast.parse(generated)
+
+
+class UnstringPointerTallyAllRegressionTests(unittest.TestCase):
+    def _variables(self):
+        return {
+            item.name.upper(): item
+            for item in cobol2py.parse_variables([
+                (1, "01 WS-SOURCE PIC X(7)."),
+                (1, "01 WS-A PIC X."),
+                (1, "01 WS-B PIC X."),
+                (1, "01 WS-C PIC X."),
+                (1, "01 WS-POINTER PIC 9(2)."),
+                (1, "01 WS-TALLY PIC 9(2)."),
+            ])
+        }
+
+    def test_all_delimiter_collapses_runs_and_updates_pointer_and_tally(self):
+        variables = self._variables()
+        statement = (
+            'UNSTRING WS-SOURCE DELIMITED BY ALL "," INTO WS-A WS-B '
+            "WITH POINTER WS-POINTER TALLYING IN WS-TALLY"
+        )
+        translated = cobol2py.translate_statement(statement, set(), variables)
+        namespace = {
+            "ws_source": "A,,,B,C",
+            "ws_a": "x",
+            "ws_b": "y",
+            "ws_c": "z",
+            "ws_pointer": 1,
+            "ws_tally": 4,
+        }
+        exec(compile("\n".join(translated or []), "<unstring-all-pointer>", "exec"), namespace)
+        self.assertEqual((namespace["ws_a"], namespace["ws_b"]), ("A", "B"))
+        self.assertEqual(namespace["ws_c"], "z")
+        self.assertEqual(namespace["ws_pointer"], 7)
+        self.assertEqual(namespace["ws_tally"], 6)
+
+    def test_pointer_starts_at_requested_character_and_tally_is_additive(self):
+        variables = self._variables()
+        statement = (
+            'UNSTRING WS-SOURCE DELIMITED BY "," INTO WS-A WS-B '
+            "WITH POINTER WS-POINTER TALLYING IN WS-TALLY"
+        )
+        translated = cobol2py.translate_statement(statement, set(), variables)
+        namespace = {
+            "ws_source": "xxA,B",
+            "ws_a": "x",
+            "ws_b": "y",
+            "ws_c": "z",
+            "ws_pointer": 3,
+            "ws_tally": 2,
+        }
+        exec(compile("\n".join(translated or []), "<unstring-pointer-start>", "exec"), namespace)
+        self.assertEqual((namespace["ws_a"], namespace["ws_b"]), ("A", "B"))
+        self.assertEqual(namespace["ws_pointer"], 6)
+        self.assertEqual(namespace["ws_tally"], 4)
+
+    def test_adjacent_delimiters_without_all_produce_empty_middle_field(self):
+        variables = self._variables()
+        statement = 'UNSTRING WS-SOURCE DELIMITED BY "," INTO WS-A WS-B WS-C'
+        translated = cobol2py.translate_statement(statement, set(), variables)
+        namespace = {
+            "ws_source": "A,,B",
+            "ws_a": "x",
+            "ws_b": "y",
+            "ws_c": "z",
+        }
+        exec(compile("\n".join(translated or []), "<unstring-empty-field>", "exec"), namespace)
+        self.assertEqual((namespace["ws_a"], namespace["ws_b"], namespace["ws_c"]), ("A", " ", "B"))
+
+    def test_pointer_past_source_leaves_receivers_and_tally_unchanged(self):
+        variables = self._variables()
+        statement = (
+            'UNSTRING WS-SOURCE DELIMITED BY "," INTO WS-A '
+            "WITH POINTER WS-POINTER TALLYING IN WS-TALLY"
+        )
+        translated = cobol2py.translate_statement(statement, set(), variables)
+        namespace = {
+            "ws_source": "ABC",
+            "ws_a": "x",
+            "ws_b": "y",
+            "ws_c": "z",
+            "ws_pointer": 7,
+            "ws_tally": 2,
+        }
+        exec(compile("\n".join(translated or []), "<unstring-pointer-past-end>", "exec"), namespace)
+        self.assertEqual(namespace["ws_a"], "x")
+        self.assertEqual(namespace["ws_pointer"], 7)
+        self.assertEqual(namespace["ws_tally"], 2)
+
+
+    def test_tally_counts_empty_fields_between_adjacent_delimiters(self):
+        variables = self._variables()
+        statement = (
+            'UNSTRING WS-SOURCE DELIMITED BY "," INTO WS-A WS-B WS-C '
+            "TALLYING IN WS-TALLY"
+        )
+        translated = cobol2py.translate_statement(statement, set(), variables)
+        namespace = {
+            "ws_source": "A,,B    ",
+            "ws_a": "x",
+            "ws_b": "y",
+            "ws_c": "z",
+            "ws_tally": 2,
+        }
+        exec(compile("\n".join(translated or []), "<unstring-tally-empty>", "exec"), namespace)
+        self.assertEqual((namespace["ws_a"], namespace["ws_b"], namespace["ws_c"]), ("A", " ", "B"))
+        self.assertEqual(namespace["ws_tally"], 5)
+
+    def test_multiple_delimiters_are_rejected_not_partially_applied(self):
+        variables = self._variables()
+        translated = cobol2py.translate_statement(
+            'UNSTRING WS-SOURCE DELIMITED BY "," OR ";" INTO WS-A WS-B',
+            set(),
+            variables,
+        )
+        self.assertEqual(translated, [
+            '# UNSTRING no traducido: UNSTRING WS-SOURCE DELIMITED BY "," OR ";" INTO WS-A WS-B'
+        ])
+
+    def test_overflow_and_metadata_clauses_fail_closed(self):
+        variables = self._variables()
+        unsupported = [
+            'UNSTRING WS-SOURCE DELIMITED BY "," INTO WS-A ON OVERFLOW DISPLAY "OVER"',
+            'UNSTRING WS-SOURCE DELIMITED BY "," INTO WS-A DELIMITER IN WS-B',
+            'UNSTRING WS-SOURCE DELIMITED BY "," INTO WS-A COUNT IN WS-POINTER',
+        ]
+        for statement in unsupported:
+            with self.subTest(statement=statement):
+                translated = cobol2py.translate_statement(statement, set(), variables)
+                self.assertEqual(translated, [f"# UNSTRING no traducido: {statement}"])

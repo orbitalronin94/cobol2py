@@ -113,7 +113,11 @@ jobs:
         shell: bash
         run: |
           mkdir -p "$OUTPUT_DIR/$SAMPLE_NAME"
-          chmod 0777 "$OUTPUT_DIR" "$OUTPUT_DIR/$SAMPLE_NAME" "$RUNNER_TEMP/translation-cache"
+          chmod 0777 "$OUTPUT_DIR" "$OUTPUT_DIR/$SAMPLE_NAME"
+          # The container runs as UID 65534. A restored SQLite file may retain
+          # restrictive file permissions even when its parent directory is writable.
+          # Grant write access to the dedicated cache contents, including SQLite sidecars.
+          chmod -R a+rwX "$RUNNER_TEMP/translation-cache"
           set +e
           docker run --name "$CONTAINER_NAME" \
             --network none \
