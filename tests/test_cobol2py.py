@@ -434,6 +434,18 @@ class TranslationTests(unittest.TestCase):
         self.assertTrue(eval(negative, {"ws_n": -1}))
         self.assertTrue(eval(zero, {"ws_n": 0}))
 
+    def test_numeric_class_uses_alphanumeric_pic_for_qualified_reference(self):
+        variable = cobol2py.CobolVar(level=5, name="WS-CODE", pic="X(4)", parent_name="WS-REC")
+        translated = cobol2py.translate_condition(
+            "WS-CODE OF WS-REC IS NUMERIC",
+            variables={"WS-CODE": variable},
+        )
+        # A qualified X/A item must use COBOL's digits-only class check, not
+        # the signed-decimal fallback intended for numeric/undeclared operands.
+        self.assertIn(r"fullmatch('\\d+'", translated)
+        self.assertNotIn("[+-]?", translated)
+        compile(translated, "<qualified-numeric-class>", "eval")
+
     def test_is_prefix_in_hyphenated_data_name_is_not_relation_word(self):
         variable = cobol2py.CobolVar(level=77, name="IS-LOW", pic="9")
         translated = cobol2py.translate_condition(
