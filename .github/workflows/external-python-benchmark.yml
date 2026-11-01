@@ -241,7 +241,7 @@ jobs:
               "- The 50-case screen is a filter, not a release score; the fixed evaluation set is repeatedly observed and is not an untouched statistical holdout.",
           ]
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
-              handle.write("\n".join(summary) + "\\n")
+              handle.write("\n".join(summary) + "\n")
           print("\n".join(summary))
           if not reached:
               raise SystemExit(f"Benchmark gate failed: {passed}/{tested}; required threshold {threshold}.")
