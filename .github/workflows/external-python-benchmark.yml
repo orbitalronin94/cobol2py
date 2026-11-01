@@ -22,7 +22,8 @@ permissions:
 
 concurrency:
   group: external-python-benchmark-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  # Never cancel a fixed-corpus shard because another run is queued.
+  cancel-in-progress: false
 
 jobs:
   external-python:
@@ -40,7 +41,8 @@ jobs:
           - { name: holdout-2, skip: 750, target: 125 }
           - { name: holdout-3, skip: 875, target: 125 }
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Each shard previously hit the 10-minute wall-clock cap before writing its report.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - name: Restore pinned X-COBOL v2 archive cache
