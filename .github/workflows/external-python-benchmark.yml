@@ -218,11 +218,11 @@ jobs:
           passed = sum(int(by_skip[skip].get("passed", 0)) for skip in expected)
           tested = sum(int(by_skip[skip].get("tested", 0)) for skip in expected)
           if fast:
-              # 24/50 is the ceiling of the frozen 47.2% reference rate.
-              threshold = 24
+              # Fast screen uses the benchmark runner's existing 75% equivalence threshold.
+              threshold = 38
               reached = passed >= threshold
               heading = "50-case fast screen (PR filter)"
-              reference = "24/50 minimum (47.2% reference rate, rounded up)"
+              reference = "38/50 minimum (75% equivalence threshold)"
               detail = "Full 500-case workflow_dispatch run is still required before accepting a candidate."
           else:
               threshold = 237
@@ -241,7 +241,7 @@ jobs:
               "- The 50-case screen is a filter, not a release score; the fixed evaluation set is repeatedly observed and is not an untouched statistical holdout.",
           ]
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
-              handle.write("\\n".join(summary) + "\\n")
-          print("\\n".join(summary))
+              handle.write("\n".join(summary) + "\\n")
+          print("\n".join(summary))
           if not reached:
               raise SystemExit(f"Benchmark gate failed: {passed}/{tested}; required threshold {threshold}.")
