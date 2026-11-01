@@ -2196,7 +2196,7 @@ def translate_expr(
     translated = re.sub(
         r"\b(?:function\s+)?test_numval\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
         lambda match: (
-            "(lambda _s: (0 if __import__('re').fullmatch(r'\s*[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)\s*', str(_s)) "
+            "(lambda _s: (0 if __import__('re').fullmatch(r'\\s*[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)\\s*', str(_s)) "
             "else next((i + 1 for i, _c in enumerate(str(_s)) if _c not in '0123456789+-.' "
             "or (_c in '+-' and i > 0) or (_c == '.' and '.' in str(_s)[:i])), 1)))("
             + intrinsic_argument(match) + ")"
