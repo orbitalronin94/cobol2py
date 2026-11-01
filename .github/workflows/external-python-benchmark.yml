@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - "cobol2py.py"
+      - "ronin/**"
+      - "tests/test_sota_repair.py"
       - "benchmarks/run_external_corpus.py"
       - "benchmarks/Dockerfile.external"
       - ".github/workflows/external-python-benchmark.yml"
@@ -20,7 +22,8 @@ permissions:
 
 concurrency:
   group: external-python-benchmark-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  # Never cancel a fixed-corpus shard because another run is queued.
+  cancel-in-progress: false
 
 jobs:
   external-python:
@@ -38,9 +41,20 @@ jobs:
           - { name: holdout-2, skip: 750, target: 125 }
           - { name: holdout-3, skip: 875, target: 125 }
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Each shard previously hit the 10-minute wall-clock cap before writing its report.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare persistent translation cache directory
+        run: mkdir -p "$RUNNER_TEMP/translation-cache"
+      - name: Restore exact-match translation cache
+        id: translation-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/translation-cache
+          key: translation-cache-v1-${{ matrix.sample.name }}-${{ hashFiles('cobol2py.py', 'ronin/compiler_guided_repair.py') }}
+          restore-keys: |
+            translation-cache-v1-${{ matrix.sample.name }}-
       - name: Restore pinned X-COBOL v2 archive cache
         id: archive-cache
         uses: actions/cache/restore@v4
@@ -83,6 +97,12 @@ jobs:
             --cache-to "type=gha,mode=max,scope=$CACHE_SCOPE" \
             -f benchmarks/Dockerfile.external \
             -t cobol2py-external-benchmark .
+      - name: Capture current main translator for timing comparison
+        shell: bash
+        run: |
+          git fetch --no-tags origin main
+          git show origin/main:cobol2py.py > "$RUNNER_TEMP/current-cobol2py.py"
+          test -s "$RUNNER_TEMP/current-cobol2py.py"
       - name: Run the reference-comparable Python benchmark
         env:
           TARGET: ${{ matrix.sample.target }}
@@ -93,7 +113,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p "$OUTPUT_DIR/$SAMPLE_NAME"
-          chmod 0777 "$OUTPUT_DIR" "$OUTPUT_DIR/$SAMPLE_NAME"
+          chmod 0777 "$OUTPUT_DIR" "$OUTPUT_DIR/$SAMPLE_NAME" "$RUNNER_TEMP/translation-cache"
           set +e
           docker run --name "$CONTAINER_NAME" \
             --network none \
@@ -107,6 +127,8 @@ jobs:
             --mount "type=bind,source=$GITHUB_WORKSPACE,target=/workspace,readonly" \
             --mount "type=bind,source=$RUNNER_TEMP/COBOL_Files.zip,target=/input.zip,readonly" \
             --mount "type=bind,source=$OUTPUT_DIR,target=/output" \
+            --mount "type=bind,source=$RUNNER_TEMP/translation-cache,target=/cache" \
+            --mount "type=bind,source=$RUNNER_TEMP/current-cobol2py.py,target=/baseline/cobol2py.py,readonly" \
             --workdir /workspace \
             cobol2py-external-benchmark \
             benchmarks/run_external_corpus.py \
@@ -115,10 +137,18 @@ jobs:
             --output "/output/$SAMPLE_NAME" \
             --target "$TARGET" \
             --skip "$SKIP" \
+            --cache-path /cache/translation-cache.sqlite3 \
+            --baseline-translator /baseline/cobol2py.py \
             --diagnostics
           status=$?
           docker rm "$CONTAINER_NAME" >/dev/null 2>&1
           exit "$status"
+      - name: Save exact-match translation cache
+        if: always() && steps.translation-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/translation-cache
+          key: translation-cache-v1-${{ matrix.sample.name }}-${{ hashFiles('cobol2py.py', 'ronin/compiler_guided_repair.py') }}
       - name: Publish exact-match scorecard
         if: always()
         run: |

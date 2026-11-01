@@ -5,9 +5,17 @@ The source archive is an external input and is never copied into the repository.
 Run only in Dockerfile.external, with networking disabled and the checkout read-only.
 """
 from __future__ import annotations
-import argparse, hashlib, json, os, re, shutil, signal, subprocess, tempfile, threading, zipfile
+import argparse, hashlib, json, os, re, shutil, signal, subprocess, tempfile, threading, time, zipfile
 from pathlib import Path, PurePosixPath
 from typing import Any, Optional
+import sys
+
+# Docker invokes Python with -I (isolated mode), which omits the checkout root
+# from sys.path. Add the mounted, read-only repository explicitly so the
+# optional repair module remains importable in the benchmark container.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from ronin.compiler_guided_repair import repair_python_source
+from ronin.translation_cache import TranslationCache
 
 # Bound captured output from untrusted corpus programs. Reader threads keep
 # draining pipes after the limit so children cannot block on a full pipe.
@@ -250,13 +258,23 @@ def main() -> int:
     parser.add_argument("--compile-timeout", type=int, default=8)
     parser.add_argument("--run-timeout", type=int, default=3)
     parser.add_argument("--translator-timeout", type=int, default=20)
+    parser.add_argument("--cache-path", type=Path, default=None, help="Optional persistent exact-match SQLite translation cache")
+    parser.add_argument("--baseline-translator", type=Path, default=None, help="Optional current-version translator used for paired timing measurements")
     parser.add_argument("--diagnostics", action="store_true", help="Preserve complete per-case stdout/stderr byte streams and source/generated code for failed cases")
     args = parser.parse_args()
     if args.target < 1: parser.error("--target must be positive")
     if args.skip < 0: parser.error("--skip must be non-negative")
     translator = args.translator.resolve()
     if not translator.is_file(): parser.error(f"translator not found: {translator}")
+    baseline_translator = args.baseline_translator.resolve() if args.baseline_translator else None
+    if baseline_translator is not None and not baseline_translator.is_file():
+        parser.error(f"baseline translator not found: {baseline_translator}")
     args.output.mkdir(parents=True, exist_ok=True)
+    translation_cache = None
+    translator_fingerprint = sha256_file(translator)
+    if args.cache_path is not None:
+        args.cache_path.parent.mkdir(parents=True, exist_ok=True)
+        translation_cache = TranslationCache(args.cache_path)
     report: dict[str, Any] = {
         "schema_version": 1, "dataset": "X-COBOL: A Dataset of Open-Source COBOL repositories, v2",
         "dataset_url": "https://zenodo.org/records/14269462", "archive_md5_expected": ARCHIVE_MD5,
@@ -265,7 +283,9 @@ def main() -> int:
         "pass_definition": "Exact stdout and process return-code match against a compiled GnuCOBOL executable.",
         "target": args.target, "skip": args.skip, "eligible_skipped": 0, "source_files_discovered": 0, "unique_source_contents": 0,
         "screened": 0, "reference_compile_failures": 0, "reference_runtime_exclusions": 0,
-        "tested": 0, "passed": 0, "failed": 0, "results": []}
+        "tested": 0, "passed": 0, "failed": 0, "results": [],
+        "baseline_translator": "current main:cobol2py.py" if baseline_translator else None,
+        "candidate_translation_seconds": 0.0, "baseline_translation_seconds": 0.0}
     with tempfile.TemporaryDirectory(prefix="x-cobol-benchmark-") as temp:
         temp_root = Path(temp)
         extracted_root = temp_root / "source"
@@ -326,10 +346,51 @@ def main() -> int:
                     report["eligible_skipped"] = eligible_seen
                     continue
                 eligible_seen += 1
-                translated = run_process(["python3", "-I", str(translator), str(source), "--format", "auto"],
-                                         candidate_work, args.translator_timeout,
-                                         case_root / "translator.stdout.bin" if args.diagnostics else None,
-                                         case_root / "translator.stderr.bin" if args.diagnostics else None)
+                translation_started = time.perf_counter()
+                cache_source = None
+                cached_translation = None
+                if translation_cache is not None:
+                    try:
+                        cache_source = source.read_text(encoding="utf-8")
+                        cached_translation = translation_cache.get(cache_source, translator_fingerprint)
+                    except (OSError, UnicodeError):
+                        cache_source = None
+                if cached_translation is not None:
+                    stdout_bytes = cached_translation.encode("utf-8")
+                    if args.diagnostics:
+                        (case_root / "translator.stdout.bin").write_bytes(stdout_bytes)
+                        (case_root / "translator.stderr.bin").write_bytes(b"")
+                    translated = {
+                        "launched": True, "returncode": 0, "stdout": cached_translation,
+                        "stderr": "", "timeout": False, "stdout_truncated": False,
+                        "stderr_truncated": False, "stdout_sha256": hashlib.sha256(stdout_bytes).hexdigest(),
+                        "stdout_length": len(stdout_bytes),
+                    }
+                    result["translation_cache_hit"] = True
+                else:
+                    translated = run_process(["python3", "-I", str(translator), str(source), "--format", "auto"],
+                                             candidate_work, args.translator_timeout,
+                                             case_root / "translator.stdout.bin" if args.diagnostics else None,
+                                             case_root / "translator.stderr.bin" if args.diagnostics else None)
+                    result["translation_cache_hit"] = False
+                    if (translation_cache is not None and cache_source is not None
+                            and translated["launched"] and not translated["timeout"]
+                            and not translated["stdout_truncated"] and translated["returncode"] == 0):
+                        translation_cache.put(cache_source, translated["stdout"], translator_fingerprint)
+                candidate_translation_seconds = time.perf_counter() - translation_started
+                result["candidate_translation_seconds"] = round(candidate_translation_seconds, 6)
+                report["candidate_translation_seconds"] += candidate_translation_seconds
+                if baseline_translator is not None:
+                    baseline_started = time.perf_counter()
+                    baseline_result = run_process(
+                        ["python3", "-I", str(baseline_translator), str(source), "--format", "auto"],
+                        candidate_work, args.translator_timeout)
+                    baseline_seconds = time.perf_counter() - baseline_started
+                    result["baseline_translation_seconds"] = round(baseline_seconds, 6)
+                    result["baseline_translator_launched"] = baseline_result["launched"]
+                    result["baseline_translator_timeout"] = baseline_result["timeout"]
+                    result["baseline_translator_returncode"] = baseline_result["returncode"]
+                    report["baseline_translation_seconds"] += baseline_seconds
                 result["translator_launched"] = translated["launched"]
                 result["translator_timeout"] = translated["timeout"]
                 result["translator_stdout_truncated"] = translated["stdout_truncated"]
@@ -341,8 +402,16 @@ def main() -> int:
                     result.update({"status": "failed", "reason": reason})
                 else:
                     generated = candidate_work / "translated.py"
-                    generated.write_text(translated["stdout"], encoding="utf-8")
-                    try: compile(translated["stdout"], str(generated), "exec")
+                    # First isolated stage: compiler-guided syntax repair only.
+                    # SMT and symbolic repair remain opt-in until tied to source
+                    # spans and validated without changing the corpus.
+                    compiler_repair = repair_python_source(translated["stdout"], max_iterations=2)
+                    candidate_source = compiler_repair.source if compiler_repair.compiled else translated["stdout"]
+                    result["compiler_repair_applied"] = candidate_source != translated["stdout"]
+                    result["compiler_repair_status"] = compiler_repair.status
+                    result["compiler_repair_iterations"] = compiler_repair.iterations
+                    generated.write_text(candidate_source, encoding="utf-8")
+                    try: compile(candidate_source, str(generated), "exec")
                     except SyntaxError as error:
                         generated_lines = translated["stdout"].splitlines()
                         offending_line = generated_lines[error.lineno - 1].strip() if error.lineno and error.lineno <= len(generated_lines) else ""
@@ -438,6 +507,15 @@ def main() -> int:
                 report["tested"] += 1
                 if result["status"] == "passed": report["passed"] += 1
                 else: report["failed"] += 1
+    report["candidate_translation_seconds"] = round(report["candidate_translation_seconds"], 6)
+    report["baseline_translation_seconds"] = round(report["baseline_translation_seconds"], 6)
+    if baseline_translator is not None and report["baseline_translation_seconds"] > 0:
+        report["translation_time_delta_percent"] = round(100 * (report["candidate_translation_seconds"] / report["baseline_translation_seconds"] - 1), 2)
+        report["translation_time_speedup"] = round(report["baseline_translation_seconds"] / max(report["candidate_translation_seconds"], 1e-9), 3)
+    report["translation_cache_hits"] = sum(result.get("translation_cache_hit") is True for result in report["results"])
+    report["translation_cache_misses"] = sum(result.get("translation_cache_hit") is False for result in report["results"])
+    cache_lookups = report["translation_cache_hits"] + report["translation_cache_misses"]
+    report["translation_cache_hit_rate_percent"] = round(100 * report["translation_cache_hits"] / cache_lookups, 2) if cache_lookups else 0.0
     report["sample_complete"] = report["tested"] == args.target
     report["pass_rate_percent"] = round(100 * report["passed"] / report["tested"], 2) if report["tested"] else 0.0
     report["equivalence_threshold_percent"] = 75.0
@@ -459,7 +537,12 @@ def main() -> int:
         f"- Reference runtime exclusions: **{report['reference_runtime_exclusions']}**",
         f"- Differentially tested: **{report['tested']}/{report['target']}**",
         f"- Exact matches: **{report['passed']}/{report['tested']} ({report['pass_rate_percent']:.2f}%)**",
-        f"- Translator mismatches/errors: **{report['failed']}**", f"- Sample complete: **{report['sample_complete']}**",
+        f"- Translator mismatches/errors: **{report['failed']}**",
+        f"- Translation cache: **{report['translation_cache_hits']} hits / {report['translation_cache_misses']} misses ({report['translation_cache_hit_rate_percent']:.2f}% hit rate)**",
+        f"- Candidate translation time (including cache lookup): **{report['candidate_translation_seconds']:.3f}s**",
+        f"- Current-main translation time: **{report['baseline_translation_seconds']:.3f}s**" if baseline_translator is not None else "- Current-main timing comparison: **not enabled**",
+        f"- Candidate vs current-main translation time: **{report['translation_time_delta_percent']:+.2f}%** (speedup ×{report['translation_time_speedup']:.3f})" if baseline_translator is not None and "translation_time_delta_percent" in report else "",
+        f"- Sample complete: **{report['sample_complete']}**",
         f"- 75% exact-equivalence gate reached: **{report['equivalence_gate_reached']}**", "",
         "## Per-program results", "", "| Case | Archive path | Status | Detail |", "|---|---|---|---|"]
     for item in report["results"]:

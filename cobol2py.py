@@ -246,7 +246,7 @@ class CobolVar:
                         initial = repr("\xff" * width)
                     elif self.value.upper() in ("SPACE", "SPACES"):
                         initial = repr(" " * width)
-                    elif re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", self.value.strip()):
+                    elif re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*", self.value.strip()):
                         # VALUE clauses are literals, not references to other
                         # data-names. Treat an unquoted alphanumeric token as
                         # text rather than emitting an unbound Python variable.
@@ -313,22 +313,22 @@ class Program:
 RE_IDENT = re.compile(r"IDENTIFICATION\s+DIVISION", re.IGNORECASE)
 RE_DATA = re.compile(r"DATA\s+DIVISION", re.IGNORECASE)
 RE_PROC = re.compile(r"PROCEDURE\s+DIVISION", re.IGNORECASE)
-RE_PROGRAM_ID = re.compile(r"PROGRAM-ID\.\s*([A-Za-z0-9\-]+)", re.IGNORECASE)
+RE_PROGRAM_ID = re.compile(r"PROGRAM-ID\.\s*([A-Za-z0-9_\-]+)", re.IGNORECASE)
 RE_WORKING_STORAGE = re.compile(r"WORKING-STORAGE\s+SECTION", re.IGNORECASE)
 RE_STORAGE_SECTION = re.compile(r"(?:WORKING-STORAGE|LOCAL-STORAGE|LINKAGE)\s+SECTION", re.IGNORECASE)
-RE_VAR = re.compile(r"^\s*(\d{1,2})\s+([A-Za-z0-9\-]+)\s*(.*?)(?:\.\s*)?$", re.IGNORECASE)
+RE_VAR = re.compile(r"^\s*(\d{1,2})\s+([A-Za-z0-9_\-]+)\s*(.*?)(?:\.\s*)?$", re.IGNORECASE)
 RE_PIC = re.compile(r"PIC(?:TURE)?\s+(?:IS\s+)?([A-Za-z0-9\(\)VSPX]+)", re.IGNORECASE)
 RE_VALUE = re.compile(
     # The optional IS is a clause keyword, never a VALUE literal. Keep the
     # negative lookahead after the optional keyword so regex backtracking
     # cannot capture IS itself when a declaration is truncated or continued.
-    r"""VALUE\s+(?:IS\s+)?(?!IS\b)((?:ALL\s+)?(?:"(?:[^"]|"")*"|'(?:[^']|'')*'|[+-]?\d+(?:\.\d+)?|[A-Za-z][A-Za-z0-9-]*))""",
+    r"""VALUE\s+(?:IS\s+)?(?!IS\b)((?:ALL\s+)?(?:"(?:[^"]|"")*"|'(?:[^']|'')*'|[+-]?\d+(?:\.\d+)?|[A-Za-z][A-Za-z0-9_-]*))""",
     re.IGNORECASE,
 )
 # Patch 2: OCCURS dinámico
 RE_OCCURS = re.compile(
     r"OCCURS\s+(?:\d+\s+TO\s+)?(\d+)(?:\s+TIMES)?"
-    r"(?:\s+DEPENDING\s+ON\s+([A-Za-z0-9\-]+))?",
+    r"(?:\s+DEPENDING\s+ON\s+([A-Za-z0-9_\-]+))?",
     re.IGNORECASE,
 )
 RE_PARAGRAPH = re.compile(r"^(?!END-)([A-Za-z][A-Za-z0-9\-]*)\.\s*$")
@@ -343,7 +343,7 @@ def _parse_indexed_by_names(rest: str) -> list[str]:
     )
     if not match:
         return []
-    return list(dict.fromkeys(name.upper() for name in re.findall(r"[A-Za-z][A-Za-z0-9-]*", match.group(1))))
+    return list(dict.fromkeys(name.upper() for name in re.findall(r"[A-Za-z][A-Za-z0-9_-]*", match.group(1))))
 
 
 def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
@@ -365,7 +365,7 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
             declarations
             and re.search(r"\bVALUE(?:\s+IS)?\s*$", declarations[-1][1], re.IGNORECASE)
             and re.match(
-                r"""^\s*(?:"(?:[^"]|"")*"|'(?:[^']|'')*'|[+-]?\d+(?:\.\d+)?|[A-Za-z][A-Za-z0-9-]*)\s*\.?\s*$""",
+                r"""^\s*(?:"(?:[^"]|"")*"|'(?:[^']|'')*'|[+-]?\d+(?:\.\d+)?|[A-Za-z][A-Za-z0-9_-]*)\s*\.?\s*$""",
                 source_line,
             )
         ):
@@ -416,11 +416,11 @@ def parse_variables(lines: list[tuple[int, str]]) -> list[CobolVar]:
             depending_on=occ_m.group(2) if occ_m and occ_m.group(2) else None,
             indexed_by=index_names[0] if index_names else None,
             indexed_by_names=index_names,
-            ascending_key=(re.search(r"\bASCENDING\s+KEY\s+(?:IS\s+)?([A-Za-z0-9-]+)", rest, re.IGNORECASE).group(1).upper()
-                           if re.search(r"\bASCENDING\s+KEY\s+(?:IS\s+)?([A-Za-z0-9-]+)", rest, re.IGNORECASE) else None),
+            ascending_key=(re.search(r"\bASCENDING\s+KEY\s+(?:IS\s+)?([A-Za-z0-9_-]+)", rest, re.IGNORECASE).group(1).upper()
+                           if re.search(r"\bASCENDING\s+KEY\s+(?:IS\s+)?([A-Za-z0-9_-]+)", rest, re.IGNORECASE) else None),
             parent_name=parent.name if parent else None,
-            redefines=(re.search(r"\bREDEFINES\s+([A-Za-z0-9-]+)", rest, re.IGNORECASE).group(1).upper()
-                       if re.search(r"\bREDEFINES\s+([A-Za-z0-9-]+)", rest, re.IGNORECASE) else None),
+            redefines=(re.search(r"\bREDEFINES\s+([A-Za-z0-9_-]+)", rest, re.IGNORECASE).group(1).upper()
+                       if re.search(r"\bREDEFINES\s+([A-Za-z0-9_-]+)", rest, re.IGNORECASE) else None),
         )
         variables.append(variable)
         if level != 77:
@@ -819,7 +819,7 @@ def build_tree(units: list[tuple[int, str]]) -> list[Node]:
             continue
 
         inline_varying = re.match(
-            r"^PERFORM(?:\s+WITH\s+TEST\s+(BEFORE|AFTER))?\s+VARYING\s+([A-Za-z0-9-]+)\s+FROM\s+(.+?)\s+BY\s+(.+?)\s+UNTIL\s+(.+)$",
+            r"^PERFORM(?:\s+WITH\s+TEST\s+(BEFORE|AFTER))?\s+VARYING\s+([A-Za-z0-9_-]+)\s+FROM\s+(.+?)\s+BY\s+(.+?)\s+UNTIL\s+(.+)$",
             normalized,
             re.IGNORECASE,
         )
@@ -1053,7 +1053,7 @@ def parse_condition_names(lines: list[tuple[int, str]]) -> dict[str, tuple[str, 
             declarations[-1] = (prior_number, prior_text.rstrip() + " " + source_line.strip())
 
     literal_pattern = re.compile(
-        r"""ALL\s+(?:"(?:[^"]|"")*"|'(?:[^']|'')*')|"(?:[^"]|"")*"|'(?:[^']|'')*'|[+-]?\d+(?:\.\d+)?|[A-Za-z][A-Za-z0-9-]*""",
+        r"""ALL\s+(?:"(?:[^"]|"")*"|'(?:[^']|'')*')|"(?:[^"]|"")*"|'(?:[^']|'')*'|[+-]?\d+(?:\.\d+)?|[A-Za-z][A-Za-z0-9_-]*""",
         re.IGNORECASE,
     )
     result: dict[str, tuple[str, list[tuple[str, Optional[str]]]]] = {}
@@ -1123,12 +1123,12 @@ def parse_file_specs(lines: list[tuple[int, str]]) -> dict[str, dict[str, Option
 
     specs: dict[str, dict[str, Optional[str]]] = {}
     for statement in statements:
-        selected = re.search(r"\bSELECT\s+([A-Za-z0-9-]+)", statement, re.IGNORECASE)
+        selected = re.search(r"\bSELECT\s+([A-Za-z0-9_-]+)", statement, re.IGNORECASE)
         if not selected:
             continue
         name = selected.group(1).upper()
         assigned = re.search(
-            r"""\bASSIGN(?:\s+TO)?\s+(?:"((?:[^"]|"")*)"|'((?:[^']|'')*)'|([A-Za-z0-9-]+))""",
+            r"""\bASSIGN(?:\s+TO)?\s+(?:"((?:[^"]|"")*)"|'((?:[^']|'')*)'|([A-Za-z0-9_-]+))""",
             statement,
             re.IGNORECASE,
         )
@@ -1142,7 +1142,7 @@ def parse_file_specs(lines: list[tuple[int, str]]) -> dict[str, dict[str, Option
             statement,
             re.IGNORECASE,
         )
-        status = re.search(r"\bFILE\s+STATUS\s+(?:IS\s+)?([A-Za-z0-9-]+)", statement, re.IGNORECASE)
+        status = re.search(r"\bFILE\s+STATUS\s+(?:IS\s+)?([A-Za-z0-9_-]+)", statement, re.IGNORECASE)
         specs[name] = {
             "assign": raw_path,
             "organization": re.sub(r"\s+", " ", organization.group(1).upper()) if organization else None,
@@ -1163,7 +1163,7 @@ def parse_file_specs(lines: list[tuple[int, str]]) -> dict[str, dict[str, Option
             current_file = None
         if not in_file_section:
             continue
-        descriptor = re.match(r"^\s*FD\s+([A-Za-z0-9-]+)\b", text, re.IGNORECASE)
+        descriptor = re.match(r"^\s*FD\s+([A-Za-z0-9_-]+)\b", text, re.IGNORECASE)
         if descriptor:
             current_file = descriptor.group(1).upper()
             continue
@@ -1212,7 +1212,7 @@ def parse_cobol(
         # partially supported. Parse each supported DATA DIVISION section
         # independently so the hierarchy from FILE SECTION cannot leak into
         # WORKING-STORAGE or LINKAGE.
-        section_header = re.compile(r"^\s*([A-Za-z0-9-]+)\s+SECTION\b", re.IGNORECASE)
+        section_header = re.compile(r"^\s*([A-Za-z0-9_-]+)\s+SECTION\b", re.IGNORECASE)
         supported_sections = {"FILE", "WORKING-STORAGE", "LOCAL-STORAGE", "LINKAGE", "SCREEN"}
         current_section: Optional[str] = None
         section_lines: list[tuple[int, str]] = []
@@ -1316,7 +1316,7 @@ def normalize_java_identifier(name: str) -> str:
 
 def normalize_java_name(name: str) -> str:
     normalized = re.sub(
-        r"(?:[A-Za-z][A-Za-z0-9-]*|[0-9]+[A-Za-z0-9-]*[A-Za-z][A-Za-z0-9-]*)",
+        r"(?:[A-Za-z][A-Za-z0-9_-]*|[0-9]+[A-Za-z0-9_-]*[A-Za-z][A-Za-z0-9_-]*)",
         lambda match: normalize_java_identifier(match.group(0)),
         name,
     )
@@ -1332,7 +1332,7 @@ def normalize_name(name: str) -> str:
     # Normalize identifiers for Python only. Java keywords are handled by
     # normalize_java_name so a Java-only keyword cannot rename Python data.
     normalized = re.sub(
-        r"(?:[A-Za-z][A-Za-z0-9-]*|[0-9]+[A-Za-z0-9-]*[A-Za-z][A-Za-z0-9-]*)",
+        r"(?:[A-Za-z][A-Za-z0-9_-]*|[0-9]+[A-Za-z0-9_-]*[A-Za-z][A-Za-z0-9_-]*)",
         lambda match: normalize_identifier(match.group(0)),
         name,
     )
@@ -1350,7 +1350,7 @@ def emit_assignment(target: str, value: str, variables: Optional[dict[str, Cobol
     """Route supported REDEFINES assignments through the shared storage buffer."""
     variable_map = variables or {}
     match = re.fullmatch(
-        r"([A-Za-z0-9-]+)(?:\s*\(([^()]*)\))?(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?",
+        r"([A-Za-z0-9_-]+)(?:\s*\(([^()]*)\))?(?:\s+(?:OF|IN)\s+[A-Za-z0-9_-]+)?",
         target.strip(), re.IGNORECASE,
     )
     if match:
@@ -1387,9 +1387,9 @@ def normalize_data_reference(
     # path when names are unique in the simplified symbol table; discard only
     # the redundant outer qualifiers before applying the normal resolver.
     qualified_chain = re.fullmatch(
-        r"([A-Za-z0-9-]+(?:\s*\([^()]*\))?)\s+(?:OF|IN)\s+"
-        r"([A-Za-z0-9-]+(?:\s*\([^()]*\))?)"
-        r"(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+(?:\s*\([^()]*\))?)+",
+        r"([A-Za-z0-9_-]+(?:\s*\([^()]*\))?)\s+(?:OF|IN)\s+"
+        r"([A-Za-z0-9_-]+(?:\s*\([^()]*\))?)"
+        r"(?:\s+(?:OF|IN)\s+[A-Za-z0-9_-]+(?:\s*\([^()]*\))?)+",
         text,
         re.IGNORECASE,
     )
@@ -1412,7 +1412,7 @@ def normalize_data_reference(
         return normalize_name(text)
     seen.add(reference_key)
     match = re.fullmatch(
-        r"([A-Za-z0-9-]+)(?:\s*\(((?:[^()]|\((?:[^()]*)\))*)\))?(?:\s+(?:OF|IN)\s+([A-Za-z0-9-]+)(?:\s*\(((?:[^()]|\((?:[^()]*)\))*)\))?)?",
+        r"([A-Za-z0-9_-]+)(?:\s*\(((?:[^()]|\((?:[^()]*)\))*)\))?(?:\s+(?:OF|IN)\s+([A-Za-z0-9_-]+)(?:\s*\(((?:[^()]|\((?:[^()]*)\))*)\))?)?",
         text,
         re.IGNORECASE,
     )
@@ -1422,7 +1422,7 @@ def normalize_data_reference(
         # keyword "is" (which becomes cobol_is); hand such expressions to the
         # condition translator instead. Keep data-description clauses untouched.
         has_relation_is = bool(
-            re.search(r"(?<![A-Za-z0-9-])IS(?![A-Za-z0-9-])", text, re.IGNORECASE)
+            re.search(r"(?<![A-Za-z0-9_-])IS(?![A-Za-z0-9_-])", text, re.IGNORECASE)
         )
         is_data_clause = bool(
             re.match(r"^\s*(?:PIC(?:TURE)?|VALUE)\b", text, re.IGNORECASE)
@@ -1474,7 +1474,7 @@ def normalize_data_reference(
         # name-keyed compatibility map can collapse duplicate data-names, so
         # the source's full qualification is the reliable path disambiguator.
         part_matches = [
-            re.fullmatch(r"([A-Za-z0-9-]+)(?:\s*\(([^()]*)\))?", part.strip())
+            re.fullmatch(r"([A-Za-z0-9_-]+)(?:\s*\(([^()]*)\))?", part.strip())
             for part in qualified_parts
         ]
         if all(part_matches):
@@ -1702,7 +1702,7 @@ def translate_literal(
         # DISPLAY operands go through translate_literal directly, not always
         # translate_expr, so handle this alphanumeric intrinsic here too.
         return "(lambda _dt: _dt.strftime('%Y%m%d%H%M%S') + f'{_dt.microsecond // 10000:02d}')(__import__('datetime').datetime.now())"
-    if re.match(r"FUNCTION\s+[A-Z][A-Z0-9-]*\s*(?:\(|\[)", t, re.IGNORECASE) or re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*\s*\([^()]*:[^()]*\)", t):
+    if re.match(r"FUNCTION\s+[A-Z][A-Z0-9-]*\s*(?:\(|\[)", t, re.IGNORECASE) or re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*\s*\([^()]*:[^()]*\)", t):
         return translate_expr(t, variables)
     if t.upper() in ("QUOTE", "QUOTES"):
         return repr('"')
@@ -1746,7 +1746,7 @@ def translate_expr(
     # Resolve a whole qualified identifier before the expression tokenizer sees
     # OF/IN as independent words (which would otherwise become invalid Python).
     if re.fullmatch(
-        r"[A-Za-z0-9-]+(?:\s*\([^()]*\))?(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+(?:\s*\([^()]*\))?)+",
+        r"[A-Za-z0-9_-]+(?:\s*\([^()]*\))?(?:\s+(?:OF|IN)\s+[A-Za-z0-9_-]+(?:\s*\([^()]*\))?)+",
         expr,
         re.IGNORECASE,
     ):
@@ -1868,7 +1868,7 @@ def translate_expr(
         return token
 
     expr = re.sub(
-        r"\b[A-Za-z][A-Za-z0-9-]*(?:\s*\((?:[^()]|\([^()]*\))*\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*(?:\s*\((?:[^()]|\([^()]*\))*\))?)+",
+        r"\b[A-Za-z][A-Za-z0-9_-]*(?:\s*\((?:[^()]|\([^()]*\))*\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9_-]*(?:\s*\((?:[^()]|\([^()]*\))*\))?)+",
         protect_qualified_reference,
         expr,
         flags=re.IGNORECASE,
@@ -1892,17 +1892,17 @@ def translate_expr(
         return f"{base_expr}[{start_index}:({start_index}) + ({length_expr})]"
 
     expr = re.sub(
-        r"\b([A-Za-z][A-Za-z0-9-]*)\s*\(\s*([^():]+)\s*:\s*([^()]*)\)",
+        r"\b([A-Za-z][A-Za-z0-9_-]*)\s*\(\s*([^():]+)\s*:\s*([^()]*)\)",
         translate_reference_modification,
         expr,
     )
     expr = re.sub(
-        r"\b([A-Za-z][A-Za-z0-9-]*)\s*\(([A-Za-z0-9_,;+*/\s-]+)\)",
+        r"\b([A-Za-z][A-Za-z0-9_-]*)\s*\(([A-Za-z0-9_,;+*/\s-]+)\)",
         lambda match: match.group(0) if match.group(1).upper() in intrinsic_names
         else normalize_data_reference(match.group(0), variables),
         expr,
     )
-    token_pattern = r"""([Xx](?:'[0-9A-Fa-f]+'|"[0-9A-Fa-f]+")|"(?:[^"]|"")*"|'(?:[^']|'')*'|\d+[A-Za-z0-9-]*[A-Za-z][A-Za-z0-9-]*|[A-Za-z][A-Za-z0-9-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&\[\]-]|\s+|.)"""
+    token_pattern = r"""([Xx](?:'[0-9A-Fa-f]+'|"[0-9A-Fa-f]+")|"(?:[^"]|"")*"|'(?:[^']|'')*'|\d+[A-Za-z0-9_-]*[A-Za-z][A-Za-z0-9_-]*|[A-Za-z][A-Za-z0-9_-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&\[\]-]|\s+|.)"""
     tokens = re.findall(token_pattern, expr)
     out = []
     for tok in tokens:
@@ -1921,7 +1921,7 @@ def translate_expr(
             out.append("True" if tok.upper() == "TRUE" else "False")
         elif tok.upper() in intrinsic_names:
             out.append(tok.lower().replace("-", "_"))
-        elif re.fullmatch(r"(?:[A-Za-z][A-Za-z0-9-]*|\d+[A-Za-z0-9-]*[A-Za-z][A-Za-z0-9-]*)", tok):
+        elif re.fullmatch(r"(?:[A-Za-z][A-Za-z0-9_-]*|\d+[A-Za-z0-9_-]*[A-Za-z][A-Za-z0-9_-]*)", tok):
             out.append(normalize_data_reference(tok, variables))
         elif re.fullmatch(r"\d+(?:\.\d+)?", tok):
             out.append(normalize_cobol_number(tok))
@@ -2538,7 +2538,7 @@ def translate_condition(
     # this on COBOL tokens avoids the post-translation regex mistaking a padded
     # lhs (for example, ws_flag.ljust(1)) for the next abbreviated literal.
     string_alternatives = re.compile(
-        r"""(?P<lhs>[A-Za-z][A-Za-z0-9-]*(?:\s*\([^()]*\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*)*)"""
+        r"""(?P<lhs>[A-Za-z][A-Za-z0-9_-]*(?:\s*\([^()]*\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9_-]*)*)"""
         r"""\s*(?P<op>NOT\s*=|NOT\s*<>|NOT\s*!=|NOT\s*<=|NOT\s*>=|NOT\s*<|NOT\s*>|==|=|<>|!=|<=|>=|<|>)\s*"""
         r"""(?P<first>"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')"""
         r"""\s+(?P<logic>OR|AND)\s+"""
@@ -2628,8 +2628,8 @@ def translate_condition(
 
     def rewrite_sign_conditions(chunk: str) -> str:
         pattern = (
-            r"\b(?!(?:IS|NOT|TO|EQUAL|GREATER|LESS|AND|OR)(?:\s|$))([A-Za-z0-9-]+(?:\s*\([^()]*\))?"
-            r"(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?)"
+            r"\b(?!(?:IS|NOT|TO|EQUAL|GREATER|LESS|AND|OR)(?:\s|$))([A-Za-z0-9_-]+(?:\s*\([^()]*\))?"
+            r"(?:\s+(?:OF|IN)\s+[A-Za-z0-9_-]+)?)"
             r"\s+(?:IS\s+)?(NOT\s+)?(POSITIVE|NEGATIVE|ZERO)\b"
         )
 
@@ -2659,8 +2659,8 @@ def translate_condition(
     # prefix and leave a dangling OF/IN token to become a Python variable.
     qualified_condition_replacements: dict[str, str] = {}
     qualified_condition_pattern = re.compile(
-        r"\b[A-Za-z][A-Za-z0-9-]*(?:\s*\([^()]*\))?"
-        r"(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*(?:\s*\([^()]*\))?){2,}",
+        r"\b[A-Za-z][A-Za-z0-9_-]*(?:\s*\([^()]*\))?"
+        r"(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9_-]*(?:\s*\([^()]*\))?){2,}",
         re.IGNORECASE,
     )
 
@@ -2678,8 +2678,8 @@ def translate_condition(
 
     def rewrite_class_conditions(chunk: str) -> str:
         pattern = (
-            r"\b([A-Za-z0-9-]+(?:\s*\([^()]*\))?"
-            r"(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+)?)"
+            r"\b([A-Za-z0-9_-]+(?:\s*\([^()]*\))?"
+            r"(?:\s+(?:OF|IN)\s+[A-Za-z0-9_-]+)?)"
             r"\s+(?:IS\s+)?(NOT\s+)?"
             r"(ALPHABETIC(?:-(?:LOWER|UPPER))?|ALPHANUMERIC|NUMERIC)\b"
         )
@@ -2746,7 +2746,7 @@ def translate_condition(
         c = re.sub(r"\bEQUALS?\s+TO\b", "==", c, flags=re.IGNORECASE)
         c = re.sub(r"\bEQUALS?\b", "==", c, flags=re.IGNORECASE)
         c = re.sub(r"\bNOT\b", "not", c, flags=re.IGNORECASE)
-        c = re.sub(r"(?<![A-Za-z0-9-])IS(?![A-Za-z0-9-])", "==", c, flags=re.IGNORECASE)
+        c = re.sub(r"(?<![A-Za-z0-9_-])IS(?![A-Za-z0-9_-])", "==", c, flags=re.IGNORECASE)
         c = re.sub(r"(?<![!<>=])=(?!=)", "==", c)
         c = c.replace("<>", "!=")
         # Some legacy sources express a compound relation with an equality
@@ -2853,7 +2853,7 @@ def pic_digit_count(pic: str) -> int:
 
 def translate_display_item(token: str, variables: dict[str, CobolVar]) -> str:
     """Emit a string expression matching basic COBOL DISPLAY formatting."""
-    base_match = re.match(r"[A-Za-z0-9-]+", token)
+    base_match = re.match(r"[A-Za-z0-9_-]+", token)
     variable = variables.get(base_match.group(0).upper()) if base_match else None
     if variable is not None and variable.pic:
         pic = variable.pic.upper()
@@ -2883,7 +2883,7 @@ def pic_character_count(pic: str) -> int:
 
 def fit_numeric_expression(expression: str, target: str, variables: dict[str, CobolVar]) -> str:
     """Apply the receiving numeric PIC's basic truncation/wrap semantics."""
-    target_base = re.match(r"([A-Za-z0-9-]+)", target)
+    target_base = re.match(r"([A-Za-z0-9_-]+)", target)
     variable = variables.get(target_base.group(1).upper()) if target_base else None
     if variable is None or not variable.pic:
         return expression
@@ -2910,7 +2910,7 @@ def fit_numeric_expression(expression: str, target: str, variables: dict[str, Co
 
 def is_subscripted_overlay_reference(target: str, variables: dict[str, CobolVar]) -> bool:
     """Identify an indexed elementary field backed by a REDEFINES byte buffer."""
-    match = re.match(r"([A-Za-z0-9-]+)\s*\(([^()]*)\)", target.strip())
+    match = re.match(r"([A-Za-z0-9_-]+)\s*\(([^()]*)\)", target.strip())
     if match is None:
         return False
     overlay_fields, _overlay_buffers = build_overlay_layout(variables)
@@ -2935,7 +2935,7 @@ def translate_group_fill_move(source: str, target: str, variables: dict[str, Cob
     fill_char = figuratives.get(source.strip().upper())
     if fill_char is None:
         return None
-    target_match = re.match(r"([A-Za-z0-9-]+)", target.strip())
+    target_match = re.match(r"([A-Za-z0-9_-]+)", target.strip())
     if target_match is None:
         return None
     root = variables.get(target_match.group(1).upper())
@@ -2998,8 +2998,8 @@ def translate_group_move(source: str, target: str, variables: dict[str, CobolVar
     route overlay leaves through the shared byte-buffer setter instead of
     replacing a group dictionary with a string or a second dictionary.
     """
-    target_match = re.match(r"([A-Za-z0-9-]+)", target.strip())
-    source_match = re.match(r"([A-Za-z0-9-]+)", source.strip())
+    target_match = re.match(r"([A-Za-z0-9_-]+)", target.strip())
+    source_match = re.match(r"([A-Za-z0-9_-]+)", source.strip())
     if target_match is None:
         return None
     target_root = variables.get(target_match.group(1).upper())
@@ -3015,7 +3015,7 @@ def translate_group_move(source: str, target: str, variables: dict[str, CobolVar
         return 1
 
     def reference_indices(reference: str) -> tuple[str, ...]:
-        match = re.match(r"[A-Za-z0-9-]+\s*\(([^()]*)\)", reference.strip())
+        match = re.match(r"[A-Za-z0-9_-]+\s*\(([^()]*)\)", reference.strip())
         if match is None:
             return ()
         return tuple(part.strip() for part in re.split(r"[,;]", match.group(1)) if part.strip())
@@ -3108,7 +3108,7 @@ def translate_group_move(source: str, target: str, variables: dict[str, CobolVar
 
 def translate_group_bytes(source: str, variables: dict[str, CobolVar]) -> Optional[str]:
     """Return a COBOL group's contiguous bytes, using the base of each overlay."""
-    source_match = re.match(r"([A-Za-z0-9-]+)", source.strip())
+    source_match = re.match(r"([A-Za-z0-9_-]+)", source.strip())
     if source_match is None:
         return None
     root = variables.get(source_match.group(1).upper())
@@ -3121,7 +3121,7 @@ def translate_group_bytes(source: str, variables: dict[str, CobolVar]) -> Option
         return max(1, pic_digit_count(variable.pic)) if variable.pic else 1
 
     def reference_indices(reference: str) -> tuple[str, ...]:
-        match = re.match(r"[A-Za-z0-9-]+\s*\(([^()]*)\)", reference.strip())
+        match = re.match(r"[A-Za-z0-9_-]+\s*\(([^()]*)\)", reference.strip())
         if match is None:
             return ()
         return tuple(part.strip() for part in re.split(r"[,;]", match.group(1)) if part.strip())
@@ -3196,7 +3196,7 @@ def translate_move_value(source: str, target: str, variables: dict[str, CobolVar
     """
     group_bytes = translate_group_bytes(source, variables)
     value = group_bytes if group_bytes is not None else translate_literal(source, variables)
-    target_base = re.match(r"([A-Za-z0-9-]+)", target)
+    target_base = re.match(r"([A-Za-z0-9_-]+)", target)
     variable = variables.get(target_base.group(1).upper()) if target_base else None
     whole_array = bool(
         variable is not None and variable.is_array and not variable.is_group
@@ -3247,7 +3247,7 @@ def translate_move_value(source: str, target: str, variables: dict[str, CobolVar
 
 
 COBOL_TOKEN_RE = re.compile(
-    r'"(?:[^"]|"")*"|\'(?:[^\']|\'\')*\'|[A-Za-z][A-Za-z0-9-]*(?:\s*\([A-Za-z0-9_-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*)?|,?\s*|(?:\S+)',
+    r'"(?:[^"]|"")*"|\'(?:[^\']|\'\')*\'|[A-Za-z][A-Za-z0-9_-]*(?:\s*\([A-Za-z0-9_-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9_-]*)?|,?\s*|(?:\S+)',
     re.IGNORECASE,
 )
 
@@ -3331,7 +3331,7 @@ def split_cobol_items(s: str) -> list[str]:
         if (
             token.upper() == "FUNCTION"
             and i + 1 < len(tokens)
-            and re.match(r"^[A-Za-z][A-Za-z0-9-]*\s*(?:\(|\[)", tokens[i + 1])
+            and re.match(r"^[A-Za-z][A-Za-z0-9_-]*\s*(?:\(|\[)", tokens[i + 1])
         ):
             token = f"{token} {tokens[i + 1]}"
             i += 1
@@ -3356,7 +3356,7 @@ def split_cobol_items(s: str) -> list[str]:
     return expanded
 
 
-DATA_REF_PATTERN = r"[A-Za-z0-9-]+(?:\s*\([A-Za-z0-9_,;:+*/\s-]+\)){0,2}(?:\s+(?:OF|IN)\s+[A-Za-z0-9-]+(?:\s*\([A-Za-z0-9_,;:+*/\s-]+\)){0,2})*"
+DATA_REF_PATTERN = r"[A-Za-z0-9_-]+(?:\s*\([A-Za-z0-9_,;:+*/\s-]+\)){0,2}(?:\s+(?:OF|IN)\s+[A-Za-z0-9_-]+(?:\s*\([A-Za-z0-9_,;:+*/\s-]+\)){0,2})*"
 
 
 def emit_reference_modification_move(
@@ -3401,8 +3401,8 @@ def emit_corresponding_arithmetic(
 ) -> list[str]:
     """Translate ADD/SUBTRACT CORRESPONDING over matching numeric group leaves."""
     variable_map = variables or {}
-    source_root_match = re.match(r"[A-Za-z0-9-]+", source_group)
-    target_root_match = re.match(r"[A-Za-z0-9-]+", target_group)
+    source_root_match = re.match(r"[A-Za-z0-9_-]+", source_group)
+    target_root_match = re.match(r"[A-Za-z0-9_-]+", target_group)
     if source_root_match is None or target_root_match is None:
         return []
     source_root = source_root_match.group(0)
@@ -3506,15 +3506,15 @@ def translate_statement(
     open_match = re.fullmatch(r"OPEN\s+(INPUT|OUTPUT|EXTEND|I-O)\s+(.+)", s, re.IGNORECASE)
     if open_match:
         mode, names = open_match.groups()
-        file_names = re.findall(r"[A-Za-z0-9-]+", names)
+        file_names = re.findall(r"[A-Za-z0-9_-]+", names)
         if file_names:
             return [f"_cobol_open({name.upper()!r}, {mode.upper()!r})" for name in file_names]
     close_match = re.fullmatch(r"CLOSE\s+(.+)", s, re.IGNORECASE)
     if close_match:
-        file_names = re.findall(r"[A-Za-z0-9-]+", close_match.group(1))
+        file_names = re.findall(r"[A-Za-z0-9_-]+", close_match.group(1))
         if file_names:
             return [f"_cobol_close({name.upper()!r})" for name in file_names]
-    write_match = re.fullmatch(r"WRITE\s+([A-Za-z0-9-]+)(?:\s+FROM\s+([A-Za-z0-9-]+))?", s, re.IGNORECASE)
+    write_match = re.fullmatch(r"WRITE\s+([A-Za-z0-9_-]+)(?:\s+FROM\s+([A-Za-z0-9_-]+))?", s, re.IGNORECASE)
     if write_match:
         record_name, from_name = write_match.groups()
         return [f"_cobol_write({record_name.upper()!r}, {normalize_name(from_name) if from_name else None!r})"]
@@ -3539,7 +3539,7 @@ def translate_statement(
         replacing_values: dict[str, str] = {}
         if replacing_match:
             replacement_pattern = re.compile(
-                r"""\b(ALPHABETIC|ALPHANUMERIC|NUMERIC|ALPHANUMERIC-EDITED|NUMERIC-EDITED)\s+DATA\s+BY\s+((?:"(?:[^"]|"")*"|'(?:[^']|'')*'|[+-]?\d+(?:\.\d+)?|[A-Za-z][A-Za-z0-9-]*))""",
+                r"""\b(ALPHABETIC|ALPHANUMERIC|NUMERIC|ALPHANUMERIC-EDITED|NUMERIC-EDITED)\s+DATA\s+BY\s+((?:"(?:[^"]|"")*"|'(?:[^']|'')*'|[+-]?\d+(?:\.\d+)?|[A-Za-z][A-Za-z0-9_-]*))""",
                 re.IGNORECASE,
             )
             for replacement in replacement_pattern.finditer(replacing_match.group(1)):
@@ -3654,7 +3654,7 @@ def translate_statement(
         return [emit_assignment(counter, value_expr, variable_map)]
 
     # ALTER changes the destination of a later GO TO to the altered paragraph.
-    m = re.fullmatch(r"ALTER\s+([A-Za-z0-9-]+)\s+TO\s+PROCEED\s+TO\s+([A-Za-z0-9-]+)", s, re.IGNORECASE)
+    m = re.fullmatch(r"ALTER\s+([A-Za-z0-9_-]+)\s+TO\s+PROCEED\s+TO\s+([A-Za-z0-9_-]+)", s, re.IGNORECASE)
     if m:
         altered, target = (part.upper() for part in m.groups())
         if altered in paragraphs and target in paragraphs:
@@ -3664,7 +3664,7 @@ def translate_statement(
     # GO TO ... DEPENDING ON uses ordinal (1-based) selection. An out-of-range
     # selector performs no transfer and execution continues with the next statement.
     m = re.fullmatch(
-        r"GO\s+TO\s+([A-Za-z0-9-]+(?:\s+[A-Za-z0-9-]+)*)\s+DEPENDING\s+ON\s+([A-Za-z0-9-]+)",
+        r"GO\s+TO\s+([A-Za-z0-9_-]+(?:\s+[A-Za-z0-9_-]+)*)\s+DEPENDING\s+ON\s+([A-Za-z0-9_-]+)",
         s, re.IGNORECASE,
     )
     if m:
@@ -3678,7 +3678,7 @@ def translate_statement(
             ]
         return [f"# COBOL no traducido: {s}"]
 
-    m = re.fullmatch(r"GO\s+TO\s+([A-Za-z0-9-]+)", s, re.IGNORECASE)
+    m = re.fullmatch(r"GO\s+TO\s+([A-Za-z0-9_-]+)", s, re.IGNORECASE)
     if m:
         target = m.group(1).upper()
         if target in paragraphs:
@@ -3732,7 +3732,7 @@ def translate_statement(
                         f"if str({delimiter_expr}) else [str({source_expr})])"
                     ]
                     for index, target in enumerate(targets):
-                        target_base = re.match(r"[A-Za-z0-9-]+", target)
+                        target_base = re.match(r"[A-Za-z0-9_-]+", target)
                         target_var = variable_map.get(target_base.group(0).upper()) if target_base else None
                         value = f"(_cobol_unstring_parts[{index}] if len(_cobol_unstring_parts) > {index} else '')"
                         if target_var is not None and target_var.pic:
@@ -3768,12 +3768,12 @@ def translate_statement(
                 )
                 pointer = pointer_match.group(1).strip() if pointer_match else None
                 variable_map = variables or {}
-                target_base = re.match(r"[A-Za-z0-9-]+", target)
+                target_base = re.match(r"[A-Za-z0-9_-]+", target)
                 target_var = variable_map.get(target_base.group(0).upper()) if target_base else None
 
                 sending_items: list[tuple[str, str]] = []
                 item_pattern = re.compile(
-                    r"""(.+?)\s+DELIMITED\s+BY\s+("(?:[^"]|"")*"|'(?:[^']|'')*'|SIZE|SPACES?|ZEROS?|[A-Za-z][A-Za-z0-9-]*)""",
+                    r"""(.+?)\s+DELIMITED\s+BY\s+("(?:[^"]|"")*"|'(?:[^']|'')*'|SIZE|SPACES?|ZEROS?|[A-Za-z][A-Za-z0-9_-]*)""",
                     re.IGNORECASE,
                 )
                 cursor = 0
@@ -3844,7 +3844,7 @@ def translate_statement(
         display_operands = m.group(1).strip()
         # UPON selects the output device; it is not another DISPLAY operand.
         display_operands = re.sub(
-            r"\s+UPON\s+[A-Za-z0-9-]+\s*$",
+            r"\s+UPON\s+[A-Za-z0-9_-]+\s*$",
             "",
             display_operands,
             flags=re.IGNORECASE,
@@ -3870,7 +3870,7 @@ def translate_statement(
     if m:
         target = m.group(1)
         target_expr = normalize_data_reference(target, variables)
-        base = re.match(r"[A-Za-z0-9-]+", target)
+        base = re.match(r"[A-Za-z0-9_-]+", target)
         variable = variables.get(base.group(0).upper()) if base and variables else None
         if variable is None or not variable.pic:
             return [emit_assignment(target, "_cobol_input()", variables)]
@@ -3899,14 +3899,14 @@ def translate_statement(
             return ["_cobol_accept_value = _cobol_input('0')", emit_assignment(target, value, variables)]
         return [f"{target_expr} = _cobol_input()"]
 
-    m = re.fullmatch(r"SET\s+([A-Za-z0-9-]+)\s+TO\s+TRUE", s, re.IGNORECASE)
+    m = re.fullmatch(r"SET\s+([A-Za-z0-9_-]+)\s+TO\s+TRUE", s, re.IGNORECASE)
     if m and condition_names:
         condition = condition_names.get(m.group(1).upper())
         if condition and condition[1]:
             parent_name, allowed_values = condition
             return [emit_assignment(parent_name, translate_literal(allowed_values[0][0], variables), variables)]
 
-    m = re.fullmatch(r"SET\s+([A-Za-z0-9-]+)\s+(UP|DOWN)\s+BY\s+(.+)", s, re.IGNORECASE)
+    m = re.fullmatch(r"SET\s+([A-Za-z0-9_-]+)\s+(UP|DOWN)\s+BY\s+(.+)", s, re.IGNORECASE)
     if m:
         target, direction, step = m.groups()
         target_expr = normalize_data_reference(target, variables)
@@ -3926,8 +3926,8 @@ def translate_statement(
     )
     if m:
         source_group, target_group = m.groups()
-        source_root = re.match(r"[A-Za-z0-9-]+", source_group).group(0)
-        target_root = re.match(r"[A-Za-z0-9-]+", target_group).group(0)
+        source_root = re.match(r"[A-Za-z0-9_-]+", source_group).group(0)
+        target_root = re.match(r"[A-Za-z0-9_-]+", target_group).group(0)
         variable_map = variables or {}
 
         def leaf_paths(group_name: str, group_expr: str, ancestors: set[str]) -> dict[str, list[tuple[str, CobolVar]]]:
@@ -4101,7 +4101,7 @@ def translate_statement(
     # WITH TEST AFTER executes the paragraph/range before checking UNTIL.
     # Model this explicitly instead of translating it as a pre-test while loop.
     m = re.match(
-        r"PERFORM\s+([A-Za-z0-9-]+)(?:\s+(?:THRU|THROUGH)\s+([A-Za-z0-9-]+))?"
+        r"PERFORM\s+([A-Za-z0-9_-]+)(?:\s+(?:THRU|THROUGH)\s+([A-Za-z0-9_-]+))?"
         r"\s+WITH\s+TEST\s+AFTER\s+UNTIL\s+(.+)",
         s,
         re.IGNORECASE,
@@ -4119,7 +4119,7 @@ def translate_statement(
             ]
 
     m = re.match(
-        r"PERFORM\s+([A-Za-z0-9-]+)\s+(?:THRU|THROUGH)\s+([A-Za-z0-9-]+)\s+UNTIL\s+(.+)",
+        r"PERFORM\s+([A-Za-z0-9_-]+)\s+(?:THRU|THROUGH)\s+([A-Za-z0-9_-]+)\s+UNTIL\s+(.+)",
         s,
         re.IGNORECASE,
     )
@@ -4131,25 +4131,25 @@ def translate_statement(
         ]
 
     m = re.match(
-        r"PERFORM\s+([A-Za-z0-9-]+)\s+(?:THRU|THROUGH)\s+([A-Za-z0-9-]+)",
+        r"PERFORM\s+([A-Za-z0-9_-]+)\s+(?:THRU|THROUGH)\s+([A-Za-z0-9_-]+)",
         s,
         re.IGNORECASE,
     )
     if m and m.group(1).upper() in paragraphs and m.group(2).upper() in paragraphs:
         return [f"_cobol_perform_range({m.group(1).upper()!r}, {m.group(2).upper()!r})"]
 
-    m = re.match(r"PERFORM\s+([A-Za-z0-9\-]+)\s+(\d+)\s+TIMES", s, re.IGNORECASE)
+    m = re.match(r"PERFORM\s+([A-Za-z0-9_\-]+)\s+(\d+)\s+TIMES", s, re.IGNORECASE)
     if m and m.group(1).upper() in paragraphs:
         return [f"for _ in range({int(m.group(2))}):", f"{normalize_name(m.group(1))}()"]
 
-    m = re.match(r"PERFORM\s+([A-Za-z0-9\-]+)\s+UNTIL\s+(.+)", s, re.IGNORECASE)
+    m = re.match(r"PERFORM\s+([A-Za-z0-9_\-]+)\s+UNTIL\s+(.+)", s, re.IGNORECASE)
     if m and m.group(1).upper() in paragraphs:
         return [
             f"while not ({translate_condition(m.group(2), variables or {}, condition_names)}):",
             f"{normalize_name(m.group(1))}()",
         ]
 
-    m = re.match(r"PERFORM\s+([A-Za-z0-9\-]+)", s, re.IGNORECASE)
+    m = re.match(r"PERFORM\s+([A-Za-z0-9_\-]+)", s, re.IGNORECASE)
     if m and m.group(1).upper() in paragraphs:
         return [f"{normalize_name(m.group(1))}()"]
 
@@ -4178,12 +4178,12 @@ def translate_nodes(
                     out.append("    " * line_indent + line.strip())
 
         elif node.kind == "read":
-            read_match = re.match(r"^READ\s+([A-Za-z0-9-]+)", node.text, re.IGNORECASE)
+            read_match = re.match(r"^READ\s+([A-Za-z0-9_-]+)", node.text, re.IGNORECASE)
             if not read_match:
                 out.append("    " * indent + f"# READ no traducido: {node.text}")
                 continue
             file_name = read_match.group(1).upper()
-            into_match = re.search(r"\bINTO\s+([A-Za-z0-9-]+)", node.text, re.IGNORECASE)
+            into_match = re.search(r"\bINTO\s+([A-Za-z0-9_-]+)", node.text, re.IGNORECASE)
             into_arg = repr(normalize_name(into_match.group(1))) if into_match else "None"
             prefix = "    " * indent
             out.append(prefix + f"if _cobol_read({file_name!r}, {into_arg}):")
@@ -4221,7 +4221,7 @@ def translate_nodes(
 
         elif node.kind == "perform_varying_inline":
             match = re.match(
-                r"^PERFORM(?:\s+WITH\s+TEST\s+(BEFORE|AFTER))?\s+VARYING\s+([A-Za-z0-9-]+)\s+FROM\s+(.+?)\s+BY\s+(.+?)\s+UNTIL\s+(.+)$",
+                r"^PERFORM(?:\s+WITH\s+TEST\s+(BEFORE|AFTER))?\s+VARYING\s+([A-Za-z0-9_-]+)\s+FROM\s+(.+?)\s+BY\s+(.+?)\s+UNTIL\s+(.+)$",
                 node.text,
                 re.IGNORECASE,
             )
@@ -4297,12 +4297,12 @@ def translate_nodes(
             out.extend(body)
 
         elif node.kind == "search_all":
-            table_match = re.match(r"SEARCH\s+ALL\s+([A-Za-z0-9-]+)", node.text, re.IGNORECASE)
+            table_match = re.match(r"SEARCH\s+ALL\s+([A-Za-z0-9_-]+)", node.text, re.IGNORECASE)
             table_name = table_match.group(1).upper() if table_match else ""
             table = (variables or {}).get(table_name)
             when_branch = next((branch for branch in node.body if branch.kind == "when" and branch.text.upper() != "AT END"), None)
             at_end_branch = next((branch for branch in node.body if branch.kind == "when" and branch.text.upper() == "AT END"), None)
-            key_match = re.match(r"([A-Za-z0-9-]+)\s*\(\s*([A-Za-z0-9_-]+)\s*\)\s*=\s*(.+)", when_branch.text, re.IGNORECASE) if when_branch else None
+            key_match = re.match(r"([A-Za-z0-9_-]+)\s*\(\s*([A-Za-z0-9_-]+)\s*\)\s*=\s*(.+)", when_branch.text, re.IGNORECASE) if when_branch else None
             key_name = key_match.group(1).upper() if key_match else (table.ascending_key if table else None)
             index_name = key_match.group(2).upper() if key_match else (table.indexed_by if table else None)
             search_value = key_match.group(3).strip() if key_match else None
@@ -4433,7 +4433,7 @@ def java_group_class_name(variable: CobolVar, variables: dict[str, CobolVar]) ->
 def java_data_reference(name: str, variables: dict[str, CobolVar]) -> str:
     text = name.strip()
     match = re.fullmatch(
-        r"([A-Za-z0-9-]+)(?:\(([A-Za-z0-9_-]+)\))?(?:\s+(?:OF|IN)\s+([A-Za-z0-9-]+))?",
+        r"([A-Za-z0-9_-]+)(?:\(([A-Za-z0-9_-]+)\))?(?:\s+(?:OF|IN)\s+([A-Za-z0-9_-]+))?",
         text,
         re.IGNORECASE,
     )
@@ -4490,22 +4490,22 @@ def translate_java_literal(token: str, variables: dict[str, CobolVar]) -> str:
 
 def translate_java_expr(expr: str, variables: dict[str, CobolVar]) -> str:
     expr = re.sub(
-        r"\b[A-Za-z][A-Za-z0-9-]*(?:\([A-Za-z0-9_-]+\))?\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*",
+        r"\b[A-Za-z][A-Za-z0-9_-]*(?:\([A-Za-z0-9_-]+\))?\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9_-]*",
         lambda match: java_data_reference(match.group(0), variables),
         expr,
         flags=re.IGNORECASE,
     )
     expr = re.sub(
-        r"\b([A-Za-z][A-Za-z0-9-]*)\(([A-Za-z0-9_-]+)\)",
+        r"\b([A-Za-z][A-Za-z0-9_-]*)\(([A-Za-z0-9_-]+)\)",
         lambda match: java_data_reference(match.group(0), variables),
         expr,
     )
-    token_pattern = r"""("(?:[^"]|"")*"|'(?:[^']|'')*'|[A-Za-z][A-Za-z0-9-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&\[\]-]|\s+|.)"""
+    token_pattern = r"""("(?:[^"]|"")*"|'(?:[^']|'')*'|[A-Za-z][A-Za-z0-9_-]*|\d+(?:\.\d+)?|<=|>=|<>|==|!=|[()+*/=<>&\[\]-]|\s+|.)"""
     out: list[str] = []
     for token in re.findall(token_pattern, expr):
         if token.startswith(('"', "'")):
             out.append(translate_java_literal(token, variables))
-        elif re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", token):
+        elif re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*", token):
             out.append(translate_java_literal(token, variables))
         else:
             out.append(token)
@@ -4515,7 +4515,7 @@ def translate_java_expr(expr: str, variables: dict[str, CobolVar]) -> str:
 def translate_java_condition(condition: str, variables: dict[str, CobolVar]) -> str:
     text = condition.strip()
     string_comparison = re.fullmatch(
-        r"""(?:(NOT)\s+)?([A-Za-z][A-Za-z0-9-]*(?:\([A-Za-z0-9_-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*)?)\s*(IS\s+NOT\s+EQUAL\s+TO|NOT\s+EQUAL\s+TO|IS\s+EQUAL\s+TO|EQUAL\s+TO|==|=|!=|<>)\s*("(?:[^"]|"")*"|'(?:[^']|'')*')""",
+        r"""(?:(NOT)\s+)?([A-Za-z][A-Za-z0-9_-]*(?:\([A-Za-z0-9_-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9_-]*)?)\s*(IS\s+NOT\s+EQUAL\s+TO|NOT\s+EQUAL\s+TO|IS\s+EQUAL\s+TO|EQUAL\s+TO|==|=|!=|<>)\s*("(?:[^"]|"")*"|'(?:[^']|'')*')""",
         text,
         re.IGNORECASE,
     )
@@ -4524,7 +4524,7 @@ def translate_java_condition(condition: str, variables: dict[str, CobolVar]) -> 
         literal = decode_cobol_quoted_literal(literal_token)
         if literal is None:
             literal = literal_token[1:-1]
-        base = re.match(r"[A-Za-z0-9-]+", left.strip())
+        base = re.match(r"[A-Za-z0-9_-]+", left.strip())
         variable = variables.get(base.group(0).upper()) if base else None
         if variable is not None and variable.pic and any(char in variable.pic.upper() for char in ("X", "A")):
             width = pic_character_count(variable.pic)
@@ -4563,13 +4563,13 @@ def translate_java_condition(condition: str, variables: dict[str, CobolVar]) -> 
         literal_token = text[literal_start:i]
         prefix = "".join(code_chunk)
         comparison = re.search(
-            r"""(?:(NOT)\s+)?(?P<left>[A-Za-z][A-Za-z0-9-]*(?:\([A-Za-z0-9_-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9-]*)?)\s*(?P<op>IS\s+NOT\s+EQUAL\s+TO|NOT\s+EQUAL\s+TO|IS\s+EQUAL\s+TO|EQUAL\s+TO|IS\s+GREATER\s+THAN|GREATER\s+THAN|IS\s+LESS\s+THAN|LESS\s+THAN|==|=|!=|<>|<=|>=|<|>)\s*$""",
+            r"""(?:(NOT)\s+)?(?P<left>[A-Za-z][A-Za-z0-9_-]*(?:\([A-Za-z0-9_-]+\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9_-]*)?)\s*(?P<op>IS\s+NOT\s+EQUAL\s+TO|NOT\s+EQUAL\s+TO|IS\s+EQUAL\s+TO|EQUAL\s+TO|IS\s+GREATER\s+THAN|GREATER\s+THAN|IS\s+LESS\s+THAN|LESS\s+THAN|==|=|!=|<>|<=|>=|<|>)\s*$""",
             prefix,
             re.IGNORECASE,
         )
         variable = None
         if comparison:
-            base = re.match(r"[A-Za-z][A-Za-z0-9-]*", comparison.group("left"))
+            base = re.match(r"[A-Za-z][A-Za-z0-9_-]*", comparison.group("left"))
             variable = variables.get(base.group(0).upper()) if base else None
         if comparison and variable and variable.pic and any(char in variable.pic.upper() for char in ("X", "A")):
             left = comparison.group("left")
@@ -4699,7 +4699,7 @@ def java_assignment_statement(
 ) -> str:
     """Emit assignment to a scalar field or a 1-based COBOL table element."""
     match = re.fullmatch(
-        r"([A-Za-z0-9-]+)\(([A-Za-z0-9_-]+)\)(?:\s+(?:OF|IN)\s+([A-Za-z0-9-]+))?",
+        r"([A-Za-z0-9_-]+)\(([A-Za-z0-9_-]+)\)(?:\s+(?:OF|IN)\s+([A-Za-z0-9_-]+))?",
         target.strip(),
         re.IGNORECASE,
     )
@@ -4718,7 +4718,7 @@ def java_assignment_statement(
 
 
 def translate_java_display_item(token: str, variables: dict[str, CobolVar]) -> str:
-    base_match = re.match(r"[A-Za-z0-9-]+", token)
+    base_match = re.match(r"[A-Za-z0-9_-]+", token)
     variable = variables.get(base_match.group(0).upper()) if base_match else None
     value = translate_java_literal(token, variables)
     if variable is not None and variable.pic and "9" in variable.pic.upper():
@@ -4752,7 +4752,7 @@ def translate_java_statement(
         match = re.match(rf"ACCEPT\s+({DATA_REF_PATTERN})$", text, re.IGNORECASE)
         if match:
             target = match.group(1)
-            base = re.match(r"[A-Za-z0-9-]+", target)
+            base = re.match(r"[A-Za-z0-9_-]+", target)
             variable = variables.get(base.group(0).upper()) if base else None
             if variable and variable.pic and any(char in variable.pic.upper() for char in ("X", "A")):
                 width = pic_character_count(variable.pic)
@@ -4773,7 +4773,7 @@ def translate_java_statement(
     if move:
         source, target = move.groups()
         value = translate_java_literal(source, variables)
-        base = re.match(r"[A-Za-z0-9-]+", target)
+        base = re.match(r"[A-Za-z0-9_-]+", target)
         variable = variables.get(base.group(0).upper()) if base else None
         target_expr = java_data_reference(target, variables)
         if variable and variable.pic and any(char in variable.pic.upper() for char in ("X", "A")):
@@ -4805,13 +4805,13 @@ def translate_java_statement(
     match = re.match(rf"DIVIDE\s+(.+?)\s+INTO\s+({DATA_REF_PATTERN})$", text, re.IGNORECASE)
     if match:
         return [java_assignment_statement(match.group(2), "/=", translate_java_literal(match.group(1), variables), variables)]
-    match = re.match(r"PERFORM\s+([A-Za-z0-9-]+)\s+(\d+)\s+TIMES", text, re.IGNORECASE)
+    match = re.match(r"PERFORM\s+([A-Za-z0-9_-]+)\s+(\d+)\s+TIMES", text, re.IGNORECASE)
     if match and match.group(1).upper() in paragraphs:
         return [f"for (int _i = 0; _i < {match.group(2)}; _i++) {{ {normalize_java_name(match.group(1))}(); }}"]
-    match = re.match(r"PERFORM\s+([A-Za-z0-9-]+)\s+UNTIL\s+(.+)", text, re.IGNORECASE)
+    match = re.match(r"PERFORM\s+([A-Za-z0-9_-]+)\s+UNTIL\s+(.+)", text, re.IGNORECASE)
     if match and match.group(1).upper() in paragraphs:
         return [f"while (!({translate_java_condition(match.group(2), variables)})) {{ {normalize_java_name(match.group(1))}(); }}"]
-    match = re.match(r"PERFORM\s+([A-Za-z0-9-]+)", text, re.IGNORECASE)
+    match = re.match(r"PERFORM\s+([A-Za-z0-9_-]+)", text, re.IGNORECASE)
     if match and match.group(1).upper() in paragraphs:
         return [f"{normalize_java_name(match.group(1))}();"]
     return [f"// COBOL no traducido: {text}"]
@@ -5457,14 +5457,14 @@ def collect_diagnostics(prog: Program, target_language: str = "python") -> list[
     }
 
     for line_number, source_line in prog.raw_lines:
-        if re.match(r"^\s*66\s+[A-Za-z0-9-]+\s+.*\bRENAMES\b", source_line, re.IGNORECASE):
+        if re.match(r"^\s*66\s+[A-Za-z0-9_-]+\s+.*\bRENAMES\b", source_line, re.IGNORECASE):
             diagnostics.append({
                 "code": "UNSUPPORTED_RENAMES",
                 "severity": "warning",
                 "line": line_number,
                 "message": source_line.strip(),
             })
-        if re.match(r"^\s*88\s+[A-Za-z0-9-]+\b", source_line, re.IGNORECASE):
+        if re.match(r"^\s*88\s+[A-Za-z0-9_-]+\b", source_line, re.IGNORECASE):
             diagnostics.append({
                 "code": "UNSUPPORTED_CONDITION_NAME_88",
                 "severity": "warning",
@@ -5472,7 +5472,7 @@ def collect_diagnostics(prog: Program, target_language: str = "python") -> list[
                 "message": source_line.strip(),
             })
         overlay_match = re.match(
-            r"^\s*\d{1,2}\s+([A-Za-z0-9-]+)\s+.*\bREDEFINES\b",
+            r"^\s*\d{1,2}\s+([A-Za-z0-9_-]+)\s+.*\bREDEFINES\b",
             source_line,
             re.IGNORECASE,
         )
@@ -5642,12 +5642,12 @@ def collect_diagnostics(prog: Program, target_language: str = "python") -> list[
                 condition = match.group(1) if match else ""
                 diagnostic_condition = mask_cobol_literal_contents(condition)
                 comparison = re.search(
-                    r"""([A-Za-z][A-Za-z0-9-]*(?:\([A-Za-z0-9_-]+\))?)\s*(?:<=|>=|<|>)\s*["']""",
+                    r"""([A-Za-z][A-Za-z0-9_-]*(?:\([A-Za-z0-9_-]+\))?)\s*(?:<=|>=|<|>)\s*["']""",
                     diagnostic_condition,
                     re.IGNORECASE,
                 )
                 if comparison:
-                    base = re.match(r"[A-Za-z][A-Za-z0-9-]*", comparison.group(1))
+                    base = re.match(r"[A-Za-z][A-Za-z0-9_-]*", comparison.group(1))
                     variable = (
                         next(
                             (item for item in prog.variables if item.name.upper() == base.group(0).upper()),
@@ -5664,7 +5664,7 @@ def collect_diagnostics(prog: Program, target_language: str = "python") -> list[
                             "paragraph": paragraph,
                         })
                 field_comparison = re.search(
-                    r"\b([A-Za-z][A-Za-z0-9-]*)\b\s*(?:=|==|!=|<>|<=|>=|<|>)\s*([A-Za-z][A-Za-z0-9-]*)\b",
+                    r"\b([A-Za-z][A-Za-z0-9_-]*)\b\s*(?:=|==|!=|<>|<=|>=|<|>)\s*([A-Za-z][A-Za-z0-9_-]*)\b",
                     diagnostic_condition,
                     re.IGNORECASE,
                 )
@@ -5691,7 +5691,7 @@ def collect_diagnostics(prog: Program, target_language: str = "python") -> list[
                             "paragraph": paragraph,
                         })
                 literal_left_comparison = re.search(
-                    r"""("(?:[^"]|"")*"|'(?:[^']|'')*')\s*(?:=|==|!=|<>|<=|>=|<|>)\s*([A-Za-z][A-Za-z0-9-]*)\b""",
+                    r"""("(?:[^"]|"")*"|'(?:[^']|'')*')\s*(?:=|==|!=|<>|<=|>=|<|>)\s*([A-Za-z][A-Za-z0-9_-]*)\b""",
                     diagnostic_condition,
                     re.IGNORECASE,
                 )
@@ -5734,7 +5734,7 @@ def collect_diagnostics(prog: Program, target_language: str = "python") -> list[
                         "message": also_branch or node.text,
                         "paragraph": paragraph,
                     })
-                subject_base = re.match(r"[A-Za-z][A-Za-z0-9-]*", subject)
+                subject_base = re.match(r"[A-Za-z][A-Za-z0-9_-]*", subject)
                 subject_variable = (
                     next(
                         (item for item in prog.variables if item.name.upper() == subject_base.group(0).upper()),
