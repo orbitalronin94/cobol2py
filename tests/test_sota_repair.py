@@ -18,7 +18,7 @@ class SotaRepairTests(unittest.TestCase):
     def test_deterministic_router_selects_ready_stages_only(self):
         self.assertEqual(compose_route(DEFAULT_CATALOG, set()), ["parse"])
         self.assertEqual(
-            compose_route(DEFAULT_CATALOG, {"ast_ready:case-1"}, available_artifacts={"ast"}),
+            compose_route(DEFAULT_CATALOG, {"ast_ready:case-1"}, already_run={"parse"}, available_artifacts={"ast"}),
             ["translate"],
         )
 
