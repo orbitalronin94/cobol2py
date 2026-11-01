@@ -10,9 +10,28 @@ from ronin.compiler_guided_repair import repair_python_source
 from ronin.smt_feedback_loop import propose_local_repair
 from ronin.symbolic_executor import delta_debug_input, generate_path_cases
 from ronin.repair_pipeline import RepairPipeline
+from ronin.translation_cache import TranslationCache
 
 
 class SotaRepairTests(unittest.TestCase):
+    def test_translation_cache_exact_hit_and_fingerprint_invalidation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cache_path = Path(tmp) / "cache.sqlite3"
+            with TranslationCache(cache_path) as cache:
+                self.assertIsNone(cache.get("DISPLAY A", "build-1"))
+                cache.put("DISPLAY A", "print(a)", "build-1")
+                self.assertEqual(cache.get("DISPLAY A", "build-1"), "print(a)")
+                self.assertIsNone(cache.get("DISPLAY B", "build-1"))
+                self.assertIsNone(cache.get("DISPLAY A", "build-2"))
+
+    def test_translation_cache_persists_between_instances(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cache_path = Path(tmp) / "cache.sqlite3"
+            with TranslationCache(cache_path) as cache:
+                cache.put("MOVE 1 TO A", "a = 1", "sha256:translator")
+            with TranslationCache(cache_path) as cache:
+                self.assertEqual(cache.get("MOVE 1 TO A", "sha256:translator"), "a = 1")
+
     def test_behavioral_graph_captures_rules_and_io(self):
         graph = BehavioralSpecGraph.from_cobol(
             "IF AMOUNT > 50\n MOVE 10 TO DISCOUNT\nEND-IF\nDISPLAY DISCOUNT")
