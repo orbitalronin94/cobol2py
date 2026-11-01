@@ -2688,7 +2688,12 @@ def translate_condition(
             operand = translate_expr(match.group(1), variables)
             class_name = match.group(3).upper()
             if class_name == "NUMERIC":
-                numeric_pattern = r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)"
+                raw_operand = match.group(1).strip()
+                variable = (variables or {}).get(raw_operand.upper())
+                picture = (getattr(variable, "pic", "") or "").strip().upper()
+                # Alphanumeric items must contain digits only; preserve the
+                # existing signed-decimal behavior for undeclared/numeric items.
+                numeric_pattern = r"\d+" if picture.startswith(("X", "A")) else r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)"
                 expression = (
                     f"(__import__('re').fullmatch({numeric_pattern!r}, "
                     f"str({operand}).strip()) is not None)"
@@ -3687,6 +3692,9 @@ def translate_statement(
             source = current_paragraph.upper() if current_paragraph else ""
             return [f"raise _CobolGoTo(_cobol_alter_targets.get({source!r}, {target!r}))"]
         return [f"# COBOL no traducido: {s}"]
+    if upper == "EXIT PARAGRAPH":
+        return ["return"]
+
     if upper.startswith("EXIT PROGRAM") or upper == "GOBACK":
         return ["return"]
     if upper in ("CONTINUE", "EXIT"):
@@ -4343,6 +4351,9 @@ def translate_nodes(
             temp_name = f"_cobol_evaluate_{node.line}"
             if not is_boolean:
                 out.append("    " * indent + f"{temp_name} = {translate_expr(subject, variables)}")
+            subject_base = re.match(r"[A-Za-z][A-Za-z0-9-]*", subject)
+            subject_var = (variables or {}).get(subject_base.group(0).upper()) if subject_base else None
+            subject_width = pic_character_count(subject_var.pic) if subject_var and subject_var.pic and any(ch in subject_var.pic.upper() for ch in ("X", "A")) else 0
             emitted = 0
             for branch in node.body:
                 if branch.kind != "when":
@@ -4382,7 +4393,12 @@ def translate_nodes(
                             ),
                         )
                     else:
-                        condition = f"{temp_name} == {translate_literal(choice, variables)}"
+                        choice_value = decode_cobol_quoted_literal(choice)
+                        if subject_width and choice_value is not None:
+                            width = max(subject_width, len(choice_value))
+                            condition = f"str({temp_name}).ljust({width}) == {choice_value.ljust(width)!r}"
+                        else:
+                            condition = f"{temp_name} == {translate_literal(choice, variables)}"
                     prefix = ("if " if emitted == 0 else "elif ") + condition + ":"
                 out.append("    " * indent + prefix)
                 branch_body = translate_nodes(branch.then_branch, paragraphs, indent + 1, variables, current_paragraph, condition_names)
