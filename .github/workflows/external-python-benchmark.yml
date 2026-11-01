@@ -97,6 +97,12 @@ jobs:
             --cache-to "type=gha,mode=max,scope=$CACHE_SCOPE" \
             -f benchmarks/Dockerfile.external \
             -t cobol2py-external-benchmark .
+      - name: Capture current main translator for timing comparison
+        shell: bash
+        run: |
+          git fetch --no-tags origin main
+          git show origin/main:cobol2py.py > "$RUNNER_TEMP/current-cobol2py.py"
+          test -s "$RUNNER_TEMP/current-cobol2py.py"
       - name: Run the reference-comparable Python benchmark
         env:
           TARGET: ${{ matrix.sample.target }}
@@ -107,7 +113,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p "$OUTPUT_DIR/$SAMPLE_NAME"
-          chmod 0777 "$OUTPUT_DIR" "$OUTPUT_DIR/$SAMPLE_NAME"
+          chmod 0777 "$OUTPUT_DIR" "$OUTPUT_DIR/$SAMPLE_NAME" "$RUNNER_TEMP/translation-cache"
           set +e
           docker run --name "$CONTAINER_NAME" \
             --network none \
@@ -122,6 +128,7 @@ jobs:
             --mount "type=bind,source=$RUNNER_TEMP/COBOL_Files.zip,target=/input.zip,readonly" \
             --mount "type=bind,source=$OUTPUT_DIR,target=/output" \
             --mount "type=bind,source=$RUNNER_TEMP/translation-cache,target=/cache" \
+            --mount "type=bind,source=$RUNNER_TEMP/current-cobol2py.py,target=/baseline/cobol2py.py,readonly" \
             --workdir /workspace \
             cobol2py-external-benchmark \
             benchmarks/run_external_corpus.py \
@@ -131,6 +138,7 @@ jobs:
             --target "$TARGET" \
             --skip "$SKIP" \
             --cache-path /cache/translation-cache.sqlite3 \
+            --baseline-translator /baseline/cobol2py.py \
             --diagnostics
           status=$?
           docker rm "$CONTAINER_NAME" >/dev/null 2>&1
