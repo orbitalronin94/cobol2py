@@ -4156,7 +4156,7 @@ class UnstringMultipleDelimiterRegressionTests(unittest.TestCase):
             variables,
         )
         self.assertIsNotNone(translated)
-        namespace = {"ws_s": "A;B   ", "ws_a": "   ", "ws_b": "   "}
+        namespace = {"re": __import__("re"), "ws_s": "A;B   ", "ws_a": "   ", "ws_b": "   "}
         exec("\n".join(translated or []), namespace)
         self.assertEqual((namespace["ws_a"], namespace["ws_b"]), ("A  ", "B  "))
 
