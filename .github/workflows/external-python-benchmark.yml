@@ -187,7 +187,6 @@ jobs:
         env:
           REPORT_ROOT: ${{ runner.temp }}/python-scorecard
           EVENT_NAME: ${{ github.event_name }}
-          GITHUB_OUTPUT: ${{ runner.temp }}/gate-output
         run: |
           import json, math, os, subprocess
           from pathlib import Path
@@ -244,8 +243,8 @@ jobs:
               "- The 50-case subset is a filter, not a release score; the repeatedly observed fixed corpus is not an untouched statistical holdout.",
           ]
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
-              handle.write("\\n".join(summary) + "\\n")
-          print("\\n".join(summary))
+              handle.write("\n".join(summary) + "\\n")
+          print("\n".join(summary))
           with open(os.environ["GITHUB_OUTPUT"], "w", encoding="utf-8") as handle:
               handle.write(f"passed={passed}\\n")
               handle.write(f"tested={tested}\\n")
