@@ -30,7 +30,7 @@ def parse_pic_string(pic_str: str) -> PicInfo:
     body = re.sub(r"\s+", "", body)
     signed = body.startswith("S")
     body = body[1:] if signed else body
-    if not body or not re.fullmatch(r"[X9AVZ*(),.+\-]+", body):
+    if not body or not re.fullmatch(r"[X9AVZ0-9*(),.+\-]+", body):
         raise ValueError(f"unsupported PIC syntax: {pic_str!r}")
     tokens = re.findall(r"([A-Z0-9*])(?:\((\d+)\))?", body)
     if not tokens:
