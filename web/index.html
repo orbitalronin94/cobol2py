@@ -3934,10 +3934,20 @@ def translate_statement(
                     else:
                         delimiter_expr = translate_literal(delimiter, variable_map)
                     source_expr = translate_literal(source, variable_map)
-                    lines = [
-                        f"_cobol_unstring_parts = (str({source_expr}).split(str({delimiter_expr})) "
-                        f"if str({delimiter_expr}) else [str({source_expr})])"
-                    ]
+                    if pointer_match:
+                        pointer_expr = normalize_data_reference(pointer_match.group(1), variable_map)
+                        lines = [
+                            f"_cobol_unstring_start = max(int({pointer_expr}) - 1, 0)",
+                            f"_cobol_unstring_source = str({source_expr})[_cobol_unstring_start:]",
+                            f"_cobol_unstring_parts = (_cobol_unstring_source.split(str({delimiter_expr})) "
+                            f"if str({delimiter_expr}) else [_cobol_unstring_source])",
+                        ]
+                    else:
+                        pointer_expr = None
+                        lines = [
+                            f"_cobol_unstring_parts = (str({source_expr}).split(str({delimiter_expr})) "
+                            f"if str({delimiter_expr}) else [str({source_expr})])"
+                        ]
                     for index, target in enumerate(targets):
                         target_base = re.match(r"[A-Za-z0-9_-]+", target)
                         target_var = variable_map.get(target_base.group(0).upper()) if target_base else None
@@ -3953,6 +3963,15 @@ def translate_statement(
                     if tally_match:
                         tally = normalize_data_reference(tally_match.group(1), variable_map)
                         lines.append(f"{tally} = min(len(_cobol_unstring_parts), {len(targets)})")
+                    if pointer_expr is not None:
+                        transferred = f"min(len(_cobol_unstring_parts), {len(targets)})"
+                        separators = f"min(max(len(_cobol_unstring_parts) - 1, 0), {len(targets)})"
+                        consumed = (
+                            f"sum(len(str(_cobol_unstring_parts[_i])) "
+                            f"for _i in range({transferred})) + "
+                            f"len(str({delimiter_expr})) * {separators}"
+                        )
+                        lines.append(f"{pointer_expr} = _cobol_unstring_start + ({consumed}) + 1")
                     return lines
         return [f"# UNSTRING no traducido: {s}"]
 
