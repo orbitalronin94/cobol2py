@@ -50,7 +50,9 @@ class TranslationCache:
         # Schema creation can be reached concurrently by multiple instances.
         with self._init_lock:
             conn = self._get_conn()
-            conn.execute("PRAGMA journal_mode=WAL")
+            # DELETE journaling keeps the persistent cache self-contained as one
+            # file when GitHub Actions snapshots/restores the cache directory.
+            conn.execute("PRAGMA journal_mode=DELETE")
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS translation_cache (
