@@ -176,6 +176,7 @@ jobs:
     needs: external-python
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Download benchmark reports
         uses: actions/download-artifact@v4
         with:
