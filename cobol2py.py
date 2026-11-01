@@ -3692,12 +3692,11 @@ def translate_statement(
     if upper in ("CONTINUE", "EXIT"):
         return ["pass"]
 
-    # UNSTRING supports a single delimiter, optional ALL, and the standard
-    # 1-based POINTER/TALLYING effects. Unsupported overflow imperative
-    # branches remain outside this narrow implementation.
+    # UNSTRING implements a conservative single-delimiter subset. Unsupported
+    # clauses are rejected rather than silently interpreted as receiver names.
     if upper.startswith("UNSTRING "):
         unstring_text = re.sub(r"\s+END-UNSTRING\s*$", "", s, flags=re.IGNORECASE).strip()
-        delimiter_match = re.search(r"\s+DELIMITED\s+BY\s+", unstring_text, re.IGNORECASE)
+        delimiter_match = re.search(r"\s+DELIMITED(?:\s+BY)?\s+", unstring_text, re.IGNORECASE)
         if delimiter_match:
             into_match = re.search(
                 r"\s+INTO\s+",
@@ -3709,10 +3708,26 @@ def translate_statement(
                 source = unstring_text[len("UNSTRING "):delimiter_match.start()].strip()
                 delimiter_text = unstring_text[delimiter_match.end():into_start].strip()
                 targets_and_options = unstring_text[into_start + into_match.end() - into_match.start():].strip()
-                tally_match = re.search(rf"\bTALLYING\s+IN\s+({DATA_REF_PATTERN})", targets_and_options, re.IGNORECASE)
-                pointer_match = re.search(rf"\bWITH\s+POINTER\s+({DATA_REF_PATTERN})", targets_and_options, re.IGNORECASE)
+                # The current slice deliberately fails closed for metadata and
+                # imperative branches instead of pretending they are receivers.
+                if re.search(
+                    r"\b(?:DELIMITER\s+IN|COUNT\s+IN|ON\s+OVERFLOW|NOT\s+ON\s+OVERFLOW)\b",
+                    targets_and_options,
+                    re.IGNORECASE,
+                ):
+                    return [f"# UNSTRING no traducido: {s}"]
+                tally_match = re.search(
+                    rf"\bTALLYING(?:\s+IN)?\s+({DATA_REF_PATTERN})",
+                    targets_and_options,
+                    re.IGNORECASE,
+                )
+                pointer_match = re.search(
+                    rf"\bWITH\s+POINTER(?:\s+IS)?\s+({DATA_REF_PATTERN})",
+                    targets_and_options,
+                    re.IGNORECASE,
+                )
                 targets_text = re.split(
-                    r"\s+(?:TALLYING\s+IN|WITH\s+POINTER|ON\s+OVERFLOW|NOT\s+ON\s+OVERFLOW)\b",
+                    r"\s+(?:TALLYING(?:\s+IN)?|WITH\s+POINTER|ON\s+OVERFLOW|NOT\s+ON\s+OVERFLOW)\b",
                     targets_and_options,
                     maxsplit=1,
                     flags=re.IGNORECASE,
@@ -3723,7 +3738,11 @@ def translate_statement(
                     delimiter_all = bool(re.match(r"^\s*ALL\b", delimiter_text, re.IGNORECASE))
                     delimiter_text = re.sub(r"^\s*ALL\s+", "", delimiter_text, flags=re.IGNORECASE)
                     delimiter_parts = split_cobol_items(delimiter_text)
-                    delimiter = delimiter_parts[0] if delimiter_parts else delimiter_text
+                    # Multiple OR delimiters are not yet implemented. Do not
+                    # silently consume only the first delimiter.
+                    if len(delimiter_parts) != 1:
+                        return [f"# UNSTRING no traducido: {s}"]
+                    delimiter = delimiter_parts[0]
                     if delimiter.upper() in ("SPACE", "SPACES"):
                         delimiter_expr = repr(" ")
                     elif delimiter.upper() in ("ZERO", "ZEROS", "ZEROES"):
@@ -3731,16 +3750,16 @@ def translate_statement(
                     else:
                         delimiter_expr = translate_literal(delimiter, variable_map)
                     source_expr = translate_literal(source, variable_map)
-                    lines = [
-                        f"_cobol_unstring_source = str({source_expr})",
-                    ]
+                    lines = [f"_cobol_unstring_source = str({source_expr})"]
                     if pointer_match:
-                        pointer_expr = normalize_data_reference(pointer_match.group(1), variable_map)
+                        pointer_name = pointer_match.group(1)
+                        pointer_expr = normalize_data_reference(pointer_name, variable_map)
                         lines.extend([
                             f"_cobol_unstring_pointer_start = int({pointer_expr})",
                             "_cobol_unstring_start = _cobol_unstring_pointer_start - 1",
                         ])
                     else:
+                        pointer_name = None
                         pointer_expr = None
                         lines.append("_cobol_unstring_start = 0")
                     lines.extend([
@@ -3753,11 +3772,12 @@ def translate_statement(
                     lines.extend([
                         "_cobol_unstring_matches = list(__import__('re').finditer(_cobol_unstring_pattern, _cobol_unstring_remaining)) if _cobol_unstring_delimiter else []",
                         "_cobol_unstring_parts = __import__('re').split(_cobol_unstring_pattern, _cobol_unstring_remaining) if _cobol_unstring_delimiter else [_cobol_unstring_remaining]",
+                        # A delimiter at source end terminates the preceding
+                        # field; it does not create another empty field.
                         "if _cobol_unstring_matches and _cobol_unstring_matches[-1].end() == len(_cobol_unstring_remaining) and _cobol_unstring_parts and _cobol_unstring_parts[-1] == '':",
                         "    _cobol_unstring_parts.pop()",
                         f"_cobol_unstring_used = min(len(_cobol_unstring_parts), {len(targets)}) if _cobol_unstring_remaining else 0",
                         "_cobol_unstring_consumed = (_cobol_unstring_matches[_cobol_unstring_used - 1].end() if _cobol_unstring_used and _cobol_unstring_used <= len(_cobol_unstring_matches) else len(_cobol_unstring_remaining) if _cobol_unstring_used else 0)",
-                        "_cobol_unstring_overflow = bool(_cobol_unstring_remaining[_cobol_unstring_consumed:])",
                     ])
                     for index, target in enumerate(targets):
                         target_base = re.match(r"[A-Za-z0-9_-]+", target)
@@ -3776,10 +3796,21 @@ def translate_statement(
                             f"    {assignment}",
                         ])
                     if tally_match:
-                        tally = normalize_data_reference(tally_match.group(1), variable_map)
-                        lines.append(f"{tally} = int({tally}) + _cobol_unstring_used")
-                    if pointer_expr:
-                        lines.append(f"{pointer_expr} = _cobol_unstring_pointer_start + _cobol_unstring_consumed")
+                        tally_name = tally_match.group(1)
+                        tally_expr = normalize_data_reference(tally_name, variable_map)
+                        tally_assignment = emit_assignment(
+                            tally_name,
+                            f"int({tally_expr}) + _cobol_unstring_used",
+                            variable_map,
+                        )
+                        lines.append(tally_assignment)
+                    if pointer_name:
+                        pointer_assignment = emit_assignment(
+                            pointer_name,
+                            "_cobol_unstring_pointer_start + _cobol_unstring_consumed",
+                            variable_map,
+                        )
+                        lines.append(pointer_assignment)
                     return lines
         return [f"# UNSTRING no traducido: {s}"]
 
