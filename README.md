@@ -8,6 +8,17 @@
 
 La traducción busca **leerse** y, para el subconjunto cubierto por regresiones diferenciales, también ejecutarse. No promete equivalencia completa de COBOL: las construcciones no soportadas quedan documentadas o señaladas explícitamente.
 
+## Protocolo de evaluación rápida y torneo
+
+El workflow `.github/workflows/external-python-benchmark.yml` aplica un filtro económico a cada PR y reserva la evaluación completa para candidatos prometedores.
+
+1. **Referencia dinámica:** `benchmarks/holdout_best.json` registra el mejor resultado completo validado del corpus fijo (casos acertados, denominador, porcentaje y commit). El umbral nunca es un 75 % fijo ni un número escrito a mano: se calcula a partir de la última mejor tasa registrada.
+2. **Filtro de 50 casos:** en cada PR se ejecutan 50 programas de la segunda mitad del corpus fijo. El candidato debe superar estrictamente la tasa del último mejor resultado. La exigencia mínima es `floor(mejor_tasa × 50) + 1`; por ejemplo, si el mejor completo es 240/500 (48,00 %), el filtro exige 25/50 (50,00 %). Si no llega, la PR queda fallida y no necesita la evaluación completa.
+3. **Gate completo de 500 casos:** antes de aceptar una mejora se ejecutan cuatro lotes de 125 con el mismo corpus, checksum y criterio de equivalencia. También debe superar estrictamente el mejor resultado registrado: si el récord es 240/500, necesita al menos 241/500.
+4. **Actualización del récord:** solo una ejecución completa, verificada y lanzada manualmente sobre `main` puede actualizar `benchmarks/holdout_best.json`, y solo si mejora el porcentaje anterior. Las ejecuciones parciales o de ramas de PR no mueven el récord.
+5. **Interpretación:** los 50 casos son un filtro rápido, no la puntuación oficial. La evaluación completa es la que decide si el candidato gana. El corpus se consulta repetidamente durante el desarrollo, así que debe llamarse *corpus fijo de evaluación*, no *holdout intacto*; se debe rotar o reservar un conjunto verdaderamente independiente para medir generalización.
+6. **Torneo de hipótesis:** mantener cada hipótesis en una rama aislada, registrar SHA, resultado exacto y tiempo, y comparar siempre con el mismo main. No mezclar mejoras de exactitud con mejoras de velocidad; una mejora de velocidad solo gana si conserva la exactitud y demuestra una reducción reproducible del tiempo.
+
 ## Roadmap único de versiones hacia v1.0
 
 Este es el roadmap de producto canónico: **el objetivo vigente es v1.0**. Los hitos anteriores, incluido v0.2, son contexto histórico y no planes alternativos ni versiones publicadas automáticamente. La v1.0 permanece bloqueada hasta cumplir las puertas de aceptación medibles que se indican aquí.
