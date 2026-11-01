@@ -181,14 +181,24 @@ jobs:
         with:
           pattern: external-python-corpus-*-${{ github.run_number }}
           path: ${{ runner.temp }}/python-scorecard
-      - name: Enforce fast-screen or full evaluation gate
+      - name: Enforce dynamic fast-screen / best-score gate
+        id: gate
         shell: python
         env:
           REPORT_ROOT: ${{ runner.temp }}/python-scorecard
           EVENT_NAME: ${{ github.event_name }}
+          GITHUB_OUTPUT: ${{ runner.temp }}/gate-output
         run: |
-          import json, os
+          import json, math, os, subprocess
           from pathlib import Path
+
+          subprocess.run(["git", "fetch", "--no-tags", "origin", "main"], check=True)
+          baseline = json.loads(subprocess.check_output(
+              ["git", "show", "origin/main:benchmarks/holdout_best.json"], text=True
+          ))
+          best_passed = int(baseline["best_passed"])
+          best_tested = int(baseline["best_tested"])
+          best_rate = best_passed / best_tested
 
           root = Path(os.environ["REPORT_ROOT"])
           reports = []
@@ -217,31 +227,67 @@ jobs:
 
           passed = sum(int(by_skip[skip].get("passed", 0)) for skip in expected)
           tested = sum(int(by_skip[skip].get("tested", 0)) for skip in expected)
-          if fast:
-              # Fast screen uses the benchmark runner's existing 75% equivalence threshold.
-              threshold = 38
-              reached = passed >= threshold
-              heading = "50-case fast screen (PR filter)"
-              reference = "38/50 minimum (75% equivalence threshold)"
-              detail = "Full 500-case workflow_dispatch run is still required before accepting a candidate."
-          else:
-              threshold = 237
-              reached = passed >= threshold
-              heading = "X-COBOL v2 full 500-case evaluation gate"
-              reference = "strict improvement over frozen reference 236/500"
-              detail = "All four 125-program shards were checksum-verified and complete."
-
+          threshold = math.floor(best_rate * tested) + 1
+          reached = passed >= threshold
           percent = 100.0 * passed / tested
+          if fast:
+              heading = "50-case fast screen (PR filter)"
+              detail = "Filter only. A full 500-case evaluation must beat the latest recorded best before acceptance."
+          else:
+              heading = "X-COBOL v2 full 500-case evaluation gate"
+              detail = "All four 125-program shards were checksum-verified and complete."
           summary = [
               f"## {heading}", "",
-              "| Evaluation | Candidate | Gate |", "|---|---:|---:|",
-              f"| Fixed evaluation corpus | {passed}/{tested} ({percent:.2f}%) | {'PASS' if reached else 'FAIL'} |",
-              "", f"- Threshold: **{reference}**",
-              f"- {detail}",
-              "- The 50-case screen is a filter, not a release score; the fixed evaluation set is repeatedly observed and is not an untouched statistical holdout.",
+              "| Evaluation | Candidate | Previous best | Required to beat best | Gate |", "|---|---:|---:|---:|---|",
+              f"| Fixed evaluation corpus | {passed}/{tested} ({percent:.2f}%) | {best_passed}/{best_tested} ({best_rate*100:.2f}%) | {threshold}/{tested} | {'PASS' if reached else 'FAIL'} |",
+              "", f"- {detail}",
+              "- The 50-case subset is a filter, not a release score; the repeatedly observed fixed corpus is not an untouched statistical holdout.",
           ]
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
-              handle.write("\n".join(summary) + "\n")
-          print("\n".join(summary))
+              handle.write("\\n".join(summary) + "\\n")
+          print("\\n".join(summary))
+          with open(os.environ["GITHUB_OUTPUT"], "w", encoding="utf-8") as handle:
+              handle.write(f"passed={passed}\\n")
+              handle.write(f"tested={tested}\\n")
+              handle.write(f"best_passed={best_passed}\\n")
+              handle.write(f"best_tested={best_tested}\\n")
+              handle.write(f"reached={'true' if reached else 'false'}\\n")
           if not reached:
-              raise SystemExit(f"Benchmark gate failed: {passed}/{tested}; required threshold {threshold}.")
+              raise SystemExit(f"Benchmark gate failed: {passed}/{tested}; must strictly beat {best_passed}/{best_tested} ({best_rate*100:.2f}%).")
+
+      - name: Advance recorded best after a winning full run on main
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && steps.gate.outputs.reached == 'true' && steps.gate.outputs.tested == '500'
+        uses: actions/github-script@v7
+        env:
+          PASSED: ${{ steps.gate.outputs.passed }}
+          TESTED: ${{ steps.gate.outputs.tested }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const path = "benchmarks/holdout_best.json";
+            const current = await github.rest.repos.getContent({ owner, repo, path, ref: "main" });
+            const previous = JSON.parse(Buffer.from(current.data.content, "base64").toString("utf8"));
+            const passed = Number(process.env.PASSED);
+            const tested = Number(process.env.TESTED);
+            if (tested !== 500 || passed / tested <= Number(previous.best_passed) / Number(previous.best_tested)) {
+              core.setFailed("Refusing to replace best score: result is incomplete or does not beat current best.");
+              return;
+            }
+            const next = {
+              corpus: "X-COBOL v2 fixed evaluation half",
+              best_passed: passed,
+              best_tested: tested,
+              best_percent: Number((100 * passed / tested).toFixed(2)),
+              source_pr: null,
+              source_commit: context.sha,
+              updated_at: new Date().toISOString().slice(0, 10),
+              policy: "Updated only by a complete, checksum-verified 500-case run on main that strictly beats the previously recorded rate. The 50-case PR screen is a filter only."
+            };
+            await github.rest.repos.createOrUpdateFileContents({
+              owner, repo, path,
+              message: `bench: advance best holdout score to ${passed}/${tested}`,
+              content: Buffer.from(JSON.stringify(next, null, 2) + "\\n").toString("base64"),
+              sha: current.data.sha,
+              branch: "main"
+            });
+            core.info(`Advanced best score to ${passed}/${tested} (${next.best_percent}%).`);
