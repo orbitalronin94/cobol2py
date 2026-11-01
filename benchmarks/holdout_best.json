@@ -1,0 +1,10 @@
+{
+  "corpus": "X-COBOL v2 fixed evaluation half",
+  "best_passed": 240,
+  "best_tested": 500,
+  "best_percent": 48,
+  "source_pr": 201,
+  "source_commit": "732d315a59385777eb79e48df29f7bf1a8330bae",
+  "updated_at": "2026-11-01",
+  "policy": "Only advance after a complete, checksum-verified 500-case evaluation strictly beats this score. The 50-case PR screen is a filter only."
+}
