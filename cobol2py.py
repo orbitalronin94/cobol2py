@@ -3753,7 +3753,7 @@ def translate_statement(
                         lines.append(emit_assignment(target, value, variable_map))
                     if tally_match:
                         tally = normalize_data_reference(tally_match.group(1), variable_map)
-                        lines.append(f"{tally} = min(len(_cobol_unstring_parts), {len(targets)})")
+                        lines.append(f"{tally} = int({tally}) + min(len(_cobol_unstring_parts), {len(targets)})")
                     return lines
         return [f"# UNSTRING no traducido: {s}"]
 
