@@ -3929,7 +3929,7 @@ def translate_statement(
                     delimiter = delimiter_parts[0] if delimiter_parts else delimiter_text
                     if delimiter.upper() in ("SPACE", "SPACES"):
                         delimiter_expr = repr(" ")
-                    elif delimiter.upper() in ("ZERO", "ZEROS"):
+                    elif delimiter.upper() in ("ZERO", "ZEROS", "ZEROES"):
                         delimiter_expr = repr("0")
                     else:
                         delimiter_expr = translate_literal(delimiter, variable_map)
