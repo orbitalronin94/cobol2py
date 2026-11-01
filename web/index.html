@@ -3925,18 +3925,35 @@ def translate_statement(
                 targets = split_cobol_items(targets_text)
                 if targets:
                     variable_map = variables or {}
-                    delimiter_parts = split_cobol_items(re.sub(r"^\s*ALL\s+", "", delimiter_text, flags=re.IGNORECASE))
+                    delimiter_parts = [
+                        part for part in split_cobol_items(
+                            re.sub(r"^\s*ALL\s+", "", delimiter_text, flags=re.IGNORECASE)
+                        ) if part.upper() != "OR"
+                    ]
                     delimiter = delimiter_parts[0] if delimiter_parts else delimiter_text
-                    if delimiter.upper() in ("SPACE", "SPACES"):
-                        delimiter_expr = repr(" ")
-                    elif delimiter.upper() in ("ZERO", "ZEROS"):
-                        delimiter_expr = repr("0")
-                    else:
-                        delimiter_expr = translate_literal(delimiter, variable_map)
+                    delimiter_exprs = []
+                    for delimiter_part in delimiter_parts or [delimiter]:
+                        if delimiter_part.upper() in ("SPACE", "SPACES"):
+                            delimiter_exprs.append(repr(" "))
+                        elif delimiter_part.upper() in ("ZERO", "ZEROS", "ZEROES"):
+                            delimiter_exprs.append(repr("0"))
+                        else:
+                            delimiter_exprs.append(translate_literal(delimiter_part, variable_map))
+                    delimiter_expr = delimiter_exprs[0] if delimiter_exprs else "''"
                     source_expr = translate_literal(source, variable_map)
+                    if len(delimiter_exprs) > 1:
+                        delimiter_list = "[" + ", ".join(delimiter_exprs) + "]"
+                        split_expr = (
+                            f"re.split(r'(?:' + '|'.join(re.escape(str(_d)) "
+                            f"for _d in {delimiter_list}) + r')', str({source_expr}))"
+                        )
+                        has_delimiter = f"any(str(_d) for _d in {delimiter_list})"
+                    else:
+                        split_expr = f"str({source_expr}).split(str({delimiter_expr}))"
+                        has_delimiter = f"str({delimiter_expr})"
                     lines = [
-                        f"_cobol_unstring_parts = (str({source_expr}).split(str({delimiter_expr})) "
-                        f"if str({delimiter_expr}) else [str({source_expr})])"
+                        f"_cobol_unstring_parts = ({split_expr} "
+                        f"if {has_delimiter} else [str({source_expr})])"
                     ]
                     for index, target in enumerate(targets):
                         target_base = re.match(r"[A-Za-z0-9_-]+", target)
