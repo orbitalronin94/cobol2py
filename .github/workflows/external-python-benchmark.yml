@@ -173,7 +173,7 @@ jobs:
           compression-level: 1
 
   aggregate-scorecard:
-    if: always() && (github.event_name != 'pull_request' || !startsWith(github.head_ref, 'experiment/'))
+    if: always() && (github.event_name != 'pull_request' || (!startsWith(github.head_ref, 'experiment/') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/')))
     needs: external-python
     runs-on: ubuntu-latest
     steps:
