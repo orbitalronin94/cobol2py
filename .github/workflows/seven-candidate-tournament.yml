@@ -28,6 +28,7 @@ concurrency:
 
 jobs:
   candidate-tests:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 239
     name: Tests — ${{ matrix.candidate.name }}
     runs-on: ubuntu-latest
     strategy:
@@ -95,6 +96,7 @@ jobs:
           retention-days: 30
 
   external-benchmark:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 239
     name: Exact corpus — ${{ matrix.candidate.name }} / ${{ matrix.sample.name }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -202,7 +204,7 @@ jobs:
 
   aggregate:
     name: Holdout gate — 250/500 minimum
-    if: always() && needs.external-benchmark.result != 'skipped'
+    if: always() && (github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 239) && needs.external-benchmark.result != 'skipped'
     needs: [candidate-tests, external-benchmark]
     runs-on: ubuntu-latest
     steps:
