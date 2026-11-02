@@ -4320,12 +4320,71 @@ def translate_statement(
         expression = f"{target_expr} * ({translate_literal(m.group(1), variables)})"
         return [emit_assignment(target, fit_numeric_expression(expression, target, variables or {}), variables)]
 
-    m = re.match(rf"DIVIDE\s+(.+?)\s+INTO\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
-    if m:
-        target = m.group(2)
-        target_expr = normalize_data_reference(target, variables)
-        expression = f"{target_expr} / ({translate_literal(m.group(1), variables)})"
-        return [emit_assignment(target, fit_numeric_expression(expression, target, variables or {}), variables)]
+    # DIVIDE supports INTO/BY, multiple INTO receivers, GIVING and REMAINDER.
+    # Snapshot operands before writes: a receiving item may also be the divisor.
+    divide_into = re.fullmatch(r"DIVIDE\s+(.+?)\s+INTO\s+(.+?)(?:\s+END-DIVIDE)?", s, re.IGNORECASE)
+    if divide_into:
+        divisor, receiving_text = divide_into.groups()
+        variable_map = variables or {}
+        giving = re.fullmatch(
+            rf"({DATA_REF_PATTERN})\s+GIVING\s+({DATA_REF_PATTERN})(?:\s+REMAINDER\s+({DATA_REF_PATTERN}))?",
+            receiving_text,
+            re.IGNORECASE,
+        )
+        divisor_expr = translate_literal(divisor, variable_map)
+        if giving:
+            dividend, target, remainder = giving.groups()
+            return_lines = [
+                f"_cobol_divide_dividend = {translate_literal(dividend, variable_map)}",
+                f"_cobol_divide_divisor = {divisor_expr}",
+                "_cobol_divide_quotient = int(float(_cobol_divide_dividend) / float(_cobol_divide_divisor))",
+                emit_assignment(target, fit_numeric_expression("_cobol_divide_quotient", target, variable_map), variable_map),
+            ]
+            if remainder:
+                remainder_expr = (
+                    "int(float(_cobol_divide_dividend)) - "
+                    "int(float(_cobol_divide_dividend) / float(_cobol_divide_divisor)) * "
+                    "int(float(_cobol_divide_divisor))"
+                )
+                return_lines.append(
+                    emit_assignment(remainder, fit_numeric_expression(remainder_expr, remainder, variable_map), variable_map)
+                )
+            return return_lines
+        targets = split_cobol_items(receiving_text)
+        if targets:
+            return_lines = [f"_cobol_divide_divisor = {divisor_expr}"]
+            for target in targets:
+                target_expr = normalize_data_reference(target, variable_map)
+                expression = f"int(float({target_expr}) / float(_cobol_divide_divisor))"
+                return_lines.append(
+                    emit_assignment(target, fit_numeric_expression(expression, target, variable_map), variable_map)
+                )
+            return return_lines
+
+    divide_by = re.fullmatch(
+        rf"DIVIDE\s+(.+?)\s+BY\s+(.+?)\s+GIVING\s+({DATA_REF_PATTERN})(?:\s+REMAINDER\s+({DATA_REF_PATTERN}))?(?:\s+END-DIVIDE)?",
+        s,
+        re.IGNORECASE,
+    )
+    if divide_by:
+        dividend, divisor, target, remainder = divide_by.groups()
+        variable_map = variables or {}
+        return_lines = [
+            f"_cobol_divide_dividend = {translate_literal(dividend, variable_map)}",
+            f"_cobol_divide_divisor = {translate_literal(divisor, variable_map)}",
+            "_cobol_divide_quotient = int(float(_cobol_divide_dividend) / float(_cobol_divide_divisor))",
+            emit_assignment(target, fit_numeric_expression("_cobol_divide_quotient", target, variable_map), variable_map),
+        ]
+        if remainder:
+            remainder_expr = (
+                "int(float(_cobol_divide_dividend)) - "
+                "int(float(_cobol_divide_dividend) / float(_cobol_divide_divisor)) * "
+                "int(float(_cobol_divide_divisor))"
+            )
+            return_lines.append(
+                emit_assignment(remainder, fit_numeric_expression(remainder_expr, remainder, variable_map), variable_map)
+            )
+        return return_lines
 
     # WITH TEST AFTER executes the paragraph/range before checking UNTIL.
     # Model this explicitly instead of translating it as a pre-test while loop.
