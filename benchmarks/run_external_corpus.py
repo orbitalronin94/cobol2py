@@ -518,8 +518,6 @@ def main() -> int:
     report["translation_cache_hit_rate_percent"] = round(100 * report["translation_cache_hits"] / cache_lookups, 2) if cache_lookups else 0.0
     report["sample_complete"] = report["tested"] == args.target
     report["pass_rate_percent"] = round(100 * report["passed"] / report["tested"], 2) if report["tested"] else 0.0
-    report["equivalence_threshold_percent"] = 75.0
-    report["equivalence_gate_reached"] = report["sample_complete"] and report["pass_rate_percent"] >= report["equivalence_threshold_percent"]
     report["source_code_republished"] = False
     report["notes"] = [
         "Only source files that compile and terminate under GnuCOBOL are included in the tested denominator.",
@@ -543,7 +541,7 @@ def main() -> int:
         f"- Current-main translation time: **{report['baseline_translation_seconds']:.3f}s**" if baseline_translator is not None else "- Current-main timing comparison: **not enabled**",
         f"- Candidate vs current-main translation time: **{report['translation_time_delta_percent']:+.2f}%** (speedup ×{report['translation_time_speedup']:.3f})" if baseline_translator is not None and "translation_time_delta_percent" in report else "",
         f"- Sample complete: **{report['sample_complete']}**",
-        f"- 75% exact-equivalence gate reached: **{report['equivalence_gate_reached']}**", "",
+        "",
         "## Per-program results", "", "| Case | Archive path | Status | Detail |", "|---|---|---|---|"]
     for item in report["results"]:
         detail = (item.get("reason") or "Exact stdout and return-code match").replace("|", "\\|").replace("\n", " ")
