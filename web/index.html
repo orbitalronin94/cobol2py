@@ -5251,8 +5251,10 @@ def emit_python(prog: Program) -> str:
     lines.append("    except EOFError:")
     lines.append("        return default")
     lines.append("")
-    lines.append("def _cobol_numval_c(value):")
+    lines.append("def _cobol_numval_c(value, currency=None):")
     lines.append("    text = str(value).strip()")
+    lines.append("    if currency is not None and str(currency):")
+    lines.append("        text = text.replace(str(currency), '')"
     lines.append("    if not text:")
     lines.append("        return 0.0")
     lines.append("    negative = text.startswith('(') and text.endswith(')')")
