@@ -1,0 +1,136 @@
+name: closed-pr-combination-tournament
+run-name: Closed PR combination tournament
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_numbers:
+        description: "Comma-separated closed/open PR numbers to evaluate (max 7)"
+        required: true
+        default: "202,204,206,208,209,214,219"
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: closed-pr-combination-tournament
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      candidates: ${{ steps.matrix.outputs.candidates }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - name: Freeze PR deltas and build single/pair/all matrix
+        id: matrix
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBERS: ${{ inputs.pr_numbers }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          python - <<'PY'
+          import itertools, json, os, subprocess
+          numbers = [int(x.strip().lstrip("#")) for x in os.environ["PR_NUMBERS"].split(",") if x.strip()]
+          if not numbers or len(numbers) > 7 or len(numbers) != len(set(numbers)):
+              raise SystemExit("Supply 1-7 distinct PR numbers")
+          rows = []
+          for number in numbers:
+              raw = subprocess.check_output(["gh", "api", f"repos/{os.environ['REPOSITORY']}/pulls/{number}"], text=True)
+              pr = json.loads(raw)
+              if pr["base"]["ref"] != "main":
+                  raise SystemExit(f"PR #{number} does not target main")
+              rows.append({"pr": number, "base_sha": pr["base"]["sha"], "head_sha": pr["head"]["sha"], "title": pr["title"]})
+          candidates = [{"name":"main-baseline","prs":[]}]
+          for size in (1, 2):
+              for group in itertools.combinations(rows, size):
+                  candidates.append({"name":"plus-" + "-".join(str(x["pr"]) for x in group), "prs":list(group)})
+          candidates.append({"name":"combined-" + "-".join(str(x["pr"]) for x in rows), "prs":rows})
+          encoded = json.dumps(candidates, separators=(",", ":"))
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write("candidates=" + encoded + "\n")
+          print(json.dumps(candidates, indent=2))
+          PY
+
+  evaluate:
+    needs: discover
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        candidate: ${{ fromJSON(needs.discover.outputs.candidates) }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Apply frozen PR deltas to current main
+        env:
+          PRS_JSON: ${{ toJSON(matrix.candidate.prs) }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, subprocess
+          rows=json.loads(os.environ["PRS_JSON"])
+          for row in rows:
+              base, head = row["base_sha"], row["head_sha"]
+              subprocess.run(["git","fetch","origin",base,head],check=True)
+              patch=subprocess.check_output(["git","diff","--binary",base,head,"--",".",":(exclude)docs/**"])
+              if not patch:
+                  raise SystemExit(f"PR #{row['pr']} contains no non-doc implementation delta")
+              p=subprocess.run(["git","apply","--3way","--index"],input=patch)
+              if p.returncode:
+                  raise SystemExit(f"PR #{row['pr']} does not apply cleanly to current main or conflicts with a prior PR")
+          print("Integrated tree:",subprocess.check_output(["git","write-tree"],text=True).strip())
+          PY
+      - name: Verify unit suite and syntax
+        run: |
+          python -m unittest discover -s tests -v
+          python -m py_compile cobol2py.py benchmarks/run_external_corpus.py
+      - name: Download and verify pinned X-COBOL archive
+        run: |
+          curl --fail --location --retry 3 --retry-delay 2 "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" -o /tmp/COBOL_Files.zip
+          echo "cbd974caed72b0836777dc2305928ed3  /tmp/COBOL_Files.zip" | md5sum --check -
+      - name: Build isolated benchmark image
+        run: docker build -f benchmarks/Dockerfile.external -t cobol2py-pr-combinations .
+      - name: Run exact 500-case holdout benchmark
+        id: benchmark
+        env:
+          CANDIDATE: ${{ matrix.candidate.name }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/report"
+          chmod 0777 "$RUNNER_TEMP/report"
+          docker run --rm --network none --cap-drop=ALL --security-opt=no-new-privileges --pids-limit=128 --memory=4g --cpus=2 --read-only --tmpfs /tmp:rw,exec,nosuid,nodev,size=3g \
+            --mount "type=bind,source=$GITHUB_WORKSPACE,target=/workspace,readonly" \
+            --mount "type=bind,source=/tmp/COBOL_Files.zip,target=/input.zip,readonly" \
+            --mount "type=bind,source=$RUNNER_TEMP/report,target=/output" \
+            --workdir /workspace cobol2py-pr-combinations \
+            benchmarks/run_external_corpus.py --translator /workspace/cobol2py.py --archive /input.zip --output /output --target 500 --skip 500 --diagnostics
+      - name: Record immutable candidate metadata
+        if: always()
+        env:
+          CANDIDATE: ${{ matrix.candidate.name }}
+          PRS: ${{ toJSON(matrix.candidate.prs) }}
+        run: |
+          python - <<'PY'
+          import json,os,subprocess
+          p={"candidate":os.environ["CANDIDATE"],"prs":json.loads(os.environ["PRS"]),"main_sha":subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip(),"integrated_tree":subprocess.check_output(["git","write-tree"],text=True).strip()}
+          open(os.path.join(os.environ["RUNNER_TEMP"],"report","candidate-meta.json"),"w").write(json.dumps(p,indent=2))
+          PY
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: closed-pr-combination-${{ matrix.candidate.name }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/report/
+          if-no-files-found: warn
+          retention-days: 90
