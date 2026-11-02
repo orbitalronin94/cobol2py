@@ -17,12 +17,12 @@ jobs:
     if: github.event_name != 'pull_request' || (!startsWith(github.head_ref, 'experiment/') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/'))
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Cache pip downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/pip
           key: pip-playwright-1.56.0-${{ runner.os }}-py312
@@ -32,7 +32,7 @@ jobs:
         run: python -m pip install playwright==1.56.0
       - name: Restore Playwright browser cache
         id: playwright-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-1.56.0-ubuntu-${{ runner.arch }}
@@ -51,8 +51,8 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - name: Run regression tests
@@ -64,7 +64,7 @@ jobs:
     if: github.event_name != 'pull_request' || (!startsWith(github.head_ref, 'experiment/') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/'))
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install GnuCOBOL
         run: |
           sudo apt-get update
@@ -126,11 +126,11 @@ jobs:
     if: github.event_name != 'pull_request' || (!startsWith(github.head_ref, 'experiment/') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/'))
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
@@ -152,8 +152,8 @@ jobs:
     if: github.event_name != 'pull_request' || (!startsWith(github.head_ref, 'experiment/') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/'))
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Install GnuCOBOL
@@ -175,8 +175,8 @@ jobs:
     if: github.event_name != 'pull_request' || (!startsWith(github.head_ref, 'experiment/') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/'))
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Run dedicated agent unit tests
@@ -195,7 +195,7 @@ jobs:
           python -c "import json; p=json.load(open('/tmp/cobol2py-pilot/translation-report.json', encoding='utf-8')); d=p['differential_validation']; assert p['semantic_validation'] == 'matched', p['semantic_validation']; assert d['case_count'] == 105, d['case_count']; assert all(x['status'] == 'matched' for x in d['cases']); print('Differential pilot matched:', d['case_count'], 'fixtures')"
           cat /tmp/cobol2py-pilot/translation-report.md
       - name: Publish pilot diagnostic report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: modernization-pilot-diagnostics
           path: /tmp/cobol2py-pilot/

@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install GnuCOBOL, C compiler, and Rust compiler
         run: |
           sudo apt-get update
@@ -54,7 +54,7 @@ jobs:
           fi
       - name: Upload detailed benchmark report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: multilang-benchmark-${{ github.run_number }}
           path: ${{ runner.temp }}/multilang-report/

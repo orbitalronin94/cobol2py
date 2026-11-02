@@ -19,29 +19,41 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout tested revision and history
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Install Python and GnuCOBOL
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Install GnuCOBOL
         run: |
           sudo apt-get update
           sudo apt-get install -y gnucobol
-      - name: Prepare initial translator snapshot
+      - name: Resolve current main baseline
+        id: baseline
+        shell: bash
         env:
-          BASELINE_SHA: 02fde4baab3956e640111092e15291aa10a6a774
+          EVENT_NAME: ${{ github.event_name }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
         run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "pull_request" ] || [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            git fetch --no-tags origin main
+            BASELINE_SHA="$(git rev-parse FETCH_HEAD)"
+          else
+            BASELINE_SHA="$PUSH_BASE_SHA"
+            git cat-file -e "$BASELINE_SHA^{commit}"
+          fi
           git cat-file -e "$BASELINE_SHA:cobol2py.py"
           mkdir -p /tmp/cobol2py-baseline
           git show "$BASELINE_SHA:cobol2py.py" > /tmp/cobol2py-baseline/cobol2py.py
-          echo "Baseline: $BASELINE_SHA (initial translator snapshot)" >> "$GITHUB_STEP_SUMMARY"
-      - name: Compare initial snapshot and current translator on the same corpus
+          echo "sha=$BASELINE_SHA" >> "$GITHUB_OUTPUT"
+          echo "Baseline: main/previous revision $BASELINE_SHA" >> "$GITHUB_STEP_SUMMARY"
+      - name: Compare main baseline and candidate on the same corpus
         shell: bash
         env:
-          BASELINE_SHA: 02fde4baab3956e640111092e15291aa10a6a774
+          BASELINE_SHA: ${{ steps.baseline.outputs.sha }}
           HEAD_SHA: ${{ github.sha }}
         run: |
           set -uo pipefail
@@ -50,8 +62,8 @@ jobs:
             --baseline-translator /tmp/cobol2py-baseline/cobol2py.py \
             --baseline-no-format-flag \
             --translator "$GITHUB_WORKSPACE/cobol2py.py" \
-            --baseline-label "Initial snapshot (${BASELINE_SHA:0:7})" \
-            --candidate-label "Current (${HEAD_SHA:0:7})" \
+            --baseline-label "Main baseline (${BASELINE_SHA:0:7})" \
+            --candidate-label "Candidate (${HEAD_SHA:0:7})" \
             --json benchmark-report.json \
             --markdown benchmark-report.md | tee /tmp/benchmark-console.md
           benchmark_status=${PIPESTATUS[0]}
@@ -61,9 +73,9 @@ jobs:
           exit "$benchmark_status"
       - name: Upload machine-readable and human-readable reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
-          name: baseline-vs-current-benchmark-${{ github.run_number }}
+          name: main-vs-candidate-benchmark-${{ github.run_number }}
           path: |
             benchmark-report.json
             benchmark-report.md
