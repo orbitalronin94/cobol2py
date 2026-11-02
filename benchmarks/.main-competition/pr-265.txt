@@ -1,3 +1,0 @@
-Trigger main-relative differential benchmark for PR #265.
-Candidate branch: experiment/comp-3-packed-decimal
-This marker is temporary and will be removed after the run.
