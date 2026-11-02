@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: differential-benchmark-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   compare:
     if: github.event_name != 'pull_request' || (!startsWith(github.head_ref, 'experiment/') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/'))
