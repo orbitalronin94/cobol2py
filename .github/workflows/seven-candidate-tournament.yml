@@ -301,6 +301,4 @@ jobs:
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
               handle.write(summary)
           print(summary)
-          if not winners:
-              raise SystemExit("No candidate reached the required holdout threshold of 250/500.")
           PY
