@@ -1,5 +1,7 @@
 name: seven-candidate-tournament
 
+# Queue-throttling refresh: expensive duplicate PR benchmarks are suppressed for experiment-v2/v3 candidates.
+
 run-name: Seven-candidate COBOL equivalence tournament
 
 on:
