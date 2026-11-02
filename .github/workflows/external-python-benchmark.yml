@@ -1,6 +1,15 @@
 name: external-python-benchmark
 
 on:
+  push:
+    branches:
+      - fix/regressions-unstring-delimiters-vs-48
+    paths:
+      - "cobol2py.py"
+      - "web/index.html"
+      - "tests/test_divide_verb_compat.py"
+      - "tests/test_numval_c_currency.py"
+      - ".github/workflows/external-python-benchmark.yml"
   pull_request:
     paths:
       - "cobol2py.py"
@@ -113,6 +122,10 @@ jobs:
         run: |
           mkdir -p "$OUTPUT_DIR/$SAMPLE_NAME"
           chmod 0777 "$OUTPUT_DIR" "$OUTPUT_DIR/$SAMPLE_NAME" "$RUNNER_TEMP/translation-cache"
+          # GitHub Actions cache restores can preserve read-only SQLite file
+          # modes. The benchmark container must update the DB and create journals.
+          find "$RUNNER_TEMP/translation-cache" -type d -exec chmod 0777 {} +
+          find "$RUNNER_TEMP/translation-cache" -type f -exec chmod 0666 {} +
           set +e
           docker run --name "$CONTAINER_NAME" \
             --network none \

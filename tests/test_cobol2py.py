@@ -4161,6 +4161,37 @@ class UnstringAllDelimiterRegressionTests(unittest.TestCase):
         self.assertEqual((namespace["ws_a"], namespace["ws_b"]), ("A  ", "B  "))
 
 
+class UnstringDelimiterRegressionTests(unittest.TestCase):
+    def _run(self, statement, source, target_names):
+        variables = {"WS-S": cobol2py.CobolVar(level=1, name="WS-S", pic="X(12)")}
+        for name in target_names:
+            variables[name] = cobol2py.CobolVar(level=1, name=name, pic="X(3)")
+        translated = cobol2py.translate_statement(statement, set(), variables)
+        self.assertIsNotNone(translated)
+        namespace = {"re": __import__("re"), "ws_s": source}
+        namespace.update({name.lower().replace("-", "_"): "   " for name in target_names})
+        exec("\n".join(translated or []), namespace)
+        return tuple(namespace[name.lower().replace("-", "_")] for name in target_names)
+
+    def test_alternative_delimiters_are_both_recognized(self):
+        self.assertEqual(
+            self._run('UNSTRING WS-S DELIMITED BY "," OR ";" INTO WS-A WS-B', "A;B   ", ["WS-A", "WS-B"]),
+            ("A  ", "B  "),
+        )
+
+    def test_all_collapses_runs_across_alternative_delimiters(self):
+        self.assertEqual(
+            self._run('UNSTRING WS-S DELIMITED BY ALL "," OR ";" INTO WS-A WS-B WS-C', "A,,;;B   ", ["WS-A", "WS-B", "WS-C"]),
+            ("A  ", "B  ", "   "),
+        )
+
+    def test_zeroes_is_a_digit_delimiter(self):
+        self.assertEqual(
+            self._run("UNSTRING WS-S DELIMITED BY ZEROES INTO WS-A WS-B", "A0B   ", ["WS-A", "WS-B"]),
+            ("A  ", "B  "),
+        )
+
+
 class CandidateUnstringZeroTests(unittest.TestCase):
     def test_unstring_zero_delimits_on_digit_zero(self):
         v={"WS-S":cobol2py.CobolVar(level=1,name="WS-S",pic="X(5)"),"WS-A":cobol2py.CobolVar(level=1,name="WS-A",pic="X(2)"),"WS-B":cobol2py.CobolVar(level=1,name="WS-B",pic="X(2)")}

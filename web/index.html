@@ -3109,7 +3109,8 @@ def fit_numeric_expression(expression: str, target: str, variables: dict[str, Co
             f"(-1 if int({expression}) < 0 else 1) * "
             f"(abs(int({expression})) % (10 ** {digits}))"
         )
-    return f"int({expression}) % (10 ** {digits})"
+    # GnuCOBOL's unsigned DISPLAY PIC result preserves magnitude for negative arithmetic.
+    return f"abs(int({expression})) % (10 ** {digits})"
 
 
 def is_subscripted_overlay_reference(target: str, variables: dict[str, CobolVar]) -> bool:
@@ -3926,22 +3927,39 @@ def translate_statement(
                 if targets:
                     variable_map = variables or {}
                     all_delimiters = bool(re.match(r"^\s*ALL\b", delimiter_text, re.IGNORECASE))
-                    delimiter_parts = split_cobol_items(re.sub(r"^\s*ALL\s+", "", delimiter_text, flags=re.IGNORECASE))
+                    delimiter_parts = [
+                        part for part in split_cobol_items(
+                            re.sub(r"^\s*ALL\s+", "", delimiter_text, flags=re.IGNORECASE)
+                        ) if part.upper() != "OR"
+                    ]
                     delimiter = delimiter_parts[0] if delimiter_parts else delimiter_text
-                    if delimiter.upper() in ("SPACE", "SPACES"):
-                        delimiter_expr = repr(" ")
-                    elif delimiter.upper() in ("ZERO", "ZEROS"):
-                        delimiter_expr = repr("0")
-                    else:
-                        delimiter_expr = translate_literal(delimiter, variable_map)
+                    delimiter_exprs = []
+                    for delimiter_part in delimiter_parts or [delimiter]:
+                        if delimiter_part.upper() in ("SPACE", "SPACES"):
+                            delimiter_exprs.append(repr(" "))
+                        elif delimiter_part.upper() in ("ZERO", "ZEROS", "ZEROES"):
+                            delimiter_exprs.append(repr("0"))
+                        else:
+                            delimiter_exprs.append(translate_literal(delimiter_part, variable_map))
+                    delimiter_expr = delimiter_exprs[0] if delimiter_exprs else "''"
                     source_expr = translate_literal(source, variable_map)
-                    if all_delimiters:
+                    if len(delimiter_exprs) > 1:
+                        delimiter_list = "[" + ", ".join(delimiter_exprs) + "]"
+                        suffix = r")+" if all_delimiters else r")"
+                        split_expr = (
+                            f"re.split(r'(?:' + '|'.join(re.escape(str(_d)) "
+                            f"for _d in {delimiter_list}) + {suffix!r}, str({source_expr}))"
+                        )
+                        has_delimiter = f"any(str(_d) for _d in {delimiter_list})"
+                    elif all_delimiters:
                         split_expr = f"re.split(r'(?:' + re.escape(str({delimiter_expr})) + r')+', str({source_expr}))"
+                        has_delimiter = f"str({delimiter_expr})"
                     else:
                         split_expr = f"str({source_expr}).split(str({delimiter_expr}))"
+                        has_delimiter = f"str({delimiter_expr})"
                     lines = [
                         f"_cobol_unstring_parts = ({split_expr} "
-                        f"if str({delimiter_expr}) else [str({source_expr})])"
+                        f"if {has_delimiter} else [str({source_expr})])"
                     ]
                     for index, target in enumerate(targets):
                         target_base = re.match(r"[A-Za-z0-9_-]+", target)
@@ -4303,12 +4321,71 @@ def translate_statement(
         expression = f"{target_expr} * ({translate_literal(m.group(1), variables)})"
         return [emit_assignment(target, fit_numeric_expression(expression, target, variables or {}), variables)]
 
-    m = re.match(rf"DIVIDE\s+(.+?)\s+INTO\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
-    if m:
-        target = m.group(2)
-        target_expr = normalize_data_reference(target, variables)
-        expression = f"{target_expr} / ({translate_literal(m.group(1), variables)})"
-        return [emit_assignment(target, fit_numeric_expression(expression, target, variables or {}), variables)]
+    # DIVIDE supports INTO/BY, multiple INTO receivers, GIVING and REMAINDER.
+    # Snapshot operands before writes: a receiving item may also be the divisor.
+    divide_into = re.fullmatch(r"DIVIDE\s+(.+?)\s+INTO\s+(.+?)(?:\s+END-DIVIDE)?", s, re.IGNORECASE)
+    if divide_into:
+        divisor, receiving_text = divide_into.groups()
+        variable_map = variables or {}
+        giving = re.fullmatch(
+            rf"({DATA_REF_PATTERN})\s+GIVING\s+({DATA_REF_PATTERN})(?:\s+REMAINDER\s+({DATA_REF_PATTERN}))?",
+            receiving_text,
+            re.IGNORECASE,
+        )
+        divisor_expr = translate_literal(divisor, variable_map)
+        if giving:
+            dividend, target, remainder = giving.groups()
+            return_lines = [
+                f"_cobol_divide_dividend = {translate_literal(dividend, variable_map)}",
+                f"_cobol_divide_divisor = {divisor_expr}",
+                "_cobol_divide_quotient = int(float(_cobol_divide_dividend) / float(_cobol_divide_divisor))",
+                emit_assignment(target, fit_numeric_expression("_cobol_divide_quotient", target, variable_map), variable_map),
+            ]
+            if remainder:
+                remainder_expr = (
+                    "int(float(_cobol_divide_dividend)) - "
+                    "int(float(_cobol_divide_dividend) / float(_cobol_divide_divisor)) * "
+                    "int(float(_cobol_divide_divisor))"
+                )
+                return_lines.append(
+                    emit_assignment(remainder, fit_numeric_expression(remainder_expr, remainder, variable_map), variable_map)
+                )
+            return return_lines
+        targets = split_cobol_items(receiving_text)
+        if targets:
+            return_lines = [f"_cobol_divide_divisor = {divisor_expr}"]
+            for target in targets:
+                target_expr = normalize_data_reference(target, variable_map)
+                expression = f"int(float({target_expr}) / float(_cobol_divide_divisor))"
+                return_lines.append(
+                    emit_assignment(target, fit_numeric_expression(expression, target, variable_map), variable_map)
+                )
+            return return_lines
+
+    divide_by = re.fullmatch(
+        rf"DIVIDE\s+(.+?)\s+BY\s+(.+?)\s+GIVING\s+({DATA_REF_PATTERN})(?:\s+REMAINDER\s+({DATA_REF_PATTERN}))?(?:\s+END-DIVIDE)?",
+        s,
+        re.IGNORECASE,
+    )
+    if divide_by:
+        dividend, divisor, target, remainder = divide_by.groups()
+        variable_map = variables or {}
+        return_lines = [
+            f"_cobol_divide_dividend = {translate_literal(dividend, variable_map)}",
+            f"_cobol_divide_divisor = {translate_literal(divisor, variable_map)}",
+            "_cobol_divide_quotient = int(float(_cobol_divide_dividend) / float(_cobol_divide_divisor))",
+            emit_assignment(target, fit_numeric_expression("_cobol_divide_quotient", target, variable_map), variable_map),
+        ]
+        if remainder:
+            remainder_expr = (
+                "int(float(_cobol_divide_dividend)) - "
+                "int(float(_cobol_divide_dividend) / float(_cobol_divide_divisor)) * "
+                "int(float(_cobol_divide_divisor))"
+            )
+            return_lines.append(
+                emit_assignment(remainder, fit_numeric_expression(remainder_expr, remainder, variable_map), variable_map)
+            )
+        return return_lines
 
     # WITH TEST AFTER executes the paragraph/range before checking UNTIL.
     # Model this explicitly instead of translating it as a pre-test while loop.
@@ -5234,8 +5311,11 @@ def emit_python(prog: Program) -> str:
     lines.append("    except EOFError:")
     lines.append("        return default")
     lines.append("")
-    lines.append("def _cobol_numval_c(value):")
+    lines.append("# NUMVAL-C supports the optional currency-symbol operand.")
+    lines.append("def _cobol_numval_c(value, currency=None):")
     lines.append("    text = str(value).strip()")
+    lines.append("    if currency is not None and str(currency):")
+    lines.append("        text = text.replace(str(currency), '')")
     lines.append("    if not text:")
     lines.append("        return 0.0")
     lines.append("    negative = text.startswith('(') and text.endswith(')')")
