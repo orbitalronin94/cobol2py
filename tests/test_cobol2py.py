@@ -4170,7 +4170,7 @@ class UnstringDelimiterRegressionTests(unittest.TestCase):
         self.assertIsNotNone(translated)
         namespace = {"re": __import__("re"), "ws_s": source}
         namespace.update({name.lower().replace("-", "_"): "   " for name in target_names})
-        exec("\\n".join(translated or []), namespace)
+        exec("\n".join(translated or []), namespace)
         return tuple(namespace[name.lower().replace("-", "_")] for name in target_names)
 
     def test_alternative_delimiters_are_both_recognized(self):
