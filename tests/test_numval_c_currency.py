@@ -6,7 +6,7 @@ import cobol2py
 class NumvalCCurrencyOperandTests(unittest.TestCase):
     def test_optional_currency_operand_is_translated_and_supported(self):
         translated = cobol2py.translate_expr('FUNCTION NUMVAL-C(WS-AMOUNT, "$" )')
-        self.assertEqual(translated, "_cobol_numval_c(ws_amount, '$')")
+        self.assertEqual(translated, '_cobol_numval_c(ws_amount, "$" )')
         compile(translated, "<numval-c-currency>", "eval")
 
         source = "\n".join([
