@@ -1,3 +1,0 @@
-Trigger main-relative differential benchmark for PR #261.
-Candidate branch: experiment/sort-merge
-This marker is temporary and will be removed after the run.
