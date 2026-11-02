@@ -1658,7 +1658,7 @@ def normalize_data_reference(
             return f"int({index_value}) - 1"
         if re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*\s*[+*/-]\s*[A-Za-z0-9_-]+(?:\s*[+*/-]\s*[A-Za-z0-9_-]+)*", subscript):
             return f"{translate_expr(subscript, variable_map)} - 1"
-        return f"{normalize_name(subscript)} - 1"
+        return f"({translate_expr(subscript, variable_map)}) - 1" if re.search(r"[+*/-]", subscript) else f"{normalize_name(subscript)} - 1"
 
     if (
         field_name.upper() in overlay_fields
@@ -4652,8 +4652,8 @@ def translate_nodes(
                     elif re.search(r"\s+(?:THRU|THROUGH)\s+", choice, re.IGNORECASE):
                         low, high = re.split(r"\s+(?:THRU|THROUGH)\s+", choice, maxsplit=1, flags=re.IGNORECASE)
                         condition = (
-                            f"{temp_name} >= {translate_literal(low, variables)} "
-                            f"and {temp_name} <= {translate_literal(high, variables)}"
+                            f"{temp_name} >= {translate_expr(low, variables)} "
+                            f"and {temp_name} <= {translate_expr(high, variables)}"
                         )
                     elif re.match(r"^(?:IS\b|NOT\b|EQUAL\b|GREATER\b|LESS\b|[<>=])", choice, re.IGNORECASE):
                         # EVALUATE subject WHEN supports relational selection
