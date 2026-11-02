@@ -1,3 +1,0 @@
-Trigger main-relative differential benchmark for PR #259.
-Candidate branch: experiment/copy-replacing
-This marker is temporary and will be removed after the run.
