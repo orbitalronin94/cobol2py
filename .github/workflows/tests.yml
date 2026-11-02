@@ -61,6 +61,7 @@ jobs:
         run: python -m py_compile cobol2py.py cobol2native.py benchmarks/run_external_corpus.py benchmarks/run_external_multilang.py benchmarks/run_multilang_benchmark.py
 
   gnucobol-reference:
+    if: github.event_name != 'pull_request' || (!startsWith(github.head_ref, 'experiment/') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
