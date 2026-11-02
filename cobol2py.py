@@ -1459,7 +1459,7 @@ def normalize_data_reference(
             return f"int({index_value}) - 1"
         if re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*\s*[+*/-]\s*[A-Za-z0-9_-]+(?:\s*[+*/-]\s*[A-Za-z0-9_-]+)*", subscript):
             return f"{translate_expr(subscript, variable_map)} - 1"
-        return f"{normalize_name(subscript)} - 1"
+        return f"({translate_expr(subscript, variable_map)}) - 1" if re.search(r"[+*/-]", subscript) else f"{normalize_name(subscript)} - 1"
 
     if (
         field_name.upper() in overlay_fields
