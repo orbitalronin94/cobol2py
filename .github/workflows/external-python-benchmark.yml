@@ -38,7 +38,7 @@ jobs:
       # PRs get a cheap 50-program screen. Run the full 500-case gate manually
       # (workflow_dispatch) before accepting a candidate; do not tune to this subset.
       matrix:
-        sample: ${{ github.event_name == 'pull_request' && fromJSON('[{"name":"fast-screen","skip":500,"target":50}]') || fromJSON('[{"name":"holdout-0","skip":500,"target":125},{"name":"holdout-1","skip":625,"target":125},{"name":"holdout-2","skip":750,"target":125},{"name":"holdout-3","skip":875,"target":125}]') }}
+        sample: ${{ (github.event_name == 'pull_request' && contains(github.event.pull_request.body, 'RUN_FULL_HOLDOUT: true') && fromJSON('[{"name":"holdout-0","skip":500,"target":125},{"name":"holdout-1","skip":625,"target":125},{"name":"holdout-2","skip":750,"target":125},{"name":"holdout-3","skip":875,"target":125}]')) || (github.event_name == 'pull_request' && fromJSON('[{"name":"fast-screen","skip":500,"target":50}]')) || fromJSON('[{"name":"holdout-0","skip":500,"target":125},{"name":"holdout-1","skip":625,"target":125},{"name":"holdout-2","skip":750,"target":125},{"name":"holdout-3","skip":875,"target":125}]') }}
     runs-on: ubuntu-latest
     # Each shard previously hit the 10-minute wall-clock cap before writing its report.
     timeout-minutes: 30
