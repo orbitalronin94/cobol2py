@@ -1884,7 +1884,7 @@ def translate_expr(
         if start.isdigit():
             start_index = str(int(start) - 1)
         else:
-            start_index = f"{normalize_data_reference(start, variables)} - 1"
+            start_index = f"({translate_expr(start, variables)}) - 1"
         if not length or not length.strip():
             return f"{base_expr}[{start_index}:]"
         length = length.strip()
@@ -3726,6 +3726,7 @@ def translate_statement(
                 targets = split_cobol_items(targets_text)
                 if targets:
                     variable_map = variables or {}
+                    all_delimiters = bool(re.match(r"^\s*ALL\b", delimiter_text, re.IGNORECASE))
                     delimiter_parts = split_cobol_items(re.sub(r"^\s*ALL\s+", "", delimiter_text, flags=re.IGNORECASE))
                     delimiter = delimiter_parts[0] if delimiter_parts else delimiter_text
                     if delimiter.upper() in ("SPACE", "SPACES"):
@@ -3735,8 +3736,12 @@ def translate_statement(
                     else:
                         delimiter_expr = translate_literal(delimiter, variable_map)
                     source_expr = translate_literal(source, variable_map)
+                    if all_delimiters:
+                        split_expr = f"re.split(r'(?:' + re.escape(str({delimiter_expr})) + r')+', str({source_expr}))"
+                    else:
+                        split_expr = f"str({source_expr}).split(str({delimiter_expr}))"
                     lines = [
-                        f"_cobol_unstring_parts = (str({source_expr}).split(str({delimiter_expr})) "
+                        f"_cobol_unstring_parts = ({split_expr} "
                         f"if str({delimiter_expr}) else [str({source_expr})])"
                     ]
                     for index, target in enumerate(targets):
