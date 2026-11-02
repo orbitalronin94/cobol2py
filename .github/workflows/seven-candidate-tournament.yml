@@ -178,7 +178,7 @@ jobs:
           with open(path, "w", encoding="utf-8") as handle:
               json.dump({"outcome": os.environ.get("BENCHMARK_OUTCOME")}, handle, indent=2)
           PY
-      - name: Publish candidate scorecard
+      - name: Publish candidate benchmark report
         if: always()
         env:
           OUTPUT_DIR: ${{ runner.temp }}/candidate-artifacts
