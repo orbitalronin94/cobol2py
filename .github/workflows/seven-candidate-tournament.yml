@@ -19,7 +19,8 @@ permissions:
   actions: read
 
 concurrency:
-  group: cobol2py-seven-candidate-tournament-v3
+  # Isolate each PR's tournament. A shared group silently cancels queued candidates.
+  group: cobol2py-seven-candidate-tournament-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 # Reusable candidate tournament: run for PRs that touch translator/tests and on manual dispatch.
