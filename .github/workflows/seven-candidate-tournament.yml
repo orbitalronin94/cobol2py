@@ -55,10 +55,10 @@ jobs:
         candidate: ${{ fromJSON(needs.discover.outputs.candidates) }}
     steps:
       - name: Checkout candidate revision
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ matrix.candidate.sha }}
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Run full unit/regression suite
@@ -96,7 +96,7 @@ jobs:
           PY
       - name: Upload candidate test status
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: candidate-tests-${{ matrix.candidate.name }}-${{ github.run_id }}
           path: ${{ runner.temp }}/candidate-test-result.json
@@ -118,7 +118,7 @@ jobs:
           - { name: holdout, skip: 500 }
     steps:
       - name: Checkout exact candidate revision
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ matrix.candidate.sha }}
       - name: Download pinned X-COBOL v2 archive
@@ -194,7 +194,7 @@ jobs:
           fi
       - name: Upload exact-match report and diagnostics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: candidate-benchmark-${{ matrix.candidate.name }}-${{ matrix.sample.name }}-${{ github.run_id }}
           path: ${{ runner.temp }}/candidate-artifacts/${{ matrix.sample.name }}/
@@ -213,11 +213,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Read current verified record from main
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: main
       - name: Download candidate reports and test results
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           pattern: candidate-*-${{ github.run_id }}
           path: ${{ runner.temp }}/tournament-artifacts
@@ -328,7 +328,7 @@ jobs:
       actions: write
     steps:
       - name: Checkout main with write token
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: main
           token: ${{ github.token }}
