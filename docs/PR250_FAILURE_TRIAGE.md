@@ -9,7 +9,7 @@ Baseline unchanged: 240/500 (48.0%). The fast-screen artifact at head 0ffff62966
 | 3 | c03ex02.cob | Reference runs; stdout mismatch | Reproduce input and trace ACCEPT/initialization/COMPUTE values. |
 | 4 | caller_program.cob | Reference rc 1; called module unavailable | Fixture/dependency; do not invent a stub. |
 | 5 | CBL0207v01DivideVerb.cbl | Reference runs; DIVIDE INTO multiple receivers was left untranslated | Implemented DIVIDE INTO/BY, multiple receivers, GIVING and REMAINDER; regression tests added. |
-| 6 | CBL0208v01ComputeVerb.cbl | Reference runs; COMPUTE stdout mismatch | Diff expressions and receiving PIC; add focused arithmetic tests. |
+| 6 | CBL0208v01ComputeVerb.cbl | Negative arithmetic into unsigned PIC wrapped modulo 10^digits | Implemented magnitude-preserving fit for unsigned PIC results; regression test added. |
 | 7 | cisp.cbl | Reference rc 1; LOGGER dependency unavailable | Fixture/dependency; no fake logger implementation. |
 | 8 | DB1014.2.cbl | Translator rc 0 but candidate rc absent | Recover runner logs and classify launch/timeout/exception first. |
 | 9 | DB102A.CBL | Translator rc 0 but candidate rc absent | Recover runner logs and classify launch/timeout/exception first. |
@@ -36,5 +36,5 @@ Baseline unchanged: 240/500 (48.0%). The fast-screen artifact at head 0ffff62966
 
 - The exact evaluated SHA must be recorded with every scorecard.
 - The full fixed evaluation uses the 500-case second half (skip=500, target=500), split into four 125-case shards; no corpus or score-rule changes. This run has not yet been dispatched.
-- Implemented code fixes: DIVIDE INTO/BY with multiple receivers, GIVING and REMAINDER (#5), and the optional NUMVAL-C currency operand (#11), each with focused regression tests. Other implementation cases remain open until their diagnostics are reproduced; environment/dependency cases must not be counted as translator fixes.
+- Implemented code fixes: DIVIDE INTO/BY with multiple receivers, GIVING and REMAINDER (#5); unsigned-PIC negative-result magnitude (#6); and the optional NUMVAL-C currency operand (#11), each with focused regression tests. Other implementation cases remain open until their diagnostics are reproduced; environment/dependency cases must not be counted as translator fixes.
 - Do not merge unless tests pass and a complete, SHA-matched report supports the decision.
