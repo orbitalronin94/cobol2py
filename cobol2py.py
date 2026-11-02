@@ -4376,8 +4376,8 @@ def translate_nodes(
                     elif re.search(r"\s+(?:THRU|THROUGH)\s+", choice, re.IGNORECASE):
                         low, high = re.split(r"\s+(?:THRU|THROUGH)\s+", choice, maxsplit=1, flags=re.IGNORECASE)
                         condition = (
-                            f"{temp_name} >= {translate_literal(low, variables)} "
-                            f"and {temp_name} <= {translate_literal(high, variables)}"
+                            f"{temp_name} >= {translate_expr(low, variables)} "
+                            f"and {temp_name} <= {translate_expr(high, variables)}"
                         )
                     elif re.match(r"^(?:IS\b|NOT\b|EQUAL\b|GREATER\b|LESS\b|[<>=])", choice, re.IGNORECASE):
                         # EVALUATE subject WHEN supports relational selection
