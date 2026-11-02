@@ -1,0 +1,94 @@
+name: pending-pr-main-competition
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pending-pr-main-competition-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  compare:
+    name: PR #${{ matrix.pr }} vs current main
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pr: [241, 242, 243, 259, 260, 261, 262, 263, 264, 265]
+    steps:
+      - name: Checkout current main and benchmark harness
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install GnuCOBOL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gnucobol
+      - name: Fetch PR head and prepare candidate translator
+        id: candidate
+        shell: bash
+        env:
+          PR_NUMBER: ${{ matrix.pr }}
+          MAIN_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "refs/pull/${PR_NUMBER}/head:refs/remotes/pull/${PR_NUMBER}/head"
+          PR_SHA="$(git rev-parse "refs/remotes/pull/${PR_NUMBER}/head")"
+          mkdir -p /tmp/cobol2py-candidate /tmp/cobol2py-main
+          git show "${MAIN_SHA}:cobol2py.py" > /tmp/cobol2py-main/cobol2py.py
+          if git diff --name-only "${MAIN_SHA}...${PR_SHA}" | grep -Fxq "cobol2py.py"; then
+            git show "${PR_SHA}:cobol2py.py" > /tmp/cobol2py-candidate/cobol2py.py
+            KIND="PR head changes cobol2py.py"
+          else
+            cp /tmp/cobol2py-main/cobol2py.py /tmp/cobol2py-candidate/cobol2py.py
+            KIND="No cobol2py.py change; candidate translator is identical to main"
+          fi
+          echo "sha=${PR_SHA}" >> "$GITHUB_OUTPUT"
+          echo "kind=${KIND}" >> "$GITHUB_OUTPUT"
+          {
+            echo "## PR #${PR_NUMBER} vs main"
+            echo "- Main baseline: ${MAIN_SHA}"
+            echo "- PR head: ${PR_SHA}"
+            echo "- Candidate source: ${KIND}"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Run identical 105-case differential benchmark
+        shell: bash
+        env:
+          PR_NUMBER: ${{ matrix.pr }}
+          MAIN_SHA: ${{ github.sha }}
+          PR_SHA: ${{ steps.candidate.outputs.sha }}
+        run: |
+          set -uo pipefail
+          python benchmarks/run_benchmark.py \
+            --manifest benchmarks/cases.json \
+            --baseline-translator /tmp/cobol2py-main/cobol2py.py \
+            --translator /tmp/cobol2py-candidate/cobol2py.py \
+            --baseline-no-format-flag \
+            --baseline-label "main (${MAIN_SHA:0:7})" \
+            --candidate-label "PR #${PR_NUMBER} (${PR_SHA:0:7})" \
+            --json benchmark-report.json \
+            --markdown benchmark-report.md | tee /tmp/benchmark-console.md
+          benchmark_status=${PIPESTATUS[0]}
+          if [ -f benchmark-report.md ]; then
+            cat benchmark-report.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$benchmark_status"
+      - name: Upload per-PR benchmark report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: pr-${{ matrix.pr }}-vs-main-${{ github.run_number }}
+          path: |
+            benchmark-report.json
+            benchmark-report.md
+          if-no-files-found: warn
+          retention-days: 90
