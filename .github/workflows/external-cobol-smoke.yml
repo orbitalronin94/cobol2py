@@ -79,7 +79,7 @@ jobs:
             cobol2py-external-benchmark \
             benchmarks/run_external_multilang.py \
             --archive /input.zip --output /output --target 50 --skip 0
-      - name: Publish smoke scorecard
+      - name: Publish smoke benchmark report
         if: always()
         run: |
           if [ -f "${{ runner.temp }}/external-smoke/external-multilang-report.md" ]; then
@@ -87,7 +87,7 @@ jobs:
           else
             echo "No report produced; inspect benchmark logs." >> "$GITHUB_STEP_SUMMARY"
           fi
-      - name: Upload scorecard without source corpus
+      - name: Upload benchmark report without source corpus
         if: always()
         uses: actions/upload-artifact@v4
         with:
