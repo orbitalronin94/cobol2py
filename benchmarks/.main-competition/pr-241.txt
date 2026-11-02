@@ -1,3 +1,0 @@
-Trigger main-relative differential benchmark for PR #241.
-Candidate branch: experiment-v2/group-move-storage
-This marker is temporary and will be removed after the run.
