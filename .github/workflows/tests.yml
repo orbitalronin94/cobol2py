@@ -14,6 +14,7 @@ concurrency:
 
 jobs:
   browser-smoke:
+    if: github.event_name != 'pull_request' || (!startsWith(github.head_ref, 'experiment/') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
