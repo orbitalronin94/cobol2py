@@ -22,8 +22,9 @@ permissions:
 
 concurrency:
   group: external-python-benchmark-${{ github.event.pull_request.number || github.ref }}
-  # Never cancel a fixed-corpus shard because another run is queued.
-  cancel-in-progress: false
+  # A newer revision supersedes stale PR benchmark work; fixed shards are only
+  # dispatched deliberately when a full run is required.
+  cancel-in-progress: true
 
 jobs:
   external-python:
