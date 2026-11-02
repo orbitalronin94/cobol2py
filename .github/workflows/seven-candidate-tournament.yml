@@ -29,7 +29,7 @@ permissions:
 concurrency:
   # Isolate each PR's tournament. A shared group silently cancels queued candidates.
   group: cobol2py-seven-candidate-tournament-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 # Reusable candidate tournament: run for PRs that touch translator/tests and on manual dispatch.
 # Candidate scores are advisory until the exact SHA, complete holdout, and open PR are revalidated by the promotion job.
