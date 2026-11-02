@@ -1,6 +1,15 @@
 name: external-python-benchmark
 
 on:
+  push:
+    branches:
+      - fix/regressions-unstring-delimiters-vs-48
+    paths:
+      - "cobol2py.py"
+      - "web/index.html"
+      - "tests/test_divide_verb_compat.py"
+      - "tests/test_numval_c_currency.py"
+      - ".github/workflows/external-python-benchmark.yml"
   pull_request:
     paths:
       - "cobol2py.py"
