@@ -27,7 +27,7 @@ concurrency:
 
 jobs:
   external-python:
-    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'experiment/')
+    if: github.event_name != 'pull_request' || (!startsWith(github.head_ref, 'experiment/') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/'))
     strategy:
       fail-fast: false
       # Decision 2026-10-31: use only the fixed 500-case second half for
