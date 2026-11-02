@@ -1,0 +1,10 @@
+{
+  "benchmark": "external-cobol-corpus",
+  "sample": "holdout",
+  "tested": 500,
+  "passed": 240,
+  "percentage": 48,
+  "sha": "historical-baseline",
+  "updated_at": "2026-11-02",
+  "note": "Only a complete, SHA-matched, archive-verified 500-program holdout may update this record."
+}
