@@ -2910,6 +2910,7 @@ def fit_numeric_expression(expression: str, target: str, variables: dict[str, Co
             f"(-1 if int({expression}) < 0 else 1) * "
             f"(abs(int({expression})) % (10 ** {digits}))"
         )
+    # GnuCOBOL's unsigned DISPLAY PIC result preserves magnitude for negative arithmetic.
     return f"abs(int({expression})) % (10 ** {digits})"
 
 
