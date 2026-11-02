@@ -4255,3 +4255,24 @@ class UnderscoreDataNameTests(unittest.TestCase):
         self.assertNotIn("COBOL no traducido: ACCEPT AREA_QUADRADO", generated)
         self.assertNotIn("COBOL no traducido: COMPUTE RESULTADO", generated)
         ast.parse(generated)
+
+
+class ArithmeticEvaluateAndSubscriptRegressionTests(unittest.TestCase):
+    def test_arithmetic_expression_in_data_reference_is_translated(self):
+        variables = {
+            "IDX": cobol2py.CobolVar(level=1, name="IDX", pic="9(2)"),
+            "OFFSET": cobol2py.CobolVar(level=1, name="OFFSET", pic="9(2)"),
+        }
+        translated = cobol2py.translate_expr("IDX + OFFSET", variables)
+        self.assertIn("+", translated)
+        self.assertNotIn("cobol_idx", translated.lower())
+
+    def test_evaluate_range_endpoints_are_expressions_not_literals(self):
+        variables = {
+            "LOW-VALUE": cobol2py.CobolVar(level=1, name="LOW-VALUE", pic="9(2)"),
+            "HIGH-VALUE": cobol2py.CobolVar(level=1, name="HIGH-VALUE", pic="9(2)"),
+        }
+        lower = cobol2py.translate_expr("LOW-VALUE + 1", variables)
+        upper = cobol2py.translate_expr("HIGH-VALUE + 2", variables)
+        self.assertIn("+", lower)
+        self.assertIn("+", upper)
