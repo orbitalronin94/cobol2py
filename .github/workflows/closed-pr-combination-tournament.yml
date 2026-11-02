@@ -7,7 +7,7 @@ on:
       pr_numbers:
         description: "Comma-separated closed/open PR numbers to evaluate (max 7)"
         required: true
-        default: "202,204,206,208,209,214,219"
+        default: "202,204,205,206,207,208,209"
         type: string
 
 permissions:
@@ -84,8 +84,12 @@ jobs:
           rows=json.loads(os.environ["PRS_JSON"])
           for row in rows:
               base, head = row["base_sha"], row["head_sha"]
-              subprocess.run(["git","fetch","origin",base,head],check=True)
-              patch=subprocess.check_output(["git","diff","--binary",base,head,"--",".",":(exclude)docs/**"])
+              ref=f"refs/remotes/pr/{row['pr']}"
+              subprocess.run(["git","fetch","origin",f"refs/pull/{row['pr']}/head:{ref}"],check=True)
+              fetched=subprocess.check_output(["git","rev-parse",ref],text=True).strip()
+              if fetched != head:
+                  raise SystemExit(f"PR #{row['pr']} head moved after freeze: {fetched} != {head}")
+              patch=subprocess.check_output(["git","diff","--binary",base,ref,"--","cobol2py.py","tests/test_cobol2py.py","web/index.html"])
               if not patch:
                   raise SystemExit(f"PR #{row['pr']} contains no non-doc implementation delta")
               p=subprocess.run(["git","apply","--3way","--index"],input=patch)
