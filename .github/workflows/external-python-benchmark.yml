@@ -43,10 +43,14 @@ jobs:
       # ongoing candidate evaluation. The former primary half is not used
       # for tuning or as a release gate. This corpus is now a repeatedly
       # observed evaluation set, not an untouched statistical holdout.
-      # PRs get a cheap 50-program screen. Run the full 500-case gate manually
-      # (workflow_dispatch) before accepting a candidate; do not tune to this subset.
+      # Every PR evaluates the complete fixed 500-case corpus, split into
+      # four parallel shards. workflow_dispatch uses the same complete gate.
       matrix:
-        sample: ${{ github.event_name == 'pull_request' && fromJSON('[{"name":"fast-screen","skip":500,"target":50}]') || fromJSON('[{"name":"holdout-0","skip":500,"target":125},{"name":"holdout-1","skip":625,"target":125},{"name":"holdout-2","skip":750,"target":125},{"name":"holdout-3","skip":875,"target":125}]') }}
+        sample:
+          - { name: holdout-0, skip: 500, target: 125 }
+          - { name: holdout-1, skip: 625, target: 125 }
+          - { name: holdout-2, skip: 750, target: 125 }
+          - { name: holdout-3, skip: 875, target: 125 }
     runs-on: ubuntu-latest
     # Each shard previously hit the 10-minute wall-clock cap before writing its report.
     timeout-minutes: 30
