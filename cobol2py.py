@@ -2910,7 +2910,7 @@ def fit_numeric_expression(expression: str, target: str, variables: dict[str, Co
             f"(-1 if int({expression}) < 0 else 1) * "
             f"(abs(int({expression})) % (10 ** {digits}))"
         )
-    return f"int({expression}) % (10 ** {digits})"
+    return f"abs(int({expression})) % (10 ** {digits})"
 
 
 def is_subscripted_overlay_reference(target: str, variables: dict[str, CobolVar]) -> bool:
