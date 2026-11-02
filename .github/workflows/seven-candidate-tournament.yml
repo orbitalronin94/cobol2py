@@ -1,57 +1,63 @@
 name: seven-candidate-tournament
 
-# Queue-throttling refresh: expensive duplicate PR benchmarks are suppressed for experiment-v2/v3 candidates.
-
 run-name: Seven-candidate COBOL equivalence tournament
 
 on:
-  pull_request:
-    types: [opened, reopened, synchronize]
+  push:
     branches: [main]
     paths:
       - "cobol2py.py"
       - "tests/test_cobol2py.py"
       - "web/index.html"
       - ".github/workflows/seven-candidate-tournament.yml"
+      - "benchmarks/holdout-record.json"
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pull-requests: read
-  actions: read
+  contents: write
+  pull-requests: write
+  actions: write
 
 concurrency:
   # Isolate each PR's tournament. A shared group silently cancels queued candidates.
-  group: cobol2py-seven-candidate-tournament-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: false
+  group: cobol2py-seven-candidate-tournament-${{ github.ref }}
+  cancel-in-progress: true
 
-# Reusable candidate tournament: run for PRs that touch translator/tests and on manual dispatch.
-# Candidate results are reports only. Never auto-merge based on a tournament artifact.
+# One coordinator only: run on main workflow updates or explicit workflow_dispatch, never once per candidate PR.
+# Candidate scores are advisory until the exact SHA, complete holdout, and open PR are revalidated by the promotion job.
 
 jobs:
+  discover:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      candidates: ${{ steps.list.outputs.candidates }}
+    steps:
+      - name: Discover open, non-draft experiment PRs and freeze their SHAs
+        id: list
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          candidates=$(gh api "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" --jq '[.[] | select(.base.ref == "main" and .draft == false and (.head.ref | test("^experiment(-v2|-v3)?/"))) | {name:(.head.ref | gsub("/"; "-")), branch:.head.ref, sha:.head.sha, pr:.number}] | unique_by(.branch)')
+          echo "candidates=$candidates" >> "$GITHUB_OUTPUT"
+          echo "$candidates" | jq .
+
   candidate-tests:
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 239
+    needs: discover
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && needs.discover.outputs.candidates != '[]'
     name: Tests — ${{ matrix.candidate.name }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      max-parallel: 5
       matrix:
-        candidate:
-          - { name: literal-condition, ref: experiment-v2/literal-condition }
-          - { name: pic-numeric-boundaries, ref: experiment-v2/pic-numeric-boundaries }
-          - { name: group-move-storage, ref: experiment-v2/group-move-storage }
-          - { name: indexed-occurs-semantics, ref: experiment-v2/indexed-occurs-semantics }
-          - { name: evaluate-branch-selection, ref: experiment-v2/evaluate-branch-selection }
-          - { name: candidate-06, ref: experiment-v3/candidate-06 }
-          - { name: candidate-07, ref: experiment-v3/candidate-07 }
-          - { name: candidate-08, ref: experiment-v3/candidate-08 }
-          - { name: candidate-09, ref: experiment-v3/candidate-09 }
-          - { name: candidate-10, ref: experiment-v3/candidate-10 }
+        candidate: ${{ fromJSON(needs.discover.outputs.candidates) }}
     steps:
       - name: Checkout candidate revision
         uses: actions/checkout@v4
         with:
-          ref: ${{ matrix.candidate.ref }}
+          ref: ${{ matrix.candidate.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -67,7 +73,7 @@ jobs:
           UNIT_OUTCOME: ${{ steps.unit-tests.outcome }}
           COMPILE_OUTCOME: ${{ steps.compile.outcome }}
           CANDIDATE_NAME: ${{ matrix.candidate.name }}
-          CANDIDATE_REF: ${{ matrix.candidate.ref }}
+          CANDIDATE_REF: ${{ matrix.candidate.branch }}
           OUTPUT: ${{ runner.temp }}/candidate-test-result.json
         run: |
           python - <<'PY'
@@ -98,32 +104,23 @@ jobs:
           retention-days: 30
 
   external-benchmark:
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 239
+    needs: discover
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event.pull_request.number == 239) && needs.discover.outputs.candidates != '[]'
     name: Exact corpus — ${{ matrix.candidate.name }} / ${{ matrix.sample.name }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
       fail-fast: false
-      max-parallel: 4
+      max-parallel: 2
       matrix:
-        candidate:
-          - { name: literal-condition, ref: experiment-v2/literal-condition }
-          - { name: pic-numeric-boundaries, ref: experiment-v2/pic-numeric-boundaries }
-          - { name: group-move-storage, ref: experiment-v2/group-move-storage }
-          - { name: indexed-occurs-semantics, ref: experiment-v2/indexed-occurs-semantics }
-          - { name: evaluate-branch-selection, ref: experiment-v2/evaluate-branch-selection }
-          - { name: candidate-06, ref: experiment-v3/candidate-06 }
-          - { name: candidate-07, ref: experiment-v3/candidate-07 }
-          - { name: candidate-08, ref: experiment-v3/candidate-08 }
-          - { name: candidate-09, ref: experiment-v3/candidate-09 }
-          - { name: candidate-10, ref: experiment-v3/candidate-10 }
+        candidate: ${{ fromJSON(needs.discover.outputs.candidates) }}
         sample:
           - { name: holdout, skip: 500 }
     steps:
       - name: Checkout exact candidate revision
         uses: actions/checkout@v4
         with:
-          ref: ${{ matrix.candidate.ref }}
+          ref: ${{ matrix.candidate.sha }}
       - name: Download pinned X-COBOL v2 archive
         run: |
           curl --fail --location --retry 3 --retry-delay 2 "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" --output /tmp/COBOL_Files.zip
@@ -133,7 +130,7 @@ jobs:
       - name: Prepare exact candidate/sample metadata
         env:
           CANDIDATE_NAME: ${{ matrix.candidate.name }}
-          CANDIDATE_REF: ${{ matrix.candidate.ref }}
+          CANDIDATE_REF: ${{ matrix.candidate.branch }}
           SAMPLE_NAME: ${{ matrix.sample.name }}
           SKIP: ${{ matrix.sample.skip }}
           OUTPUT_DIR: ${{ runner.temp }}/candidate-artifacts
@@ -205,38 +202,42 @@ jobs:
           retention-days: 90
 
   aggregate:
-    name: Holdout gate — 250/500 minimum
-    if: always() && (github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 239) && needs.external-benchmark.result != 'skipped'
-    needs: [candidate-tests, external-benchmark]
+    name: Verified holdout ranking
+    if: always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && needs.external-benchmark.result != 'skipped'
+    needs: [discover, candidate-tests, external-benchmark]
+    outputs:
+      winner: ${{ steps.score.outputs.winner }}
+      winner_branch: ${{ steps.score.outputs.winner_branch }}
+      winner_sha: ${{ steps.score.outputs.winner_sha }}
+      winner_score: ${{ steps.score.outputs.winner_score }}
     runs-on: ubuntu-latest
     steps:
+      - name: Read current verified record from main
+        uses: actions/checkout@v4
+        with:
+          ref: main
       - name: Download candidate reports and test results
         uses: actions/download-artifact@v4
         with:
           pattern: candidate-*-${{ github.run_id }}
           path: ${{ runner.temp }}/tournament-artifacts
           merge-multiple: false
-      - name: Rank only the 500-program holdout and enforce 50 percent
+      - name: Rank complete holdout results against the persisted record
+        id: score
         env:
           REPORT_ROOT: ${{ runner.temp }}/tournament-artifacts
+          CANDIDATES_JSON: ${{ needs.discover.outputs.candidates }}
         run: |
           python - <<'PY'
           import json, os
           from pathlib import Path
 
           root = Path(os.environ["REPORT_ROOT"])
-          candidates = {
-              "literal-condition": "experiment-v2/literal-condition",
-              "pic-numeric-boundaries": "experiment-v2/pic-numeric-boundaries",
-              "group-move-storage": "experiment-v2/group-move-storage",
-              "indexed-occurs-semantics": "experiment-v2/indexed-occurs-semantics",
-              "evaluate-branch-selection": "experiment-v2/evaluate-branch-selection",
-              "candidate-06": "experiment-v3/candidate-06",
-              "candidate-07": "experiment-v3/candidate-07",
-              "candidate-08": "experiment-v3/candidate-08",
-              "candidate-09": "experiment-v3/candidate-09",
-              "candidate-10": "experiment-v3/candidate-10",
-          }
+          candidate_rows = json.loads(os.environ["CANDIDATES_JSON"])
+          candidates = {item["name"]: item for item in candidate_rows}
+          record = json.loads(Path("benchmarks/holdout-record.json").read_text(encoding="utf-8"))
+          baseline = int(record.get("passed", 240))
+          print(f"Verified record: {baseline}/500 ({baseline/5:.1f}%)")
           tests = {}
           for path in root.rglob("candidate-test-result.json"):
               try:
@@ -265,8 +266,9 @@ jobs:
                   test = tests.get(name, {})
                   valid = (
                       status.get("outcome") == "success"
-                      and meta.get("branch") == candidates[name]
-                      and bool(meta.get("sha"))
+                      and name in candidates
+                      and meta.get("branch") == candidates[name]["branch"]
+                      and meta.get("sha") == candidates[name]["sha"]
                       and report.get("tested") == 500
                       and report.get("target") == 500
                       and report.get("skip") == 500
@@ -289,21 +291,123 @@ jobs:
           lines = [
               "## Holdout-only tournament (the only selection metric)",
               "",
-              "Threshold: **250/500 = 50.0%**. No primary score or 105-case differential score is used.",
+              f"Persisted record: **{baseline}/500 ({baseline/5:.1f}%)**. A candidate must strictly beat it; no primary score or differential score is used.",
               "",
               "| Rank | Candidate | Holdout passed / 500 | Percentage | SHA |",
               "|---:|---|---:|---:|---|",
           ]
           for rank, (passed, name, sha) in enumerate(scores, 1):
               lines.append(f"| {rank} | {name} | {passed}/500 | {passed/5:.1f}% | `{sha[:12]}` |")
-          winners = [row for row in scores if row[0] >= 250]
+          winners = [row for row in scores if row[0] > baseline]
+          output = {"winner":"false","winner_branch":"","winner_sha":"","winner_score":"0","winner_name":""}
           if winners:
-              lines += ["", f"**Threshold met:** {winners[0][1]} — {winners[0][0]}/500 ({winners[0][0]/5:.1f}%). Manual review required; no automatic merge."]
+              passed, name, sha = winners[0]
+              output = {"winner":"true","winner_branch":candidates[name]["branch"],"winner_sha":sha,"winner_score":str(passed),"winner_name":name}
+              lines += ["", f"**Record breaker:** {name} — {passed}/500 ({passed/5:.1f}%), strictly above {baseline}/500. Exact PR/head SHA will be revalidated before merge."]
           else:
               best = f"{scores[0][1]} at {scores[0][0]}/500 ({scores[0][0]/5:.1f}%)" if scores else "no valid candidate result"
-              lines += ["", f"**No winner:** none reached 250/500. Current best: {best}. Depuration is required before another run; this workflow does not pretend repeated execution of unchanged code is improvement."]
+              lines += ["", f"**No promotion:** no candidate strictly beat {baseline}/500. Current best: {best}."]
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              for key, value in output.items():
+                  handle.write(f"{key}={value}\n")
           summary = "\n".join(lines) + "\n"
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
               handle.write(summary)
           print(summary)
           PY
+
+  promote-record-breaker:
+    name: Merge verified record-breaker and launch next round
+    if: needs.aggregate.outputs.winner == 'true'
+    needs: aggregate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - name: Checkout main with write token
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ github.token }}
+      - name: Revalidate exact open PR and merge SHA-guarded
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WINNER_BRANCH: ${{ needs.aggregate.outputs.winner_branch }}
+          WINNER_SHA: ${{ needs.aggregate.outputs.winner_sha }}
+          WINNER_SCORE: ${{ needs.aggregate.outputs.winner_score }}
+        run: |
+          set -euo pipefail
+          encoded=$(python -c 'import os,urllib.parse; print(urllib.parse.quote(os.environ["WINNER_BRANCH"], safe=""))')
+          branch_sha=$(gh api "repos/$GITHUB_REPOSITORY/branches/$encoded" --jq .commit.sha)
+          test "$branch_sha" = "$WINNER_SHA" || { echo "Winner SHA changed; refusing promotion."; exit 1; }
+          prs=$(gh api "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100")
+          pr_number=$(echo "$prs" | jq -r --arg branch "$WINNER_BRANCH" --arg sha "$WINNER_SHA" '[.[] | select(.base.ref=="main" and .head.ref==$branch and .head.sha==$sha and .draft==false)] | .[0].number // empty')
+          test -n "$pr_number" || { echo "No open, non-draft PR matches the exact scored SHA."; exit 1; }
+          result=$(gh api --method PUT "repos/$GITHUB_REPOSITORY/pulls/$pr_number/merge" -f merge_method=squash -f sha="$WINNER_SHA")
+          echo "$result" | jq -e '.merged == true'
+          echo "Merged PR #$pr_number at $WINNER_SCORE/500."
+      - name: Persist new verified record
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WINNER_BRANCH: ${{ needs.aggregate.outputs.winner_branch }}
+          WINNER_SHA: ${{ needs.aggregate.outputs.winner_sha }}
+          WINNER_SCORE: ${{ needs.aggregate.outputs.winner_score }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git checkout -B main origin/main
+          python - <<'PY'
+          import json, os
+          from datetime import datetime, timezone
+          path = "benchmarks/holdout-record.json"
+          data = {
+              "benchmark": "external-cobol-corpus",
+              "sample": "holdout",
+              "tested": 500,
+              "passed": int(os.environ["WINNER_SCORE"]),
+              "percentage": int(os.environ["WINNER_SCORE"]) / 5,
+              "candidate_branch": os.environ["WINNER_BRANCH"],
+              "candidate_sha": os.environ["WINNER_SHA"],
+              "updated_at": datetime.now(timezone.utc).isoformat(),
+              "note": "Updated only by the SHA-guarded promotion workflow after a complete verified 500-program holdout."
+          }
+          with open(path, "w", encoding="utf-8") as f:
+              json.dump(data, f, indent=2)
+              f.write("\n")
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add benchmarks/holdout-record.json
+          git commit -m "benchmarks: record verified holdout record"
+          git push origin main
+      - name: Rebase remaining candidates on promoted main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WINNER_BRANCH: ${{ needs.aggregate.outputs.winner_branch }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          prs=$(gh api "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100")
+          echo "$prs" | jq -r --arg winner "$WINNER_BRANCH" '.[] | select(.base.ref=="main" and .draft==false and .head.ref!=$winner and (.head.ref|test("^experiment(-v2|-v3)?/"))) | [.number,.head.ref] | @tsv' |
+          while IFS="$(printf '\t')" read -r number branch; do
+            [ -n "$branch" ] || continue
+            echo "Refreshing PR #$number ($branch) against main"
+            git fetch origin "$branch"
+            git checkout -B refresh-candidate "origin/$branch"
+            if git merge --no-edit origin/main; then
+              git push origin HEAD:"$branch"
+            else
+              git merge --abort || true
+              node_id=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$number" --jq .node_id)
+              gh api graphql -f query='mutation($id:ID!){convertPullRequestToDraft(input:{pullRequestId:$id}){pullRequest{number isDraft}}}' -F id="$node_id" || true
+              echo "Marked conflicting PR #$number as draft so it is excluded from the next tournament."
+            fi
+          done
+      - name: Dispatch next tournament against the new main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/seven-candidate-tournament.yml/dispatches" -f ref=main
