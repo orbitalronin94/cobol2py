@@ -24,7 +24,7 @@ concurrency:
   cancel-in-progress: true
 
 # One coordinator only: run on main workflow updates or explicit workflow_dispatch, never once per candidate PR.
-# Candidate scores are advisory until the exact SHA, complete holdout, and open PR are revalidated by the promotion job.
+# Candidate scores are advisory: this workflow measures frozen PR SHAs on the complete holdout and never merges candidates automatically.
 
 jobs:
   discover:
