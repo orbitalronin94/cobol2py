@@ -35,7 +35,6 @@ Baseline unchanged: 240/500 (48.0%). The fast-screen artifact at head 0ffff62966
 ## Validation and execution policy
 
 - The exact evaluated SHA must be recorded with every scorecard.
-- The full fixed evaluation uses the 500-case second half (skip=500, target=500), split into four 125-case shards; no corpus or score-rule changes.
-- RUN_FULL_HOLDOUT: true opts this PR into that full evaluation. The 50-case screen is not the release result.
+- The full fixed evaluation uses the 500-case second half (skip=500, target=500), split into four 125-case shards; no corpus or score-rule changes. This run has not yet been dispatched.
 - The one code fix in this revision is the demonstrated NUMVAL-C arity defect (#11). Other implementation cases remain open until their diagnostics are reproduced; environment/dependency cases must not be counted as translator fixes.
 - Do not merge unless tests pass and a complete, SHA-matched report supports the decision.
