@@ -32,7 +32,7 @@ concurrency:
   cancel-in-progress: false
 
 # Reusable candidate tournament: run for PRs that touch translator/tests and on manual dispatch.
-# Candidate results are reports only. Never auto-merge based on a tournament artifact.
+# Candidate scores are advisory until the exact SHA, complete holdout, and open PR are revalidated by the promotion job.
 
 jobs:
   discover:
@@ -47,7 +47,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          candidates=$(gh api "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" --jq '[.[] | select(.base.ref == "main" and .draft == false and (.head.ref | test("^experiment(-v2|-v3)?/"))) | {name:(.head.ref | split("/") | last), branch:.head.ref, sha:.head.sha, pr:.number}] | unique_by(.branch)')
+          candidates=$(gh api "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" --jq '[.[] | select(.base.ref == "main" and .draft == false and (.head.ref | test("^experiment(-v2|-v3)?/"))) | {name:(.head.ref | gsub("/"; "-")), branch:.head.ref, sha:.head.sha, pr:.number}] | unique_by(.branch)')
           echo "candidates=$candidates" >> "$GITHUB_OUTPUT"
           echo "$candidates" | jq .
 
@@ -317,7 +317,7 @@ jobs:
               lines += ["", f"**No promotion:** no candidate strictly beat {baseline}/500. Current best: {best}."]
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
               for key, value in output.items():
-                  handle.write(f"{key}={value}\\n")
+                  handle.write(f"{key}={value}\n")
           summary = "\n".join(lines) + "\n"
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
               handle.write(summary)
@@ -384,7 +384,7 @@ jobs:
           }
           with open(path, "w", encoding="utf-8") as f:
               json.dump(data, f, indent=2)
-              f.write("\\n")
+              f.write("\n")
           PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
