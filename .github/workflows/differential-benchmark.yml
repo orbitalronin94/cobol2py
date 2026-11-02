@@ -15,7 +15,6 @@ concurrency:
 
 jobs:
   compare:
-    if: github.event_name != 'pull_request' || (!startsWith(github.head_ref, 'experiment/') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/'))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout tested revision and history
