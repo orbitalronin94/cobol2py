@@ -1,5 +1,7 @@
 name: tests
 
+# v4 candidate branches run unit/compile checks here; the tournament alone runs the external 500-case score.
+
 on:
   push:
     branches: [main]
