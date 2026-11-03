@@ -4399,3 +4399,53 @@ MAIN.
         )
         self.assertEqual(namespace["_cobol_open_modes"], {})
 
+
+
+class CobolOpenMixedModesTests(unittest.TestCase):
+    def test_one_open_statement_can_open_input_and_output_files(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. OPEN-MIXED-MODES.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT INPUT-FILE ASSIGN TO "input-mixed.dat"
+        ORGANIZATION IS LINE SEQUENTIAL.
+    SELECT OUTPUT-FILE ASSIGN TO "output-mixed.dat"
+        ORGANIZATION IS LINE SEQUENTIAL.
+DATA DIVISION.
+FILE SECTION.
+FD INPUT-FILE.
+01 INPUT-RECORD PIC X(4).
+FD OUTPUT-FILE.
+01 OUTPUT-RECORD PIC X(4).
+PROCEDURE DIVISION.
+MAIN.
+    OPEN INPUT INPUT-FILE OUTPUT OUTPUT-FILE.
+    READ INPUT-FILE
+        AT END DISPLAY "EOF"
+        NOT AT END MOVE INPUT-RECORD TO OUTPUT-RECORD
+    END-READ.
+    WRITE OUTPUT-RECORD.
+    CLOSE INPUT-FILE OUTPUT-FILE.
+    GOBACK.
+"""
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<open-mixed-modes>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        previous = Path.cwd()
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "input-mixed.dat").write_text("ABCD\n", encoding="latin-1")
+            try:
+                os.chdir(directory)
+                with redirect_stdout(output):
+                    namespace["main"]()
+                written = Path("output-mixed.dat").read_text(encoding="latin-1")
+            finally:
+                os.chdir(previous)
+        self.assertEqual(output.getvalue(), "", generated)
+        self.assertEqual(written, "ABCD\n", generated)
