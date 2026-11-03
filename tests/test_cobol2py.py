@@ -4420,7 +4420,7 @@ class UnstringTallyIncrementTests(unittest.TestCase):
             "ws_second": "   ",
             "ws_tally": 5,
         }
-        exec("\\n".join(lines or []), namespace)
+        exec("\n".join(lines or []), namespace)
         self.assertEqual(namespace["ws_first"], "A  ")
         self.assertEqual(namespace["ws_second"], "B  ")
         self.assertEqual(namespace["ws_tally"], 7)
