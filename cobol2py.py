@@ -3744,6 +3744,10 @@ def translate_statement(
                             delimiter_exprs.append(translate_literal(delimiter_part, variable_map))
                     delimiter_expr = delimiter_exprs[0] if delimiter_exprs else "''"
                     source_expr = translate_literal(source, variable_map)
+                    pointer_expr = normalize_data_reference(pointer_match.group(1), variable_map) if pointer_match else None
+                    pointer_start = f"max(int({pointer_expr}) - 1, 0)" if pointer_expr else None
+                    if pointer_expr and len(delimiter_exprs) == 1 and not all_delimiters:
+                        source_expr = f"str({source_expr})[{pointer_start}:]"
                     if len(delimiter_exprs) > 1:
                         delimiter_list = "[" + ", ".join(delimiter_exprs) + "]"
                         suffix = r")+" if all_delimiters else r")"
@@ -3777,6 +3781,10 @@ def translate_statement(
                     if tally_match:
                         tally = normalize_data_reference(tally_match.group(1), variable_map)
                         lines.append(f"{tally} = min(len(_cobol_unstring_parts), {len(targets)})")
+                    if pointer_expr and len(delimiter_exprs) == 1 and not all_delimiters:
+                        filled = f"min(len(_cobol_unstring_parts), {len(targets)})"
+                        consumed = f"sum(len(_part) for _part in _cobol_unstring_parts[:{filled}]) + len(str({delimiter_expr})) * min({filled}, max(len(_cobol_unstring_parts) - 1, 0))"
+                        lines.append(f"{pointer_expr} = {pointer_start} + ({consumed}) + 1")
                     return lines
         return [f"# UNSTRING no traducido: {s}"]
 
