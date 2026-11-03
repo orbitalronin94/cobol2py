@@ -4420,7 +4420,7 @@ class UnstringPointerTests(unittest.TestCase):
             "ws_second": "   ",
             "ws_ptr": 3,
         }
-        exec("\\n".join(lines or []), namespace)
+        exec("\n".join(lines or []), namespace)
         self.assertEqual(namespace["ws_first"], "A  ")
         self.assertEqual(namespace["ws_second"], "B  ")
         self.assertEqual(namespace["ws_ptr"], 6)
