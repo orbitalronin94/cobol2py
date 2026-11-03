@@ -22,14 +22,14 @@
     {
       "id": "C002",
       "status": "pending_ci",
-      "branch": "experiment-massive-16/reopen-already-open-status41",
+      "branch": "experiment-massive-16/reopen-already-open-status41-verified",
       "hypothesis": "A second OPEN on an already-open file must return status 41 and preserve the original handle and open mode instead of replacing the live handle.",
-      "patch_sha": "befcd7205076ce51bcf34a273975739f1e439042",
+      "patch_sha": "5f7393be5cc65a20f2e35f3eb8c2afdab63acc78",
       "evidence": "GnuCOBOL Programmer's Guide: attempting to OPEN a file that is already open returns file status 41; current _cobol_open overwrites the open handle map without checking this state.",
       "tests": [
         "test_open_already_open_sets_41_and_preserves_original_handle"
       ],
-      "pr": 323
+      "pr": 324
     },
     {
       "id": "C003",
