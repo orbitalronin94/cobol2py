@@ -4399,3 +4399,51 @@ MAIN.
         )
         self.assertEqual(namespace["_cobol_open_modes"], {})
 
+
+
+class CobolReadAfterEofStatusTests(unittest.TestCase):
+    def test_second_read_after_eof_returns_status_46(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. READ-AFTER-EOF.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT INPUT-FILE ASSIGN TO "read-eof.dat"
+        ORGANIZATION IS SEQUENTIAL
+        FILE STATUS IS WS-STATUS.
+DATA DIVISION.
+FILE SECTION.
+FD INPUT-FILE.
+01 INPUT-RECORD PIC X(4).
+WORKING-STORAGE SECTION.
+01 WS-STATUS PIC XX.
+PROCEDURE DIVISION.
+MAIN.
+    OPEN INPUT INPUT-FILE.
+    READ INPUT-FILE.
+    DISPLAY WS-STATUS.
+    READ INPUT-FILE.
+    DISPLAY WS-STATUS.
+    READ INPUT-FILE.
+    DISPLAY WS-STATUS.
+    CLOSE INPUT-FILE.
+    GOBACK.
+"""
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<read-after-eof>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        previous = Path.cwd()
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "read-eof.dat").write_text("ONE!", encoding="latin-1")
+            try:
+                os.chdir(directory)
+                with redirect_stdout(output):
+                    namespace["main"]()
+            finally:
+                os.chdir(previous)
+        self.assertEqual(output.getvalue(), "00\\n10\\n46\\n", generated)
