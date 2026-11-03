@@ -1,0 +1,273 @@
+{
+  "protocol": "docs/MASSIVE_PARALLEL_EXPERIMENT_PROTOCOL.md",
+  "cohort_size": 32,
+  "base_branch": "main",
+  "base_sha_policy": "freeze main SHA at execution start; all candidates must derive from that SHA",
+  "status": "scaffold_only_candidates_not_yet_implemented",
+  "candidates": [
+    {
+      "id": "C001",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C002",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C003",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C004",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C005",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C006",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C007",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C008",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C009",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C010",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C011",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C012",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C013",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C014",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C015",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C016",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C017",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C018",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C019",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C020",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C021",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C022",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C023",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C024",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C025",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C026",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C027",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C028",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C029",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C030",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C031",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C032",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    }
+  ],
+  "acceptance": {
+    "complete_cases": 500,
+    "minimum_score": 251,
+    "zero_regressions_against_same_run_main": true,
+    "full_test_suite_green": true,
+    "checksum_verified": true
+  },
+  "note": "Manifest scaffold only. Empty slots are not runnable candidates and must be populated with distinct, evidence-backed functional changes before dispatch."
+}
