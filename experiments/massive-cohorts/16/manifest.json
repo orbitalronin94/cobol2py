@@ -33,11 +33,15 @@
     },
     {
       "id": "C003",
-      "status": "unassigned",
-      "branch": null,
-      "hypothesis": null,
-      "patch_sha": null,
-      "evidence": null
+      "status": "pending_ci",
+      "branch": "experiment-massive-16/open-mixed-modes-verified",
+      "hypothesis": "Parse one COBOL OPEN statement containing multiple mode groups (for example INPUT file-A and OUTPUT file-B) without applying the first mode to every file.",
+      "patch_sha": "b58b830830d6c9058263b332adb6316b4281aae6",
+      "evidence": "Current translate_statement handles only the first mode group and extracts all identifiers from the remaining text as filenames. This can interpret OUTPUT as a file name and open an output file in INPUT mode. COBOL OPEN syntax permits multiple mode groups in one statement.",
+      "tests": [
+        "test_one_open_statement_can_open_input_and_output_files"
+      ],
+      "pr": 326
     },
     {
       "id": "C004",
