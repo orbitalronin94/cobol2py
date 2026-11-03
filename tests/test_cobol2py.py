@@ -4399,3 +4399,15 @@ MAIN.
         )
         self.assertEqual(namespace["_cobol_open_modes"], {})
 
+
+
+class SplitLevelDataDeclarationTests(unittest.TestCase):
+    def test_level_number_on_own_line_applies_to_following_data_name(self):
+        variables = cobol2py.parse_variables([
+            (1, "01"),
+            (2, "WS-NAME PIC X(4)."),
+        ])
+        self.assertEqual(len(variables), 1)
+        self.assertEqual(variables[0].level, 1)
+        self.assertEqual(variables[0].name, "WS-NAME")
+        self.assertEqual(variables[0].pic, "X(4)")
