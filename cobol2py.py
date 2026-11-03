@@ -1884,7 +1884,7 @@ def translate_expr(
         if start.isdigit():
             start_index = str(int(start) - 1)
         else:
-            start_index = f"{normalize_data_reference(start, variables)} - 1"
+            start_index = f"({translate_expr(start, variables)}) - 1"
         if not length or not length.strip():
             return f"{base_expr}[{start_index}:]"
         length = length.strip()
