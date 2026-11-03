@@ -18,14 +18,8 @@ on:
       - "benchmarks/run_external_corpus.py"
       - "benchmarks/Dockerfile.external"
       - ".github/workflows/external-python-benchmark.yml"
-  # PRs and manual dispatch both evaluate the same fixed 500-case corpus.
+  # Every run uses the same fixed 500-case evaluation sample.
   workflow_dispatch:
-    inputs:
-      target:
-        description: "Eligible COBOL programs per fixed evaluation run (500 recommended)"
-        required: true
-        default: "500"
-        type: string
 
 permissions:
   contents: read
