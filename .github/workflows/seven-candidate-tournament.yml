@@ -1,6 +1,6 @@
 name: seven-candidate-tournament
 
-run-name: Seven-candidate COBOL equivalence tournament
+run-name: COBOL equivalence tournament — ${{ inputs.cohort_size || 'auto' }} candidates
 
 on:
   push:
@@ -12,6 +12,13 @@ on:
       - ".github/workflows/seven-candidate-tournament.yml"
       - "benchmarks/holdout-record.json"
   workflow_dispatch:
+    inputs:
+      cohort_size:
+        description: "Number of experiment PRs to evaluate in this cohort"
+        required: true
+        type: choice
+        options: ["16", "32", "64", "100"]
+        default: "16"
 
 permissions:
   contents: read
@@ -41,7 +48,25 @@ jobs:
         run: |
           set -euo pipefail
           main_sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
-          candidates=$(gh api "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" --jq --arg main_sha "$main_sha" '[{name:"main-baseline",branch:"main",sha:$main_sha,pr:0}] + ([.[] | select(.base.ref == "main" and .draft == false and (.head.ref | test("^experiment(-v2|-v3|-v4)?/"))) | {name:(.head.ref | gsub("/"; "-")), branch:.head.ref, sha:.head.sha, pr:.number}] | unique_by(.branch))')
+          pulls=$(gh api --paginate "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" | jq -s 'add')
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            batch_size="${{ inputs.cohort_size }}"
+            prefix="experiment-massive-${batch_size}/"
+            candidates=$(jq --arg main_sha "$main_sha" --arg prefix "$prefix" --argjson n "$batch_size" '
+              ([.[] | select(.base.ref == "main" and .draft == false and (.head.ref | startswith($prefix))) |
+                {name:(.head.ref | gsub("/"; "-")), branch:.head.ref, sha:.head.sha, pr:.number}] |
+                unique_by(.branch) | sort_by(.branch) | .[0:$n]) as $selected |
+              if ($selected | length) != $n then
+                error("Expected exactly " + ($n|tostring) + " open non-draft candidate PRs under " + $prefix + "; found " + ($selected|length|tostring))
+              else
+                [{name:"main-baseline",branch:"main",sha:$main_sha,pr:0}] + $selected
+              end' <<< "$pulls")
+          else
+            candidates=$(jq --arg main_sha "$main_sha" '
+              [{name:"main-baseline",branch:"main",sha:$main_sha,pr:0}] +
+              ([.[] | select(.base.ref == "main" and .draft == false and (.head.ref | test("^experiment(-v2|-v3|-v4)?/"))) |
+                {name:(.head.ref | gsub("/"; "-")), branch:.head.ref, sha:.head.sha, pr:.number}] | unique_by(.branch))' <<< "$pulls")
+          fi
           echo "candidates=$candidates" >> "$GITHUB_OUTPUT"
           echo "$candidates" | jq .
 
@@ -52,7 +77,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      max-parallel: 5
+      max-parallel: 8
       matrix:
         candidate: ${{ fromJSON(needs.discover.outputs.candidates) }}
     steps:
@@ -113,7 +138,7 @@ jobs:
     timeout-minutes: 90
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 4
       matrix:
         candidate: ${{ fromJSON(needs.discover.outputs.candidates) }}
         sample:
@@ -213,6 +238,8 @@ jobs:
       winner_sha: ${{ steps.score.outputs.winner_sha }}
       winner_score: ${{ steps.score.outputs.winner_score }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Read current verified record from main
         uses: actions/checkout@v5
@@ -229,6 +256,7 @@ jobs:
         env:
           REPORT_ROOT: ${{ runner.temp }}/tournament-artifacts
           CANDIDATES_JSON: ${{ needs.discover.outputs.candidates }}
+          REPORT_FILE: ${{ runner.temp }}/massive-tournament-report.md
         run: |
           python - <<'PY'
           import json, os
@@ -316,6 +344,40 @@ jobs:
           summary = "\n".join(lines) + "\n"
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
               handle.write(summary)
+          Path(os.environ["REPORT_FILE"]).write_text(summary, encoding="utf-8")
           print(summary)
           PY
+      - name: Append verified run report to the experiment protocol
+        if: always()
+        env:
+          REPORT_FILE: ${{ runner.temp }}/massive-tournament-report.md
+          RUN_ID: ${{ github.run_id }}
+          RUN_NUMBER: ${{ github.run_number }}
+          EVENT_NAME: ${{ github.event_name }}
+          COHORT_SIZE: ${{ inputs.cohort_size || 'auto' }}
+        run: |
+          set -euo pipefail
+          if [ ! -s "$REPORT_FILE" ]; then
+            echo "No verified ranking report was produced; document was not updated."
+            exit 0
+          fi
+          doc="docs/MASSIVE_PARALLEL_EXPERIMENT_PROTOCOL.md"
+          if [ ! -f "$doc" ]; then
+            echo "Protocol document is not present on main yet; merge PR #315 before running this workflow."
+            exit 0
+          fi
+          {
+            printf '\\n\\n---\\n\\n## Ejecución automática #%s (run %s)\\n\\n' "$RUN_NUMBER" "$RUN_ID"
+            printf -- '- Evento: `%s`\\n- Tamaño solicitado: `%s` candidatas (más baseline main)\\n- Informe: https://github.com/%s/actions/runs/%s\\n\\n' "$EVENT_NAME" "$COHORT_SIZE" "$GITHUB_REPOSITORY" "$RUN_ID"
+            cat "$REPORT_FILE"
+          } >> "$doc"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$doc"
+          if git diff --cached --quiet; then
+            echo "No report changes to commit."
+          else
+            git commit -m "docs: record massive tournament run #$RUN_NUMBER"
+            git push origin HEAD:main
+          fi
 
