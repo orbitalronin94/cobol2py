@@ -4276,12 +4276,14 @@ def translate_nodes(
             into_match = re.search(r"\bINTO\s+([A-Za-z0-9_-]+)", node.text, re.IGNORECASE)
             into_arg = repr(normalize_name(into_match.group(1))) if into_match else "None"
             prefix = "    " * indent
-            out.append(prefix + f"if _cobol_read({file_name!r}, {into_arg}):")
+            read_result = f"_cobol_read_result_{node.line}"
+            out.append(prefix + f"{read_result} = _cobol_read({file_name!r}, {into_arg})")
+            out.append(prefix + f"if {read_result} is True:")
             success_body = translate_nodes(node.then_branch, paragraphs, indent + 1, variables, current_paragraph, condition_names)
             if not success_body or all(not line.strip() or line.strip().startswith("#") for line in success_body):
                 success_body = ["    " * (indent + 1) + "pass"]
             out.extend(success_body)
-            out.append(prefix + "else:")
+            out.append(prefix + f"elif {read_result} is False:")
             at_end_body = translate_nodes(node.else_branch, paragraphs, indent + 1, variables, current_paragraph, condition_names)
             if not at_end_body or all(not line.strip() or line.strip().startswith("#") for line in at_end_body):
                 at_end_body = ["    " * (indent + 1) + "pass"]
@@ -5142,11 +5144,46 @@ def emit_python(prog: Program) -> str:
         status_variable = variables_by_name.get(status_name.upper()) if status_name else None
         status_pic = (status_variable.pic or "").upper() if status_variable else ""
         runtime_spec["status_numeric"] = bool(status_pic and "9" in status_pic and not any(char in status_pic for char in "XA"))
-        runtime_spec["status_width"] = (
-            pic_digit_count(status_pic) if runtime_spec["status_numeric"]
-            else pic_character_count(status_pic) if status_pic else 0
-        )
         runtime_spec["status_python_name"] = normalize_name(status_name) if status_name else None
+        status_layout: list[dict[str, object]] = []
+        status_layout_supported = False
+        if status_variable is not None and status_variable.is_group:
+            def add_status_fields(variable: CobolVar, path: list[str]) -> bool:
+                if variable.is_array:
+                    return False
+                if variable.is_group:
+                    children = [
+                        child for child in variables_by_name.values()
+                        if child.parent_name and child.parent_name.upper() == variable.name.upper()
+                    ]
+                    if not children:
+                        return False
+                    for child in children:
+                        if not add_status_fields(child, path + [normalize_name(child.name)]):
+                            return False
+                    return True
+                pic = (variable.pic or "").upper()
+                width = pic_character_count(pic) if any(char in pic for char in "XA") else pic_digit_count(pic)
+                if width <= 0:
+                    return False
+                scale = pic_digit_count(pic.split("V", 1)[1]) if "V" in pic else 0
+                status_layout.append({
+                    "path": path,
+                    "width": width,
+                    "numeric": bool("9" in pic and not any(char in pic for char in "XA")),
+                    "scale": scale,
+                })
+                return True
+            status_layout_supported = add_status_fields(status_variable, [])
+        runtime_spec["status_layout"] = status_layout if status_layout_supported else []
+        runtime_spec["status_width"] = (
+            sum(int(field["width"]) for field in status_layout)
+            if status_layout_supported
+            else (
+                pic_digit_count(status_pic) if runtime_spec["status_numeric"]
+                else pic_character_count(status_pic) if status_pic else 0
+            )
+        )
         record_name = file_spec.get("record")
         record_variable = variables_by_name.get(record_name.upper()) if record_name else None
         runtime_spec["record_width"] = (_simple_storage_width(record_variable, variables_by_name) or 0) if record_variable else 0
@@ -5178,6 +5215,7 @@ def emit_python(prog: Program) -> str:
         runtime_file_specs[file_name] = runtime_spec
     lines.append("_cobol_file_specs = " + repr(runtime_file_specs))
     lines.append("_cobol_open_files = {}")
+    lines.append("_cobol_open_modes = {}")
     lines.append("")
     lines.append("def _cobol_set_file_status(spec, status):")
     lines.append("    name = spec.get('status')")
@@ -5187,6 +5225,29 @@ def emit_python(prog: Program) -> str:
     lines.append("    text = str(status)")
     lines.append("    if width:")
     lines.append("        text = text[-width:] if spec.get('status_numeric') else text[:width].ljust(width)")
+    lines.append("    layout = spec.get('status_layout') or []")
+    lines.append("    if layout:")
+    lines.append("        target = globals().get(spec['status_python_name'])")
+    lines.append("        if not isinstance(target, dict):")
+    lines.append("            target = {}")
+    lines.append("        offset = 0")
+    lines.append("        for field in layout:")
+    lines.append("            field_width = int(field['width'])")
+    lines.append("            piece = text[offset:offset + field_width].ljust(field_width)")
+    lines.append("            offset += field_width")
+    lines.append("            value = int(piece.strip() or '0') if field.get('numeric') else piece")
+    lines.append("            path = field.get('path') or []")
+    lines.append("            container = target")
+    lines.append("            for key_part in path[:-1]:")
+    lines.append("                nested = container.get(key_part)")
+    lines.append("                if not isinstance(nested, dict):")
+    lines.append("                    nested = {}")
+    lines.append("                    container[key_part] = nested")
+    lines.append("                container = nested")
+    lines.append("            if path:")
+    lines.append("                container[path[-1]] = value")
+    lines.append("        globals()[spec['status_python_name']] = target")
+    lines.append("        return")
     lines.append("    globals()[spec['status_python_name']] = int(text or '0') if spec.get('status_numeric') else text")
     lines.append("")
     lines.append("def _cobol_open(name, mode):")
@@ -5210,6 +5271,7 @@ def emit_python(prog: Program) -> str:
     lines.append("            return status")
     lines.append("        raise SystemExit(1)")
     lines.append("    _cobol_open_files[key] = handle")
+    lines.append("    _cobol_open_modes[key] = mode.upper()")
     lines.append("    _cobol_set_file_status(spec, '00')")
     lines.append("    return '00'")
     lines.append("")
@@ -5217,9 +5279,11 @@ def emit_python(prog: Program) -> str:
     lines.append("    key = name.upper()")
     lines.append("    spec = _cobol_file_specs.get(key, {})")
     lines.append("    handle = _cobol_open_files.get(key)")
-    lines.append("    if handle is None:")
+    lines.append("    mode = _cobol_open_modes.get(key)")
+    lines.append("    if handle is None or mode not in ('INPUT', 'I-O'):")
     lines.append("        if spec.get('status'):")
-    lines.append("            return False")
+    lines.append("            _cobol_set_file_status(spec, '47')")
+    lines.append("            return None")
     lines.append("        raise SystemExit(1)")
     lines.append("    raw = handle.readline()")
     lines.append("    if raw == '':")
@@ -5267,9 +5331,10 @@ def emit_python(prog: Program) -> str:
     lines.append("        raise SystemExit(1)")
     lines.append("    file_name = next(name for name, item in _cobol_file_specs.items() if item is spec)")
     lines.append("    handle = _cobol_open_files.get(file_name)")
-    lines.append("    if handle is None:")
+    lines.append("    mode = _cobol_open_modes.get(file_name)")
+    lines.append("    if handle is None or mode not in ('OUTPUT', 'EXTEND', 'I-O'):")
     lines.append("        if spec.get('status'):")
-    lines.append("            _cobol_set_file_status(spec, '42')")
+    lines.append("            _cobol_set_file_status(spec, '48')")
     lines.append("            return False")
     lines.append("        raise SystemExit(1)")
     lines.append("    source_name = from_name or spec.get('record_python_name')")
@@ -5301,6 +5366,7 @@ def emit_python(prog: Program) -> str:
     lines.append("    key = name.upper()")
     lines.append("    spec = _cobol_file_specs.get(key, {})")
     lines.append("    handle = _cobol_open_files.pop(key, None)")
+    lines.append("    _cobol_open_modes.pop(key, None)")
     lines.append("    if handle is None:")
     lines.append("        if spec.get('status'):")
     lines.append("            _cobol_set_file_status(spec, '42')")

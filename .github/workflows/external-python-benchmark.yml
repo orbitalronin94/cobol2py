@@ -40,14 +40,15 @@ jobs:
   external-python:
     strategy:
       fail-fast: false
-      # Decision 2026-10-31: use only the fixed 500-case second half for
-      # ongoing candidate evaluation. The former primary half is not used
-      # for tuning or as a release gate. This corpus is now a repeatedly
-      # observed evaluation set, not an untouched statistical holdout.
-      # Every PR evaluates the complete fixed 500-case corpus, split into
-      # four parallel shards. workflow_dispatch uses the same complete gate.
+      # Paired exact-match evaluation: both fixed 500-case halves run on the
+      # same candidate SHA and against the same main-branch translator baseline.
+      # The corpus and byte-for-byte stdout/return-code metric are unchanged.
       matrix:
         sample:
+          - { name: primary-0, skip: 0, target: 125 }
+          - { name: primary-1, skip: 125, target: 125 }
+          - { name: primary-2, skip: 250, target: 125 }
+          - { name: primary-3, skip: 375, target: 125 }
           - { name: holdout-0, skip: 500, target: 125 }
           - { name: holdout-1, skip: 625, target: 125 }
           - { name: holdout-2, skip: 750, target: 125 }
@@ -99,7 +100,7 @@ jobs:
       - name: Build isolated benchmark image with layer cache
         env:
           CACHE_SCOPE: external-benchmark-${{ github.workflow }}-${{ matrix.sample.name }}
-          CACHE_PEER_SCOPE: external-benchmark-${{ github.workflow }}-${{ matrix.sample.name == 'primary' && 'holdout' || 'primary' }}
+          CACHE_PEER_SCOPE: external-benchmark-${{ github.workflow }}-${{ startsWith(matrix.sample.name, 'primary') && 'holdout-0' || 'primary-0' }}
           CACHE_CROSS_WORKFLOW_SCOPE: external-benchmark-external-cobol-corpus-${{ matrix.sample.name }}
         run: |
           docker buildx build --load \
