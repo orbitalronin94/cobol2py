@@ -1658,7 +1658,7 @@ def normalize_data_reference(
             return f"int({index_value}) - 1"
         if re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*\s*[+*/-]\s*[A-Za-z0-9_-]+(?:\s*[+*/-]\s*[A-Za-z0-9_-]+)*", subscript):
             return f"{translate_expr(subscript, variable_map)} - 1"
-        return f"({translate_expr(subscript, variable_map)}) - 1" if re.search(r"[+*/-]", subscript) else f"{normalize_name(subscript)} - 1"
+        return f"{normalize_name(subscript)} - 1"
 
     if (
         field_name.upper() in overlay_fields
@@ -2087,7 +2087,7 @@ def translate_expr(
         if not length or not length.strip():
             return f"{base_expr}[{start_index}:]"
         length = length.strip()
-        length_expr = str(int(length)) if length.isdigit() else normalize_data_reference(length, variables)
+        length_expr = str(int(length)) if length.isdigit() else (translate_expr(length, variables) if re.search(r"[+*/-]", length) else normalize_data_reference(length, variables))
         return f"{base_expr}[{start_index}:({start_index}) + ({length_expr})]"
 
     expr = re.sub(
@@ -3109,8 +3109,7 @@ def fit_numeric_expression(expression: str, target: str, variables: dict[str, Co
             f"(-1 if int({expression}) < 0 else 1) * "
             f"(abs(int({expression})) % (10 ** {digits}))"
         )
-    # GnuCOBOL's unsigned DISPLAY PIC result preserves magnitude for negative arithmetic.
-    return f"abs(int({expression})) % (10 ** {digits})"
+    return f"int({expression}) % (10 ** {digits})"
 
 
 def is_subscripted_overlay_reference(target: str, variables: dict[str, CobolVar]) -> bool:
@@ -3927,39 +3926,22 @@ def translate_statement(
                 if targets:
                     variable_map = variables or {}
                     all_delimiters = bool(re.match(r"^\s*ALL\b", delimiter_text, re.IGNORECASE))
-                    delimiter_parts = [
-                        part for part in split_cobol_items(
-                            re.sub(r"^\s*ALL\s+", "", delimiter_text, flags=re.IGNORECASE)
-                        ) if part.upper() != "OR"
-                    ]
+                    delimiter_parts = split_cobol_items(re.sub(r"^\s*ALL\s+", "", delimiter_text, flags=re.IGNORECASE))
                     delimiter = delimiter_parts[0] if delimiter_parts else delimiter_text
-                    delimiter_exprs = []
-                    for delimiter_part in delimiter_parts or [delimiter]:
-                        if delimiter_part.upper() in ("SPACE", "SPACES"):
-                            delimiter_exprs.append(repr(" "))
-                        elif delimiter_part.upper() in ("ZERO", "ZEROS", "ZEROES"):
-                            delimiter_exprs.append(repr("0"))
-                        else:
-                            delimiter_exprs.append(translate_literal(delimiter_part, variable_map))
-                    delimiter_expr = delimiter_exprs[0] if delimiter_exprs else "''"
+                    if delimiter.upper() in ("SPACE", "SPACES"):
+                        delimiter_expr = repr(" ")
+                    elif delimiter.upper() in ("ZERO", "ZEROS"):
+                        delimiter_expr = repr("0")
+                    else:
+                        delimiter_expr = translate_literal(delimiter, variable_map)
                     source_expr = translate_literal(source, variable_map)
-                    if len(delimiter_exprs) > 1:
-                        delimiter_list = "[" + ", ".join(delimiter_exprs) + "]"
-                        suffix = r")+" if all_delimiters else r")"
-                        split_expr = (
-                            f"re.split(r'(?:' + '|'.join(re.escape(str(_d)) "
-                            f"for _d in {delimiter_list}) + {suffix!r}, str({source_expr}))"
-                        )
-                        has_delimiter = f"any(str(_d) for _d in {delimiter_list})"
-                    elif all_delimiters:
+                    if all_delimiters:
                         split_expr = f"re.split(r'(?:' + re.escape(str({delimiter_expr})) + r')+', str({source_expr}))"
-                        has_delimiter = f"str({delimiter_expr})"
                     else:
                         split_expr = f"str({source_expr}).split(str({delimiter_expr}))"
-                        has_delimiter = f"str({delimiter_expr})"
                     lines = [
                         f"_cobol_unstring_parts = ({split_expr} "
-                        f"if {has_delimiter} else [str({source_expr})])"
+                        f"if str({delimiter_expr}) else [str({source_expr})])"
                     ]
                     for index, target in enumerate(targets):
                         target_base = re.match(r"[A-Za-z0-9_-]+", target)
@@ -4321,71 +4303,12 @@ def translate_statement(
         expression = f"{target_expr} * ({translate_literal(m.group(1), variables)})"
         return [emit_assignment(target, fit_numeric_expression(expression, target, variables or {}), variables)]
 
-    # DIVIDE supports INTO/BY, multiple INTO receivers, GIVING and REMAINDER.
-    # Snapshot operands before writes: a receiving item may also be the divisor.
-    divide_into = re.fullmatch(r"DIVIDE\s+(.+?)\s+INTO\s+(.+?)(?:\s+END-DIVIDE)?", s, re.IGNORECASE)
-    if divide_into:
-        divisor, receiving_text = divide_into.groups()
-        variable_map = variables or {}
-        giving = re.fullmatch(
-            rf"({DATA_REF_PATTERN})\s+GIVING\s+({DATA_REF_PATTERN})(?:\s+REMAINDER\s+({DATA_REF_PATTERN}))?",
-            receiving_text,
-            re.IGNORECASE,
-        )
-        divisor_expr = translate_literal(divisor, variable_map)
-        if giving:
-            dividend, target, remainder = giving.groups()
-            return_lines = [
-                f"_cobol_divide_dividend = {translate_literal(dividend, variable_map)}",
-                f"_cobol_divide_divisor = {divisor_expr}",
-                "_cobol_divide_quotient = int(float(_cobol_divide_dividend) / float(_cobol_divide_divisor))",
-                emit_assignment(target, fit_numeric_expression("_cobol_divide_quotient", target, variable_map), variable_map),
-            ]
-            if remainder:
-                remainder_expr = (
-                    "int(float(_cobol_divide_dividend)) - "
-                    "int(float(_cobol_divide_dividend) / float(_cobol_divide_divisor)) * "
-                    "int(float(_cobol_divide_divisor))"
-                )
-                return_lines.append(
-                    emit_assignment(remainder, fit_numeric_expression(remainder_expr, remainder, variable_map), variable_map)
-                )
-            return return_lines
-        targets = split_cobol_items(receiving_text)
-        if targets:
-            return_lines = [f"_cobol_divide_divisor = {divisor_expr}"]
-            for target in targets:
-                target_expr = normalize_data_reference(target, variable_map)
-                expression = f"int(float({target_expr}) / float(_cobol_divide_divisor))"
-                return_lines.append(
-                    emit_assignment(target, fit_numeric_expression(expression, target, variable_map), variable_map)
-                )
-            return return_lines
-
-    divide_by = re.fullmatch(
-        rf"DIVIDE\s+(.+?)\s+BY\s+(.+?)\s+GIVING\s+({DATA_REF_PATTERN})(?:\s+REMAINDER\s+({DATA_REF_PATTERN}))?(?:\s+END-DIVIDE)?",
-        s,
-        re.IGNORECASE,
-    )
-    if divide_by:
-        dividend, divisor, target, remainder = divide_by.groups()
-        variable_map = variables or {}
-        return_lines = [
-            f"_cobol_divide_dividend = {translate_literal(dividend, variable_map)}",
-            f"_cobol_divide_divisor = {translate_literal(divisor, variable_map)}",
-            "_cobol_divide_quotient = int(float(_cobol_divide_dividend) / float(_cobol_divide_divisor))",
-            emit_assignment(target, fit_numeric_expression("_cobol_divide_quotient", target, variable_map), variable_map),
-        ]
-        if remainder:
-            remainder_expr = (
-                "int(float(_cobol_divide_dividend)) - "
-                "int(float(_cobol_divide_dividend) / float(_cobol_divide_divisor)) * "
-                "int(float(_cobol_divide_divisor))"
-            )
-            return_lines.append(
-                emit_assignment(remainder, fit_numeric_expression(remainder_expr, remainder, variable_map), variable_map)
-            )
-        return return_lines
+    m = re.match(rf"DIVIDE\s+(.+?)\s+INTO\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
+    if m:
+        target = m.group(2)
+        target_expr = normalize_data_reference(target, variables)
+        expression = f"{target_expr} / ({translate_literal(m.group(1), variables)})"
+        return [emit_assignment(target, fit_numeric_expression(expression, target, variables or {}), variables)]
 
     # WITH TEST AFTER executes the paragraph/range before checking UNTIL.
     # Model this explicitly instead of translating it as a pre-test while loop.
@@ -4475,14 +4398,12 @@ def translate_nodes(
             into_match = re.search(r"\bINTO\s+([A-Za-z0-9_-]+)", node.text, re.IGNORECASE)
             into_arg = repr(normalize_name(into_match.group(1))) if into_match else "None"
             prefix = "    " * indent
-            read_result = f"_cobol_read_result_{node.line}"
-            out.append(prefix + f"{read_result} = _cobol_read({file_name!r}, {into_arg})")
-            out.append(prefix + f"if {read_result} is True:")
+            out.append(prefix + f"if _cobol_read({file_name!r}, {into_arg}):")
             success_body = translate_nodes(node.then_branch, paragraphs, indent + 1, variables, current_paragraph, condition_names)
             if not success_body or all(not line.strip() or line.strip().startswith("#") for line in success_body):
                 success_body = ["    " * (indent + 1) + "pass"]
             out.extend(success_body)
-            out.append(prefix + f"elif {read_result} is False:")
+            out.append(prefix + "else:")
             at_end_body = translate_nodes(node.else_branch, paragraphs, indent + 1, variables, current_paragraph, condition_names)
             if not at_end_body or all(not line.strip() or line.strip().startswith("#") for line in at_end_body):
                 at_end_body = ["    " * (indent + 1) + "pass"]
@@ -4654,8 +4575,8 @@ def translate_nodes(
                     elif re.search(r"\s+(?:THRU|THROUGH)\s+", choice, re.IGNORECASE):
                         low, high = re.split(r"\s+(?:THRU|THROUGH)\s+", choice, maxsplit=1, flags=re.IGNORECASE)
                         condition = (
-                            f"{temp_name} >= {translate_expr(low, variables)} "
-                            f"and {temp_name} <= {translate_expr(high, variables)}"
+                            f"{temp_name} >= {translate_literal(low, variables)} "
+                            f"and {temp_name} <= {translate_literal(high, variables)}"
                         )
                     elif re.match(r"^(?:IS\b|NOT\b|EQUAL\b|GREATER\b|LESS\b|[<>=])", choice, re.IGNORECASE):
                         # EVALUATE subject WHEN supports relational selection
@@ -5313,11 +5234,8 @@ def emit_python(prog: Program) -> str:
     lines.append("    except EOFError:")
     lines.append("        return default")
     lines.append("")
-    lines.append("# NUMVAL-C supports the optional currency-symbol operand.")
-    lines.append("def _cobol_numval_c(value, currency=None):")
+    lines.append("def _cobol_numval_c(value):")
     lines.append("    text = str(value).strip()")
-    lines.append("    if currency is not None and str(currency):")
-    lines.append("        text = text.replace(str(currency), '')")
     lines.append("    if not text:")
     lines.append("        return 0.0")
     lines.append("    negative = text.startswith('(') and text.endswith(')')")
@@ -5343,46 +5261,11 @@ def emit_python(prog: Program) -> str:
         status_variable = variables_by_name.get(status_name.upper()) if status_name else None
         status_pic = (status_variable.pic or "").upper() if status_variable else ""
         runtime_spec["status_numeric"] = bool(status_pic and "9" in status_pic and not any(char in status_pic for char in "XA"))
-        runtime_spec["status_python_name"] = normalize_name(status_name) if status_name else None
-        status_layout: list[dict[str, object]] = []
-        status_layout_supported = False
-        if status_variable is not None and status_variable.is_group:
-            def add_status_fields(variable: CobolVar, path: list[str]) -> bool:
-                if variable.is_array:
-                    return False
-                if variable.is_group:
-                    children = [
-                        child for child in variables_by_name.values()
-                        if child.parent_name and child.parent_name.upper() == variable.name.upper()
-                    ]
-                    if not children:
-                        return False
-                    for child in children:
-                        if not add_status_fields(child, path + [normalize_name(child.name)]):
-                            return False
-                    return True
-                pic = (variable.pic or "").upper()
-                width = pic_character_count(pic) if any(char in pic for char in "XA") else pic_digit_count(pic)
-                if width <= 0:
-                    return False
-                scale = pic_digit_count(pic.split("V", 1)[1]) if "V" in pic else 0
-                status_layout.append({
-                    "path": path,
-                    "width": width,
-                    "numeric": bool("9" in pic and not any(char in pic for char in "XA")),
-                    "scale": scale,
-                })
-                return True
-            status_layout_supported = add_status_fields(status_variable, [])
-        runtime_spec["status_layout"] = status_layout if status_layout_supported else []
         runtime_spec["status_width"] = (
-            sum(int(field["width"]) for field in status_layout)
-            if status_layout_supported
-            else (
-                pic_digit_count(status_pic) if runtime_spec["status_numeric"]
-                else pic_character_count(status_pic) if status_pic else 0
-            )
+            pic_digit_count(status_pic) if runtime_spec["status_numeric"]
+            else pic_character_count(status_pic) if status_pic else 0
         )
+        runtime_spec["status_python_name"] = normalize_name(status_name) if status_name else None
         record_name = file_spec.get("record")
         record_variable = variables_by_name.get(record_name.upper()) if record_name else None
         runtime_spec["record_width"] = (_simple_storage_width(record_variable, variables_by_name) or 0) if record_variable else 0
@@ -5414,7 +5297,6 @@ def emit_python(prog: Program) -> str:
         runtime_file_specs[file_name] = runtime_spec
     lines.append("_cobol_file_specs = " + repr(runtime_file_specs))
     lines.append("_cobol_open_files = {}")
-    lines.append("_cobol_open_modes = {}")
     lines.append("")
     lines.append("def _cobol_set_file_status(spec, status):")
     lines.append("    name = spec.get('status')")
@@ -5424,29 +5306,6 @@ def emit_python(prog: Program) -> str:
     lines.append("    text = str(status)")
     lines.append("    if width:")
     lines.append("        text = text[-width:] if spec.get('status_numeric') else text[:width].ljust(width)")
-    lines.append("    layout = spec.get('status_layout') or []")
-    lines.append("    if layout:")
-    lines.append("        target = globals().get(spec['status_python_name'])")
-    lines.append("        if not isinstance(target, dict):")
-    lines.append("            target = {}")
-    lines.append("        offset = 0")
-    lines.append("        for field in layout:")
-    lines.append("            field_width = int(field['width'])")
-    lines.append("            piece = text[offset:offset + field_width].ljust(field_width)")
-    lines.append("            offset += field_width")
-    lines.append("            value = int(piece.strip() or '0') if field.get('numeric') else piece")
-    lines.append("            path = field.get('path') or []")
-    lines.append("            container = target")
-    lines.append("            for key_part in path[:-1]:")
-    lines.append("                nested = container.get(key_part)")
-    lines.append("                if not isinstance(nested, dict):")
-    lines.append("                    nested = {}")
-    lines.append("                    container[key_part] = nested")
-    lines.append("                container = nested")
-    lines.append("            if path:")
-    lines.append("                container[path[-1]] = value")
-    lines.append("        globals()[spec['status_python_name']] = target")
-    lines.append("        return")
     lines.append("    globals()[spec['status_python_name']] = int(text or '0') if spec.get('status_numeric') else text")
     lines.append("")
     lines.append("def _cobol_open(name, mode):")
@@ -5470,7 +5329,6 @@ def emit_python(prog: Program) -> str:
     lines.append("            return status")
     lines.append("        raise SystemExit(1)")
     lines.append("    _cobol_open_files[key] = handle")
-    lines.append("    _cobol_open_modes[key] = mode.upper()")
     lines.append("    _cobol_set_file_status(spec, '00')")
     lines.append("    return '00'")
     lines.append("")
@@ -5478,11 +5336,9 @@ def emit_python(prog: Program) -> str:
     lines.append("    key = name.upper()")
     lines.append("    spec = _cobol_file_specs.get(key, {})")
     lines.append("    handle = _cobol_open_files.get(key)")
-    lines.append("    mode = _cobol_open_modes.get(key)")
-    lines.append("    if handle is None or mode not in ('INPUT', 'I-O'):")
+    lines.append("    if handle is None:")
     lines.append("        if spec.get('status'):")
-    lines.append("            _cobol_set_file_status(spec, '47')")
-    lines.append("            return None")
+    lines.append("            return False")
     lines.append("        raise SystemExit(1)")
     lines.append("    raw = handle.readline()")
     lines.append("    if raw == '':")
@@ -5530,10 +5386,9 @@ def emit_python(prog: Program) -> str:
     lines.append("        raise SystemExit(1)")
     lines.append("    file_name = next(name for name, item in _cobol_file_specs.items() if item is spec)")
     lines.append("    handle = _cobol_open_files.get(file_name)")
-    lines.append("    mode = _cobol_open_modes.get(file_name)")
-    lines.append("    if handle is None or mode not in ('OUTPUT', 'EXTEND', 'I-O'):")
+    lines.append("    if handle is None:")
     lines.append("        if spec.get('status'):")
-    lines.append("            _cobol_set_file_status(spec, '48')")
+    lines.append("            _cobol_set_file_status(spec, '42')")
     lines.append("            return False")
     lines.append("        raise SystemExit(1)")
     lines.append("    source_name = from_name or spec.get('record_python_name')")
@@ -5565,7 +5420,6 @@ def emit_python(prog: Program) -> str:
     lines.append("    key = name.upper()")
     lines.append("    spec = _cobol_file_specs.get(key, {})")
     lines.append("    handle = _cobol_open_files.pop(key, None)")
-    lines.append("    _cobol_open_modes.pop(key, None)")
     lines.append("    if handle is None:")
     lines.append("        if spec.get('status'):")
     lines.append("            _cobol_set_file_status(spec, '42')")
