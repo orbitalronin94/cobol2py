@@ -334,11 +334,15 @@
     },
     {
       "id": "C016",
-      "status": "unassigned",
-      "branch": null,
-      "hypothesis": null,
-      "patch_sha": null,
-      "evidence": null
+      "status": "pending_ci",
+      "branch": "experiment-massive-16/fixed-length-sequential-read",
+      "hypothesis": "Read ORGANIZATION SEQUENTIAL files as fixed-width records using the FD record width, while retaining line-based reads for LINE SEQUENTIAL files.",
+      "patch_sha": "2ae9cd2a3d5391de8e61944ce7b10cb579fd736c",
+      "evidence": "The current _cobol_read always calls handle.readline(), which incorrectly treats a sequential fixed-width file without line separators as one record. The regression uses two adjacent four-byte records with no newline.",
+      "tests": [
+        "test_sequential_read_consumes_fixed_width_records_without_newlines"
+      ],
+      "pr": 341
     }
   ],
   "acceptance": {
