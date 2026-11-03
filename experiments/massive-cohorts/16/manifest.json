@@ -149,11 +149,15 @@
     },
     {
       "id": "C010",
-      "status": "unassigned",
-      "branch": null,
-      "hypothesis": null,
-      "patch_sha": null,
-      "evidence": null
+      "status": "pending_ci",
+      "branch": "experiment-massive-16/write-from-literal",
+      "hypothesis": "Support WRITE record FROM literal by moving the literal into the record area before writing, while preserving existing identifier-based FROM behavior.",
+      "patch_sha": "3c1e99ae8e00135d9971674e0200a725a1c95eb5",
+      "evidence": "The current WRITE parser accepts only a data-name after FROM, although COBOL syntax allows a literal or identifier. The runtime already serializes the record area, so the literal must first be moved into that record.",
+      "tests": [
+        "test_write_from_literal_moves_literal_into_record_before_write"
+      ],
+      "pr": 333
     },
     {
       "id": "C011",
