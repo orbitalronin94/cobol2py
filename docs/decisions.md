@@ -494,3 +494,13 @@ Añadir una sección con:
 - **Decisión:** eliminar esa medición duplicada del workflow de promoción; mantener cache de archivo verificado, cache de capas Docker y cache de traducción separado por shard/huella de código. Limitar la matriz a cuatro shards holdout de 125 y paralelismo máximo cuatro.
 - **Consecuencias:** menor trabajo por run y métricas de equivalencia más claras. Las comparaciones de rendimiento se harán en una ejecución de profiling separada, nunca mezcladas con el score.
 - **Validación:** comparar tiempos de workflow antes/después y confirmar que los 500 IDs y el resultado exacto permanecen idénticos.
+
+
+## D-024 — Preparar el corpus una vez antes de los shards
+
+- **Fecha:** 2026-11-03.
+- **Estado:** propuesta en PR.
+- **Contexto:** los cuatro shards de 125 se ejecutan en runners independientes. Aunque cada runner usaba cache por checksum, un cache miss simultáneo podía provocar cuatro descargas y verificaciones del mismo archivo X-COBOL.
+- **Decisión propuesta:** añadir un job `prepare-corpus` que restaura/descarga/verifica el ZIP y guarda el cache antes de que arranquen los cuatro shards. Cada shard depende del preparador y solo restaura el archivo ya verificado.
+- **Consecuencias:** una descarga por workflow run cuando el cache está frío; se conserva el checksum MD5 fijado y no se cachean resultados de traducción como si fueran evidencia de score.
+- **Validación:** confirmar orden de dependencias, un solo paso de descarga en el YAML y cuatro shards completos con los mismos 500 IDs.
