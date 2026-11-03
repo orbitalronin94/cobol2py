@@ -4408,7 +4408,7 @@ class InspectReplacingTests(unittest.TestCase):
         }
         lines = cobol2py.translate_statement(statement, set(), variables)
         namespace = {"ws_text": "AABAA"}
-        exec("\\n".join(lines or []), namespace)
+        exec("\n".join(lines or []), namespace)
         return namespace["ws_text"], lines
 
     def test_inspect_replacing_all_replaces_every_occurrence(self):
