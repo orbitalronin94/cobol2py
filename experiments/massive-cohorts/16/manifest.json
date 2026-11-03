@@ -112,7 +112,7 @@
     },
     {
       "id": "C004",
-      "status": "tests_green_benchmark_in_progress",
+      "status": "tests_green_benchmark_250_pairwise_required",
       "branch": "experiment-massive-16/string-zeroes-delimiter",
       "hypothesis": "Correct STRING DELIMITED BY ZEROES so it recognizes the ZEROES spelling and terminates on the COBOL character '0', not NUL.",
       "patch_sha": "8f76e2bd5f3a47b05104b2f8414cc963a3a6bad7",
@@ -126,13 +126,18 @@
         "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41696952737"
       },
       "benchmark": {
-        "tested_so_far": 375,
-        "shard_scores": {
-          "holdout_0": 61,
-          "holdout_1": 52,
-          "holdout_3": 70
-        },
-        "remaining_shards": 1,
+        "tested": 500,
+        "exact_matches": 250,
+        "rate_percent": 50,
+        "shard_scores": [
+          61,
+          52,
+          67,
+          70
+        ],
+        "historical_main_exact_matches": 250,
+        "same_run_main_comparison": "not_performed",
+        "qualification": "no raw-score improvement; zero regressions still unproven",
         "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41696952716"
       }
     },
@@ -169,7 +174,7 @@
     },
     {
       "id": "C006",
-      "status": "tests_in_progress_benchmark_in_progress",
+      "status": "tests_in_progress_benchmark_250_pairwise_required",
       "branch": "experiment-massive-16/arithmetic-reference-length",
       "hypothesis": "Translate arithmetic expressions in COBOL reference-modification lengths rather than treating the entire length as a single data-name.",
       "patch_sha": "278198b33b0b00d28bd60a626cbf1edc12ac87ad",
@@ -182,12 +187,18 @@
         "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41697233013"
       },
       "benchmark": {
-        "tested_so_far": 250,
-        "shard_scores": {
-          "holdout_0": 61,
-          "holdout_3": 70
-        },
-        "remaining_shards": 2,
+        "tested": 500,
+        "exact_matches": 250,
+        "rate_percent": 50,
+        "shard_scores": [
+          61,
+          67,
+          52,
+          70
+        ],
+        "historical_main_exact_matches": 250,
+        "same_run_main_comparison": "not_performed",
+        "qualification": "no raw-score improvement; zero regressions still unproven",
         "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41697232692"
       }
     },
