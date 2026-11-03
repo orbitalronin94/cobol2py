@@ -4446,4 +4446,4 @@ MAIN.
                     namespace["main"]()
             finally:
                 os.chdir(previous)
-        self.assertEqual(output.getvalue(), "00\\n10\\n46\\n", generated)
+        self.assertEqual(output.getvalue(), "00\n10\n46\n", generated)
