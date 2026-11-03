@@ -4276,3 +4276,67 @@ class ArithmeticEvaluateAndSubscriptRegressionTests(unittest.TestCase):
         upper = cobol2py.translate_expr("HIGH-VALUE + 2", variables)
         self.assertIn("+", lower)
         self.assertIn("+", upper)
+
+
+class CobolFileStatusGroupRuntimeTests(unittest.TestCase):
+    def test_group_file_status_is_preserved_and_invalid_read_sets_47(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+        import os
+        import tempfile
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. FILE-STATUS-GROUP.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT TEST-FILE ASSIGN TO "status-test.dat"
+        ORGANIZATION IS LINE SEQUENTIAL
+        FILE STATUS IS WS-STATUS.
+DATA DIVISION.
+FILE SECTION.
+FD TEST-FILE.
+01 TEST-RECORD PIC X(4).
+WORKING-STORAGE SECTION.
+01 WS-STATUS.
+   03 WS-STATUS-HI PIC X.
+   03 WS-STATUS-LO PIC X.
+PROCEDURE DIVISION.
+MAIN.
+    OPEN OUTPUT TEST-FILE.
+    DISPLAY WS-STATUS-HI WS-STATUS-LO.
+    READ TEST-FILE
+        AT END DISPLAY "AT-END"
+        NOT AT END DISPLAY "NOT-AT-END"
+    END-READ.
+    DISPLAY WS-STATUS-HI WS-STATUS-LO.
+    CLOSE TEST-FILE.
+    DISPLAY WS-STATUS-HI WS-STATUS-LO.
+    READ TEST-FILE
+        AT END DISPLAY "CLOSED-AT-END"
+        NOT AT END DISPLAY "CLOSED-NOT-AT-END"
+    END-READ.
+    DISPLAY WS-STATUS-HI WS-STATUS-LO.
+    STOP RUN.
+"""
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<file-status-group>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        previous = os.getcwd()
+        with tempfile.TemporaryDirectory() as directory:
+            try:
+                os.chdir(directory)
+                with redirect_stdout(output):
+                    namespace["_cobol_dispatch"]("MAIN")
+            finally:
+                os.chdir(previous)
+
+        self.assertEqual(output.getvalue(), "00\n47\n00\n47\n", generated)
+        self.assertEqual(
+            namespace["ws_status"],
+            {"ws_status_hi": "4", "ws_status_lo": "7"},
+        )
+        self.assertEqual(namespace["_cobol_open_modes"], {})
+
