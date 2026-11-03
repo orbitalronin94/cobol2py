@@ -5216,6 +5216,7 @@ def emit_python(prog: Program) -> str:
     lines.append("_cobol_file_specs = " + repr(runtime_file_specs))
     lines.append("_cobol_open_files = {}")
     lines.append("_cobol_open_modes = {}")
+    lines.append("_cobol_at_end = set()")
     lines.append("")
     lines.append("def _cobol_set_file_status(spec, status):")
     lines.append("    name = spec.get('status')")
