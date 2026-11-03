@@ -4399,3 +4399,25 @@ MAIN.
         )
         self.assertEqual(namespace["_cobol_open_modes"], {})
 
+
+
+class UnstringDelimiterCountInRegressionTests(unittest.TestCase):
+    def test_unstring_delimiter_in_and_count_in_single_receiver(self):
+        variables = {
+            "WS-SOURCE": cobol2py.CobolVar(level=1, name="WS-SOURCE", pic="X(12)"),
+            "WS-PART": cobol2py.CobolVar(level=1, name="WS-PART", pic="X(8)"),
+            "WS-DELIM": cobol2py.CobolVar(level=1, name="WS-DELIM", pic="X"),
+            "WS-COUNT": cobol2py.CobolVar(level=1, name="WS-COUNT", pic="99"),
+        }
+        statement = 'UNSTRING WS-SOURCE DELIMITED BY "," INTO WS-PART DELIMITER IN WS-DELIM COUNT IN WS-COUNT'
+        lines = cobol2py.translate_statement(statement, set(), variables)
+        namespace = {
+            "ws_source": "ALPHA,BETA    ",
+            "ws_part": "        ",
+            "ws_delim": " ",
+            "ws_count": 0,
+        }
+        exec("\n".join(lines or []), namespace)
+        self.assertEqual(namespace["ws_part"], "ALPHA   ")
+        self.assertEqual(namespace["ws_delim"], ",")
+        self.assertEqual(namespace["ws_count"], 5)
