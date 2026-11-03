@@ -38,6 +38,8 @@ concurrency:
 
 jobs:
   external-python:
+    # Candidate PRs are evaluated only by the holdout-only tournament; never run primary shards here.
+    if: github.event_name != 'pull_request' || !(startsWith(github.head_ref, 'experiment-v2/') || startsWith(github.head_ref, 'experiment-v3/'))
     strategy:
       fail-fast: false
       # Paired exact-match evaluation: both fixed 500-case halves run on the
