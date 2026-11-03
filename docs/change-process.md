@@ -22,10 +22,10 @@
 python -m unittest discover -s tests -v
 python -m py_compile cobol2py.py
 python cobol2py.py programa.cbl --strict
-python benchmarks/run_benchmark.py --translator cobol2py.py
+python benchmarks/run_external_corpus.py --translator cobol2py.py --target 500 --skip 500 --diagnostics
 ```
 
-El benchmark requiere GnuCOBOL y falla con código distinto de cero si alguna referencia no compila o el candidato no coincide exactamente. Usa `--report-only` solo para exploración. Revisa el informe caso por caso, no solo el porcentaje. En CI, consulta tanto el workflow de tests como el de benchmark diferencial.
+El benchmark externo requiere GnuCOBOL y el archivo X-COBOL v2; ejecútalo dentro del contenedor aislado definido por CI. La evaluación de promoción usa exclusivamente `--target 500 --skip 500`; no ejecutes ni combines la muestra primaria. El criterio oficial es stdout byte a byte y código de retorno idéntico. Revisa los informes JSON/Markdown y los diagnósticos por caso, no solo el porcentaje. La línea base vigente es 250/500 y la mejora mínima 251/500. El comparador curado de 105 fixtures es manual-only e histórico.
 
 ## Qué registrar en cada mejora
 
@@ -35,7 +35,7 @@ Para cada PR o cambio semántico importante, documentar:
 - **Comportamiento de referencia:** salida/código de retorno de GnuCOBOL o referencia documental cuando no sea viable.
 - **Cambio realizado:** regla nueva o corrección y fase afectada.
 - **Regresiones añadidas:** nombres de tests y/o IDs del benchmark.
-- **Resultados:** tests ejecutados y porcentaje del corpus, incluyendo el denominador.
+- **Resultados:** tests ejecutados y puntuación holdout-only (aciertos/500), URL del workflow y SHA exacto. No registrar primaria ni un total combinado.
 - **Riesgos y límites:** casos cercanos no cubiertos.
 - **Decisión afectada:** ID de `decisions.md`, si aplica.
 
@@ -65,3 +65,8 @@ No es necesario añadir un documento largo por cada cambio trivial. Los cambios 
 
 
 El benchmark debe producir informes aun cuando falle la ejecución de la referencia: verifica que compile, que termine dentro del timeout y que su salida/código de retorno puedan usarse como oráculo. No confundas un código de retorno COBOL distinto de cero con un fallo de infraestructura.
+
+
+## Torneo de hipótesis independientes
+
+Para cambios orientados a recuperar aciertos del corpus externo, consulta [el protocolo y las siete hipótesis](EXPERIMENT_TOURNAMENT_2026-11.md). Cada hipótesis debe partir de `main`, tener una rama/PR independiente, incluir regresiones mínimas y no modificar corpus, checksum ni métrica. El coordinador solo compara el SHA congelado de cada PR; no fusiona candidatas automáticamente.
