@@ -5292,6 +5292,7 @@ def emit_python(prog: Program) -> str:
     lines.append("        return False")
     lines.append("    raw = handle.readline()")
     lines.append("    if raw == '':")
+    lines.append("        _cobol_at_end.add(key)")
     lines.append("        _cobol_set_file_status(spec, '10')")
     lines.append("        return False")
     lines.append("    record_name = spec.get('record')")
