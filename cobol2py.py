@@ -5273,6 +5273,7 @@ def emit_python(prog: Program) -> str:
     lines.append("        raise SystemExit(1)")
     lines.append("    _cobol_open_files[key] = handle")
     lines.append("    _cobol_open_modes[key] = mode.upper()")
+    lines.append("    _cobol_at_end.discard(key)")
     lines.append("    _cobol_set_file_status(spec, '00')")
     lines.append("    return '00'")
     lines.append("")
