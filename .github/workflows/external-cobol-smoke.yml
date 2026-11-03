@@ -78,7 +78,7 @@ jobs:
             --workdir /workspace \
             cobol2py-external-benchmark \
             benchmarks/run_external_multilang.py \
-            --archive /input.zip --output /output --target 50 --skip 0
+            --archive /input.zip --output /output --target 50 --skip 500
       - name: Publish smoke benchmark report
         if: always()
         run: |
