@@ -18,14 +18,8 @@ on:
       - "benchmarks/run_external_corpus.py"
       - "benchmarks/Dockerfile.external"
       - ".github/workflows/external-python-benchmark.yml"
-  # PRs and manual dispatch both evaluate the same fixed 500-case corpus.
+  # Every run uses the same fixed 500-case evaluation sample.
   workflow_dispatch:
-    inputs:
-      target:
-        description: "Eligible COBOL programs per fixed evaluation run (500 recommended)"
-        required: true
-        default: "500"
-        type: string
 
 permissions:
   contents: read
@@ -37,7 +31,37 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  prepare-corpus:
+    # One download/checksum per workflow run; shards restore the verified archive.
+    if: github.event_name != 'pull_request' || !(startsWith(github.head_ref, 'experiment-v2/') || startsWith(github.head_ref, 'experiment-v3/') || startsWith(github.head_ref, 'experiment-v4/'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore pinned X-COBOL v2 archive cache
+        id: archive-cache
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ runner.temp }}/COBOL_Files.zip
+          key: x-cobol-v2-cbd974caed72b0836777dc2305928ed3
+      - name: Download and verify pinned X-COBOL v2 archive
+        shell: bash
+        run: |
+          archive="$RUNNER_TEMP/COBOL_Files.zip"
+          if [ ! -f "$archive" ]; then
+            curl --fail --location --retry 3 --retry-delay 2 \
+              "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" \
+              --output "$archive"
+          fi
+          echo "Archive size: $(du -h "$archive" | cut -f1)"
+          echo "cbd974caed72b0836777dc2305928ed3  $archive" | md5sum --check -
+      - name: Save verified corpus archive cache
+        if: steps.archive-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ runner.temp }}/COBOL_Files.zip
+          key: x-cobol-v2-cbd974caed72b0836777dc2305928ed3
+
   external-python:
+    needs: prepare-corpus
     # Candidate PRs are evaluated only by the holdout-only tournament; never run primary shards here.
     if: github.event_name != 'pull_request' || !(startsWith(github.head_ref, 'experiment-v2/') || startsWith(github.head_ref, 'experiment-v3/') || startsWith(github.head_ref, 'experiment-v4/'))
     strategy:
@@ -66,32 +90,13 @@ jobs:
           key: translation-cache-v1-${{ matrix.sample.name }}-${{ hashFiles('cobol2py.py', 'ronin/compiler_guided_repair.py') }}
           restore-keys: |
             translation-cache-v1-${{ matrix.sample.name }}-
-      - name: Restore pinned X-COBOL v2 archive cache
+      - name: Restore verified corpus archive prepared by coordinator
         id: archive-cache
         uses: actions/cache/restore@v5
         with:
           path: ${{ runner.temp }}/COBOL_Files.zip
           key: x-cobol-v2-cbd974caed72b0836777dc2305928ed3
 
-      - name: Download and verify pinned X-COBOL v2 archive
-        shell: bash
-        run: |
-          date +%s > "$RUNNER_TEMP/external-python-start-time"
-          archive="$RUNNER_TEMP/COBOL_Files.zip"
-          if [ ! -f "$archive" ]; then
-            curl --fail --location --retry 3 --retry-delay 2 \
-              "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" \
-              --output "$archive"
-          fi
-          echo "Archive size: $(du -h "$archive" | cut -f1)"
-          echo "cbd974caed72b0836777dc2305928ed3  $archive" | md5sum --check -
-
-      - name: Save verified corpus archive cache
-        if: steps.archive-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v5
-        with:
-          path: ${{ runner.temp }}/COBOL_Files.zip
-          key: x-cobol-v2-cbd974caed72b0836777dc2305928ed3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
