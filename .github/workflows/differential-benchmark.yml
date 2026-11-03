@@ -1,9 +1,7 @@
 name: differential-benchmark
 
 on:
-  push:
-    branches: [main]
-  pull_request:
+  # Historical curated-fixture comparator: manual only, not a candidate score.
   workflow_dispatch:
 
 permissions:

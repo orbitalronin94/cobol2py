@@ -11,6 +11,8 @@ Esta carpeta documenta el diseño actual, las decisiones técnicas, el alcance s
 - [Compatibilidad COBOL](compatibility.md): comportamientos implementados, verificación y limitaciones conocidas.
 - [Proceso de cambios](change-process.md): cómo proponer, medir y documentar mejoras.
 - [Plan técnico del benchmark externo](EXTERNAL_BENCHMARK_FAILURE_ANALYSIS.md): medición de referencia, distribución de fallos y prioridades para recuperar casos sin alterar la métrica.
+- [Torneo de siete hipótesis](EXPERIMENT_TOURNAMENT_2026-11.md): evidencia, alcance, aislamiento y criterios de aceptación de las siete líneas de mejora.
+- [Política holdout-only](HOLDOUT_ONLY_EVALUATION_POLICY.md): baseline 250/500, umbral 251/500 y evaluación de 500 casos sin muestra primaria.
 - [Notas de versión 0.1.0-rc1](release-notes-0.1.0-rc1.md): alcance, resultados medidos y limitaciones del candidato.
 - [Notas de hito 0.8 (borrador de ingeniería)](release-notes-0.8.0.md): esquema de informe v2, clasificación de diagnósticos, artefacto de CI y límites del hito; no representa una publicación etiquetada.
 - [Triage de diagnósticos de samples](pilot-diagnostics-baseline.md): clasificación por fuente de los 35 archivos que mantienen avisos en el piloto, con el falso positivo corregido y las limitaciones pendientes.

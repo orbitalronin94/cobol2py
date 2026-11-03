@@ -41,7 +41,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          candidates=$(gh api "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" --jq '[.[] | select(.base.ref == "main" and .draft == false and (.head.ref | test("^experiment(-v2|-v3)?/"))) | {name:(.head.ref | gsub("/"; "-")), branch:.head.ref, sha:.head.sha, pr:.number}] | unique_by(.branch)')
+          candidates=$(gh api "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" --jq '[.[] | select(.base.ref == "main" and .draft == false and (.head.ref | test("^experiment(-v2|-v3|-v4)?/"))) | {name:(.head.ref | gsub("/"; "-")), branch:.head.ref, sha:.head.sha, pr:.number}] | unique_by(.branch)')
           echo "candidates=$candidates" >> "$GITHUB_OUTPUT"
           echo "$candidates" | jq .
 

@@ -1,43 +1,48 @@
-# Decisión de diseño: evaluación iterativa con una sola mitad del corpus
+# Política de evaluación externa de candidatas Python
 
-**Fecha:** 2026-10-31  
-**Estado:** propuesta en PR; no cambiar `main` hasta revisar y validar los checks.
+**Fecha de actualización:** 2026-11-03  
+**Estado:** vigente para el torneo de hipótesis COBOL → Python.
 
 ## Decisión
 
-A partir de esta iteración, los workflows de evaluación de candidatos ejecutan únicamente los 500 programas de la segunda mitad determinista de X-COBOL v2 (`skip=500`, `target=500`). La mitad primaria (`skip=0`) deja de ejecutarse en el ciclo rutinario de optimización.
+La evaluación iterativa usa exclusivamente la segunda mitad fija de X-COBOL v2: `skip=500`, `target=500`. La muestra primaria (`skip=0`, 500 casos) queda fuera de los workflows de candidatas y no se utiliza para ranking, promoción ni cálculo combinado.
 
-Motivos:
-- reducir aproximadamente a la mitad el coste de ejecución del benchmark externo;
-- evitar que el ciclo de trabajo siga optimizando contra dos subconjuntos del mismo corpus;
-- mantener una selección de 500 casos y un criterio exacto reproducibles entre candidatos.
+La muestra se divide en cuatro shards deterministas de 125 casos (`skip=500, 625, 750, 875`). Los cuatro deben terminar correctamente y sumar exactamente 500 casos.
 
-## Línea base y gate
+## Baseline y criterio de promoción
 
-- Referencia histórica completa de la PR #177: **480/1.000**, compuesta por 244/500 en la primaria y 236/500 en la segunda mitad.
-- Línea base de evaluación iterativa: **236/500 (47,20 %)**.
-- Un candidato solo supera el gate si obtiene **más de 236/500** en la mitad fija, con el checksum del archivo fuente verificado y los 500 casos ejecutables medidos.
-- No se permite cambiar el corpus, el orden determinista, el denominador, las exclusiones, los límites de ejecución, ni el criterio de coincidencia (stdout byte a byte y código de retorno).
+- **Baseline de main:** 250/500 (50,0 %).
+- **Umbral mínimo de mejora:** 251/500 (50,2 %).
+- **Fuente:** benchmark externo completo run [#538](https://github.com/orbitalronin94/cobol2py/actions/runs/41602383991), PR #284, con SHA integrado registrado en [`benchmarks/holdout-record.json`](../benchmarks/holdout-record.json).
+- **Condiciones obligatorias:** checksum de X-COBOL v2 verificado, muestra completa 500/500, suite completa de tests verde y resultado asociado al SHA exacto de la PR.
+- No se acepta como victoria un shard aislado, una muestra incompleta, un score de otro SHA o una suma de ejecuciones distintas.
 
-## Precisión metodológica: no llamarlo holdout intacto
+## Métrica
 
-El término *holdout* describe una muestra reservada que no se utiliza para ajustar decisiones. Si el equipo observa la puntuación de estos 500 programas en cada iteración y adapta el traductor a sus fallos, la muestra deja de ser independiente para medir generalización. En esta política se denomina **corpus fijo de evaluación**; conservar el nombre histórico de la mitad del dataset no la convierte en un holdout estadístico intacto.
+Un caso pasa únicamente cuando el flujo de bytes de stdout coincide exactamente con GnuCOBOL y el código de retorno también es idéntico. No se normalizan espacios, saltos de línea, codificación ni códigos de salida. No se cambia el orden determinista, el criterio de elegibilidad, el denominador, los timeouts ni las exclusiones para elevar el porcentaje.
 
-Por tanto:
-- la puntuación de 500 casos sirve para comparar candidatos en una evaluación fija;
-- no debe presentarse como prueba de generalización a programas no observados;
-- el objetivo de release histórico de 75 % en ambas mitades no puede declararse satisfecho a partir de esta evaluación única;
-- cualquier anuncio debe identificar el tamaño de muestra y la limitación anterior.
+Los fallos de compilación de referencia y los timeouts del programa de referencia se informan por separado; no se convierten silenciosamente en aciertos o fallos del traductor.
 
-## Coste y trade-off aceptado
+## Terminología y límites
 
-La ejecución normal reduce de dos mitades de 500 a una mitad de 500. Se acepta perder la señal de regresión rutinaria en la primaria a cambio de menor coste; no se falsea el denominador ni se suman puntuaciones de ejecuciones distintas. Si una futura decisión de release necesita confirmar generalización, debe especificar por separado el presupuesto y la política de validación antes de ejecutar una muestra adicional.
+Aunque el repositorio conserve el nombre histórico *holdout*, esta muestra se observa repetidamente durante el desarrollo. Por tanto, es una **muestra fija de evaluación**, no un holdout estadístico intacto. No permite estimar sin sesgo la generalización a fuentes COBOL no observadas ni demuestra equivalencia de producción.
 
-## Evidencia exigida por PR
+La muestra primaria de 500 no se ejecuta en el ciclo rutinario. No se publicará una puntuación combinada 1.000/1.000 como criterio vigente. El benchmark diferencial curado de 105 fixtures se conserva únicamente como herramienta manual histórica; no bloquea PRs ni participa en el ranking.
 
-1. SHA exacto evaluado y artefacto JSON/Markdown del corpus fijo.
-2. Verificación del checksum del archivo X-COBOL v2.
-3. 500 casos medidos y conteo de coincidencias exactas.
-4. Delta respecto a 236/500.
-5. Tests unitarios/regresión del cambio.
-6. Ninguna afirmación de mejora hasta que el artefacto de esa ejecución confirme la puntuación.
+## Workflows canónicos
+
+- `seven-candidate-tournament.yml`: descubre PRs candidatas no draft contra `main`, congela sus SHA, ejecuta suite completa y evalúa el corpus fijo.
+- `external-python-benchmark.yml`: evaluación externa Python holdout-only en cuatro shards; no ejecuta primaria para ramas `experiment-v4/`.
+- `differential-benchmark.yml`: manual-only para análisis histórico de las fixtures versionadas.
+- `tests.yml`: mantiene unittest, compilación y smoke/differential checks de fixtures pequeñas; no ejecuta el barrido de 105 fixtures.
+
+## Evidencia que debe adjuntar cada PR
+
+1. SHA exacto evaluado y URL del workflow.
+2. Los cuatro shards completados, con 500/500 casos medidos.
+3. JSON/Markdown del informe y checksum del archivo externo verificado.
+4. Aciertos/500 y delta frente a 250/500.
+5. Resultado de la suite completa y regresiones enfocadas.
+6. Diagnósticos de fallos sin redistribuir el dataset de terceros.
+
+No hay merge automático. Un resultado de 251/500 es una condición necesaria, no suficiente: también se revisan regresiones, calidad de la implementación y reproducibilidad.

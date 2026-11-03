@@ -424,3 +424,35 @@ The PR test run #41599425917 failed because web/index.html did not contain the c
 ### Promotion policy
 
 Do not update benchmarks/holdout_best.json or merge this candidate on the basis of the 49.7% observation. First validate the WRITE-mode correction, synchronize the standalone HTML, obtain exact-match primary and holdout comparisons against the same pinned main SHA, and repeat the candidate run to check stability. The 75% target remains 750/1000 exact matches.
+
+
+## 8. Informe vigente para el torneo de siete hipótesis (2026-11-03)
+
+La línea base de main para el ranking iterativo es **250/500 (50,0 %)**, registrada en `benchmarks/holdout-record.json` y validada en el benchmark externo [run #538](https://github.com/orbitalronin94/cobol2py/actions/runs/41602383991). El último informe de fallos analizado corresponde a una candidata posterior y contiene 500 casos:
+
+| Resultado | Casos |
+|---|---:|
+| Coincidencia exacta | 250 |
+| stdout o return code diferente | 169 |
+| Error de sintaxis Python generado | 39 |
+| Timeout del programa traducido | 38 |
+| Salida de traducción por encima del límite de captura | 3 |
+| Timeout del traductor | 2 |
+
+Excepciones Python observadas: `ValueError` 18, `NameError` 18, `TypeError` 15, `KeyError` 10, `UnboundLocalError` 4, `ZeroDivisionError` 3, `AttributeError` 2 e `IndexError` 2. Las excepciones son diagnósticos secundarios y pueden solaparse con mismatches.
+
+### Priorización y límites de evidencia
+
+1. **Emisión Python:** investigar los 39 errores sintácticos y agrupar por línea generada/causa antes de cambiar el emisor.
+2. **Símbolos y registros:** rastrear `NameError`/`KeyError` desde la declaración COBOL hasta el símbolo emitido; no añadir variables ficticias.
+3. **PIC y conversiones:** reproducir `ValueError`/`TypeError` y separar parsing, operación y asignación al receptor.
+4. **OCCURS:** revisar índices, rutas anidadas y diferencias lista/diccionario.
+5. **MOVE de grupos:** comprobar si el modelo de diccionarios pierde el layout de almacenamiento, padding u overlays.
+6. **INSPECT/STRING/UNSTRING:** no atribuir mismatches sin inspeccionar las fuentes; los issues de estas sentencias son pistas para diseñar fixtures, no prueba de que expliquen los 169.
+7. **PERFORM y terminación:** los 38 timeouts justifican investigar control de flujo, pero primero hay que descartar entrada ausente, salida excesiva y bucles propios de cada programa.
+
+La especificación de alcance, fixtures esperadas y gate está en [EXPERIMENT_TOURNAMENT_2026-11.md](EXPERIMENT_TOURNAMENT_2026-11.md). Las siete rutas son hipótesis independientes; ninguna categoría de fallo se asigna a un verbo COBOL sin reproducir el caso.
+
+### Criterio de medición vigente
+
+Solo se utiliza la muestra fija de 500 casos con `skip=500`. El baseline es 250/500 y el mínimo para superar es 251/500. Se exigen cuatro shards completos, checksum verificado, tests completos y SHA exacto. La muestra primaria y el benchmark curado de 105 casos no forman parte del ranking. Esta muestra fija se observa repetidamente y no debe describirse como holdout estadístico intacto.

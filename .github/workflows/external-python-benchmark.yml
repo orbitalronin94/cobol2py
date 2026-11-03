@@ -22,7 +22,7 @@ on:
   workflow_dispatch:
     inputs:
       target:
-        description: "Eligible COBOL programs per half (full benchmark uses 500)"
+        description: "Eligible COBOL programs per fixed evaluation run (500 recommended)"
         required: true
         default: "500"
         type: string
@@ -39,18 +39,14 @@ concurrency:
 jobs:
   external-python:
     # Candidate PRs are evaluated only by the holdout-only tournament; never run primary shards here.
-    if: github.event_name != 'pull_request' || !(startsWith(github.head_ref, 'experiment-v2/') || startsWith(github.head_ref, 'experiment-v3/'))
+    if: github.event_name != 'pull_request' || !(startsWith(github.head_ref, 'experiment-v2/') || startsWith(github.head_ref, 'experiment-v3/') || startsWith(github.head_ref, 'experiment-v4/'))
     strategy:
       fail-fast: false
-      # Paired exact-match evaluation: both fixed 500-case halves run on the
-      # same candidate SHA and against the same main-branch translator baseline.
-      # The corpus and byte-for-byte stdout/return-code metric are unchanged.
+      # One fixed evaluation sample only: 500 cases, four bounded shards.
+      # Primary-sample runs are intentionally excluded from candidate ranking.
+      max-parallel: 4
       matrix:
         sample:
-          - { name: primary-0, skip: 0, target: 125 }
-          - { name: primary-1, skip: 125, target: 125 }
-          - { name: primary-2, skip: 250, target: 125 }
-          - { name: primary-3, skip: 375, target: 125 }
           - { name: holdout-0, skip: 500, target: 125 }
           - { name: holdout-1, skip: 625, target: 125 }
           - { name: holdout-2, skip: 750, target: 125 }
@@ -102,22 +98,14 @@ jobs:
       - name: Build isolated benchmark image with layer cache
         env:
           CACHE_SCOPE: external-benchmark-${{ github.workflow }}-${{ matrix.sample.name }}
-          CACHE_PEER_SCOPE: external-benchmark-${{ github.workflow }}-${{ startsWith(matrix.sample.name, 'primary') && 'holdout-0' || 'primary-0' }}
-          CACHE_CROSS_WORKFLOW_SCOPE: external-benchmark-external-cobol-corpus-${{ matrix.sample.name }}
+          CACHE_CROSS_WORKFLOW_SCOPE: external-benchmark-external-cobol-corpus-holdout
         run: |
           docker buildx build --load \
             --cache-from "type=gha,scope=$CACHE_SCOPE" \
-            --cache-from "type=gha,scope=$CACHE_PEER_SCOPE" \
-            --cache-from "type=gha,scope=$CACHE_CROSS_WORKFLOW_SCOPE" \
+              --cache-from "type=gha,scope=$CACHE_CROSS_WORKFLOW_SCOPE" \
             --cache-to "type=gha,mode=max,scope=$CACHE_SCOPE" \
             -f benchmarks/Dockerfile.external \
             -t cobol2py-external-benchmark .
-      - name: Capture current main translator for timing comparison
-        shell: bash
-        run: |
-          git fetch --no-tags origin main
-          git show origin/main:cobol2py.py > "$RUNNER_TEMP/current-cobol2py.py"
-          test -s "$RUNNER_TEMP/current-cobol2py.py"
       - name: Run the reference-comparable Python benchmark
         env:
           TARGET: ${{ matrix.sample.target }}
@@ -147,8 +135,7 @@ jobs:
             --mount "type=bind,source=$RUNNER_TEMP/COBOL_Files.zip,target=/input.zip,readonly" \
             --mount "type=bind,source=$OUTPUT_DIR,target=/output" \
             --mount "type=bind,source=$RUNNER_TEMP/translation-cache,target=/cache" \
-            --mount "type=bind,source=$RUNNER_TEMP/current-cobol2py.py,target=/baseline/cobol2py.py,readonly" \
-            --workdir /workspace \
+              --workdir /workspace \
             cobol2py-external-benchmark \
             benchmarks/run_external_corpus.py \
             --translator /workspace/cobol2py.py \
@@ -157,7 +144,6 @@ jobs:
             --target "$TARGET" \
             --skip "$SKIP" \
             --cache-path /cache/translation-cache.sqlite3 \
-            --baseline-translator /baseline/cobol2py.py \
             --diagnostics
           status=$?
           docker rm "$CONTAINER_NAME" >/dev/null 2>&1
