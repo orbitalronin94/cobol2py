@@ -3524,6 +3524,10 @@ def translate_statement(
     if write_match:
         record_name, from_name = write_match.groups()
         return [f"_cobol_write({record_name.upper()!r}, {normalize_name(from_name) if from_name else None!r})"]
+    rewrite_match = re.fullmatch(r"REWRITE\s+([A-Za-z0-9_-]+)(?:\s+FROM\s+([A-Za-z0-9_-]+))?", s, re.IGNORECASE)
+    if rewrite_match:
+        record_name, from_name = rewrite_match.groups()
+        return [f"_cobol_rewrite({record_name.upper()!r}, {normalize_name(from_name) if from_name else None!r})"]
 
 
 
@@ -5216,6 +5220,7 @@ def emit_python(prog: Program) -> str:
     lines.append("_cobol_file_specs = " + repr(runtime_file_specs))
     lines.append("_cobol_open_files = {}")
     lines.append("_cobol_open_modes = {}")
+    lines.append("_cobol_last_read_offsets = {}")
     lines.append("")
     lines.append("def _cobol_set_file_status(spec, status):")
     lines.append("    name = spec.get('status')")
@@ -5285,8 +5290,10 @@ def emit_python(prog: Program) -> str:
     lines.append("            _cobol_set_file_status(spec, '47')")
     lines.append("            return None")
     lines.append("        raise SystemExit(1)")
+    lines.append("    read_offset = handle.tell()")
     lines.append("    raw = handle.readline()")
     lines.append("    if raw == '':")
+    lines.append("        _cobol_last_read_offsets.pop(key, None)")
     lines.append("        _cobol_set_file_status(spec, '10')")
     lines.append("        return False")
     lines.append("    record_name = spec.get('record')")
@@ -5322,6 +5329,7 @@ def emit_python(prog: Program) -> str:
     lines.append("        globals()[spec['record_python_name']] = record_value")
     lines.append("        if into:")
     lines.append("            globals()[into] = __import__('copy').deepcopy(record_value)")
+    lines.append("    _cobol_last_read_offsets[key] = read_offset")
     lines.append("    _cobol_set_file_status(spec, '00')")
     lines.append("    return True")
     lines.append("")
