@@ -81,11 +81,15 @@
     },
     {
       "id": "C007",
-      "status": "unassigned",
-      "branch": null,
-      "hypothesis": null,
-      "patch_sha": null,
-      "evidence": null
+      "status": "pending_ci",
+      "branch": "experiment-massive-16/split-level-declaration",
+      "hypothesis": "Parse COBOL data declarations whose level number (such as 01) is placed on its own physical line and whose data-name/PIC clause follows on the next line.",
+      "patch_sha": "e9a728be2c56ea5b50c63f9f48e3790342650aba",
+      "evidence": "An existing isolated parser branch contains the pending-level implementation; current main only accepts complete declarations matching RE_VAR on a single line.",
+      "tests": [
+        "test_level_number_on_own_line_applies_to_following_data_name"
+      ],
+      "pr": 330
     },
     {
       "id": "C008",
