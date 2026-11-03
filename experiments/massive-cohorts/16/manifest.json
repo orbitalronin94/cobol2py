@@ -45,11 +45,15 @@
     },
     {
       "id": "C004",
-      "status": "unassigned",
-      "branch": null,
-      "hypothesis": null,
-      "patch_sha": null,
-      "evidence": null
+      "status": "pending_ci",
+      "branch": "experiment-massive-16/string-zeroes-delimiter",
+      "hypothesis": "Correct STRING DELIMITED BY ZEROES so it recognizes the ZEROES spelling and terminates on the COBOL character '0', not NUL.",
+      "patch_sha": "8f76e2bd5f3a47b05104b2f8414cc963a3a6bad7",
+      "evidence": "An existing isolated branch contains a minimal regression for WS-SOURCE='A0B     '; the main translator currently maps ZERO/ZEROS to NUL and does not accept ZEROES in the delimiter token regex.",
+      "tests": [
+        "test_string_delimited_by_zeroes_stops_at_character_zero"
+      ],
+      "pr": 327
     },
     {
       "id": "C005",
