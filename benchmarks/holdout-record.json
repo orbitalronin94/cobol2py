@@ -2,9 +2,12 @@
   "benchmark": "external-cobol-corpus",
   "sample": "holdout",
   "tested": 500,
-  "passed": 240,
-  "percentage": 48,
-  "sha": "historical-baseline",
-  "updated_at": "2026-11-02",
-  "note": "Only a complete, SHA-matched, archive-verified 500-program holdout may update this record."
+  "passed": 250,
+  "percentage": 50,
+  "baseline_main_sha": "a3563994cc41749f0e0c9555099e52c974aa6a26",
+  "source_run": 41602383991,
+  "source_pr": 284,
+  "source_commit": "87eaba8043d6a7280db1902ad36ca41fb2a3885d",
+  "updated_at": "2026-11-03",
+  "note": "Main holdout baseline: 250/500 from paired external benchmark run #538 (PR #284). Candidate promotion must beat 250/500 on the unchanged holdout IDs; primary sample is excluded."
 }
