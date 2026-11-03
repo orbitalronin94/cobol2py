@@ -7,11 +7,17 @@
   "candidates": [
     {
       "id": "C001",
-      "status": "unassigned",
-      "branch": null,
-      "hypothesis": null,
-      "patch_sha": null,
-      "evidence": null
+      "status": "pending_ci",
+      "branch": "experiment-massive-16/optional-file-open-verified",
+      "hypothesis": "Implement SELECT OPTIONAL semantics for missing sequential files: status 05 and correct creation/EOF behavior; non-optional OPEN EXTEND must not silently create a missing file.",
+      "patch_sha": "10557dca587a9100d64693f7eefc602337419de9",
+      "evidence": "docs/EXTERNAL_BENCHMARK_FAILURE_ANALYSIS.md: at least 234 cases exposed to file-I/O omissions; GnuCOBOL documentation states non-OPTIONAL INPUT/I-O/EXTEND missing file yields status 35, OPTIONAL yields status 05 and OPTIONAL EXTEND/I-O creates the file.",
+      "tests": [
+        "test_extend_nonoptional_missing_file_returns_35_without_creating_file",
+        "test_optional_extend_missing_file_creates_it_and_returns_05",
+        "test_optional_input_missing_file_returns_05_then_read_sets_eof_10"
+      ],
+      "pr": 322
     },
     {
       "id": "C002",
