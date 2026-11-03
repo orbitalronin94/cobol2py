@@ -15,7 +15,7 @@ Open-source availability of a dataset does not automatically grant the same lice
 
 ## Run it
 
-Candidate promotion uses only the fixed second half (`skip=500`, `target=500`) through `external-python-benchmark.yml` and `seven-candidate-tournament.yml`. Four shards of 125 cases are run; the primary half is not part of the iterative score. The `external-cobol-corpus` workflow is a separate optional multi-backend diagnostic and is not the promotion score. See [the current evaluation policy](../docs/HOLDOUT_ONLY_EVALUATION_POLICY.md). The workflow downloads an external archive and runs programs from third-party repositories.
+Candidate promotion uses only the fixed second half (`skip=500`, `target=500`) through `external-python-benchmark.yml` and `seven-candidate-tournament.yml`. Four shards of 125 cases are run; the primary half is not part of the iterative score. The `external-cobol-corpus` workflow is manual-only, a separate optional multi-backend diagnostic, and is not the promotion score. See [the current evaluation policy](../docs/HOLDOUT_ONLY_EVALUATION_POLICY.md). The workflow downloads an external archive and runs programs from third-party repositories.
 
 The job builds a small Docker image with Python and GnuCOBOL, then runs the test process with:
 - network disabled;
