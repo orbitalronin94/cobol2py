@@ -3816,6 +3816,27 @@ def translate_statement(
             else:
                 initialize_group(root, target_expr, set())
         return assignments or [f"# INITIALIZE sin campos traducibles: {s}"]
+    # INSPECT REPLACING supports ALL and FIRST literal substitutions.
+    replacing_match = re.fullmatch(
+        rf"INSPECT\\s+({DATA_REF_PATTERN})\\s+REPLACING\\s+(ALL|FIRST)\\s+(.+?)\\s+BY\\s+(.+?)(?:\\s+END-INSPECT)?",
+        s,
+        re.IGNORECASE,
+    )
+    if replacing_match:
+        target, mode, old_operand, new_operand = (
+            part.strip() for part in replacing_match.groups()
+        )
+        variable_map = variables or {}
+        source_expr = translate_literal(target, variable_map)
+        old_expr = translate_literal(old_operand, variable_map)
+        new_expr = translate_literal(new_operand, variable_map)
+        count_arg = ", 1" if mode.upper() == "FIRST" else ""
+        replacement_expr = (
+            f"(str({source_expr}).replace(str({old_expr}), str({new_expr}){count_arg}) "
+            f"if str({old_expr}) else str({source_expr}))"
+        )
+        return [emit_assignment(target, replacement_expr, variable_map)]
+
     # INSPECT CONVERTING performs a character-position mapping on the
     # receiving data item. Reverse construction makes the first occurrence
     # of a repeated source character win, rather than Python dict's last one.
