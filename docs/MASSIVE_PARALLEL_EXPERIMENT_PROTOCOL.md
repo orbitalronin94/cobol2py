@@ -1,7 +1,7 @@
 # Protocolo de experimentación masiva en paralelo contra main
 
 **Fecha:** 2026-11-03  
-**Estado:** propuesta operativa; no autoriza merges automáticos ni afirma que el torneo masivo ya esté implementado.
+**Estado:** protocolo y orquestación preparados en la PR #315; requieren merge para activarse. Las 212 candidatas funcionales aún deben crearse y validarse. No autoriza merges automáticos.
 
 ## 1. Objetivo
 
@@ -240,3 +240,21 @@ El programa se considera útil cuando demuestra, en rondas repetibles, que la ex
 - [Análisis de fallos del benchmark externo](EXTERNAL_BENCHMARK_FAILURE_ANALYSIS.md)
 - [Registro de baseline](../benchmarks/holdout-record.json)
 - [Workflow de torneo](../.github/workflows/seven-candidate-tournament.yml)
+
+
+## 13. Orquestación disponible en la PR #315
+
+La PR #315 también adapta el workflow `.github/workflows/seven-candidate-tournament.yml` para admitir lotes manuales de **16, 32, 64 o 100 candidatas**. El nombre histórico del archivo se conserva para no romper referencias existentes; el coordinador sigue ejecutándose una sola vez por despacho o push relevante a main.
+
+Tras integrar la PR #315 en `main`, se podrá lanzar el workflow desde GitHub Actions con `workflow_dispatch` y elegir `cohort_size`. Para cada tamaño, el descubrimiento exige exactamente ese número de PRs abiertas, no draft, dirigidas a main y con ramas bajo el prefijo correspondiente:
+
+| Lote | Prefijo obligatorio de ramas candidatas | PRs candidatas requeridas |
+|---:|---|---:|
+| 16 | `experiment-massive-16/` | 16 |
+| 32 | `experiment-massive-32/` | 32 |
+| 64 | `experiment-massive-64/` | 64 |
+| 100 | `experiment-massive-100/` | 100 |
+
+Cada despacho añade una ejecución de `main` como baseline en la misma matriz. Las candidatas se congelan por SHA, pasan por suite completa y benchmark externo, y se comparan por los mismos IDs. La concurrencia de pruebas unitarias se limita a 8 jobs y la del benchmark a 4 jobs para evitar lanzar 100 ejecuciones simultáneas sin control. El informe agregado se añade al resumen de Actions y, si se ha producido un ranking verificable, el job agregador lo incorpora al final de este documento mediante un commit de `github-actions[bot]` en main. El job agregador es el único que recibe permiso `contents: write`; los jobs que ejecutan candidatas no reciben ese permiso.
+
+**Importante:** el workflow no genera código COBOL/Python aleatorio ni inventa candidatas. Cada una de las 212 PRs debe contener una mutación funcional, reproducible y revisable. Si no existe exactamente el número solicitado de PRs candidatas para un lote, el despacho falla de forma explícita en descubrimiento y no presenta un resultado parcial como torneo completo. La PR #315 contiene el protocolo y esta orquestación; todavía no contiene las 212 implementaciones candidatas ni activa los despachos hasta que se integre.
