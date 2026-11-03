@@ -4445,5 +4445,5 @@ MAIN.
                 contents = Path("reopen-status.dat").read_text(encoding="latin-1")
             finally:
                 os.chdir(previous)
-        self.assertEqual(output.getvalue(), "41\\n", generated)
-        self.assertEqual(contents, "DATA\\n", generated)
+        self.assertEqual(output.getvalue(), "41\n", generated)
+        self.assertEqual(contents, "DATA\n", generated)
