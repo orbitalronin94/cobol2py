@@ -206,11 +206,11 @@ jobs:
           for case_id in sorted(set(regressions + improvements)):
               print(f"- {case_id}: main={cases['baseline'][case_id]}, candidate={cases['candidate'][case_id]}")
           with open(__import__("os").environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
-              summary.write("\\n" + "\\n".join([
+              summary.write("\n" + "\n".join([
                   "## Paired 500-case result",
                   f"- main: **{baseline_passed}/500 ({baseline_passed / 5:.2f}%)**",
                   f"- candidate: **{candidate_passed}/500 ({candidate_passed / 5:.2f}%)**",
                   f"- delta: **{delta:+d} cases ({delta / 5:+.2f} pp)**",
                   f"- case-level regressions: **{len(regressions)}**; improvements: **{len(improvements)}**",
-              ]) + "\\n")
+              ]) + "\n")
           PY
