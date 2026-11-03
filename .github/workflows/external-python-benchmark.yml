@@ -18,6 +18,7 @@ on:
       - "benchmarks/run_external_corpus.py"
       - "benchmarks/Dockerfile.external"
       - ".github/workflows/external-python-benchmark.yml"
+  # PRs and manual dispatch both evaluate the same fixed 500-case corpus.
   workflow_dispatch:
     inputs:
       target:
