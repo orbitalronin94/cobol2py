@@ -1,0 +1,155 @@
+name: main-vs-pr-holdout-500
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_ref:
+        description: "Exact candidate branch, tag, or SHA to measure"
+        required: true
+        default: "1074021cf155752356423e736ce6b9b8d0b7d087"
+        type: string
+      baseline_ref:
+        description: "Main baseline ref"
+        required: true
+        default: "main"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: main-vs-pr-holdout-500
+  cancel-in-progress: false
+
+jobs:
+  compare:
+    name: "Paired 125-case shard ${{ matrix.sample.name }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        sample:
+          - { name: holdout-0, skip: 500, target: 125 }
+          - { name: holdout-1, skip: 625, target: 125 }
+          - { name: holdout-2, skip: 750, target: 125 }
+          - { name: holdout-3, skip: 875, target: 125 }
+
+    steps:
+      - name: Validate refs and protocol gate
+        env:
+          CANDIDATE_REF: ${{ inputs.candidate_ref }}
+          BASELINE_REF: ${{ inputs.baseline_ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CANDIDATE_REF"
+          test -n "$BASELINE_REF"
+          if [ "$CANDIDATE_REF" = "$BASELINE_REF" ]; then
+            echo "::error::Candidate and baseline refs must differ."
+            exit 1
+          fi
+          echo "Candidate ref: $CANDIDATE_REF"
+          echo "Baseline ref: $BASELINE_REF"
+          echo "::notice::Dispatch only after G-01 through G-09 are approved and the candidate SHA is frozen."
+
+      - name: Checkout candidate
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.candidate_ref }}
+          path: candidate
+
+      - name: Checkout main baseline
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.baseline_ref }}
+          path: baseline
+
+      - name: Record exact revisions
+        shell: bash
+        run: |
+          {
+            echo "## Compared revisions"
+            echo "- Candidate: `$(git -C candidate rev-parse HEAD)`"
+            echo "- Baseline: `$(git -C baseline rev-parse HEAD)`"
+            echo "- Dataset: X-COBOL v2"
+            echo "- Selection: skip=${{ matrix.sample.skip }}, target=${{ matrix.sample.target }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Download and verify pinned X-COBOL v2 archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-delay 2 \
+            "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" \
+            --output "$RUNNER_TEMP/COBOL_Files.zip"
+          echo "cbd974caed72b0836777dc2305928ed3  $RUNNER_TEMP/COBOL_Files.zip" | md5sum --check -
+
+      - name: Build isolated benchmark image
+        run: |
+          docker build --pull -f candidate/benchmarks/Dockerfile.external \
+            -t cobol2py-main-vs-pr-benchmark candidate
+
+      - name: Run baseline and candidate on the identical shard
+        env:
+          SKIP: ${{ matrix.sample.skip }}
+          TARGET: ${{ matrix.sample.target }}
+          CONTAINER_NAME: main-vs-pr-${{ github.run_id }}-${{ matrix.sample.name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/paired-reports"
+          mkdir -p "$OUT/baseline" "$OUT/candidate"
+          chmod 0777 "$OUT" "$OUT/baseline" "$OUT/candidate"
+          docker run --name "$CONTAINER_NAME" \
+            --network none --cap-drop=ALL --security-opt=no-new-privileges \
+            --pids-limit=128 --memory=4g --cpus=2 --read-only \
+            --tmpfs /tmp:rw,exec,nosuid,nodev,size=3g \
+            --mount "type=bind,source=$GITHUB_WORKSPACE/candidate,target=/candidate,readonly" \
+            --mount "type=bind,source=$GITHUB_WORKSPACE/baseline,target=/baseline,readonly" \
+            --mount "type=bind,source=$RUNNER_TEMP/COBOL_Files.zip,target=/input.zip,readonly" \
+            --mount "type=bind,source=$OUT,target=/output" \
+            --workdir /candidate \
+            cobol2py-main-vs-pr-benchmark \
+            /baseline/benchmarks/run_external_corpus.py \
+            --translator /baseline/cobol2py.py --archive /input.zip \
+            --output "/output/baseline/${{ matrix.sample.name }}" \
+            --target "$TARGET" --skip "$SKIP"
+          docker rm "$CONTAINER_NAME" >/dev/null
+          docker run --name "$CONTAINER_NAME" \
+            --network none --cap-drop=ALL --security-opt=no-new-privileges \
+            --pids-limit=128 --memory=4g --cpus=2 --read-only \
+            --tmpfs /tmp:rw,exec,nosuid,nodev,size=3g \
+            --mount "type=bind,source=$GITHUB_WORKSPACE/candidate,target=/candidate,readonly" \
+            --mount "type=bind,source=$GITHUB_WORKSPACE/baseline,target=/baseline,readonly" \
+            --mount "type=bind,source=$RUNNER_TEMP/COBOL_Files.zip,target=/input.zip,readonly" \
+            --mount "type=bind,source=$OUT,target=/output" \
+            --workdir /candidate \
+            cobol2py-main-vs-pr-benchmark \
+            /candidate/benchmarks/run_external_corpus.py \
+            --translator /candidate/cobol2py.py --archive /input.zip \
+            --output "/output/candidate/${{ matrix.sample.name }}" \
+            --target "$TARGET" --skip "$SKIP"
+          docker rm "$CONTAINER_NAME" >/dev/null
+
+      - name: Publish paired shard summary
+        if: always()
+        shell: bash
+        run: |
+          OUT="$RUNNER_TEMP/paired-reports"
+          for variant in baseline candidate; do
+            report="$OUT/$variant/${{ matrix.sample.name }}/external-corpus-report.md"
+            echo "## $variant — ${{ matrix.sample.name }}" >> "$GITHUB_STEP_SUMMARY"
+            if [ -f "$report" ]; then cat "$report" >> "$GITHUB_STEP_SUMMARY"; else echo "No report produced." >> "$GITHUB_STEP_SUMMARY"; fi
+          done
+
+      - name: Upload paired reports
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: main-vs-pr-${{ matrix.sample.name }}-${{ github.run_number }}
+          path: ${{ runner.temp }}/paired-reports/
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 1
