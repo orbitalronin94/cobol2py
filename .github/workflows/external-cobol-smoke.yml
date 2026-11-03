@@ -59,6 +59,7 @@ jobs:
             --cache-to "type=gha,mode=max,scope=external-cobol-smoke" \
             -f benchmarks/Dockerfile.external \
             -t cobol2py-external-benchmark .
+      # Fast smoke only: sample the same fixed evaluation half, never primary.
       - name: Run deterministic 50-program differential smoke test
         run: |
           mkdir -p "${{ runner.temp }}/external-smoke"
@@ -78,7 +79,7 @@ jobs:
             --workdir /workspace \
             cobol2py-external-benchmark \
             benchmarks/run_external_multilang.py \
-            --archive /input.zip --output /output --target 50 --skip 0
+            --archive /input.zip --output /output --target 50 --skip 500
       - name: Publish smoke benchmark report
         if: always()
         run: |

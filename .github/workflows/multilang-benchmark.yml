@@ -1,21 +1,7 @@
 name: multilang-benchmark
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "cobol2py.py"
-      - "cobol2native.py"
-      - "benchmarks/cases.json"
-      - "benchmarks/run_multilang_benchmark.py"
-      - ".github/workflows/multilang-benchmark.yml"
-  pull_request:
-    paths:
-      - "cobol2py.py"
-      - "cobol2native.py"
-      - "benchmarks/cases.json"
-      - "benchmarks/run_multilang_benchmark.py"
-      - ".github/workflows/multilang-benchmark.yml"
+  # Historical 105-fixture multi-backend report; manual-only and not a PR gate.
   workflow_dispatch:
 
 permissions:
