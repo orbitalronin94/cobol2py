@@ -4417,7 +4417,7 @@ class UnstringDelimiterCountInRegressionTests(unittest.TestCase):
             "ws_delim": " ",
             "ws_count": 0,
         }
-        exec("\\n".join(lines or []), namespace)
+        exec("\n".join(lines or []), namespace)
         self.assertEqual(namespace["ws_part"], "ALPHA   ")
         self.assertEqual(namespace["ws_delim"], ",")
         self.assertEqual(namespace["ws_count"], 5)
