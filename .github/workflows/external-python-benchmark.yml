@@ -46,7 +46,7 @@ jobs:
         id: archive-cache
         uses: actions/cache/restore@v5
         with:
-          path: \${{ runner.temp }}/COBOL_Files.zip
+          path: ${{ runner.temp }}/COBOL_Files.zip
           key: x-cobol-v2-cbd974caed72b0836777dc2305928ed3
       - name: Download and verify pinned X-COBOL v2 archive
         shell: bash
@@ -63,7 +63,7 @@ jobs:
         if: steps.archive-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v5
         with:
-          path: \${{ runner.temp }}/COBOL_Files.zip
+          path: ${{ runner.temp }}/COBOL_Files.zip
           key: x-cobol-v2-cbd974caed72b0836777dc2305928ed3
 
   external-python:
@@ -100,7 +100,7 @@ jobs:
         id: archive-cache
         uses: actions/cache/restore@v5
         with:
-          path: \${{ runner.temp }}/COBOL_Files.zip
+          path: ${{ runner.temp }}/COBOL_Files.zip
           key: x-cobol-v2-cbd974caed72b0836777dc2305928ed3
 
       - name: Set up Docker Buildx
