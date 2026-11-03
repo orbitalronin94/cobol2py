@@ -7,7 +7,7 @@
   "candidates": [
     {
       "id": "C001",
-      "status": "pending_ci",
+      "status": "ready",
       "branch": "experiment-massive-16/optional-file-open-verified",
       "hypothesis": "Implement SELECT OPTIONAL semantics for missing sequential files: status 05 and correct creation/EOF behavior; non-optional OPEN EXTEND must not silently create a missing file.",
       "patch_sha": "10557dca587a9100d64693f7eefc602337419de9",
@@ -17,7 +17,22 @@
         "test_optional_extend_missing_file_creates_it_and_returns_05",
         "test_optional_input_missing_file_returns_05_then_read_sets_eof_10"
       ],
-      "pr": 322
+      "pr": 322,
+      "ci": {
+        "tests_run": 2504,
+        "result": "success",
+        "checks": [
+          "unit tests Python 3.10",
+          "unit tests Python 3.11",
+          "unit tests Python 3.12",
+          "unit tests Python 3.13",
+          "Java backend",
+          "GnuCOBOL reference",
+          "GnuCOBOL trace",
+          "browser smoke"
+        ],
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41696275249"
+      }
     },
     {
       "id": "C002",
