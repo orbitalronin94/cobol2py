@@ -1,5 +1,7 @@
 name: external-python-benchmark
 
+# All candidates use the same 500-case fixed evaluation sample; only the archive setup is shared.
+
 on:
   push:
     branches:
