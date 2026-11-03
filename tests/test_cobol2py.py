@@ -4399,3 +4399,54 @@ MAIN.
         )
         self.assertEqual(namespace["_cobol_open_modes"], {})
 
+
+
+class CobolAcceptDateTimeTests(unittest.TestCase):
+    def test_accept_from_date_and_time_emits_runtime_helper(self):
+        variables = {
+            "WS-DATE": cobol2py.CobolVar(level=1, name="WS-DATE", pic="9(6)"),
+            "WS-DATE8": cobol2py.CobolVar(level=1, name="WS-DATE8", pic="9(8)"),
+            "WS-DAY": cobol2py.CobolVar(level=1, name="WS-DAY", pic="9(5)"),
+            "WS-DOW": cobol2py.CobolVar(level=1, name="WS-DOW", pic="9"),
+            "WS-TIME": cobol2py.CobolVar(level=1, name="WS-TIME", pic="9(8)"),
+        }
+        cases = [
+            ("ACCEPT WS-DATE FROM DATE", "DATE"),
+            ("ACCEPT WS-DATE8 FROM DATE YYYYMMDD", "DATE YYYYMMDD"),
+            ("ACCEPT WS-DAY FROM DAY", "DAY"),
+            ("ACCEPT WS-DOW FROM DAY-OF-WEEK", "DAY-OF-WEEK"),
+            ("ACCEPT WS-TIME FROM TIME", "TIME"),
+        ]
+        for statement, source in cases:
+            with self.subTest(statement=statement):
+                translated = cobol2py.translate_statement(statement, set(), variables)
+                self.assertTrue(translated)
+                self.assertIn(f"_cobol_accept_from({source!r})", translated[0])
+
+    def test_accept_date_runtime_formats(self):
+        import datetime
+
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(
+            """IDENTIFICATION DIVISION.
+PROGRAM-ID. ACCEPT-DATE.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-DATE PIC 9(6).
+PROCEDURE DIVISION.
+MAIN.
+    ACCEPT WS-DATE FROM DATE.
+    GOBACK.
+""",
+            source_format="free",
+        ))
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        before = datetime.datetime.now()
+        values = {name: namespace["_cobol_accept_from"](name) for name in ("DATE", "DATE YYYYMMDD", "DAY", "DAY-OF-WEEK", "TIME")}
+        after = datetime.datetime.now()
+        self.assertEqual(values["DATE"], before.strftime("%y%m%d"))
+        self.assertEqual(values["DATE YYYYMMDD"], before.strftime("%Y%m%d"))
+        self.assertEqual(values["DAY"], before.strftime("%y%j"))
+        self.assertIn(values["DAY-OF-WEEK"], [str(i) for i in range(1, 8)])
+        self.assertRegex(values["TIME"], r"^\d{8}$")
+        self.assertEqual(values["DATE"], after.strftime("%y%m%d"))
