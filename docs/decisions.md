@@ -466,3 +466,31 @@ Añadir una sección con:
 - **Consecuencias:** el runner debe producir artefactos diagnósticos por caso. Cualquier aceleración debe mantener idénticos el orden determinista, la selección de 500 primary y 500 holdout, el denominador, los timeouts y la comparación exacta de stdout y código de retorno. Los fallos de referencia, exclusiones, errores de traducción y discrepancias de ejecución se contabilizarán por separado.
 - **Validación:** comparar IDs, estados y resultados entre ejecución secuencial y optimizada con el mismo corpus; comprobar que cada fallo deja evidencia suficiente para reproducirlo y clasificarlo.
 - **Revisión:** no se cambiarán criterios de selección ni se reducirá evidencia diagnóstica sin documentar y justificar una nueva decisión.
+
+
+## D-021 — Usar una sola muestra externa fija para el ranking iterativo
+
+- **Fecha:** 2026-11-03.
+- **Estado:** aceptada.
+- **Contexto:** la línea base integrada de main es 250/500 en la segunda mitad de X-COBOL v2. Ejecutar también la muestra primaria duplicaba coste y generaba una métrica combinada que ya no es el criterio de decisión del torneo.
+- **Decisión:** el ranking de candidatas Python usa únicamente los mismos 500 casos de la segunda mitad (`skip=500`, `target=500`). La primaria no se ejecuta en el flujo iterativo ni se mezcla con el resultado. Se exige 251/500 o más, 500 casos completos, checksum verificado, suite completa y SHA exacto.
+- **Consecuencias:** menor coste y una regla simple; se pierde la señal de regresión de la primaria. La muestra fija se consulta durante el ajuste y no es un holdout estadístico intacto.
+- **Validación:** cuatro shards de 125, comparación exacta de stdout y return code contra GnuCOBOL; el coordinador no hace merge automático.
+
+## D-022 — Mantener el benchmark curado de 105 casos fuera del CI de promoción
+
+- **Fecha:** 2026-11-03.
+- **Estado:** aceptada.
+- **Contexto:** el conjunto curado de 105 fixtures es útil como herramienta de desarrollo, pero no representa la evaluación externa de candidatas y su repetición en cada CI añade tiempo y una segunda puntuación que puede confundirse con el ranking oficial.
+- **Decisión:** `differential-benchmark.yml` queda manual-only. CI conserva unittest, compilación, smoke tests y comparaciones pequeñas explícitas con GnuCOBOL; se retira el job que ejecutaba el piloto diferencial de 105 casos.
+- **Consecuencias:** las regresiones unitarias no desaparecen; la ejecución masiva de 105 fixtures deja de ser una barrera ni una métrica de PR. Puede invocarse manualmente para diagnóstico.
+- **Validación:** revisar los triggers de Actions y el job de Modernization agent en `tests.yml`.
+
+## D-023 — Optimizar el benchmark sin duplicar trabajo de traducción
+
+- **Fecha:** 2026-11-03.
+- **Estado:** aceptada.
+- **Contexto:** la comparación de tiempo candidato-vs-main ejecutaba una segunda traducción por fuente en cada shard y exigía montar otro snapshot. El ranking se basa en equivalencia, no en velocidad del traductor.
+- **Decisión:** eliminar esa medición duplicada del workflow de promoción; mantener cache de archivo verificado, cache de capas Docker y cache de traducción separado por shard/huella de código. Limitar la matriz a cuatro shards holdout de 125 y paralelismo máximo cuatro.
+- **Consecuencias:** menor trabajo por run y métricas de equivalencia más claras. Las comparaciones de rendimiento se harán en una ejecución de profiling separada, nunca mezcladas con el score.
+- **Validación:** comparar tiempos de workflow antes/después y confirmar que los 500 IDs y el resultado exacto permanecen idénticos.
