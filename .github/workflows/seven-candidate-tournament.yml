@@ -1,4 +1,4 @@
-name: seven-candidate-tournament
+name: massive-parallel-tournament
 
 run-name: COBOL equivalence tournament — ${{ inputs.cohort_size || 'auto' }} candidates
 
@@ -26,7 +26,7 @@ permissions:
 
 concurrency:
   # Isolate each PR's tournament. A shared group silently cancels queued candidates.
-  group: cobol2py-seven-candidate-tournament-${{ github.ref }}
+  group: cobol2py-massive-parallel-tournament-${{ github.ref }}
   cancel-in-progress: true
 
 # One coordinator only: run on main workflow updates or explicit workflow_dispatch, never once per candidate PR.
