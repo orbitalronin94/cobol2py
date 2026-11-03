@@ -41,27 +41,53 @@ jobs:
     outputs:
       candidates: ${{ steps.list.outputs.candidates }}
     steps:
-      - name: Discover open, non-draft experiment PRs and freeze their SHAs
+      - name: Load cohort manifest and freeze candidate revisions
         id: list
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           main_sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
-          pulls=$(gh api --paginate "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" | jq -s 'add')
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
             batch_size="${{ inputs.cohort_size }}"
-            prefix="experiment-massive-${batch_size}/"
-            candidates=$(jq --arg main_sha "$main_sha" --arg prefix "$prefix" --argjson n "$batch_size" '
-              ([.[] | select(.base.ref == "main" and .draft == false and (.head.ref | startswith($prefix))) |
-                {name:(.head.ref | gsub("/"; "-")), branch:.head.ref, sha:.head.sha, pr:.number}] |
-                unique_by(.branch) | sort_by(.branch) | .[0:$n]) as $selected |
-              if ($selected | length) != $n then
-                error("Expected exactly " + ($n|tostring) + " open non-draft candidate PRs under " + $prefix + "; found " + ($selected|length|tostring))
-              else
-                [{name:"main-baseline",branch:"main",sha:$main_sha,pr:0}] + $selected
-              end' <<< "$pulls")
+            manifest="experiments/massive-cohorts/$batch_size/manifest.json"
+            gh api "repos/$GITHUB_REPOSITORY/contents/$manifest?ref=main" --jq .content | base64 -d > /tmp/cohort.json
+            jq -e --argjson n "$batch_size" '
+              .cohort_size == $n and
+              (.candidates | length) == $n and
+              all(.candidates[];
+                .status == "ready" and
+                (.branch | type == "string" and length > 0) and
+                (.hypothesis | type == "string" and length > 0) and
+                (.patch_sha | type == "string" and test("^[0-9a-f]{40}$"))
+              )
+            ' /tmp/cohort.json >/dev/null || {
+              echo "::error::Manifest must contain exactly $batch_size ready, distinct, evidence-backed candidates with branch, hypothesis and 40-character patch_sha. Scaffold/unassigned slots are not runnable."
+              exit 1
+            }
+            duplicates=$(jq -r '[.candidates[].branch] | unique | length' /tmp/cohort.json)
+            [ "$duplicates" = "$batch_size" ] || { echo "::error::Candidate branches must be unique"; exit 1; }
+            candidates=$(jq -c --arg main_sha "$main_sha" '
+              [{name:"main-baseline",branch:"main",sha:$main_sha,pr:0}] +
+              [.candidates[] | {
+                name:.id, branch:.branch, sha:.patch_sha, pr:0,
+                hypothesis:.hypothesis
+              }]
+            ' /tmp/cohort.json)
+            while IFS=$'\t' read -r candidate_branch expected_sha; do
+              actual_sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/$candidate_branch" --jq .sha)
+              if [ "$actual_sha" != "$expected_sha" ]; then
+                echo "::error::Stale manifest for $candidate_branch: expected $expected_sha, found $actual_sha"
+                exit 1
+              fi
+              merge_base=$(gh api "repos/$GITHUB_REPOSITORY/compare/$main_sha...$actual_sha" --jq .merge_base_commit.sha)
+              if [ "$merge_base" != "$main_sha" ]; then
+                echo "::error::Candidate $candidate_branch is not based on the frozen main SHA $main_sha"
+                exit 1
+              fi
+            done < <(jq -r '.candidates[] | [.branch,.patch_sha] | @tsv' /tmp/cohort.json)
           else
+            pulls=$(gh api --paginate "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" | jq -s 'add')
             candidates=$(jq --arg main_sha "$main_sha" '
               [{name:"main-baseline",branch:"main",sha:$main_sha,pr:0}] +
               ([.[] | select(.base.ref == "main" and .draft == false and (.head.ref | test("^experiment(-v2|-v3|-v4)?/"))) |
@@ -69,6 +95,7 @@ jobs:
           fi
           echo "candidates=$candidates" >> "$GITHUB_OUTPUT"
           echo "$candidates" | jq .
+
 
   candidate-tests:
     needs: discover
