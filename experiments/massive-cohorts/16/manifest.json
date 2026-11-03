@@ -7,7 +7,7 @@
   "candidates": [
     {
       "id": "C001",
-      "status": "ready",
+      "status": "ci_green_benchmark_plus_one_pairwise_required",
       "branch": "experiment-massive-16/optional-file-open-verified",
       "hypothesis": "Implement SELECT OPTIONAL semantics for missing sequential files: status 05 and correct creation/EOF behavior; non-optional OPEN EXTEND must not silently create a missing file.",
       "patch_sha": "10557dca587a9100d64693f7eefc602337419de9",
@@ -47,7 +47,8 @@
         ],
         "same_run_main_comparison": "not_performed",
         "regression_status": "unknown_until_cohort_pairwise_run"
-      }
+      },
+      "qualification": "not_yet_qualified: 251/500 versus historical main 250/500, but no same-run per-case comparison exists"
     },
     {
       "id": "C002",
@@ -94,7 +95,7 @@
       "status": "ci_revision_pending",
       "branch": "experiment-massive-16/open-mixed-modes-verified",
       "hypothesis": "Parse one COBOL OPEN statement containing multiple mode groups (for example INPUT file-A and OUTPUT file-B) without applying the first mode to every file.",
-      "patch_sha": "cece05ab28849a28ddc66b7fd8c6b923618ff31c",
+      "patch_sha": "24e3fc72e50292d7b4cd807ff80bd0a3cba5953b",
       "evidence": "Current translate_statement handles only the first mode group and extracts all identifiers from the remaining text as filenames. This can interpret OUTPUT as a file name and open an output file in INPUT mode. COBOL OPEN syntax permits multiple mode groups in one statement.",
       "tests": [
         "test_one_open_statement_can_open_input_and_output_files"
@@ -104,7 +105,9 @@
         "previous_run": "failed",
         "failure_cause": "mode-token regex split identifiers such as INPUT-FILE at the hyphen; this made generated _cobol_open receive FILE instead of INPUT-FILE and caused four runtime tests to fail.",
         "revision": "mode keyword matching now excludes adjacent word and hyphen characters",
-        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41700038305"
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41700038305",
+        "latest_run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41700052095",
+        "latest_run_status": "queued"
       }
     },
     {
