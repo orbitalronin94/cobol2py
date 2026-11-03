@@ -4399,3 +4399,42 @@ MAIN.
         )
         self.assertEqual(namespace["_cobol_open_modes"], {})
 
+
+
+class CobolWriteFromLiteralTests(unittest.TestCase):
+    def test_write_from_literal_moves_literal_into_record_before_write(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. WRITE-FROM-LITERAL.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT OUTPUT-FILE ASSIGN TO "write-from-literal.dat"
+        ORGANIZATION IS LINE SEQUENTIAL.
+DATA DIVISION.
+FILE SECTION.
+FD OUTPUT-FILE.
+01 OUTPUT-RECORD PIC X(4).
+PROCEDURE DIVISION.
+MAIN.
+    OPEN OUTPUT OUTPUT-FILE.
+    WRITE OUTPUT-RECORD FROM "DATA".
+    CLOSE OUTPUT-FILE.
+    GOBACK.
+"""
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<write-from-literal>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        previous = Path.cwd()
+        with tempfile.TemporaryDirectory() as directory:
+            try:
+                os.chdir(directory)
+                with redirect_stdout(StringIO()):
+                    namespace["main"]()
+                contents = Path("write-from-literal.dat").read_text(encoding="latin-1")
+            finally:
+                os.chdir(previous)
+        self.assertEqual(contents, "DATA\\n", generated)
