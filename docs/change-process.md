@@ -22,10 +22,10 @@
 python -m unittest discover -s tests -v
 python -m py_compile cobol2py.py
 python cobol2py.py programa.cbl --strict
-python benchmarks/run_external_corpus.py --translator cobol2py.py --target 500 --skip 500 --diagnostics
+python -m py_compile cobol2py.py benchmarks/run_external_corpus.py
 ```
 
-El benchmark externo requiere GnuCOBOL y el archivo X-COBOL v2; ejecútalo dentro del contenedor aislado definido por CI. La evaluación de promoción usa exclusivamente `--target 500 --skip 500`; no ejecutes ni combines la muestra primaria. El criterio oficial es stdout byte a byte y código de retorno idéntico. Revisa los informes JSON/Markdown y los diagnósticos por caso, no solo el porcentaje. La línea base vigente es 250/500 y la mejora mínima 251/500. El comparador curado de 105 fixtures es manual-only e histórico.
+El benchmark externo requiere GnuCOBOL, el ZIP X-COBOL v2 verificado y rutas explícitas `--archive`, `--translator` y `--output`; no es una ejecución local de un solo comando. Para evitar descargar/ejecutar fuentes de terceros fuera del entorno aislado, la evaluación de promoción se lanza mediante el workflow `seven-candidate-tournament.yml` o `external-python-benchmark.yml`, que prepara el corpus en Docker sin red y usa exclusivamente `--target 500 --skip 500`. No ejecutes ni combines la muestra primaria. El criterio oficial es stdout byte a byte y código de retorno idéntico. Revisa los informes JSON/Markdown y los diagnósticos por caso, no solo el porcentaje. La línea base vigente es 250/500 y la mejora mínima 251/500. El comparador curado de 105 fixtures es manual-only e histórico.
 
 ## Qué registrar en cada mejora
 
