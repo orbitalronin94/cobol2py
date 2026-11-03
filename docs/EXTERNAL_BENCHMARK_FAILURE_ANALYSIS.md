@@ -424,3 +424,28 @@ The PR test run #41599425917 failed because web/index.html did not contain the c
 ### Promotion policy
 
 Do not update benchmarks/holdout_best.json or merge this candidate on the basis of the 49.7% observation. First validate the WRITE-mode correction, synchronize the standalone HTML, obtain exact-match primary and holdout comparisons against the same pinned main SHA, and repeat the candidate run to check stability. The 75% target remains 750/1000 exact matches.
+
+## 2026-11-03 — paired candidate 499/1,000 and inline paragraph parser repair
+
+The complete paired external Python run for PR #283 head `87eaba8043d6a7280db1902ad36ca41fb2a3885d` completed in workflow [#41602383991](https://github.com/orbitalronin94/cobol2py/actions/runs/41602383991), with all eight 125-case shards complete and the pinned archive checksum verified:
+
+| Sample | Exact matches | Rate |
+|---|---:|---:|
+| Primary | 249/500 | 49.8% |
+| Holdout | 250/500 | 50.0% |
+| Combined | 499/1,000 | 49.9% |
+
+Compared with the previous complete candidate run #41599425845 (497/1,000; 249 primary + 248 holdout), per-case comparison on the identical 1,000 IDs shows **two gains and zero regressions**: `SQ155A` and `SQ152A`. Both were caused by `WRITE` against a file opened for INPUT. The runtime now returns COBOL file status 48 rather than attempting `handle.write` on a read-only Python handle.
+
+This remains a candidate measurement, not a new main-branch record. The validated main holdout record is still 243/500 (48.6%) from #41593293825 on SHA `4fd4900e`; main does not yet have a same-SHA paired primary result. Do not update `benchmarks/holdout_best.json` until the candidate is merged and the record is revalidated.
+
+The first test run on SHA `87eaba80` failed only because the new regression asserted the two-character string `\\n` instead of an actual newline. That test expectation was corrected in commit `dbbfac26`; the translator code was unchanged by that test-only correction. The full test matrix must pass on the final SHA before promotion.
+
+### Next high-yield parser family: paragraph labels with inline bodies
+
+Inspection of the primary shard 0 diagnostics found 25 failed NIST cases with the same procedure pattern: paragraph labels such as `INSPT.`, `PASS.`, `FAIL.`, and `DE-LETE.` share a physical line with their first imperative statement. Some also use paragraph names beginning `END-`, such as `END-ROUTINE.`.
+
+The old `RE_PARAGRAPH` regex accepted only a label occupying the entire line and rejected every label beginning `END-`. As a result, these labels were emitted as unsupported statements; their paragraph bodies were not built, and nested scopes later appeared unclosed. The parser now accepts an optional inline body and excludes only actual reserved statement terminators (including `END-SEARCH`), not all `END-...` user paragraph names. A fixed-format regression exercises all five names and verifies their execution order and output.
+
+The parser/HTML/test changes in this commit are a candidate repair only. Promotion still requires a green test matrix and a complete paired primary+holdout exact-match run on the same SHA. The corpus, denominator, timeouts, stdout capture, and exact stdout/return-code rule are unchanged.
+

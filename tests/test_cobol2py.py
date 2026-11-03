@@ -4399,3 +4399,44 @@ MAIN.
         )
         self.assertEqual(namespace["_cobol_open_modes"], {})
 
+class InlineParagraphLabelTests(unittest.TestCase):
+    def test_fixed_format_paragraph_labels_accept_inline_bodies_and_end_prefixes(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """000100 IDENTIFICATION DIVISION.
+000200 PROGRAM-ID. INLINEPARA.
+000300 DATA DIVISION.
+000400 WORKING-STORAGE SECTION.
+000500 01 WS-COUNT PIC 9 VALUE 0.
+000600 PROCEDURE DIVISION.
+000700 MAIN.
+000800     PERFORM INSPT.
+000900     PERFORM PASS.
+001000     PERFORM FAIL.
+001100     PERFORM DE-LETE.
+001200     PERFORM END-ROUTINE.
+001300     DISPLAY WS-COUNT.
+001400     STOP RUN.
+001500 INSPT. ADD 1 TO WS-COUNT.
+001600 PASS. ADD 1 TO WS-COUNT.
+001700 FAIL. ADD 1 TO WS-COUNT.
+001800 DE-LETE. ADD 1 TO WS-COUNT.
+001900 END-ROUTINE.
+002000     ADD 1 TO WS-COUNT.
+"""
+        program = cobol2py.parse_cobol(source, source_format="fixed")
+        self.assertTrue(
+            {"INSPT", "PASS", "FAIL", "DE-LETE", "END-ROUTINE"}.issubset(program.paragraphs)
+        )
+
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<inline-paragraph-labels>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["_cobol_dispatch"]("MAIN")
+        self.assertEqual(output.getvalue(), "5\\n", generated)
+

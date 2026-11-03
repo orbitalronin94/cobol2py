@@ -530,7 +530,7 @@ RE_OCCURS = re.compile(
     r"(?:\s+DEPENDING\s+ON\s+([A-Za-z0-9_\-]+))?",
     re.IGNORECASE,
 )
-RE_PARAGRAPH = re.compile(r"^(?!END-)([A-Za-z][A-Za-z0-9\-]*)\.\s*$")
+RE_PARAGRAPH = re.compile(r"^([A-Za-z][A-Za-z0-9\\-]*)\\.(?:\\s+(.*))?$")
 
 
 def _parse_indexed_by_names(rest: str) -> list[str]:
@@ -827,6 +827,9 @@ STATEMENT_VERBS = frozenset({
     "CONTINUE", "RETURN", "SEARCH", "SORT", "MERGE", "GO", "ALTER",
 })
 
+# These tokens terminate/control statements and cannot introduce paragraphs.
+PARAGRAPH_RESERVED_WORDS = STATEMENT_VERBS | {"WHEN", "END-SEARCH"}
+
 SCOPE_END_NOOPS = frozenset({
     "END-ADD", "END-SUBTRACT", "END-MULTIPLY", "END-DIVIDE", "END-STRING",
     "END-UNSTRING", "END-WRITE", "END-REWRITE", "END-DELETE",
@@ -1103,12 +1106,17 @@ def parse_procedure(lines: list[tuple[int, str]]) -> tuple[dict[str, list[Node]]
     for num, text in lines:
         stripped = text.strip()
         m = RE_PARAGRAPH.match(stripped)
-        if m and m.group(1).upper() not in {"GOBACK", "CONTINUE", "EXIT"}:
-            current = m.group(1).upper()
-            if current not in paragraph_lines:
-                paragraph_lines[current] = []
-                order.append(current)
-            continue
+        if m:
+            paragraph_name = m.group(1).upper()
+            if paragraph_name not in PARAGRAPH_RESERVED_WORDS:
+                current = paragraph_name
+                if current not in paragraph_lines:
+                    paragraph_lines[current] = []
+                    order.append(current)
+                inline_body = (m.group(2) or "").strip()
+                if inline_body:
+                    paragraph_lines[current].append((num, inline_body))
+                continue
         paragraph_lines[current].append((num, text))
 
     paragraphs: dict[str, list[Node]] = {}
