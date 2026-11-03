@@ -10,7 +10,7 @@ La traducción busca **leerse** y, para el subconjunto cubierto por regresiones 
 
 ## Protocolo de evaluación rápida y torneo
 
-El workflow `.github/workflows/external-python-benchmark.yml` ejecuta el filtro rápido de 50 casos y conserva el informe como artefacto. Se eliminó el job agregador de scorecard porque no debe decidir el estado de una PR: los números verificables se leen directamente del log del benchmark y de su informe JSON/Markdown. La evaluación externa completa de 500 casos es la única que puede demostrar una mejora.
+El workflow `.github/workflows/external-python-benchmark.yml` ejecuta el filtro rápido de 50 casos y conserva el informe como artefacto. Se eliminó el job agregador de scorecard porque no debe decidir el estado de una PR: los números verificables se leen directamente del log del benchmark y de su informe JSON/Markdown. La evaluación externa completa pareada de 1.000 casos (500 primaria + 500 holdout) es la que demuestra una mejora comparable.
 
 1. **Referencia dinámica:** `benchmarks/holdout_best.json` registra el mejor resultado completo y pareado validado del corpus fijo: primaria + holdout, 1.000 casos en total. El récord vigente es 499/1.000 (49,90 %), con desglose por muestra y commit medido.
 2. **Filtro de 50 casos:** en cada PR se ejecutan 50 programas de la segunda mitad del corpus fijo. Es una señal temprana y no bloquea ni aprueba una PR por sí sola. El informe y los logs muestran coincidencias exactas, errores y tiempo; no se usa un agregador de scorecard.
@@ -25,12 +25,12 @@ Este es el roadmap de producto canónico: **el objetivo vigente es v1.0**. Los h
 
 ### Métrica de aceptación de v1.0
 
-**Objetivo de producto:** alcanzar al menos un 75 % de coincidencias exactas en cada muestra de 500 programas. Cada coincidencia exige que la traducción termine y que stdout y código de retorno sean idénticos a GnuCOBOL.
+**Objetivo de producto:** alcanzar al menos un 75 % de coincidencias exactas en cada una de las dos muestras de 500 programas (primaria y holdout). Cada coincidencia exige que la traducción termine y que stdout y código de retorno sean idénticos a GnuCOBOL.
 
 - **Referencia histórica:** 480/1.000 (48,00 %) en la PR [#177](https://github.com/orbitalronin94/cobol2py/pull/177): 244/500 en la primaria y 236/500 en la segunda mitad.
 - **Mejor resultado integrado actual (PR #284):** 499/1.000 (49,90 %) en la evaluación pareada completa: 249/500 (49,8 %) primaria y 250/500 (50,0 %) holdout. El resultado se obtuvo en el benchmark externo [#538](https://github.com/orbitalronin94/cobol2py/actions/runs/41602383991), con ocho shards completos y checksum del corpus verificado; el SHA exacto medido e integrado fue `87eaba8043d6a7280db1902ad36ca41fb2a3885d`.
 - **Riesgo metodológico:** como el corpus fijo se consulta durante el desarrollo, la puntuación puede sobreajustarse a él. La puntuación sirve para comparar candidatos en ese corpus, no para afirmar generalización estadística. No alterar selección, denominador, timeout, ni criterio de equivalencia.
-- **Objetivo de release v1.0:** el umbral de producto de 75 % en ambas mitades sigue siendo una aspiración histórica; con la política de coste actual, la mitad primaria no se ejecuta en el ciclo normal y no se puede declarar validado ese objetivo completo usando solo la mitad de evaluación. Documentar esta limitación en cualquier anuncio de release.
+- **Objetivo de release v1.0:** el umbral de producto de 75 % en ambas mitades sigue pendiente. El run #538 ya midió ambas muestras (49,8 % primaria y 50,0 % holdout), por lo que el objetivo no está alcanzado. Documentar esta limitación en cualquier anuncio de release.
 - **Candidatas:** las PR deben adjuntar la scorecard completa del SHA exacto; CI verde o tests unitarios por sí solos no prueban mejora de porcentaje.
 - **Límites:** la métrica mide stdout y código de retorno de programas ejecutables del dataset, no equivalencia de archivos, bases de datos, transacciones, interacciones ni todos los dialectos.
 
