@@ -4399,3 +4399,112 @@ MAIN.
         )
         self.assertEqual(namespace["_cobol_open_modes"], {})
 
+
+
+class CobolSequentialRewriteTests(unittest.TestCase):
+    def _run_program(self, source, directory):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<sequential-rewrite>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        previous = Path.cwd()
+        try:
+            os.chdir(directory)
+            with redirect_stdout(output):
+                namespace["main"]()
+        finally:
+            os.chdir(previous)
+        return output.getvalue(), namespace, generated
+
+    def test_rewrite_replaces_most_recently_read_sequential_record(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. SEQUENTIAL-REWRITE.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT DATA-FILE ASSIGN TO "rewrite.dat"
+        ORGANIZATION IS SEQUENTIAL
+        FILE STATUS IS WS-STATUS.
+DATA DIVISION.
+FILE SECTION.
+FD DATA-FILE.
+01 DATA-RECORD PIC X(4).
+WORKING-STORAGE SECTION.
+01 WS-STATUS PIC XX.
+PROCEDURE DIVISION.
+MAIN.
+    OPEN I-O DATA-FILE.
+    READ DATA-FILE.
+    MOVE "NEW!" TO DATA-RECORD.
+    REWRITE DATA-RECORD.
+    DISPLAY WS-STATUS.
+    CLOSE DATA-FILE.
+    GOBACK.
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "rewrite.dat").write_text("OLD!", encoding="latin-1")
+            output, _namespace, generated = self._run_program(source, directory)
+            contents = Path(directory, "rewrite.dat").read_text(encoding="latin-1")
+        self.assertEqual(output, "00\n", generated)
+        self.assertEqual(contents, "NEW!", generated)
+
+    def test_rewrite_without_prior_read_returns_43(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. REWRITE-NO-READ.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT DATA-FILE ASSIGN TO "rewrite-no-read.dat"
+        ORGANIZATION IS SEQUENTIAL
+        FILE STATUS IS WS-STATUS.
+DATA DIVISION.
+FILE SECTION.
+FD DATA-FILE.
+01 DATA-RECORD PIC X(4).
+WORKING-STORAGE SECTION.
+01 WS-STATUS PIC XX.
+PROCEDURE DIVISION.
+MAIN.
+    OPEN I-O DATA-FILE.
+    MOVE "NEW!" TO DATA-RECORD.
+    REWRITE DATA-RECORD.
+    DISPLAY WS-STATUS.
+    CLOSE DATA-FILE.
+    GOBACK.
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "rewrite-no-read.dat").write_text("OLD!", encoding="latin-1")
+            output, _namespace, generated = self._run_program(source, directory)
+        self.assertEqual(output, "43\n", generated)
+
+    def test_rewrite_on_input_file_returns_49(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. REWRITE-INPUT.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT DATA-FILE ASSIGN TO "rewrite-input.dat"
+        ORGANIZATION IS SEQUENTIAL
+        FILE STATUS IS WS-STATUS.
+DATA DIVISION.
+FILE SECTION.
+FD DATA-FILE.
+01 DATA-RECORD PIC X(4).
+WORKING-STORAGE SECTION.
+01 WS-STATUS PIC XX.
+PROCEDURE DIVISION.
+MAIN.
+    OPEN INPUT DATA-FILE.
+    REWRITE DATA-RECORD.
+    DISPLAY WS-STATUS.
+    CLOSE DATA-FILE.
+    GOBACK.
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "rewrite-input.dat").write_text("OLD!", encoding="latin-1")
+            output, _namespace, generated = self._run_program(source, directory)
+        self.assertEqual(output, "49\n", generated)
