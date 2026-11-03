@@ -112,10 +112,10 @@
     },
     {
       "id": "C004",
-      "status": "tests_green_benchmark_250_pairwise_required",
+      "status": "ci_revision_pending",
       "branch": "experiment-massive-16/string-zeroes-delimiter",
       "hypothesis": "Correct STRING DELIMITED BY ZEROES so it recognizes the ZEROES spelling and terminates on the COBOL character '0', not NUL.",
-      "patch_sha": "8f76e2bd5f3a47b05104b2f8414cc963a3a6bad7",
+      "patch_sha": "f753f1e6f11b52810a028caa395a807da41e7f30",
       "evidence": "An existing isolated branch contains a minimal regression for WS-SOURCE='A0B     '; the main translator currently maps ZERO/ZEROS to NUL and does not accept ZEROES in the delimiter token regex.",
       "tests": [
         "test_string_delimited_by_zeroes_stops_at_character_zero"
@@ -296,10 +296,10 @@
     },
     {
       "id": "C013",
-      "status": "pending_ci",
+      "status": "ci_revision_pending",
       "branch": "experiment-massive-16/unstring-tally-increment",
       "hypothesis": "UNSTRING TALLYING IN must add the number of populated receiving fields to the existing tally value instead of replacing it.",
-      "patch_sha": "0a32585adeb02329334d38485390073b7936eeb9",
+      "patch_sha": "df43ef5c2310b890e3c8d502a6ff04f9bc8a8539",
       "evidence": "Current translate_statement assigns min(len(parts), targets) directly to the tally item. COBOL TALLYING IN is an accumulating counter; a nonzero initial value is lost.",
       "tests": [
         "test_unstring_tallying_in_adds_to_existing_counter"
@@ -308,10 +308,10 @@
     },
     {
       "id": "C014",
-      "status": "pending_ci",
+      "status": "ci_revision_pending",
       "branch": "experiment-massive-16/unstring-pointer",
       "hypothesis": "Honor UNSTRING WITH POINTER for the single-delimiter, non-ALL subset by starting at the 1-based pointer and advancing it past consumed fields and delimiters.",
-      "patch_sha": "63df113793edc32a4b1636116165e570a99ceb99",
+      "patch_sha": "d0d5ba304bcf003c8130986556c57ca2954de608",
       "evidence": "The current translator extracts POINTER but never uses it; it always splits from the beginning of the source and leaves the pointer unchanged.",
       "tests": [
         "test_unstring_pointer_starts_at_current_position_and_advances"
@@ -321,10 +321,10 @@
     },
     {
       "id": "C015",
-      "status": "pending_ci",
+      "status": "ci_revision_pending",
       "branch": "experiment-massive-16/unstring-delimiter-count-in-verified",
       "hypothesis": "For a single-delimiter, single-receiver UNSTRING, populate DELIMITER IN with the delimiter consumed and COUNT IN with the number of characters moved.",
-      "patch_sha": "a9a8b6b00e209e0088c646d527fd3f542a022134",
+      "patch_sha": "05a56e940a3654ba9e241b865fe391a973fb8752",
       "evidence": "Main parses neither DELIMITER IN nor COUNT IN; an existing experimental branch exposed these clauses but did not assign their values. This revision adds both assignments for the explicitly scoped single-receiver subset.",
       "tests": [
         "test_unstring_delimiter_in_and_count_in_single_receiver"
