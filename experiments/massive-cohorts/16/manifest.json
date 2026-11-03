@@ -174,11 +174,16 @@
     },
     {
       "id": "C012",
-      "status": "unassigned",
-      "branch": null,
-      "hypothesis": null,
-      "patch_sha": null,
-      "evidence": null
+      "status": "pending_ci",
+      "branch": "experiment-massive-16/inspect-replacing-final",
+      "hypothesis": "Implement INSPECT identifier REPLACING ALL/FIRST literal BY literal, preserving occurrence count semantics.",
+      "patch_sha": "ba5d7728161edd48fc6f21ed05171f13a0b2b7d2",
+      "evidence": "The current translator supports INSPECT CONVERTING and TALLYING but has no REPLACING handler; COBOL supports ALL and FIRST replacement modes.",
+      "tests": [
+        "test_inspect_replacing_all_replaces_every_occurrence",
+        "test_inspect_replacing_first_replaces_only_first_occurrence"
+      ],
+      "pr": 337
     },
     {
       "id": "C013",
