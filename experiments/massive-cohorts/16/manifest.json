@@ -161,11 +161,16 @@
     },
     {
       "id": "C011",
-      "status": "unassigned",
-      "branch": null,
-      "hypothesis": null,
-      "patch_sha": null,
-      "evidence": null
+      "status": "pending_ci",
+      "branch": "experiment-massive-16/accept-date-time",
+      "hypothesis": "Implement ACCEPT FROM DATE, DATE YYYYMMDD, DAY, DAY-OF-WEEK and TIME using the host clock and COBOL-compatible output formats.",
+      "patch_sha": "d31182977d17ea5ab131e3b99056b347719097fa",
+      "evidence": "The current Python translator only recognizes ACCEPT target from stdin; the date/time source forms fall through as unsupported statements.",
+      "tests": [
+        "test_accept_from_date_and_time_emits_runtime_helper",
+        "test_accept_date_runtime_formats"
+      ],
+      "pr": 334
     },
     {
       "id": "C012",
