@@ -4388,7 +4388,7 @@ MAIN.
                 with redirect_stdout(output):
                     namespace["_cobol_dispatch"]("MAIN")
                 with open("write-status-test.dat", encoding="latin-1") as record_file:
-                    self.assertEqual(record_file.read(), "DATA\\n")
+                    self.assertEqual(record_file.read(), "DATA\n")
             finally:
                 os.chdir(previous)
 
