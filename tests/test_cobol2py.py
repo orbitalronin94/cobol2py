@@ -4444,7 +4444,7 @@ MAIN.
         with tempfile.TemporaryDirectory() as directory:
             output, _namespace, generated = self._run(source, directory)
             self.assertFalse(Path(directory, "missing-extend.dat").exists(), generated)
-        self.assertEqual(output, "35\\n", generated)
+        self.assertEqual(output, "35\n", generated)
 
     def test_optional_extend_missing_file_creates_it_and_returns_05(self):
         source = """IDENTIFICATION DIVISION.
@@ -4471,7 +4471,7 @@ MAIN.
         with tempfile.TemporaryDirectory() as directory:
             output, _namespace, generated = self._run(source, directory)
             self.assertTrue(Path(directory, "optional-extend.dat").exists(), generated)
-        self.assertEqual(output, "05\\n", generated)
+        self.assertEqual(output, "05\n", generated)
 
     def test_optional_input_missing_file_returns_05_then_read_sets_eof_10(self):
         source = """IDENTIFICATION DIVISION.
@@ -4502,4 +4502,4 @@ MAIN.
         with tempfile.TemporaryDirectory() as directory:
             output, _namespace, generated = self._run(source, directory)
             self.assertFalse(Path(directory, "optional-input.dat").exists(), generated)
-        self.assertEqual(output, "05\\nEOF\\n10\\n", generated)
+        self.assertEqual(output, "05\nEOF\n10\n", generated)
