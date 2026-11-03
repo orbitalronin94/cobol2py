@@ -112,7 +112,7 @@
     },
     {
       "id": "C004",
-      "status": "tests_green_benchmark_running",
+      "status": "tests_green_benchmark_in_progress",
       "branch": "experiment-massive-16/string-zeroes-delimiter",
       "hypothesis": "Correct STRING DELIMITED BY ZEROES so it recognizes the ZEROES spelling and terminates on the COBOL character '0', not NUL.",
       "patch_sha": "8f76e2bd5f3a47b05104b2f8414cc963a3a6bad7",
@@ -124,11 +124,21 @@
       "ci": {
         "result": "success",
         "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41696952737"
+      },
+      "benchmark": {
+        "tested_so_far": 375,
+        "shard_scores": {
+          "holdout_0": 61,
+          "holdout_1": 52,
+          "holdout_3": 70
+        },
+        "remaining_shards": 1,
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41696952716"
       }
     },
     {
       "id": "C005",
-      "status": "tests_green_benchmark_running",
+      "status": "tests_green_benchmark_251_pairwise_required",
       "branch": "experiment-massive-16/arithmetic-reference-offset",
       "hypothesis": "Translate arithmetic expressions in COBOL reference-modification start offsets rather than treating the entire expression as a single data-name.",
       "patch_sha": "580dc50b557ecd4b7824071c69887ad568270686",
@@ -140,11 +150,26 @@
       "ci": {
         "result": "success",
         "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41697157948"
+      },
+      "benchmark": {
+        "tested": 500,
+        "exact_matches": 251,
+        "rate_percent": 50.2,
+        "shard_scores": [
+          61,
+          68,
+          52,
+          70
+        ],
+        "historical_main_exact_matches": 250,
+        "same_run_main_comparison": "not_performed",
+        "qualification": "not_yet_qualified: +1 raw match only; zero-regression case comparison is still required",
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41697158085"
       }
     },
     {
       "id": "C006",
-      "status": "tests_in_progress_benchmark_running",
+      "status": "tests_in_progress_benchmark_in_progress",
       "branch": "experiment-massive-16/arithmetic-reference-length",
       "hypothesis": "Translate arithmetic expressions in COBOL reference-modification lengths rather than treating the entire length as a single data-name.",
       "patch_sha": "278198b33b0b00d28bd60a626cbf1edc12ac87ad",
@@ -155,6 +180,15 @@
       "pr": 329,
       "ci": {
         "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41697233013"
+      },
+      "benchmark": {
+        "tested_so_far": 250,
+        "shard_scores": {
+          "holdout_0": 61,
+          "holdout_3": 70
+        },
+        "remaining_shards": 2,
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41697232692"
       }
     },
     {
@@ -171,17 +205,23 @@
     },
     {
       "id": "C008",
-      "status": "pending_ci",
+      "status": "ci_revision_pending",
       "branch": "experiment-massive-16/sequential-rewrite",
       "hypothesis": "Implement sequential REWRITE at the most recently read record position, requiring OPEN I-O and a prior successful READ, with statuses 49, 43, 44 and 00.",
-      "patch_sha": "2b05f2a22bc0a021225688704d93d37123226967",
+      "patch_sha": "ac55f1255a0f98d70050a33842399b6bf4e4d41a",
       "evidence": "GnuCOBOL Programmer's Guide section 7.8.37: REWRITE requires OPEN I-O, a prior READ for sequential organization, and cannot be used with LINE SEQUENTIAL. GnuCOBOL status codes 43/44/49 are documented.",
       "tests": [
         "test_rewrite_replaces_most_recently_read_sequential_record",
         "test_rewrite_without_prior_read_returns_43",
         "test_rewrite_on_input_file_returns_49"
       ],
-      "pr": 331
+      "pr": 331,
+      "ci": {
+        "previous_run": "failed",
+        "failure_cause": "three assertions compared actual newline characters against literal backslash-n strings",
+        "revision": "fixed test expected strings; runtime implementation unchanged",
+        "latest_run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41700638816"
+      }
     },
     {
       "id": "C009",
