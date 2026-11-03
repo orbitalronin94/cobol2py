@@ -137,11 +137,15 @@
     },
     {
       "id": "C009",
-      "status": "unassigned",
-      "branch": null,
-      "hypothesis": null,
-      "patch_sha": null,
-      "evidence": null
+      "status": "pending_ci",
+      "branch": "experiment-massive-16/read-after-eof-status46",
+      "hypothesis": "Track per-file EOF state so the first unsuccessful sequential READ returns status 10 and another READ before reopen returns status 46.",
+      "patch_sha": "98f1c2b3949b43bf0a83e8d9cb46e5fac9abb297",
+      "evidence": "GnuCOBOL sequential file status references document status 10 at end and status 46 for sequential READ with no valid next record after AT END has already been reached.",
+      "tests": [
+        "test_second_read_after_eof_returns_status_46"
+      ],
+      "pr": 332
     },
     {
       "id": "C010",
