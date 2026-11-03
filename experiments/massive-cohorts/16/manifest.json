@@ -32,6 +32,21 @@
           "browser smoke"
         ],
         "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41696275249"
+      },
+      "benchmark": {
+        "run": 595,
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41696238387",
+        "tested": 500,
+        "exact_matches": 251,
+        "rate_percent": 50.2,
+        "shard_scores": [
+          61,
+          52,
+          67,
+          71
+        ],
+        "same_run_main_comparison": "not_performed",
+        "regression_status": "unknown_until_cohort_pairwise_run"
       }
     },
     {
