@@ -3818,7 +3818,7 @@ def translate_statement(
         return assignments or [f"# INITIALIZE sin campos traducibles: {s}"]
     # INSPECT REPLACING supports ALL and FIRST literal substitutions.
     replacing_match = re.fullmatch(
-        rf"INSPECT\s+({DATA_REF_PATTERN})\s+REPLACING\s+(ALL|FIRST)\\s+(.+?)\s+BY\s+(.+?)(?:\s+END-INSPECT)?",
+        rf"INSPECT\s+({DATA_REF_PATTERN})\s+REPLACING\s+(ALL|FIRST)\s+(.+?)\s+BY\s+(.+?)(?:\s+END-INSPECT)?",
         s,
         re.IGNORECASE,
     )
