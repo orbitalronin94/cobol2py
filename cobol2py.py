@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Holdout measurement trigger (no runtime behavior change).
 """
 cobol2py.py — Traductor COBOL → Python (v0.0.4)
 Un archivo. Sin dependencias. Solo stdlib.
