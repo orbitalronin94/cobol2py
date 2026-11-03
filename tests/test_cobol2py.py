@@ -4399,3 +4399,28 @@ MAIN.
         )
         self.assertEqual(namespace["_cobol_open_modes"], {})
 
+
+
+class UnstringPointerTests(unittest.TestCase):
+    def test_unstring_pointer_starts_at_current_position_and_advances(self):
+        variables = {
+            "WS-SOURCE": cobol2py.CobolVar(level=1, name="WS-SOURCE", pic="X(10)"),
+            "WS-FIRST": cobol2py.CobolVar(level=1, name="WS-FIRST", pic="X(3)"),
+            "WS-SECOND": cobol2py.CobolVar(level=1, name="WS-SECOND", pic="X(3)"),
+            "WS-PTR": cobol2py.CobolVar(level=1, name="WS-PTR", pic="9(2)"),
+        }
+        lines = cobol2py.translate_statement(
+            'UNSTRING WS-SOURCE DELIMITED BY "," INTO WS-FIRST WS-SECOND WITH POINTER WS-PTR',
+            set(),
+            variables,
+        )
+        namespace = {
+            "ws_source": "X,A,B     ",
+            "ws_first": "   ",
+            "ws_second": "   ",
+            "ws_ptr": 3,
+        }
+        exec("\\n".join(lines or []), namespace)
+        self.assertEqual(namespace["ws_first"], "A  ")
+        self.assertEqual(namespace["ws_second"], "B  ")
+        self.assertEqual(namespace["ws_ptr"], 6)
