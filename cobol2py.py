@@ -3509,12 +3509,27 @@ def translate_statement(
 
     if upper in ("STOP RUN", "STOP RUN."):
         return ["raise _CobolStopRun"]
-    open_match = re.fullmatch(r"OPEN\s+(INPUT|OUTPUT|EXTEND|I-O)\s+(.+)", s, re.IGNORECASE)
+    open_match = re.fullmatch(r"OPEN\s+(.+)", s, re.IGNORECASE)
     if open_match:
-        mode, names = open_match.groups()
-        file_names = re.findall(r"[A-Za-z0-9_-]+", names)
-        if file_names:
-            return [f"_cobol_open({name.upper()!r}, {mode.upper()!r})" for name in file_names]
+        clauses = re.split(r"\b(INPUT|OUTPUT|EXTEND|I-O)\b", open_match.group(1), flags=re.IGNORECASE)
+        mode = None
+        operations = []
+        modifiers = {"WITH", "NO", "REWIND", "LOCK", "SHARING", "ALL", "OTHER", "READ", "ONLY", "REVERSED"}
+        for clause in clauses:
+            token = clause.strip().upper()
+            if token in {"INPUT", "OUTPUT", "EXTEND", "I-O"}:
+                mode = token
+                continue
+            if mode:
+                file_names = [
+                    name for name in re.findall(r"[A-Za-z0-9_-]+", clause)
+                    if name.upper() not in modifiers
+                ]
+                operations.extend(
+                    f"_cobol_open({name.upper()!r}, {mode!r})" for name in file_names
+                )
+        if operations:
+            return operations
     close_match = re.fullmatch(r"CLOSE\s+(.+)", s, re.IGNORECASE)
     if close_match:
         file_names = re.findall(r"[A-Za-z0-9_-]+", close_match.group(1))
