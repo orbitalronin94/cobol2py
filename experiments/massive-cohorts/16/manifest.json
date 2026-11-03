@@ -187,11 +187,15 @@
     },
     {
       "id": "C013",
-      "status": "unassigned",
-      "branch": null,
-      "hypothesis": null,
-      "patch_sha": null,
-      "evidence": null
+      "status": "pending_ci",
+      "branch": "experiment-massive-16/unstring-tally-increment",
+      "hypothesis": "UNSTRING TALLYING IN must add the number of populated receiving fields to the existing tally value instead of replacing it.",
+      "patch_sha": "0a32585adeb02329334d38485390073b7936eeb9",
+      "evidence": "Current translate_statement assigns min(len(parts), targets) directly to the tally item. COBOL TALLYING IN is an accumulating counter; a nonzero initial value is lost.",
+      "tests": [
+        "test_unstring_tallying_in_adds_to_existing_counter"
+      ],
+      "pr": 338
     },
     {
       "id": "C014",
