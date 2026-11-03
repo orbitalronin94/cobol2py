@@ -367,8 +367,8 @@ jobs:
             exit 0
           fi
           {
-            printf '\\n\\n---\\n\\n## Ejecución automática #%s (run %s)\\n\\n' "$RUN_NUMBER" "$RUN_ID"
-            printf -- '- Evento: `%s`\\n- Tamaño solicitado: `%s` candidatas (más baseline main)\\n- Informe: https://github.com/%s/actions/runs/%s\\n\\n' "$EVENT_NAME" "$COHORT_SIZE" "$GITHUB_REPOSITORY" "$RUN_ID"
+            printf '\n\n---\n\n## Ejecución automática #%s (run %s)\n\n' "$RUN_NUMBER" "$RUN_ID"
+            printf -- '- Evento: `%s`\n- Tamaño solicitado: `%s` candidatas (más baseline main)\n- Informe: https://github.com/%s/actions/runs/%s\n\n' "$EVENT_NAME" "$COHORT_SIZE" "$GITHUB_REPOSITORY" "$RUN_ID"
             cat "$REPORT_FILE"
           } >> "$doc"
           git config user.name "github-actions[bot]"
