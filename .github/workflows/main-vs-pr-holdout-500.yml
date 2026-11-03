@@ -153,3 +153,64 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
           compression-level: 1
+
+  aggregate:
+    name: Aggregate paired 500-case comparison
+    needs: compare
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all paired shard reports
+        uses: actions/download-artifact@v6
+        with:
+          pattern: main-vs-pr-holdout-*-\${{ github.run_number }}
+          path: paired-reports
+          merge-multiple: true
+
+      - name: Compare exact case sets and scores
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import glob, json, pathlib, sys
+          root = pathlib.Path("paired-reports")
+          reports = {"baseline": [], "candidate": []}
+          for variant in reports:
+              for path in sorted(root.glob(f"{variant}/*/external-corpus-report.json")):
+                  reports[variant].append(json.loads(path.read_text(encoding="utf-8")))
+          if any(len(items) != 4 for items in reports.values()):
+              raise SystemExit(f"Expected four shard reports per side; got { {k: len(v) for k, v in reports.items()} }")
+          cases = {}
+          for variant, shards in reports.items():
+              cases[variant] = {case["id"]: case["status"] for shard in shards for case in shard["results"]}
+          if len(cases["baseline"]) != 500 or len(cases["candidate"]) != 500:
+              raise SystemExit(f"Expected 500 tested cases per side; got baseline={len(cases['baseline'])}, candidate={len(cases['candidate'])}")
+          if cases["baseline"].keys() != cases["candidate"].keys():
+              missing_candidate = sorted(cases["baseline"].keys() - cases["candidate"].keys())
+              missing_baseline = sorted(cases["candidate"].keys() - cases["baseline"].keys())
+              raise SystemExit(f"Case sets differ. Missing candidate={missing_candidate[:10]}; missing baseline={missing_baseline[:10]}")
+          baseline_passed = sum(status == "passed" for status in cases["baseline"].values())
+          candidate_passed = sum(status == "passed" for status in cases["candidate"].values())
+          delta = candidate_passed - baseline_passed
+          print("# Main vs candidate — paired X-COBOL v2 holdout")
+          print()
+          print("| Side | Exact matches | Tested | Rate |")
+          print("|---|---:|---:|---:|")
+          print(f"| main | {baseline_passed} | 500 | {baseline_passed / 5:.2f}% |")
+          print(f"| candidate | {candidate_passed} | 500 | {candidate_passed / 5:.2f}% |")
+          print()
+          print(f"**Delta:** {delta:+d} cases ({delta / 5:+.2f} percentage points).")
+          regressions = sorted(case_id for case_id in cases["baseline"] if cases["baseline"][case_id] == "passed" and cases["candidate"][case_id] != "passed")
+          improvements = sorted(case_id for case_id in cases["baseline"] if cases["baseline"][case_id] != "passed" and cases["candidate"][case_id] == "passed")
+          print(f"**Regressions:** {len(regressions)}; **improvements:** {len(improvements)}.")
+          print()
+          print("## Per-case status changes")
+          for case_id in sorted(set(regressions + improvements)):
+              print(f"- {case_id}: main={cases['baseline'][case_id]}, candidate={cases['candidate'][case_id]}")
+          with open(__import__("os").environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+              summary.write("\\n" + "\\n".join([
+                  "## Paired 500-case result",
+                  f"- main: **{baseline_passed}/500 ({baseline_passed / 5:.2f}%)**",
+                  f"- candidate: **{candidate_passed}/500 ({candidate_passed / 5:.2f}%)**",
+                  f"- delta: **{delta:+d} cases ({delta / 5:+.2f} pp)**",
+                  f"- case-level regressions: **{len(regressions)}**; improvements: **{len(improvements)}**",
+              ]) + "\\n")
+          PY
