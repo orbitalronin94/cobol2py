@@ -4399,3 +4399,24 @@ MAIN.
         )
         self.assertEqual(namespace["_cobol_open_modes"], {})
 
+
+
+class InspectReplacingTests(unittest.TestCase):
+    def _run(self, statement):
+        variables = {
+            "WS-TEXT": cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(5)"),
+        }
+        lines = cobol2py.translate_statement(statement, set(), variables)
+        namespace = {"ws_text": "AABAA"}
+        exec("\\n".join(lines or []), namespace)
+        return namespace["ws_text"], lines
+
+    def test_inspect_replacing_all_replaces_every_occurrence(self):
+        result, lines = self._run('INSPECT WS-TEXT REPLACING ALL "A" BY "Z"')
+        self.assertEqual(result, "ZZBZZ")
+        self.assertTrue(lines)
+
+    def test_inspect_replacing_first_replaces_only_first_occurrence(self):
+        result, lines = self._run('INSPECT WS-TEXT REPLACING FIRST "A" BY "Z"')
+        self.assertEqual(result, "ZABAA")
+        self.assertTrue(lines)
