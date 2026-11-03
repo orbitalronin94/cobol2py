@@ -4392,7 +4392,7 @@ MAIN.
             finally:
                 os.chdir(previous)
 
-        self.assertEqual(output.getvalue(), "48\\n", generated)
+        self.assertEqual(output.getvalue(), "48\n", generated)
         self.assertEqual(
             namespace["ws_status"],
             {"ws_status_hi": "0", "ws_status_lo": "0"},
