@@ -321,11 +321,16 @@
     },
     {
       "id": "C015",
-      "status": "unassigned",
-      "branch": null,
-      "hypothesis": null,
-      "patch_sha": null,
-      "evidence": null
+      "status": "pending_ci",
+      "branch": "experiment-massive-16/unstring-delimiter-count-in-verified",
+      "hypothesis": "For a single-delimiter, single-receiver UNSTRING, populate DELIMITER IN with the delimiter consumed and COUNT IN with the number of characters moved.",
+      "patch_sha": "a9a8b6b00e209e0088c646d527fd3f542a022134",
+      "evidence": "Main parses neither DELIMITER IN nor COUNT IN; an existing experimental branch exposed these clauses but did not assign their values. This revision adds both assignments for the explicitly scoped single-receiver subset.",
+      "tests": [
+        "test_unstring_delimiter_in_and_count_in_single_receiver"
+      ],
+      "pr": 340,
+      "scope_limit": "One receiving field, one delimiter, no ALL; per-receiver options and multiple delimiters are not covered."
     },
     {
       "id": "C016",
