@@ -35,7 +35,7 @@ concurrency:
 jobs:
   prepare-corpus:
     # One download/checksum per workflow run; shards restore the verified archive.
-    if: github.event_name != 'pull_request' || !(startsWith(github.head_ref, 'experiment-v2/') || startsWith(github.head_ref, 'experiment-v3/') || startsWith(github.head_ref, 'experiment-v4/'))
+    if: github.event_name != 'pull_request' || !(startsWith(github.head_ref, 'experiment-v2/') || startsWith(github.head_ref, 'experiment-v3/') || startsWith(github.head_ref, 'experiment-v4/') || startsWith(github.head_ref, 'feat/consolidacion-main-holdout'))
     runs-on: ubuntu-latest
     steps:
       - name: Restore pinned X-COBOL v2 archive cache
@@ -65,7 +65,7 @@ jobs:
   external-python:
     needs: prepare-corpus
     # Candidate PRs are evaluated only by the holdout-only tournament; never run primary shards here.
-    if: github.event_name != 'pull_request' || !(startsWith(github.head_ref, 'experiment-v2/') || startsWith(github.head_ref, 'experiment-v3/') || startsWith(github.head_ref, 'experiment-v4/'))
+    if: github.event_name != 'pull_request' || !(startsWith(github.head_ref, 'experiment-v2/') || startsWith(github.head_ref, 'experiment-v3/') || startsWith(github.head_ref, 'experiment-v4/') || startsWith(github.head_ref, 'feat/consolidacion-main-holdout'))
     strategy:
       fail-fast: false
       # One fixed evaluation sample only: 500 cases, four bounded shards.
