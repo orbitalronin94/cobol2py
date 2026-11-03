@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Run a deterministic 500-program differential sweep over the X-COBOL archive.
 
+The promotion workflows pin the sample to skip=500 and target=500; do not alter
+that selection in the runner when experimenting with translation behavior.
+
 The source archive is an external input and is never copied into the repository.
 Run only in Dockerfile.external, with networking disabled and the checkout read-only.
 """
