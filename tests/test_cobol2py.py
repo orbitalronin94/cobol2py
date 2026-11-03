@@ -4413,5 +4413,5 @@ class StringZeroesDelimiterRegressionTests(unittest.TestCase):
             variables,
         )
         namespace = {"ws_source": "A0B     ", "ws_dest": "        "}
-        exec("\\n".join(lines or []), namespace)
+        exec("\n".join(lines or []), namespace)
         self.assertEqual(namespace["ws_dest"], "A       ")
