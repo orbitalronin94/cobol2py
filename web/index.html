@@ -530,7 +530,7 @@ RE_OCCURS = re.compile(
     r"(?:\s+DEPENDING\s+ON\s+([A-Za-z0-9_\-]+))?",
     re.IGNORECASE,
 )
-RE_PARAGRAPH = re.compile(r"^([A-Za-z][A-Za-z0-9\\-]*)\\.(?:\\s+(.*))?$")
+RE_PARAGRAPH = re.compile(r"^([A-Za-z][A-Za-z0-9\-]*)\.(?:\s+(.*))?$")
 
 
 def _parse_indexed_by_names(rest: str) -> list[str]:

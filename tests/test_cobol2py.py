@@ -4438,5 +4438,5 @@ class InlineParagraphLabelTests(unittest.TestCase):
         output = StringIO()
         with redirect_stdout(output):
             namespace["_cobol_dispatch"]("MAIN")
-        self.assertEqual(output.getvalue(), "5\\n", generated)
+        self.assertEqual(output.getvalue(), "5\n", generated)
 
