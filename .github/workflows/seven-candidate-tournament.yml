@@ -26,6 +26,7 @@ concurrency:
 # One coordinator only: run on main workflow updates or explicit workflow_dispatch, never once per candidate PR.
 # Candidate PRs are refreshed against main; only the unchanged external holdout (skip=500, 500 cases) decides ranking.
 # Candidate scores are advisory: this workflow measures frozen PR SHAs and never merges candidates automatically.
+# Re-run the coordinator after candidate branch updates; primary-sample scoring is intentionally disabled.
 
 jobs:
   discover:
