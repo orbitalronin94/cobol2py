@@ -4399,3 +4399,107 @@ MAIN.
         )
         self.assertEqual(namespace["_cobol_open_modes"], {})
 
+
+
+class CobolOptionalFileOpenTests(unittest.TestCase):
+    def _run(self, source, directory):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<optional-file-open>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        previous = Path.cwd()
+        try:
+            os.chdir(directory)
+            with redirect_stdout(output):
+                namespace["main"]()
+        finally:
+            os.chdir(previous)
+        return output.getvalue(), namespace, generated
+
+    def test_extend_nonoptional_missing_file_returns_35_without_creating_file(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. EXTEND-MISSING.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT OUTPUT-FILE ASSIGN TO "missing-extend.dat"
+        ORGANIZATION IS LINE SEQUENTIAL
+        FILE STATUS IS WS-STATUS.
+DATA DIVISION.
+FILE SECTION.
+FD OUTPUT-FILE.
+01 OUTPUT-RECORD PIC X(4).
+WORKING-STORAGE SECTION.
+01 WS-STATUS PIC XX.
+PROCEDURE DIVISION.
+MAIN.
+    OPEN EXTEND OUTPUT-FILE.
+    DISPLAY WS-STATUS.
+    GOBACK.
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            output, _namespace, generated = self._run(source, directory)
+            self.assertFalse(Path(directory, "missing-extend.dat").exists(), generated)
+        self.assertEqual(output, "35\\n", generated)
+
+    def test_optional_extend_missing_file_creates_it_and_returns_05(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. OPTIONAL-EXTEND.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT OPTIONAL OUTPUT-FILE ASSIGN TO "optional-extend.dat"
+        ORGANIZATION IS LINE SEQUENTIAL
+        FILE STATUS IS WS-STATUS.
+DATA DIVISION.
+FILE SECTION.
+FD OUTPUT-FILE.
+01 OUTPUT-RECORD PIC X(4).
+WORKING-STORAGE SECTION.
+01 WS-STATUS PIC XX.
+PROCEDURE DIVISION.
+MAIN.
+    OPEN EXTEND OUTPUT-FILE.
+    DISPLAY WS-STATUS.
+    CLOSE OUTPUT-FILE.
+    GOBACK.
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            output, _namespace, generated = self._run(source, directory)
+            self.assertTrue(Path(directory, "optional-extend.dat").exists(), generated)
+        self.assertEqual(output, "05\\n", generated)
+
+    def test_optional_input_missing_file_returns_05_then_read_sets_eof_10(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. OPTIONAL-INPUT.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT OPTIONAL INPUT-FILE ASSIGN TO "optional-input.dat"
+        ORGANIZATION IS LINE SEQUENTIAL
+        FILE STATUS IS WS-STATUS.
+DATA DIVISION.
+FILE SECTION.
+FD INPUT-FILE.
+01 INPUT-RECORD PIC X(4).
+WORKING-STORAGE SECTION.
+01 WS-STATUS PIC XX.
+PROCEDURE DIVISION.
+MAIN.
+    OPEN INPUT INPUT-FILE.
+    DISPLAY WS-STATUS.
+    READ INPUT-FILE
+        AT END DISPLAY "EOF"
+    END-READ.
+    DISPLAY WS-STATUS.
+    CLOSE INPUT-FILE.
+    GOBACK.
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            output, _namespace, generated = self._run(source, directory)
+            self.assertFalse(Path(directory, "optional-input.dat").exists(), generated)
+        self.assertEqual(output, "05\\nEOF\\n10\\n", generated)
