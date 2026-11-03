@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   smoke:
-    if: github.event_name != 'pull_request' || (!startsWith(github.head_ref, 'experiment/') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/'))
+    if: github.event_name != 'pull_request' || (!startsWith(github.head_ref, 'experiment/') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/') && !startsWith(github.head_ref, 'feat/consolidacion-main-holdout'))
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
