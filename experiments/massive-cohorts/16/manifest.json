@@ -3,7 +3,7 @@
   "cohort_size": 16,
   "base_branch": "main",
   "base_sha_policy": "freeze main SHA at execution start; all candidates must derive from that SHA",
-  "status": "scaffold_only_candidates_not_yet_implemented",
+  "status": "active_candidates_under_ci_and_benchmark",
   "candidates": [
     {
       "id": "C001",
@@ -51,7 +51,7 @@
     },
     {
       "id": "C002",
-      "status": "pending_ci",
+      "status": "benchmark_below_historical_main",
       "branch": "experiment-massive-16/reopen-already-open-status41-verified",
       "hypothesis": "A second OPEN on an already-open file must return status 41 and preserve the original handle and open mode instead of replacing the live handle.",
       "patch_sha": "5f7393be5cc65a20f2e35f3eb8c2afdab63acc78",
@@ -59,23 +59,57 @@
       "tests": [
         "test_open_already_open_sets_41_and_preserves_original_handle"
       ],
-      "pr": 324
+      "pr": 324,
+      "ci": {
+        "result": "success",
+        "checks": [
+          "unit tests Python 3.10",
+          "unit tests Python 3.11",
+          "unit tests Python 3.12",
+          "unit tests Python 3.13",
+          "Java backend",
+          "GnuCOBOL reference",
+          "GnuCOBOL trace",
+          "browser smoke"
+        ],
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41696547199"
+      },
+      "benchmark": {
+        "tested": 500,
+        "exact_matches": 247,
+        "rate_percent": 49.4,
+        "shard_scores": [
+          51,
+          67,
+          60,
+          69
+        ],
+        "historical_main_exact_matches": 250,
+        "same_run_main_comparison": "not_performed",
+        "qualification": "rejected_below_historical_main"
+      }
     },
     {
       "id": "C003",
-      "status": "pending_ci",
+      "status": "ci_revision_pending",
       "branch": "experiment-massive-16/open-mixed-modes-verified",
       "hypothesis": "Parse one COBOL OPEN statement containing multiple mode groups (for example INPUT file-A and OUTPUT file-B) without applying the first mode to every file.",
-      "patch_sha": "b58b830830d6c9058263b332adb6316b4281aae6",
+      "patch_sha": "cece05ab28849a28ddc66b7fd8c6b923618ff31c",
       "evidence": "Current translate_statement handles only the first mode group and extracts all identifiers from the remaining text as filenames. This can interpret OUTPUT as a file name and open an output file in INPUT mode. COBOL OPEN syntax permits multiple mode groups in one statement.",
       "tests": [
         "test_one_open_statement_can_open_input_and_output_files"
       ],
-      "pr": 326
+      "pr": 326,
+      "ci": {
+        "previous_run": "failed",
+        "failure_cause": "mode-token regex split identifiers such as INPUT-FILE at the hyphen; this made generated _cobol_open receive FILE instead of INPUT-FILE and caused four runtime tests to fail.",
+        "revision": "mode keyword matching now excludes adjacent word and hyphen characters",
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41700038305"
+      }
     },
     {
       "id": "C004",
-      "status": "pending_ci",
+      "status": "tests_green_benchmark_running",
       "branch": "experiment-massive-16/string-zeroes-delimiter",
       "hypothesis": "Correct STRING DELIMITED BY ZEROES so it recognizes the ZEROES spelling and terminates on the COBOL character '0', not NUL.",
       "patch_sha": "8f76e2bd5f3a47b05104b2f8414cc963a3a6bad7",
@@ -83,11 +117,15 @@
       "tests": [
         "test_string_delimited_by_zeroes_stops_at_character_zero"
       ],
-      "pr": 327
+      "pr": 327,
+      "ci": {
+        "result": "success",
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41696952737"
+      }
     },
     {
       "id": "C005",
-      "status": "pending_ci",
+      "status": "tests_green_benchmark_running",
       "branch": "experiment-massive-16/arithmetic-reference-offset",
       "hypothesis": "Translate arithmetic expressions in COBOL reference-modification start offsets rather than treating the entire expression as a single data-name.",
       "patch_sha": "580dc50b557ecd4b7824071c69887ad568270686",
@@ -95,11 +133,15 @@
       "tests": [
         "test_arithmetic_offset_is_translated_as_an_expression"
       ],
-      "pr": 328
+      "pr": 328,
+      "ci": {
+        "result": "success",
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41697157948"
+      }
     },
     {
       "id": "C006",
-      "status": "pending_ci",
+      "status": "tests_in_progress_benchmark_running",
       "branch": "experiment-massive-16/arithmetic-reference-length",
       "hypothesis": "Translate arithmetic expressions in COBOL reference-modification lengths rather than treating the entire length as a single data-name.",
       "patch_sha": "278198b33b0b00d28bd60a626cbf1edc12ac87ad",
@@ -107,7 +149,10 @@
       "tests": [
         "test_arithmetic_length_is_translated_as_an_expression"
       ],
-      "pr": 329
+      "pr": 329,
+      "ci": {
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41697233013"
+      }
     },
     {
       "id": "C007",
