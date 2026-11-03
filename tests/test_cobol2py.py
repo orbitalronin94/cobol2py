@@ -4439,7 +4439,7 @@ MAIN.
         output = StringIO()
         previous = Path.cwd()
         with tempfile.TemporaryDirectory() as directory:
-            Path(directory, "input-mixed.dat").write_text("ABCD\\n", encoding="latin-1")
+            Path(directory, "input-mixed.dat").write_text("ABCD\n", encoding="latin-1")
             try:
                 os.chdir(directory)
                 with redirect_stdout(output):
@@ -4448,4 +4448,4 @@ MAIN.
             finally:
                 os.chdir(previous)
         self.assertEqual(output.getvalue(), "", generated)
-        self.assertEqual(written, "ABCD\\n", generated)
+        self.assertEqual(written, "ABCD\n", generated)
