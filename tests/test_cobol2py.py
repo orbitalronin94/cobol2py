@@ -4399,3 +4399,51 @@ MAIN.
         )
         self.assertEqual(namespace["_cobol_open_modes"], {})
 
+
+
+class CobolReopenFileRuntimeTests(unittest.TestCase):
+    def test_open_already_open_sets_41_and_preserves_original_handle(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. REOPEN-STATUS.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT TEST-FILE ASSIGN TO "reopen-status.dat"
+        ORGANIZATION IS LINE SEQUENTIAL
+        FILE STATUS IS WS-STATUS.
+DATA DIVISION.
+FILE SECTION.
+FD TEST-FILE.
+01 TEST-RECORD PIC X(4).
+WORKING-STORAGE SECTION.
+01 WS-STATUS PIC XX.
+PROCEDURE DIVISION.
+MAIN.
+    OPEN OUTPUT TEST-FILE.
+    MOVE "**" TO WS-STATUS.
+    OPEN INPUT TEST-FILE.
+    DISPLAY WS-STATUS.
+    MOVE "DATA" TO TEST-RECORD.
+    WRITE TEST-RECORD.
+    CLOSE TEST-FILE.
+    GOBACK.
+"""
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<reopen-status>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        previous = Path.cwd()
+        with tempfile.TemporaryDirectory() as directory:
+            try:
+                os.chdir(directory)
+                with redirect_stdout(output):
+                    namespace["main"]()
+                contents = Path("reopen-status.dat").read_text(encoding="latin-1")
+            finally:
+                os.chdir(previous)
+        self.assertEqual(output.getvalue(), "41\n", generated)
+        self.assertEqual(contents, "DATA\n", generated)
