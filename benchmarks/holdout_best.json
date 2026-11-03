@@ -1,21 +1,24 @@
 {
-  "corpus": "X-COBOL v2 fixed evaluation half",
-  "best_passed": 243,
-  "best_tested": 500,
-  "best_percent": 48.6,
-  "source_commit": "4fd4900eb1036e9fc7395b9550985cf4d50b7537",
+  "corpus": "X-COBOL v2 fixed paired evaluation (primary + holdout)",
+  "best_passed": 499,
+  "best_tested": 1000,
+  "best_percent": 49.9,
+  "primary_passed": 249,
+  "primary_tested": 500,
+  "primary_percent": 49.8,
+  "holdout_passed": 250,
+  "holdout_tested": 500,
+  "holdout_percent": 50,
+  "source_commit": "87eaba8043d6a7280db1902ad36ca41fb2a3885d",
   "updated_at": "2026-11-03",
-  "policy": "Recorded from the complete, checksum-verified four-shard 500-case X-COBOL v2 run #536 after PRs #274-#281 were integrated into main. PR #282 triggered the run; future records require a complete comparable run that strictly beats this score. PR fast screens are filters only.",
-  "source_run": 41593293825,
-  "source_prs": [
-    274,
-    275,
-    276,
-    277,
-    278,
-    279,
-    280,
-    281
-  ],
-  "trigger_pr": 282
+  "policy": "Recorded from complete, checksum-verified paired X-COBOL v2 run #538: four 125-case primary shards (249/500) plus four 125-case holdout shards (250/500). The exact measured candidate SHA was integrated by PR #284. Future records require a complete comparable eight-shard run strictly exceeding 499/1000; fast screens are filters only.",
+  "source_run": 41602383991,
+  "source_pr": 284,
+  "previous_holdout_record": {
+    "passed": 243,
+    "tested": 500,
+    "percent": 48.6,
+    "run": 41593293825,
+    "source_commit": "4fd4900eb1036e9fc7395b9550985cf4d50b7537"
+  }
 }
