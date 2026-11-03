@@ -4305,6 +4305,7 @@ PROCEDURE DIVISION.
 MAIN.
     OPEN OUTPUT TEST-FILE.
     DISPLAY WS-STATUS-HI WS-STATUS-LO.
+    MOVE "**" TO WS-STATUS.
     READ TEST-FILE
         AT END DISPLAY "AT-END"
         NOT AT END DISPLAY "NOT-AT-END"
@@ -4337,6 +4338,64 @@ MAIN.
         self.assertEqual(
             namespace["ws_status"],
             {"ws_status_hi": "4", "ws_status_lo": "7"},
+        )
+        self.assertEqual(namespace["_cobol_open_modes"], {})
+
+    def test_write_to_input_file_sets_group_file_status_48(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+        import os
+        import tempfile
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. FILE-STATUS-WRITE-INPUT.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT TEST-FILE ASSIGN TO "write-status-test.dat"
+        ORGANIZATION IS LINE SEQUENTIAL
+        FILE STATUS IS WS-STATUS.
+DATA DIVISION.
+FILE SECTION.
+FD TEST-FILE.
+01 TEST-RECORD PIC X(4).
+WORKING-STORAGE SECTION.
+01 WS-STATUS.
+   03 WS-STATUS-HI PIC X.
+   03 WS-STATUS-LO PIC X.
+PROCEDURE DIVISION.
+MAIN.
+    OPEN OUTPUT TEST-FILE.
+    MOVE "DATA" TO TEST-RECORD.
+    WRITE TEST-RECORD.
+    CLOSE TEST-FILE.
+    OPEN INPUT TEST-FILE.
+    MOVE "**" TO WS-STATUS.
+    WRITE TEST-RECORD.
+    DISPLAY WS-STATUS-HI WS-STATUS-LO.
+    CLOSE TEST-FILE.
+    STOP RUN.
+"""
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<file-status-write-input>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        previous = os.getcwd()
+        with tempfile.TemporaryDirectory() as directory:
+            try:
+                os.chdir(directory)
+                with redirect_stdout(output):
+                    namespace["_cobol_dispatch"]("MAIN")
+                with open("write-status-test.dat", encoding="latin-1") as record_file:
+                    self.assertEqual(record_file.read(), "DATA\\n")
+            finally:
+                os.chdir(previous)
+
+        self.assertEqual(output.getvalue(), "48\\n", generated)
+        self.assertEqual(
+            namespace["ws_status"],
+            {"ws_status_hi": "0", "ws_status_lo": "0"},
         )
         self.assertEqual(namespace["_cobol_open_modes"], {})
 

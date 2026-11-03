@@ -399,3 +399,28 @@ Priorizar la asociación correcta de `ACCEPT` con pantalla/terminal y la estruct
 5. Mantener la comparación primaria/holdout y el análisis por ID. No modificar corpus, stdin, timeout, captura, stdout ni criterio de equivalencia para mejorar el score.
 
 La primera iteración técnica debería ser una prueba mínima de `OPEN INPUT` + `READ AT END` + `FILE STATUS`, y otra de `OPEN OUTPUT` + `WRITE` + `CLOSE`. Si no pasan contra GnuCOBOL, no se amplía a organizaciones indexadas. La aceptación exige suite, regresiones, primaria y holdout completos sobre el mismo SHA, con ganancias y pérdidas por ID.
+
+
+## 2026-11-03 — grouped FILE STATUS / invalid READ candidate
+
+The best completed external candidate measurement in this iteration is PR #283, head 609723976a31c8c666d3e3f7106d30cbaaae980c. The eight checksum-verified Python shards completed successfully in workflow #41599425845:
+
+| Sample | Exact matches | Rate |
+|---|---:|---:|
+| Primary | 249/500 | 49.8% |
+| Holdout | 248/500 | 49.6% |
+| Combined | 497/1000 | 49.7% |
+
+This is a candidate observation, not a validated new record. The current main translator blob is 345cbd9c8f40f2673670b5db410bb0ba9c6aa2f2; the best current-main holdout remains 243/500 (48.6%) from workflow #41593293825. A same-SHA current-main primary measurement is not yet available, so the 249 primary result cannot yet be compared to current main case-for-case. The older paired 480/1000 result is from a different translator blob and is historical context only.
+
+The separate multilang run #41599425787, on the same candidate SHA, reported Python 247/500 (49.4%), C 22/500 (4.4%), and Rust 21/500 (4.2%). The two Python holdout measurements differ by one case. Per-case comparison identifies three unstable outcomes: rock-paper-scissors (time/random dependent), d12b (program timeout in one run), and exec84-2 (translator timeout in one run). Keep the corpus and exact-match rule unchanged; repeat the measurement and investigate the nondeterminism before promoting a record.
+
+### Root cause and exposed follow-up
+
+The baseline diagnostics showed six NIST cases failing while a grouped FILE STATUS item was represented as a string and then indexed as a group. The candidate now passes SQ136A, SQ147A, SQ149A, SQ150A, and SQ229A. It exposes the next error in SQ155A: after OPEN INPUT, COBOL attempts WRITE; the generated runtime calls handle.write on a read-only handle and raises io.UnsupportedOperation. COBOL requires file status 48 for a WRITE when the file is not open for OUTPUT, EXTEND, or I-O. The next fix adds that mode guard and a regression that first moves "**" into the grouped status item.
+
+The PR test run #41599425917 failed because web/index.html did not contain the current cobol2py.py source. The translator/runtime tests themselves reached the embedded-source synchronization failure; do not merge until the standalone copy is regenerated and the complete matrix passes.
+
+### Promotion policy
+
+Do not update benchmarks/holdout_best.json or merge this candidate on the basis of the 49.7% observation. First validate the WRITE-mode correction, synchronize the standalone HTML, obtain exact-match primary and holdout comparisons against the same pinned main SHA, and repeat the candidate run to check stability. The 75% target remains 750/1000 exact matches.
