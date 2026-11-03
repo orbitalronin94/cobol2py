@@ -204,7 +204,7 @@
     },
     {
       "id": "C007",
-      "status": "pending_ci",
+      "status": "ci_green_benchmark_250_pairwise_required",
       "branch": "experiment-massive-16/split-level-declaration",
       "hypothesis": "Parse COBOL data declarations whose level number (such as 01) is placed on its own physical line and whose data-name/PIC clause follows on the next line.",
       "patch_sha": "e9a728be2c56ea5b50c63f9f48e3790342650aba",
@@ -212,7 +212,26 @@
       "tests": [
         "test_level_number_on_own_line_applies_to_following_data_name"
       ],
-      "pr": 330
+      "pr": 330,
+      "ci": {
+        "result": "success",
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41697487755"
+      },
+      "benchmark": {
+        "tested": 500,
+        "exact_matches": 250,
+        "rate_percent": 50,
+        "shard_scores": [
+          61,
+          52,
+          67,
+          70
+        ],
+        "historical_main_exact_matches": 250,
+        "same_run_main_comparison": "not_performed",
+        "qualification": "no raw-score improvement; zero regressions unproven",
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41697487620"
+      }
     },
     {
       "id": "C008",
@@ -270,7 +289,7 @@
     },
     {
       "id": "C011",
-      "status": "pending_ci",
+      "status": "ci_green_benchmark_249_pairwise_required",
       "branch": "experiment-massive-16/accept-date-time",
       "hypothesis": "Implement ACCEPT FROM DATE, DATE YYYYMMDD, DAY, DAY-OF-WEEK and TIME using the host clock and COBOL-compatible output formats.",
       "patch_sha": "d31182977d17ea5ab131e3b99056b347719097fa",
@@ -279,11 +298,30 @@
         "test_accept_from_date_and_time_emits_runtime_helper",
         "test_accept_date_runtime_formats"
       ],
-      "pr": 334
+      "pr": 334,
+      "ci": {
+        "result": "success",
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41698856882"
+      },
+      "benchmark": {
+        "tested": 500,
+        "exact_matches": 249,
+        "rate_percent": 49.8,
+        "shard_scores": [
+          61,
+          52,
+          66,
+          70
+        ],
+        "historical_main_exact_matches": 250,
+        "same_run_main_comparison": "not_performed",
+        "qualification": "below historical main; not eligible",
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41698856900"
+      }
     },
     {
       "id": "C012",
-      "status": "pending_ci",
+      "status": "ci_green_benchmark_249_pairwise_required",
       "branch": "experiment-massive-16/inspect-replacing-final",
       "hypothesis": "Implement INSPECT identifier REPLACING ALL/FIRST literal BY literal, preserving occurrence count semantics.",
       "patch_sha": "ba5d7728161edd48fc6f21ed05171f13a0b2b7d2",
@@ -292,7 +330,26 @@
         "test_inspect_replacing_all_replaces_every_occurrence",
         "test_inspect_replacing_first_replaces_only_first_occurrence"
       ],
-      "pr": 337
+      "pr": 337,
+      "ci": {
+        "result": "success",
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41699228371"
+      },
+      "benchmark": {
+        "tested": 500,
+        "exact_matches": 249,
+        "rate_percent": 49.8,
+        "shard_scores": [
+          61,
+          52,
+          66,
+          70
+        ],
+        "historical_main_exact_matches": 250,
+        "same_run_main_comparison": "not_performed",
+        "qualification": "below historical main; not eligible",
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41699239905"
+      }
     },
     {
       "id": "C013",
