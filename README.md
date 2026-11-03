@@ -1,6 +1,6 @@
 # cobol2py
 
-> **Estado de evaluación (2026-11-03):** el mejor candidato integrado es la PR [#284](https://github.com/orbitalronin94/cobol2py/pull/284), validada en el benchmark externo completo [#538](https://github.com/orbitalronin94/cobol2py/actions/runs/41602383991) sobre el SHA `87eaba8043d6a7280db1902ad36ca41fb2a3885d`: **499/1.000 (49,90 %)**, con 249/500 (49,8 %) en primaria y 250/500 (50,0 %) en holdout. Los ocho shards de 125 terminaron correctamente y el corpus pasó la verificación de checksum. En particular, la mitad holdout mejora de 243/500 (48,6 %) a 250/500 (50,0 %), +7 coincidencias (+1,40 puntos porcentuales). La medición de #538 corresponde exactamente al snapshot integrado; las adiciones posteriores del antiguo branch #283 no se incluyeron. Esta cifra es una medición de las dos muestras fijas de X-COBOL v2, no una estimación de compatibilidad universal ni una validación del objetivo de release del 75 %.
+> **Estado de evaluación (2026-11-03):** la línea base vigente de la evaluación externa Python es **250/500 (50,0 %)** sobre la muestra fija X-COBOL v2, medida en el run [#538](https://github.com/orbitalronin94/cobol2py/actions/runs/41602383991) y registrada en [holdout-record.json](benchmarks/holdout-record.json). Para declarar una mejora se requieren **al menos 251/500**, 500 casos completos, el checksum verificado, el SHA exacto de la candidata y la suite completa. La muestra primaria no participa en el ranking iterativo. Esta muestra fija se consulta repetidamente durante el desarrollo: no es un holdout estadístico intacto ni una estimación de compatibilidad universal.
 
 > Traductor COBOL a Python, con prototipos experimentales a C y Rust. El núcleo de análisis COBOL se comparte; los backends nativos tienen cobertura limitada y no prometen equivalencia general.
 
@@ -8,16 +8,19 @@
 
 La traducción busca **leerse** y, para el subconjunto cubierto por regresiones diferenciales, también ejecutarse. No promete equivalencia completa de COBOL: las construcciones no soportadas quedan documentadas o señaladas explícitamente.
 
-## Protocolo de evaluación rápida y torneo
+## Protocolo de evaluación y torneo
 
-El workflow `.github/workflows/external-python-benchmark.yml` ejecuta el filtro rápido de 50 casos y conserva el informe como artefacto. Se eliminó el job agregador de scorecard porque no debe decidir el estado de una PR: los números verificables se leen directamente del log del benchmark y de su informe JSON/Markdown. La evaluación externa completa pareada de 1.000 casos (500 primaria + 500 holdout) es la que demuestra una mejora comparable.
+La única métrica externa que decide el ranking de las candidatas Python es el workflow `.github/workflows/seven-candidate-tournament.yml`, que mide los **500 casos fijos de la segunda mitad** de X-COBOL v2 (`skip=500`, `target=500`). La ejecución se divide en cuatro shards de 125 casos. El workflow `.github/workflows/external-python-benchmark.yml` conserva la misma política para la evaluación de PR; no ejecuta la muestra primaria.
 
-1. **Referencia dinámica:** `benchmarks/holdout_best.json` registra el mejor resultado completo y pareado validado del corpus fijo: primaria + holdout, 1.000 casos en total. El récord vigente es 499/1.000 (49,90 %), con desglose por muestra y commit medido.
-2. **Filtro de 50 casos:** en cada PR se ejecutan 50 programas de la segunda mitad del corpus fijo. Es una señal temprana y no bloquea ni aprueba una PR por sí sola. El informe y los logs muestran coincidencias exactas, errores y tiempo; no se usa un agregador de scorecard.
-3. **Evaluación completa pareada:** antes de aceptar una mejora se ejecutan los ocho lotes de 125 (cuatro primaria y cuatro holdout), con el mismo corpus, checksum y criterio de equivalencia. Debe superar estrictamente el récord combinado de 499/1.000; necesita al menos 500/1.000. Se conservan y revisan también los resultados individuales de cada muestra. No comparar una sola mitad como si fuera el total pareado.
-4. **Actualización del récord:** actualizar `benchmarks/holdout_best.json` únicamente después de revisar una ejecución completa, checksum-verificada y comparable, y solo si mejora el porcentaje anterior. Las ejecuciones parciales o filtros rápidos no mueven el récord.
-5. **Interpretación:** los 50 casos son un filtro rápido, no la puntuación oficial. La evaluación completa es la que decide si el candidato gana. El corpus se consulta repetidamente durante el desarrollo, así que debe llamarse *corpus fijo de evaluación*, no *holdout intacto*; se debe rotar o reservar un conjunto verdaderamente independiente para medir generalización.
-6. **Torneo de hipótesis:** mantener cada hipótesis en una rama aislada, registrar SHA, resultado exacto y tiempo, y comparar siempre con el mismo main. No mezclar mejoras de exactitud con mejoras de velocidad; una mejora de velocidad solo gana si conserva la exactitud y demuestra una reducción reproducible del tiempo.
+1. **Baseline inmutable:** `benchmarks/holdout-record.json` registra 250/500 (50,0 %) en main, con SHA y ejecución de origen. No se sustituye por un resultado parcial ni por una media entre ejecuciones distintas.
+2. **Umbral de mejora:** una candidata debe obtener al menos **251/500**, completar exactamente los mismos 500 casos y pasar la suite completa. El resultado debe pertenecer al SHA exacto que se revisa.
+3. **Comparación exacta:** el caso solo pasa si stdout coincide byte a byte y el código de retorno es idéntico al de GnuCOBOL. No se cambian el corpus, su checksum, la selección determinista, los límites, las exclusiones ni el denominador.
+4. **Aislamiento:** cada hipótesis vive en su propia rama y PR contra `main`. No se combinan cambios antes de medirlos y no hay merge automático. Los resultados negativos también se conservan para evitar repetir experimentos.
+5. **Diagnóstico:** el artefacto debe permitir rastrear el fallo hasta el caso, la fuente temporal, el Python generado, stdout/stderr y el traceback, respetando las restricciones de redistribución del dataset.
+6. **Métricas retiradas del ranking:** el benchmark diferencial de 105 fixtures queda como herramienta manual histórica; la muestra primaria de 500 no se ejecuta ni se usa para ordenar candidatas. Las pruebas unitarias y regresiones locales siguen activas.
+7. **Interpretación:** como los mismos 500 casos se observan durante la optimización, se denominan *muestra fija de evaluación*, no *holdout intacto*. La puntuación no demuestra generalización a COBOL no observado ni equivalencia de producción.
+
+Consulta [la política de evaluación](docs/HOLDOUT_ONLY_EVALUATION_POLICY.md), [el proceso de experimentación](docs/EXPERIMENT_TOURNAMENT_2026-11.md) y [el análisis de fallos](docs/EXTERNAL_BENCHMARK_FAILURE_ANALYSIS.md).
 
 ## Roadmap único de versiones hacia v1.0
 
