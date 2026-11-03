@@ -3718,8 +3718,10 @@ def translate_statement(
                 targets_and_options = unstring_text[into_start + into_match.end() - into_match.start():].strip()
                 tally_match = re.search(rf"\bTALLYING\s+IN\s+({DATA_REF_PATTERN})", targets_and_options, re.IGNORECASE)
                 pointer_match = re.search(rf"\bWITH\s+POINTER\s+({DATA_REF_PATTERN})", targets_and_options, re.IGNORECASE)
+                delimiter_in_match = re.search(rf"\bDELIMITER\s+IN\s+({DATA_REF_PATTERN})", targets_and_options, re.IGNORECASE)
+                count_in_match = re.search(rf"\bCOUNT\s+IN\s+({DATA_REF_PATTERN})", targets_and_options, re.IGNORECASE)
                 targets_text = re.split(
-                    r"\s+(?:TALLYING\s+IN|WITH\s+POINTER|ON\s+OVERFLOW|NOT\s+ON\s+OVERFLOW)\b",
+                    r"\s+(?:DELIMITER\s+IN|COUNT\s+IN|TALLYING\s+IN|WITH\s+POINTER|ON\s+OVERFLOW|NOT\s+ON\s+OVERFLOW)\b",
                     targets_and_options,
                     maxsplit=1,
                     flags=re.IGNORECASE,
