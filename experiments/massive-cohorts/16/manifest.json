@@ -225,27 +225,37 @@
     },
     {
       "id": "C009",
-      "status": "pending_ci",
+      "status": "ci_revision_pending",
       "branch": "experiment-massive-16/read-after-eof-status46",
       "hypothesis": "Track per-file EOF state so the first unsuccessful sequential READ returns status 10 and another READ before reopen returns status 46.",
-      "patch_sha": "98f1c2b3949b43bf0a83e8d9cb46e5fac9abb297",
+      "patch_sha": "92b9f91118c8dca7f03946a26f43f42b41b92a0d",
       "evidence": "GnuCOBOL sequential file status references document status 10 at end and status 46 for sequential READ with no valid next record after AT END has already been reached.",
       "tests": [
         "test_second_read_after_eof_returns_status_46"
       ],
-      "pr": 332
+      "pr": 332,
+      "ci": {
+        "previous_run": "failed",
+        "failure_cause": "the regression expected literal backslash-n sequences rather than actual newline characters",
+        "revision": "corrected expected output string; runtime logic unchanged"
+      }
     },
     {
       "id": "C010",
-      "status": "pending_ci",
+      "status": "ci_revision_pending",
       "branch": "experiment-massive-16/write-from-literal",
       "hypothesis": "Support WRITE record FROM literal by moving the literal into the record area before writing, while preserving existing identifier-based FROM behavior.",
-      "patch_sha": "3c1e99ae8e00135d9971674e0200a725a1c95eb5",
+      "patch_sha": "f3fc2ac7d606cad211b66675c7ade77e301ade55",
       "evidence": "The current WRITE parser accepts only a data-name after FROM, although COBOL syntax allows a literal or identifier. The runtime already serializes the record area, so the literal must first be moved into that record.",
       "tests": [
         "test_write_from_literal_moves_literal_into_record_before_write"
       ],
-      "pr": 333
+      "pr": 333,
+      "ci": {
+        "previous_run": "pending",
+        "failure_cause": "the new regression expected literal backslash-n rather than the line-sequential newline",
+        "revision": "corrected expected file contents to include an actual newline"
+      }
     },
     {
       "id": "C011",
