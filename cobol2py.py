@@ -1147,9 +1147,10 @@ def parse_file_specs(lines: list[tuple[int, str]]) -> dict[str, dict[str, Option
             "assign": raw_path,
             "organization": re.sub(r"\s+", " ", organization.group(1).upper()) if organization else None,
             "status": status.group(1).upper() if status else None,
-            "optional": bool(re.search(r"\bSELECT\s+OPTIONAL\b", statement, re.IGNORECASE)),
             "record": None,
         }
+        if re.search(r"\bSELECT\s+OPTIONAL\b", statement, re.IGNORECASE):
+            specs[name]["optional"] = True
 
     in_file_section = False
     current_file: Optional[str] = None
