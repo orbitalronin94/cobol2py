@@ -3,9 +3,19 @@
   "best_passed": 243,
   "best_tested": 500,
   "best_percent": 48.6,
-  "source_pr": 282,
   "source_commit": "4fd4900eb1036e9fc7395b9550985cf4d50b7537",
   "updated_at": "2026-11-03",
   "policy": "Recorded from the complete, checksum-verified four-shard 500-case X-COBOL v2 run #536 after PRs #274-#281 were integrated into main. PR #282 triggered the run; future records require a complete comparable run that strictly beats this score. PR fast screens are filters only.",
-  "source_run": 41593293825
+  "source_run": 41593293825,
+  "source_prs": [
+    274,
+    275,
+    276,
+    277,
+    278,
+    279,
+    280,
+    281
+  ],
+  "trigger_pr": 282
 }
