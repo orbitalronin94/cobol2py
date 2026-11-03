@@ -162,7 +162,7 @@ jobs:
       - name: Download all paired shard reports
         uses: actions/download-artifact@v6
         with:
-          pattern: main-vs-pr-holdout-*-\${{ github.run_number }}
+          pattern: main-vs-pr-holdout-*-${{ github.run_number }}
           path: paired-reports
           merge-multiple: true
 
