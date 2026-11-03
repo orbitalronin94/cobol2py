@@ -3897,6 +3897,15 @@ def translate_statement(
             return [f'print("".join([{items}]), end="")']
         return [f'print("".join([{items}]))']
 
+    accept_from = re.fullmatch(rf"ACCEPT\s+({DATA_REF_PATTERN})\s+FROM\s+(DATE(?:\s+YYYYMMDD)?|DAY-OF-WEEK|DAY|TIME)", s, re.IGNORECASE)
+    if accept_from:
+        target, source = accept_from.groups()
+        base = re.match(r"[A-Za-z0-9_-]+", target)
+        variable = variables.get(base.group(0).upper()) if base and variables else None
+        expression = f"_cobol_accept_from({source.upper()!r})"
+        if variable is not None and variable.pic and "9" in variable.pic.upper():
+            expression = f"int({expression})"
+        return [emit_assignment(target, expression, variables)]
     m = re.match(rf"ACCEPT\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
         target = m.group(1)
@@ -5113,6 +5122,21 @@ def emit_python(prog: Program) -> str:
     lines.append("        return input()")
     lines.append("    except EOFError:")
     lines.append("        return default")
+    lines.append("")
+    lines.append("def _cobol_accept_from(source):")
+    lines.append("    now = __import__('datetime').datetime.now()")
+    lines.append("    source = source.upper()")
+    lines.append("    if source == 'DATE':")
+    lines.append("        return now.strftime('%y%m%d')")
+    lines.append("    if source == 'DATE YYYYMMDD':")
+    lines.append("        return now.strftime('%Y%m%d')")
+    lines.append("    if source == 'DAY':")
+    lines.append("        return now.strftime('%y%j')")
+    lines.append("    if source == 'DAY-OF-WEEK':")
+    lines.append("        return str((now.weekday() + 1) % 7 + 1)")
+    lines.append("    if source == 'TIME':")
+    lines.append("        return now.strftime('%H%M%S%f')[:8]")
+    lines.append("    raise ValueError(f'Unsupported ACCEPT source: {source}')")
     lines.append("")
     lines.append("# NUMVAL-C supports the optional currency-symbol operand.")
     lines.append("def _cobol_numval_c(value, currency=None):")
