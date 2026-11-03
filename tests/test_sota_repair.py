@@ -84,3 +84,5 @@ class SotaRepairTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+# Holdout measurement trigger (test-only comment).
