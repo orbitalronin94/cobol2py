@@ -199,11 +199,16 @@
     },
     {
       "id": "C014",
-      "status": "unassigned",
-      "branch": null,
-      "hypothesis": null,
-      "patch_sha": null,
-      "evidence": null
+      "status": "pending_ci",
+      "branch": "experiment-massive-16/unstring-pointer",
+      "hypothesis": "Honor UNSTRING WITH POINTER for the single-delimiter, non-ALL subset by starting at the 1-based pointer and advancing it past consumed fields and delimiters.",
+      "patch_sha": "63df113793edc32a4b1636116165e570a99ceb99",
+      "evidence": "The current translator extracts POINTER but never uses it; it always splits from the beginning of the source and leaves the pointer unchanged.",
+      "tests": [
+        "test_unstring_pointer_starts_at_current_position_and_advances"
+      ],
+      "pr": 339,
+      "scope_limit": "Multiple delimiters and ALL-pointer combinations are not implemented by this candidate."
     },
     {
       "id": "C015",
