@@ -4449,7 +4449,7 @@ MAIN.
             Path(directory, "rewrite.dat").write_text("OLD!", encoding="latin-1")
             output, _namespace, generated = self._run_program(source, directory)
             contents = Path(directory, "rewrite.dat").read_text(encoding="latin-1")
-        self.assertEqual(output, "00\\n", generated)
+        self.assertEqual(output, "00\n", generated)
         self.assertEqual(contents, "NEW!", generated)
 
     def test_rewrite_without_prior_read_returns_43(self):
@@ -4479,7 +4479,7 @@ MAIN.
         with tempfile.TemporaryDirectory() as directory:
             Path(directory, "rewrite-no-read.dat").write_text("OLD!", encoding="latin-1")
             output, _namespace, generated = self._run_program(source, directory)
-        self.assertEqual(output, "43\\n", generated)
+        self.assertEqual(output, "43\n", generated)
 
     def test_rewrite_on_input_file_returns_49(self):
         source = """IDENTIFICATION DIVISION.
@@ -4507,4 +4507,4 @@ MAIN.
         with tempfile.TemporaryDirectory() as directory:
             Path(directory, "rewrite-input.dat").write_text("OLD!", encoding="latin-1")
             output, _namespace, generated = self._run_program(source, directory)
-        self.assertEqual(output, "49\\n", generated)
+        self.assertEqual(output, "49\n", generated)
