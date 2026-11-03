@@ -4437,4 +4437,4 @@ MAIN.
                 contents = Path("write-from-literal.dat").read_text(encoding="latin-1")
             finally:
                 os.chdir(previous)
-        self.assertEqual(contents, "DATA\\n", generated)
+        self.assertEqual(contents, "DATA\n", generated)
