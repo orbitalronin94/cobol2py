@@ -25,20 +25,21 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
         self.assertIn("candidates=$(jq -cn --arg main_sha", WORKFLOW)
         self.assertIn('--slurpfile pulls "$RUNNER_TEMP/open-pulls.json"', WORKFLOW)
         self.assertIn("$pulls[0][]", WORKFLOW)
-        self.assertIn('sha:"b63304e430ca45fa3d96910c2a867ef4aeb37a27"', WORKFLOW)
+        self.assertNotIn("previous-main-baseline", WORKFLOW)
+        self.assertIn('{name:"main-baseline",branch:"main",sha:$main_sha,pr:0}', WORKFLOW)
         self.assertIn('echo "candidates=$candidates" >> "$GITHUB_OUTPUT"', WORKFLOW)
 
     def test_push_discovery_includes_massive_experiment_branches(self):
         self.assertIn("experiments/massive-cohorts/16/manifest.json", WORKFLOW)
         self.assertIn("$manifest[0].candidates", WORKFLOW)
 
-    def test_manifest_has_sixteen_entries_and_fourteen_unmerged_candidates(self):
+    def test_manifest_has_seventeen_entries_and_fifteen_unmerged_candidates(self):
         candidates = MANIFEST["candidates"]
         active = [candidate for candidate in candidates if candidate.get("merged") is not True]
         branches = [candidate["branch"] for candidate in active]
-        self.assertEqual(len(candidates), 16)
-        self.assertEqual(len(active), 14)
-        self.assertEqual(len(set(branches)), 14)
+        self.assertEqual(len(candidates), 17)
+        self.assertEqual(len(active), 15)
+        self.assertEqual(len(set(branches)), 15)
         self.assertTrue(all(branch.startswith("experiment-massive-16/") for branch in branches))
 
     def test_both_fixed_disjoint_samples_are_evaluated(self):
