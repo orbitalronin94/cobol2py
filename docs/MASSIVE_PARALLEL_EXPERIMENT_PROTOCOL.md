@@ -337,3 +337,39 @@ A candidate qualifies for human review only with both complete 500-case samples 
 - experiment-massive-16-unstring-pointer: full unit/compile suite did not pass on frozen SHA
 - experiment-massive-16-unstring-tally-increment: missing complete sample(s): holdout, primary
 - experiment-massive-16-write-from-literal: missing complete sample(s): holdout, primary
+
+
+---
+
+## Ejecución automática #316 (run 41807663012)
+
+- Evento: `push`
+- Tamaño solicitado: `16` candidatas (más baseline main)
+- Informe: https://github.com/orbitalronin94/cobol2py/actions/runs/41807663012
+
+## Paired exact-match tournament — no automatic promotion
+
+Same-run main baseline: primary **253/500 (50.6%)**, holdout **251/500 (50.2%)**, combined **504/1000 (50.4%)**.
+A candidate qualifies for human review only with both complete 500-case samples on the frozen SHA, green full tests, a higher combined score, and **zero regressions by case ID across all 1,000 cases**.
+
+| Rank | Candidate | Primary | Holdout | Combined | Gains | Regressions | SHA |
+|---:|---|---:|---:|---:|---:|---:|---|
+| 1 | experiment-massive-16-environment-and-stderr | 252/500 (50.4%) | 251/500 (50.2%) | **503/1000 (50.3%)** | 1 | 2 | 18f1145f0320 |
+| 2 | experiment-massive-16-inspect-replacing-final | 251/500 (50.2%) | 251/500 (50.2%) | **502/1000 (50.2%)** | 3 | 5 | ba5d7728161e |
+| 3 | experiment-massive-16-split-level-declaration | 251/500 (50.2%) | 250/500 (50.0%) | **501/1000 (50.1%)** | 1 | 4 | e9a728be2c56 |
+| 4 | experiment-massive-16-unstring-delimiter-count-in-verified | 251/500 (50.2%) | 250/500 (50.0%) | **501/1000 (50.1%)** | 2 | 5 | 05a56e940a36 |
+| 5 | experiment-massive-16-unstring-tally-increment | 250/500 (50.0%) | 251/500 (50.2%) | **501/1000 (50.1%)** | 2 | 5 | df43ef5c2310 |
+| 6 | experiment-massive-16-open-mixed-modes-verified | 250/500 (50.0%) | 251/500 (50.2%) | **501/1000 (50.1%)** | 3 | 6 | 24e3fc72e502 |
+| 7 | experiment-massive-16-sequential-rewrite | 250/500 (50.0%) | 250/500 (50.0%) | **500/1000 (50.0%)** | 1 | 5 | ac55f1255a0f |
+| 8 | experiment-massive-16-string-zeroes-delimiter | 251/500 (50.2%) | 249/500 (49.8%) | **500/1000 (50.0%)** | 1 | 5 | f753f1e6f11b |
+| 9 | experiment-massive-16-accept-date-time | 250/500 (50.0%) | 249/500 (49.8%) | **499/1000 (49.9%)** | 1 | 6 | d31182977d17 |
+| 10 | experiment-massive-16-arithmetic-reference-length | 250/500 (50.0%) | 249/500 (49.8%) | **499/1000 (49.9%)** | 1 | 6 | 278198b33b0b |
+| 11 | experiment-massive-16-fixed-length-sequential-read | 250/500 (50.0%) | 249/500 (49.8%) | **499/1000 (49.9%)** | 1 | 6 | 2ae9cd2a3d53 |
+| 12 | experiment-massive-16-read-after-eof-status46 | 250/500 (50.0%) | 249/500 (49.8%) | **499/1000 (49.9%)** | 1 | 6 | 92b9f91118c8 |
+| 13 | experiment-massive-16-reopen-already-open-status41-verified | 250/500 (50.0%) | 247/500 (49.4%) | **497/1000 (49.7%)** | 1 | 8 | 5f7393be5cc6 |
+| 14 | experiment-massive-16-write-from-literal | 247/500 (49.4%) | 245/500 (49.0%) | **492/1000 (49.2%)** | 1 | 13 | f3fc2ac7d606 |
+
+**No candidate qualifies.** No merge and no benchmark-record update.
+
+### Rejected candidates
+- experiment-massive-16-unstring-pointer: full unit/compile suite did not pass on frozen SHA; holdout: incomplete, checksum/SHA mismatch, or failed tests; primary: incomplete, checksum/SHA mismatch, or failed tests
