@@ -77,7 +77,7 @@ jobs:
               end')
           else
             prefix="experiment-massive-${batch_size}/"
-            candidates=$(jq -cn --arg main_sha "$main_sha" --arg prefix "$prefix" --argjson n "$batch_size" --argjson pulls "$pulls" '
+            candidates=$(jq -cn --arg main_sha "$main_sha" --arg prefix "$prefix" --argjson n "$batch_size" --slurpfile pulls "$RUNNER_TEMP/open-pulls.json" '
               ([$pulls[0][] | select(.base.ref == "main" and .draft == false and (.head.ref | startswith($prefix))) |
                 {name:(.head.ref | gsub("/"; "-")), branch:.head.ref, sha:.head.sha, pr:.number}] |
                 unique_by(.branch) | sort_by(.branch) | .[0:$n]) as $selected |
