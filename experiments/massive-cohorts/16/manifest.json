@@ -3,7 +3,7 @@
   "cohort_size": 16,
   "base_branch": "main",
   "base_sha_policy": "freeze main SHA at execution start; all candidates must derive from that SHA",
-  "status": "paired_evaluation_pending_after_one_candidate_merged",
+  "status": "paired_evaluation_pending_after_two_candidates_merged",
   "candidates": [
     {
       "id": "C001",
@@ -147,7 +147,7 @@
     },
     {
       "id": "C005",
-      "status": "tests_green_benchmark_251_pairwise_required",
+      "status": "merged_before_paired_validation",
       "branch": "experiment-massive-16/arithmetic-reference-offset",
       "hypothesis": "Translate arithmetic expressions in COBOL reference-modification start offsets rather than treating the entire expression as a single data-name.",
       "patch_sha": "580dc50b557ecd4b7824071c69887ad568270686",
@@ -174,7 +174,11 @@
         "same_run_main_comparison": "not_performed",
         "qualification": "not_yet_qualified: +1 raw match only; zero-regression case comparison is still required",
         "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41697158085"
-      }
+      },
+      "merged": true,
+      "merged_at": "2026-11-04T07:40:00Z",
+      "merge_commit_sha": "a769980a9096da80c712c2b762ffcc227b8a67e9",
+      "qualification": "Merged into main before paired 1,000-case validation; its 251/500 holdout-only result is now part of the main baseline."
     },
     {
       "id": "C006",

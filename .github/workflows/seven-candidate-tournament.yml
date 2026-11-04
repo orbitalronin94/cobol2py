@@ -53,7 +53,7 @@ jobs:
         run: |
           set -euo pipefail
           main_sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
-          pulls=$(gh api --paginate "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" | jq -s 'add')
+          gh api --paginate "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" | jq -s 'add' > "$RUNNER_TEMP/open-pulls.json"
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
             batch_size="${{ inputs.cohort_size || '16' }}"
             case "$batch_size" in
@@ -64,21 +64,21 @@ jobs:
             batch_size="16"
           fi
           if [ "$batch_size" = "16" ]; then
-            candidates=$(jq -cn --arg main_sha "$main_sha" --argjson pulls "$pulls" --slurpfile manifest experiments/massive-cohorts/16/manifest.json '
+            candidates=$(jq -cn --arg main_sha "$main_sha" --slurpfile pulls "$RUNNER_TEMP/open-pulls.json" --slurpfile manifest experiments/massive-cohorts/16/manifest.json '
               ($manifest[0].candidates | map(select(.merged != true) | .branch)) as $branches |
-              ([$pulls[] as $p |
+              ([$pulls[0][] as $p |
                 select($p.base.ref == "main" and $p.draft == false and (($branches | index($p.head.ref)) != null)) |
                 {name:($p.head.ref | gsub("/"; "-")), branch:$p.head.ref, sha:$p.head.sha, pr:$p.number}
               ] | sort_by(.branch)) as $selected |
               if ($selected | length) != ($branches | length) then
                 error("Expected all " + (($branches | length)|tostring) + " unmerged manifest candidates as open PRs; found " + ($selected|length|tostring))
               else
-                [{name:"main-baseline",branch:"main",sha:$main_sha,pr:0}] + $selected
+                [{name:"main-baseline",branch:"main",sha:$main_sha,pr:0}, {name:"previous-main-baseline",branch:"main-before-pr322",sha:"b63304e430ca45fa3d96910c2a867ef4aeb37a27",pr:0}] + $selected
               end')
           else
             prefix="experiment-massive-${batch_size}/"
-            candidates=$(jq -cn --arg main_sha "$main_sha" --arg prefix "$prefix" --argjson n "$batch_size" --argjson pulls "$pulls" '
-              ([$pulls[] | select(.base.ref == "main" and .draft == false and (.head.ref | startswith($prefix))) |
+            candidates=$(jq -cn --arg main_sha "$main_sha" --arg prefix "$prefix" --argjson n "$batch_size" --slurpfile pulls "$RUNNER_TEMP/open-pulls.json" '
+              ([$pulls[0][] | select(.base.ref == "main" and .draft == false and (.head.ref | startswith($prefix))) |
                 {name:(.head.ref | gsub("/"; "-")), branch:.head.ref, sha:.head.sha, pr:.number}] |
                 unique_by(.branch) | sort_by(.branch) | .[0:$n]) as $selected |
               if ($selected | length) != $n then
