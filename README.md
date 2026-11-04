@@ -1,6 +1,6 @@
 # cobol2py
 
-> **Estado de evaluación (2026-11-03):** la línea base vigente de la evaluación externa Python es **250/500 (50,0 %)** sobre la muestra fija X-COBOL v2, medida en el run [#538](https://github.com/orbitalronin94/cobol2py/actions/runs/41602383991) y registrada en [holdout-record.json](benchmarks/holdout-record.json). Para declarar una mejora se requieren **al menos 251/500**, 500 casos completos, el checksum verificado, el SHA exacto de la candidata y la suite completa. La muestra primaria no participa en el ranking iterativo. Esta muestra fija se consulta repetidamente durante el desarrollo: no es un holdout estadístico intacto ni una estimación de compatibilidad universal.
+> **Estado de evaluación (2026-11-04):** la comparación pareada de `main` antes y después de los PR [#322](https://github.com/orbitalronin94/cobol2py/pull/322) y [#328](https://github.com/orbitalronin94/cobol2py/pull/328), validada en el torneo [#41794173313](https://github.com/orbitalronin94/cobol2py/actions/runs/41794173313), sube de **500/1.000 (50,00 %)** a **505/1.000 (50,50 %)**: **+5 aciertos exactos (+0,50 puntos porcentuales)**. Las dos muestras de 500 terminaron correctamente. La línea base fija de ranking iterativo sigue siendo **250/500 (50,0 %)** según [holdout-record.json](benchmarks/holdout-record.json); la comparación pareada de 1.000 casos es una medición adicional y no cambia ese protocolo. El corpus se consulta durante el desarrollo: no es un holdout estadístico intacto ni una estimación de compatibilidad universal.
 
 > Traductor COBOL a Python, con prototipos experimentales a C y Rust. El núcleo de análisis COBOL se comparte; los backends nativos tienen cobertura limitada y no prometen equivalencia general.
 
@@ -21,6 +21,18 @@ La única métrica externa que decide el ranking de las candidatas Python es el 
 7. **Interpretación:** como los mismos 500 casos se observan durante la optimización, se denominan *muestra fija de evaluación*, no *holdout intacto*. La puntuación no demuestra generalización a COBOL no observado ni equivalencia de producción.
 
 Consulta [la política de evaluación](docs/HOLDOUT_ONLY_EVALUATION_POLICY.md), [el proceso de experimentación](docs/EXPERIMENT_TOURNAMENT_2026-11.md) y [el análisis de fallos](docs/EXTERNAL_BENCHMARK_FAILURE_ANALYSIS.md).
+
+### Comparación pareada de `main` tras #322 y #328 (2026-11-04)
+
+El workflow [#41794173313](https://github.com/orbitalronin94/cobol2py/actions/runs/41794173313) ejecutó las mismas dos muestras de X-COBOL v2 sobre el `main` anterior a los cambios y sobre el `main` que ya contiene ambos PR. Cada ejecución completó 500/500 casos, con checksum del dataset verificado y jobs correctos.
+
+| Muestra | `main` anterior (`b63304e`) | `main` con #322 + #328 (`a2de34c`) | Diferencia |
+|---|---:|---:|---:|
+| Primaria (500) | 250/500 (50,00 %) | 253/500 (50,60 %) | +3 |
+| Holdout (500) | 250/500 (50,00 %) | 252/500 (50,40 %) | +2 |
+| **Combinado (1.000)** | **500/1.000 (50,00 %)** | **505/1.000 (50,50 %)** | **+5 (+0,50 pp)** |
+
+La mejora aparece en ambas mitades, aunque su magnitud es modesta. La métrica exige stdout idéntico byte a byte y el mismo código de retorno que GnuCOBOL. Esta comparación mide el efecto conjunto de los dos PR; **no permite atribuir los cinco aciertos a uno u otro cambio por separado**, ni demuestra generalización fuera del corpus. Los SHA comparados son `b63304e430ca45fa3d96910c2a867ef4aeb37a27` (anterior) y `a2de34c6fd580fc942dd207cffcc3bdddfd3e19e` (posterior).
 
 ## Roadmap único de versiones hacia v1.0
 
