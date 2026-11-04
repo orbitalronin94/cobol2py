@@ -1123,7 +1123,7 @@ def parse_file_specs(lines: list[tuple[int, str]]) -> dict[str, dict[str, Option
 
     specs: dict[str, dict[str, Optional[str]]] = {}
     for statement in statements:
-        selected = re.search(r"\bSELECT\s+([A-Za-z0-9_-]+)", statement, re.IGNORECASE)
+        selected = re.search(r"\bSELECT\s+(?:OPTIONAL\s+)?([A-Za-z0-9_-]+)", statement, re.IGNORECASE)
         if not selected:
             continue
         name = selected.group(1).upper()
@@ -1149,6 +1149,8 @@ def parse_file_specs(lines: list[tuple[int, str]]) -> dict[str, dict[str, Option
             "status": status.group(1).upper() if status else None,
             "record": None,
         }
+        if re.search(r"\bSELECT\s+OPTIONAL\b", statement, re.IGNORECASE):
+            specs[name]["optional"] = True
 
     in_file_section = False
     current_file: Optional[str] = None
@@ -5262,18 +5264,30 @@ def emit_python(prog: Program) -> str:
     lines.append("            _cobol_set_file_status(spec, '30')")
     lines.append("            return '30'")
     lines.append("        raise SystemExit(1)")
-    lines.append("    try:")
-    lines.append("        handle = open(path, python_mode, encoding='latin-1', newline='')")
-    lines.append("    except OSError:")
-    lines.append("        status = '35' if mode.upper() in ('INPUT', 'EXTEND', 'I-O') else '30'")
+    lines.append("    optional_missing = bool(spec.get('optional')) and mode.upper() != 'OUTPUT' and not __import__('os').path.exists(path)")
+    lines.append("    if mode.upper() != 'OUTPUT' and not __import__('os').path.exists(path) and not spec.get('optional'):")
     lines.append("        if spec.get('status'):")
-    lines.append("            _cobol_set_file_status(spec, status)")
-    lines.append("            return status")
+    lines.append("            _cobol_set_file_status(spec, '35')")
+    lines.append("            return '35'")
     lines.append("        raise SystemExit(1)")
+    lines.append("    if optional_missing and mode.upper() == 'INPUT':")
+    lines.append("        handle = __import__('io').StringIO('')")
+    lines.append("    else:")
+    lines.append("        if optional_missing and mode.upper() == 'I-O':")
+    lines.append("            python_mode = 'w+'")
+    lines.append("        try:")
+    lines.append("            handle = open(path, python_mode, encoding='latin-1', newline='')")
+    lines.append("        except OSError:")
+    lines.append("            status = '35' if mode.upper() in ('INPUT', 'EXTEND', 'I-O') else '30'")
+    lines.append("            if spec.get('status'):")
+    lines.append("                _cobol_set_file_status(spec, status)")
+    lines.append("                return status")
+    lines.append("            raise SystemExit(1)")
     lines.append("    _cobol_open_files[key] = handle")
     lines.append("    _cobol_open_modes[key] = mode.upper()")
-    lines.append("    _cobol_set_file_status(spec, '00')")
-    lines.append("    return '00'")
+    lines.append("    status = '05' if optional_missing else '00'")
+    lines.append("    _cobol_set_file_status(spec, status)")
+    lines.append("    return status")
     lines.append("")
     lines.append("def _cobol_read(name, into=None):")
     lines.append("    key = name.upper()")
