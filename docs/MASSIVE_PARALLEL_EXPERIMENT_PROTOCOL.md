@@ -302,3 +302,38 @@ El workflow no hace merge, no modifica `holdout_best.json` ni cambia corpus, sel
 PR #322 (`OPTIONAL sequential file OPEN`) fue fusionada por el propietario del repositorio a las 07:33:49Z, commit `725e32f8a55950727a8eb7def8d022ce2d77389e`. Su evidencia previa era **251/500 (50,2 %) solo en holdout**, sin comparación por ID contra main en el mismo run ni primaria pareada. Por tanto, esa cifra no es un nuevo récord combinado ni una validación de cero regresiones. No la atribuyo como mejora aceptada: el cambio queda dentro del nuevo baseline de main y se medirá allí.
 
 El manifiesto conserva las 16 hipótesis originales, pero C001 (#322) queda marcado como integrada antes de la validación pareada. El torneo debe ejecutar main más las 15 candidatas aún abiertas. La prueba de contrato verifica esa composición; la puerta de resultados sigue exigiendo ambas mitades completas y cero regresiones en los 1.000 IDs. El registro histórico 499/1.000 permanece intacto hasta disponer de una nueva evaluación pareada completa y reproducible.
+
+---
+
+## Ejecución automática #311 (run 41794173313)
+
+- Evento: `push`
+- Tamaño solicitado: `16` candidatas (más baseline main)
+- Informe: https://github.com/orbitalronin94/cobol2py/actions/runs/41794173313
+
+## Paired exact-match tournament — no automatic promotion
+
+Same-run main baseline: primary **253/500 (50.6%)**, holdout **252/500 (50.4%)**, combined **505/1000 (50.5%)**.
+A candidate qualifies for human review only with both complete 500-case samples on the frozen SHA, green full tests, a higher combined score, and **zero regressions by case ID across all 1,000 cases**.
+
+| Rank | Candidate | Primary | Holdout | Combined | Gains | Regressions | SHA |
+|---:|---|---:|---:|---:|---:|---:|---|
+| 1 | experiment-massive-16-inspect-replacing-final | 251/500 (50.2%) | 250/500 (50.0%) | **501/1000 (50.1%)** | 2 | 6 | ba5d7728161e |
+| 2 | experiment-massive-16-accept-date-time | 251/500 (50.2%) | 249/500 (49.8%) | **500/1000 (50.0%)** | 1 | 6 | d31182977d17 |
+| 3 | previous-main-baseline | 250/500 (50.0%) | 250/500 (50.0%) | **500/1000 (50.0%)** | 1 | 6 | b63304e430ca |
+| 4 | experiment-massive-16-open-mixed-modes-verified | 249/500 (49.8%) | 251/500 (50.2%) | **500/1000 (50.0%)** | 2 | 7 | 24e3fc72e502 |
+| 5 | experiment-massive-16-arithmetic-reference-length | 250/500 (50.0%) | 249/500 (49.8%) | **499/1000 (49.9%)** | 1 | 7 | 278198b33b0b |
+| 6 | experiment-massive-16-fixed-length-sequential-read | 250/500 (50.0%) | 249/500 (49.8%) | **499/1000 (49.9%)** | 1 | 7 | 2ae9cd2a3d53 |
+
+**No candidate qualifies.** No merge and no benchmark-record update.
+
+### Rejected candidates
+- experiment-massive-16-read-after-eof-status46: holdout: missing report/status; missing complete sample(s): holdout
+- experiment-massive-16-reopen-already-open-status41-verified: holdout: missing report/status; missing complete sample(s): holdout
+- experiment-massive-16-sequential-rewrite: holdout: missing report/status; missing complete sample(s): holdout, primary; primary: missing report/status
+- experiment-massive-16-split-level-declaration: missing complete sample(s): holdout, primary
+- experiment-massive-16-string-zeroes-delimiter: missing complete sample(s): holdout, primary
+- experiment-massive-16-unstring-delimiter-count-in-verified: missing complete sample(s): holdout, primary
+- experiment-massive-16-unstring-pointer: full unit/compile suite did not pass on frozen SHA
+- experiment-massive-16-unstring-tally-increment: missing complete sample(s): holdout, primary
+- experiment-massive-16-write-from-literal: missing complete sample(s): holdout, primary
