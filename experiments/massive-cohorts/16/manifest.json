@@ -414,7 +414,7 @@
       "status": "awaiting_paired_tournament",
       "branch": "experiment-massive-16/environment-and-stderr",
       "hypothesis": "Combined PR candidate: (1) ACCEPT FROM ENVIRONMENT / ENVIRONMENT-VALUE reads an environment variable into an alphanumeric PIC X/A receiver with COBOL truncation and right-padding; (2) DISPLAY UPON SYSERR/STDERR routes output to the standard-error stream. These are two bundled hypotheses and are scored as one indivisible candidate.",
-      "patch_sha": "97b3b4e14949b4db76e5ac2ebde7b1e895fc98ea",
+      "patch_sha": "cfab631863309df09679fe9848d1979a56c1794d",
       "evidence": "The current ACCEPT translator only recognizes bare ACCEPT identifier; the DISPLAY translator strips UPON device without routing the output. PR #343 adds scoped implementation and regression tests for both cases.",
       "tests": [
         "test_accept_from_environment_value_pads_alphanumeric_field",
