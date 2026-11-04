@@ -1,0 +1,417 @@
+{
+  "protocol": "docs/MASSIVE_PARALLEL_EXPERIMENT_PROTOCOL.md",
+  "cohort_size": 16,
+  "base_branch": "main",
+  "base_sha_policy": "freeze main SHA at execution start; all candidates must derive from that SHA",
+  "status": "paired_evaluation_pending_after_one_candidate_merged",
+  "candidates": [
+    {
+      "id": "C001",
+      "status": "merged_before_paired_validation",
+      "branch": "experiment-massive-16/optional-file-open-verified",
+      "hypothesis": "Implement SELECT OPTIONAL semantics for missing sequential files: status 05 and correct creation/EOF behavior; non-optional OPEN EXTEND must not silently create a missing file.",
+      "patch_sha": "10557dca587a9100d64693f7eefc602337419de9",
+      "evidence": "docs/EXTERNAL_BENCHMARK_FAILURE_ANALYSIS.md: at least 234 cases exposed to file-I/O omissions; GnuCOBOL documentation states non-OPTIONAL INPUT/I-O/EXTEND missing file yields status 35, OPTIONAL yields status 05 and OPTIONAL EXTEND/I-O creates the file.",
+      "tests": [
+        "test_extend_nonoptional_missing_file_returns_35_without_creating_file",
+        "test_optional_extend_missing_file_creates_it_and_returns_05",
+        "test_optional_input_missing_file_returns_05_then_read_sets_eof_10"
+      ],
+      "pr": 322,
+      "ci": {
+        "tests_run": 2504,
+        "result": "success",
+        "checks": [
+          "unit tests Python 3.10",
+          "unit tests Python 3.11",
+          "unit tests Python 3.12",
+          "unit tests Python 3.13",
+          "Java backend",
+          "GnuCOBOL reference",
+          "GnuCOBOL trace",
+          "browser smoke"
+        ],
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41696275249"
+      },
+      "benchmark": {
+        "run": 595,
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41696238387",
+        "tested": 500,
+        "exact_matches": 251,
+        "rate_percent": 50.2,
+        "shard_scores": [
+          61,
+          52,
+          67,
+          71
+        ],
+        "same_run_main_comparison": "not_performed",
+        "regression_status": "unknown_until_cohort_pairwise_run"
+      },
+      "qualification": "Merged into main before paired 1,000-case validation; its 251/500 holdout-only result is not a combined record and is now part of the main baseline.",
+      "merged": true,
+      "merged_at": "2026-11-04T07:33:49Z",
+      "merge_commit_sha": "725e32f8a55950727a8eb7def8d022ce2d77389e",
+      "merged_by": "orbitalronin94"
+    },
+    {
+      "id": "C002",
+      "status": "benchmark_below_historical_main",
+      "branch": "experiment-massive-16/reopen-already-open-status41-verified",
+      "hypothesis": "A second OPEN on an already-open file must return status 41 and preserve the original handle and open mode instead of replacing the live handle.",
+      "patch_sha": "5f7393be5cc65a20f2e35f3eb8c2afdab63acc78",
+      "evidence": "GnuCOBOL Programmer's Guide: attempting to OPEN a file that is already open returns file status 41; current _cobol_open overwrites the open handle map without checking this state.",
+      "tests": [
+        "test_open_already_open_sets_41_and_preserves_original_handle"
+      ],
+      "pr": 324,
+      "ci": {
+        "result": "success",
+        "checks": [
+          "unit tests Python 3.10",
+          "unit tests Python 3.11",
+          "unit tests Python 3.12",
+          "unit tests Python 3.13",
+          "Java backend",
+          "GnuCOBOL reference",
+          "GnuCOBOL trace",
+          "browser smoke"
+        ],
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41696547199"
+      },
+      "benchmark": {
+        "tested": 500,
+        "exact_matches": 247,
+        "rate_percent": 49.4,
+        "shard_scores": [
+          51,
+          67,
+          60,
+          69
+        ],
+        "historical_main_exact_matches": 250,
+        "same_run_main_comparison": "not_performed",
+        "qualification": "rejected_below_historical_main"
+      }
+    },
+    {
+      "id": "C003",
+      "status": "ci_revision_pending",
+      "branch": "experiment-massive-16/open-mixed-modes-verified",
+      "hypothesis": "Parse one COBOL OPEN statement containing multiple mode groups (for example INPUT file-A and OUTPUT file-B) without applying the first mode to every file.",
+      "patch_sha": "24e3fc72e50292d7b4cd807ff80bd0a3cba5953b",
+      "evidence": "Current translate_statement handles only the first mode group and extracts all identifiers from the remaining text as filenames. This can interpret OUTPUT as a file name and open an output file in INPUT mode. COBOL OPEN syntax permits multiple mode groups in one statement.",
+      "tests": [
+        "test_one_open_statement_can_open_input_and_output_files"
+      ],
+      "pr": 326,
+      "ci": {
+        "previous_run": "failed",
+        "failure_cause": "mode-token regex split identifiers such as INPUT-FILE at the hyphen; this made generated _cobol_open receive FILE instead of INPUT-FILE and caused four runtime tests to fail.",
+        "revision": "mode keyword matching now excludes adjacent word and hyphen characters",
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41700038305",
+        "latest_run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41700052095",
+        "latest_run_status": "queued"
+      }
+    },
+    {
+      "id": "C004",
+      "status": "ci_revision_pending",
+      "branch": "experiment-massive-16/string-zeroes-delimiter",
+      "hypothesis": "Correct STRING DELIMITED BY ZEROES so it recognizes the ZEROES spelling and terminates on the COBOL character '0', not NUL.",
+      "patch_sha": "f753f1e6f11b52810a028caa395a807da41e7f30",
+      "evidence": "An existing isolated branch contains a minimal regression for WS-SOURCE='A0B     '; the main translator currently maps ZERO/ZEROS to NUL and does not accept ZEROES in the delimiter token regex.",
+      "tests": [
+        "test_string_delimited_by_zeroes_stops_at_character_zero"
+      ],
+      "pr": 327,
+      "ci": {
+        "result": "success",
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41696952737"
+      },
+      "benchmark": {
+        "tested": 500,
+        "exact_matches": 250,
+        "rate_percent": 50,
+        "shard_scores": [
+          61,
+          52,
+          67,
+          70
+        ],
+        "historical_main_exact_matches": 250,
+        "same_run_main_comparison": "not_performed",
+        "qualification": "no raw-score improvement; zero regressions still unproven",
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41696952716"
+      }
+    },
+    {
+      "id": "C005",
+      "status": "tests_green_benchmark_251_pairwise_required",
+      "branch": "experiment-massive-16/arithmetic-reference-offset",
+      "hypothesis": "Translate arithmetic expressions in COBOL reference-modification start offsets rather than treating the entire expression as a single data-name.",
+      "patch_sha": "580dc50b557ecd4b7824071c69887ad568270686",
+      "evidence": "Existing isolated candidate-v3 fixture showed WS-TEXT(WS-START + WS-OFFSET * 2:2) must evaluate to 'CD'; current main normalizes the entire offset as one name.",
+      "tests": [
+        "test_arithmetic_offset_is_translated_as_an_expression"
+      ],
+      "pr": 328,
+      "ci": {
+        "result": "success",
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41697157948"
+      },
+      "benchmark": {
+        "tested": 500,
+        "exact_matches": 251,
+        "rate_percent": 50.2,
+        "shard_scores": [
+          61,
+          68,
+          52,
+          70
+        ],
+        "historical_main_exact_matches": 250,
+        "same_run_main_comparison": "not_performed",
+        "qualification": "not_yet_qualified: +1 raw match only; zero-regression case comparison is still required",
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41697158085"
+      }
+    },
+    {
+      "id": "C006",
+      "status": "tests_in_progress_benchmark_250_pairwise_required",
+      "branch": "experiment-massive-16/arithmetic-reference-length",
+      "hypothesis": "Translate arithmetic expressions in COBOL reference-modification lengths rather than treating the entire length as a single data-name.",
+      "patch_sha": "278198b33b0b00d28bd60a626cbf1edc12ac87ad",
+      "evidence": "Existing isolated candidate-v3 fixture showed WS-TEXT(1:WS-LENGTH + WS-EXTRA * 2) must produce 'ABC'; current main normalizes the full length as one name.",
+      "tests": [
+        "test_arithmetic_length_is_translated_as_an_expression"
+      ],
+      "pr": 329,
+      "ci": {
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41697233013"
+      },
+      "benchmark": {
+        "tested": 500,
+        "exact_matches": 250,
+        "rate_percent": 50,
+        "shard_scores": [
+          61,
+          67,
+          52,
+          70
+        ],
+        "historical_main_exact_matches": 250,
+        "same_run_main_comparison": "not_performed",
+        "qualification": "no raw-score improvement; zero regressions still unproven",
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41697232692"
+      }
+    },
+    {
+      "id": "C007",
+      "status": "ci_green_benchmark_250_pairwise_required",
+      "branch": "experiment-massive-16/split-level-declaration",
+      "hypothesis": "Parse COBOL data declarations whose level number (such as 01) is placed on its own physical line and whose data-name/PIC clause follows on the next line.",
+      "patch_sha": "e9a728be2c56ea5b50c63f9f48e3790342650aba",
+      "evidence": "An existing isolated parser branch contains the pending-level implementation; current main only accepts complete declarations matching RE_VAR on a single line.",
+      "tests": [
+        "test_level_number_on_own_line_applies_to_following_data_name"
+      ],
+      "pr": 330,
+      "ci": {
+        "result": "success",
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41697487755"
+      },
+      "benchmark": {
+        "tested": 500,
+        "exact_matches": 250,
+        "rate_percent": 50,
+        "shard_scores": [
+          61,
+          52,
+          67,
+          70
+        ],
+        "historical_main_exact_matches": 250,
+        "same_run_main_comparison": "not_performed",
+        "qualification": "no raw-score improvement; zero regressions unproven",
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41697487620"
+      }
+    },
+    {
+      "id": "C008",
+      "status": "ci_revision_pending",
+      "branch": "experiment-massive-16/sequential-rewrite",
+      "hypothesis": "Implement sequential REWRITE at the most recently read record position, requiring OPEN I-O and a prior successful READ, with statuses 49, 43, 44 and 00.",
+      "patch_sha": "ac55f1255a0f98d70050a33842399b6bf4e4d41a",
+      "evidence": "GnuCOBOL Programmer's Guide section 7.8.37: REWRITE requires OPEN I-O, a prior READ for sequential organization, and cannot be used with LINE SEQUENTIAL. GnuCOBOL status codes 43/44/49 are documented.",
+      "tests": [
+        "test_rewrite_replaces_most_recently_read_sequential_record",
+        "test_rewrite_without_prior_read_returns_43",
+        "test_rewrite_on_input_file_returns_49"
+      ],
+      "pr": 331,
+      "ci": {
+        "previous_run": "failed",
+        "failure_cause": "three assertions compared actual newline characters against literal backslash-n strings",
+        "revision": "fixed test expected strings; runtime implementation unchanged",
+        "latest_run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41700638816"
+      }
+    },
+    {
+      "id": "C009",
+      "status": "ci_revision_pending",
+      "branch": "experiment-massive-16/read-after-eof-status46",
+      "hypothesis": "Track per-file EOF state so the first unsuccessful sequential READ returns status 10 and another READ before reopen returns status 46.",
+      "patch_sha": "92b9f91118c8dca7f03946a26f43f42b41b92a0d",
+      "evidence": "GnuCOBOL sequential file status references document status 10 at end and status 46 for sequential READ with no valid next record after AT END has already been reached.",
+      "tests": [
+        "test_second_read_after_eof_returns_status_46"
+      ],
+      "pr": 332,
+      "ci": {
+        "previous_run": "failed",
+        "failure_cause": "the regression expected literal backslash-n sequences rather than actual newline characters",
+        "revision": "corrected expected output string; runtime logic unchanged"
+      }
+    },
+    {
+      "id": "C010",
+      "status": "ci_revision_pending",
+      "branch": "experiment-massive-16/write-from-literal",
+      "hypothesis": "Support WRITE record FROM literal by moving the literal into the record area before writing, while preserving existing identifier-based FROM behavior.",
+      "patch_sha": "f3fc2ac7d606cad211b66675c7ade77e301ade55",
+      "evidence": "The current WRITE parser accepts only a data-name after FROM, although COBOL syntax allows a literal or identifier. The runtime already serializes the record area, so the literal must first be moved into that record.",
+      "tests": [
+        "test_write_from_literal_moves_literal_into_record_before_write"
+      ],
+      "pr": 333,
+      "ci": {
+        "previous_run": "pending",
+        "failure_cause": "the new regression expected literal backslash-n rather than the line-sequential newline",
+        "revision": "corrected expected file contents to include an actual newline"
+      }
+    },
+    {
+      "id": "C011",
+      "status": "ci_green_benchmark_249_pairwise_required",
+      "branch": "experiment-massive-16/accept-date-time",
+      "hypothesis": "Implement ACCEPT FROM DATE, DATE YYYYMMDD, DAY, DAY-OF-WEEK and TIME using the host clock and COBOL-compatible output formats.",
+      "patch_sha": "d31182977d17ea5ab131e3b99056b347719097fa",
+      "evidence": "The current Python translator only recognizes ACCEPT target from stdin; the date/time source forms fall through as unsupported statements.",
+      "tests": [
+        "test_accept_from_date_and_time_emits_runtime_helper",
+        "test_accept_date_runtime_formats"
+      ],
+      "pr": 334,
+      "ci": {
+        "result": "success",
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41698856882"
+      },
+      "benchmark": {
+        "tested": 500,
+        "exact_matches": 249,
+        "rate_percent": 49.8,
+        "shard_scores": [
+          61,
+          52,
+          66,
+          70
+        ],
+        "historical_main_exact_matches": 250,
+        "same_run_main_comparison": "not_performed",
+        "qualification": "below historical main; not eligible",
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41698856900"
+      }
+    },
+    {
+      "id": "C012",
+      "status": "ci_green_benchmark_249_pairwise_required",
+      "branch": "experiment-massive-16/inspect-replacing-final",
+      "hypothesis": "Implement INSPECT identifier REPLACING ALL/FIRST literal BY literal, preserving occurrence count semantics.",
+      "patch_sha": "ba5d7728161edd48fc6f21ed05171f13a0b2b7d2",
+      "evidence": "The current translator supports INSPECT CONVERTING and TALLYING but has no REPLACING handler; COBOL supports ALL and FIRST replacement modes.",
+      "tests": [
+        "test_inspect_replacing_all_replaces_every_occurrence",
+        "test_inspect_replacing_first_replaces_only_first_occurrence"
+      ],
+      "pr": 337,
+      "ci": {
+        "result": "success",
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41699228371"
+      },
+      "benchmark": {
+        "tested": 500,
+        "exact_matches": 249,
+        "rate_percent": 49.8,
+        "shard_scores": [
+          61,
+          52,
+          66,
+          70
+        ],
+        "historical_main_exact_matches": 250,
+        "same_run_main_comparison": "not_performed",
+        "qualification": "below historical main; not eligible",
+        "run_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/41699239905"
+      }
+    },
+    {
+      "id": "C013",
+      "status": "ci_revision_pending",
+      "branch": "experiment-massive-16/unstring-tally-increment",
+      "hypothesis": "UNSTRING TALLYING IN must add the number of populated receiving fields to the existing tally value instead of replacing it.",
+      "patch_sha": "df43ef5c2310b890e3c8d502a6ff04f9bc8a8539",
+      "evidence": "Current translate_statement assigns min(len(parts), targets) directly to the tally item. COBOL TALLYING IN is an accumulating counter; a nonzero initial value is lost.",
+      "tests": [
+        "test_unstring_tallying_in_adds_to_existing_counter"
+      ],
+      "pr": 338
+    },
+    {
+      "id": "C014",
+      "status": "ci_revision_pending",
+      "branch": "experiment-massive-16/unstring-pointer",
+      "hypothesis": "Honor UNSTRING WITH POINTER for the single-delimiter, non-ALL subset by starting at the 1-based pointer and advancing it past consumed fields and delimiters.",
+      "patch_sha": "d0d5ba304bcf003c8130986556c57ca2954de608",
+      "evidence": "The current translator extracts POINTER but never uses it; it always splits from the beginning of the source and leaves the pointer unchanged.",
+      "tests": [
+        "test_unstring_pointer_starts_at_current_position_and_advances"
+      ],
+      "pr": 339,
+      "scope_limit": "Multiple delimiters and ALL-pointer combinations are not implemented by this candidate."
+    },
+    {
+      "id": "C015",
+      "status": "ci_revision_pending",
+      "branch": "experiment-massive-16/unstring-delimiter-count-in-verified",
+      "hypothesis": "For a single-delimiter, single-receiver UNSTRING, populate DELIMITER IN with the delimiter consumed and COUNT IN with the number of characters moved.",
+      "patch_sha": "05a56e940a3654ba9e241b865fe391a973fb8752",
+      "evidence": "Main parses neither DELIMITER IN nor COUNT IN; an existing experimental branch exposed these clauses but did not assign their values. This revision adds both assignments for the explicitly scoped single-receiver subset.",
+      "tests": [
+        "test_unstring_delimiter_in_and_count_in_single_receiver"
+      ],
+      "pr": 340,
+      "scope_limit": "One receiving field, one delimiter, no ALL; per-receiver options and multiple delimiters are not covered."
+    },
+    {
+      "id": "C016",
+      "status": "pending_ci",
+      "branch": "experiment-massive-16/fixed-length-sequential-read",
+      "hypothesis": "Read ORGANIZATION SEQUENTIAL files as fixed-width records using the FD record width, while retaining line-based reads for LINE SEQUENTIAL files.",
+      "patch_sha": "2ae9cd2a3d5391de8e61944ce7b10cb579fd736c",
+      "evidence": "The current _cobol_read always calls handle.readline(), which incorrectly treats a sequential fixed-width file without line separators as one record. The regression uses two adjacent four-byte records with no newline.",
+      "tests": [
+        "test_sequential_read_consumes_fixed_width_records_without_newlines"
+      ],
+      "pr": 341
+    }
+  ],
+  "acceptance": {
+    "complete_cases": 500,
+    "minimum_score": 251,
+    "zero_regressions_against_same_run_main": true,
+    "full_test_suite_green": true,
+    "checksum_verified": true
+  },
+  "note": "Manifest scaffold only. Empty slots are not runnable candidates and must be populated with distinct, evidence-backed functional changes before dispatch."
+}

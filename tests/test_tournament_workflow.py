@@ -2,6 +2,10 @@ import unittest
 from pathlib import Path
 
 
+MANIFEST = json.loads(
+    (Path(__file__).resolve().parents[1] / "experiments" / "massive-cohorts" / "16" / "manifest.json").read_text(encoding="utf-8")
+)
+
 WORKFLOW = (
     Path(__file__).resolve().parents[1]
     / ".github"
@@ -21,10 +25,17 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
         self.assertIn('echo "candidates=$candidates" >> "$GITHUB_OUTPUT"', WORKFLOW)
 
     def test_push_discovery_includes_massive_experiment_branches(self):
-        self.assertIn(
-            'test("^experiment(-v2|-v3|-v4|-massive-[0-9]+)?/")',
-            WORKFLOW,
-        )
+        self.assertIn("experiments/massive-cohorts/16/manifest.json", WORKFLOW)
+        self.assertIn("$manifest[0].candidates", WORKFLOW)
+
+    def test_manifest_has_sixteen_entries_and_fifteen_unmerged_candidates(self):
+        candidates = MANIFEST["candidates"]
+        active = [candidate for candidate in candidates if candidate.get("merged") is not True]
+        branches = [candidate["branch"] for candidate in active]
+        self.assertEqual(len(candidates), 16)
+        self.assertEqual(len(active), 15)
+        self.assertEqual(len(set(branches)), 15)
+        self.assertTrue(all(branch.startswith("experiment-massive-16/") for branch in branches))
 
     def test_both_fixed_disjoint_samples_are_evaluated(self):
         self.assertIn("- { name: primary, skip: 0 }", WORKFLOW)
@@ -33,7 +44,7 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
     def test_aggregate_requires_paired_casewise_zero_regressions(self):
         self.assertIn('required_samples = ("primary", "holdout")', WORKFLOW)
         self.assertIn('report.get("archive_md5_verified") is True', WORKFLOW)
-        self.assertIn("regressions == 0", WORKFLOW)
+        self.assertIn('row["regressions"] == 0', WORKFLOW)
         self.assertIn('row["combined"] > baseline_total', WORKFLOW)
 
     def test_workflow_never_merges_or_updates_benchmark_record(self):

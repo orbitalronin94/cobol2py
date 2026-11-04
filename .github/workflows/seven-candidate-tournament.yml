@@ -1,6 +1,6 @@
 name: massive-parallel-tournament
 
-run-name: COBOL equivalence tournament — ${{ inputs.cohort_size || 'auto' }} candidates
+run-name: COBOL equivalence tournament — ${{ inputs.cohort_size || '16' }} candidates
 
 on:
   push:
@@ -9,6 +9,7 @@ on:
       - "cobol2py.py"
       - "tests/test_cobol2py.py"
       - "tests/test_tournament_workflow.py"
+      - "experiments/massive-cohorts/16/manifest.json"
       - "web/index.html"
       - ".github/workflows/seven-candidate-tournament.yml"
       - "benchmarks/holdout-record.json"
@@ -42,7 +43,10 @@ jobs:
     outputs:
       candidates: ${{ steps.list.outputs.candidates }}
     steps:
-      - name: Discover open, non-draft experiment PRs and freeze their SHAs
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - name: Discover manifest-backed experiment PRs and freeze their SHAs
         id: list
         env:
           GH_TOKEN: ${{ github.token }}
@@ -56,21 +60,32 @@ jobs:
               16|32|64|100) ;;
               *) echo "Unsupported cohort size: $batch_size" >&2; exit 1 ;;
             esac
+          else
+            batch_size="16"
+          fi
+          if [ "$batch_size" = "16" ]; then
+            candidates=$(jq -cn --arg main_sha "$main_sha" --argjson pulls "$pulls" --slurpfile manifest experiments/massive-cohorts/16/manifest.json '
+              ($manifest[0].candidates | map(select(.merged != true) | .branch)) as $branches |
+              ([$pulls[] as $p |
+                select($p.base.ref == "main" and $p.draft == false and (($branches | index($p.head.ref)) != null)) |
+                {name:($p.head.ref | gsub("/"; "-")), branch:$p.head.ref, sha:$p.head.sha, pr:$p.number}
+              ] | sort_by(.branch)) as $selected |
+              if ($selected | length) != ($branches | length) then
+                error("Expected all " + (($branches | length)|tostring) + " unmerged manifest candidates as open PRs; found " + ($selected|length|tostring))
+              else
+                [{name:"main-baseline",branch:"main",sha:$main_sha,pr:0}] + $selected
+              end')
+          else
             prefix="experiment-massive-${batch_size}/"
-            candidates=$(jq -c --arg main_sha "$main_sha" --arg prefix "$prefix" --argjson n "$batch_size" '
-              ([.[] | select(.base.ref == "main" and .draft == false and (.head.ref | startswith($prefix))) |
+            candidates=$(jq -cn --arg main_sha "$main_sha" --arg prefix "$prefix" --argjson n "$batch_size" --argjson pulls "$pulls" '
+              ([$pulls[] | select(.base.ref == "main" and .draft == false and (.head.ref | startswith($prefix))) |
                 {name:(.head.ref | gsub("/"; "-")), branch:.head.ref, sha:.head.sha, pr:.number}] |
                 unique_by(.branch) | sort_by(.branch) | .[0:$n]) as $selected |
               if ($selected | length) != $n then
                 error("Expected exactly " + ($n|tostring) + " open non-draft candidate PRs under " + $prefix + "; found " + ($selected|length|tostring))
               else
                 [{name:"main-baseline",branch:"main",sha:$main_sha,pr:0}] + $selected
-              end' <<< "$pulls")
-          else
-            candidates=$(jq -c --arg main_sha "$main_sha" '
-              [{name:"main-baseline",branch:"main",sha:$main_sha,pr:0}] +
-              ([.[] | select(.base.ref == "main" and .draft == false and (.head.ref | test("^experiment(-v2|-v3|-v4|-massive-[0-9]+)?/"))) |
-                {name:(.head.ref | gsub("/"; "-")), branch:.head.ref, sha:.head.sha, pr:.number}] | unique_by(.branch))' <<< "$pulls")
+              end')
           fi
           echo "candidates=$candidates" >> "$GITHUB_OUTPUT"
           echo "$candidates" | jq .
@@ -450,7 +465,7 @@ jobs:
           RUN_ID: ${{ github.run_id }}
           RUN_NUMBER: ${{ github.run_number }}
           EVENT_NAME: ${{ github.event_name }}
-          COHORT_SIZE: ${{ inputs.cohort_size || 'auto' }}
+          COHORT_SIZE: ${{ inputs.cohort_size || '16' }}
         run: |
           set -euo pipefail
           if [ ! -s "$REPORT_FILE" ]; then

@@ -296,3 +296,9 @@ El coordinador ahora debe:
 El workflow no hace merge, no modifica `holdout_best.json` ni cambia corpus, selección, timeout o criterio exact-match. La prueba de contrato `tests/test_tournament_workflow.py` protege el default, el formato de output, las dos muestras y la puerta de cero regresiones.
 
 **Pendiente de validación:** el siguiente run completo debe establecer primero el baseline pareado del `main` actual y comparar las 16 candidatas contra él. Hasta que los 34 shards (17 SHAs × 2 muestras) terminen, no se declara ganadora ni se promueve código.
+
+## 16. PR #322 integrada antes de la evaluación pareada — 2026-11-04
+
+PR #322 (`OPTIONAL sequential file OPEN`) fue fusionada por el propietario del repositorio a las 07:33:49Z, commit `725e32f8a55950727a8eb7def8d022ce2d77389e`. Su evidencia previa era **251/500 (50,2 %) solo en holdout**, sin comparación por ID contra main en el mismo run ni primaria pareada. Por tanto, esa cifra no es un nuevo récord combinado ni una validación de cero regresiones. No la atribuyo como mejora aceptada: el cambio queda dentro del nuevo baseline de main y se medirá allí.
+
+El manifiesto conserva las 16 hipótesis originales, pero C001 (#322) queda marcado como integrada antes de la validación pareada. El torneo debe ejecutar main más las 15 candidatas aún abiertas. La prueba de contrato verifica esa composición; la puerta de resultados sigue exigiendo ambas mitades completas y cero regresiones en los 1.000 IDs. El registro histórico 499/1.000 permanece intacto hasta disponer de una nueva evaluación pareada completa y reproducible.
