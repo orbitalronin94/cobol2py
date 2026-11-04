@@ -73,7 +73,7 @@ jobs:
               if ($selected | length) != ($branches | length) then
                 error("Expected all " + (($branches | length)|tostring) + " unmerged manifest candidates as open PRs; found " + ($selected|length|tostring))
               else
-                [{name:"main-baseline",branch:"main",sha:$main_sha,pr:0}, {name:"previous-main-baseline",branch:"main-before-pr322",sha:"b63304e430ca45fa3d96910c2a867ef4aeb37a27",pr:0}] + $selected
+                [{name:"main-baseline",branch:"main",sha:$main_sha,pr:0}] + $selected
               end')
           else
             prefix="experiment-massive-${batch_size}/"

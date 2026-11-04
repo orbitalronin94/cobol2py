@@ -3,7 +3,7 @@
   "cohort_size": 16,
   "base_branch": "main",
   "base_sha_policy": "freeze main SHA at execution start; all candidates must derive from that SHA",
-  "status": "paired_evaluation_pending_after_two_candidates_merged",
+  "status": "paired_evaluation_pending_with_combined_candidate_C017",
   "candidates": [
     {
       "id": "C001",
@@ -408,6 +408,20 @@
         "test_sequential_read_consumes_fixed_width_records_without_newlines"
       ],
       "pr": 341
+    },
+    {
+      "id": "C017",
+      "status": "awaiting_paired_tournament",
+      "branch": "experiment-massive-16/environment-and-stderr",
+      "hypothesis": "Combined PR candidate: (1) ACCEPT FROM ENVIRONMENT / ENVIRONMENT-VALUE reads an environment variable into an alphanumeric PIC X/A receiver with COBOL truncation and right-padding; (2) DISPLAY UPON SYSERR/STDERR routes output to the standard-error stream. These are two bundled hypotheses and are scored as one indivisible candidate.",
+      "patch_sha": "97b3b4e14949b4db76e5ac2ebde7b1e895fc98ea",
+      "evidence": "The current ACCEPT translator only recognizes bare ACCEPT identifier; the DISPLAY translator strips UPON device without routing the output. PR #343 adds scoped implementation and regression tests for both cases.",
+      "tests": [
+        "test_accept_from_environment_value_pads_alphanumeric_field",
+        "test_display_upon_syserr_writes_to_stderr"
+      ],
+      "pr": 343,
+      "merged": false
     }
   ],
   "acceptance": {
@@ -417,5 +431,5 @@
     "full_test_suite_green": true,
     "checksum_verified": true
   },
-  "note": "Manifest scaffold only. Empty slots are not runnable candidates and must be populated with distinct, evidence-backed functional changes before dispatch."
+  "note": "The 16-slot cohort now has two merged candidates, fourteen original open candidates, and one combined C017 PR containing two new hypotheses. C017 is one indivisible tournament candidate; the two bundled changes cannot be separately attributed by this run. All active manifest branches must have open non-draft PRs against main."
 }
