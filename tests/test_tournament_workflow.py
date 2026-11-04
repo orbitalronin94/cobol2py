@@ -1,0 +1,45 @@
+import unittest
+from pathlib import Path
+
+
+WORKFLOW = (
+    Path(__file__).resolve().parents[1]
+    / ".github"
+    / "workflows"
+    / "seven-candidate-tournament.yml"
+).read_text(encoding="utf-8")
+
+
+class MassiveTournamentWorkflowContractTests(unittest.TestCase):
+    def test_dispatch_has_safe_default_and_allowed_cohort_sizes(self):
+        self.assertIn('batch_size="${{ inputs.cohort_size || \'16\' }}"', WORKFLOW)
+        self.assertIn('case "$batch_size" in', WORKFLOW)
+        self.assertIn("16|32|64|100)", WORKFLOW)
+
+    def test_candidate_output_is_single_line_json(self):
+        self.assertIn("candidates=$(jq -c --arg main_sha", WORKFLOW)
+        self.assertIn('echo "candidates=$candidates" >> "$GITHUB_OUTPUT"', WORKFLOW)
+
+    def test_push_discovery_includes_massive_experiment_branches(self):
+        self.assertIn(
+            'test("^experiment(-v2|-v3|-v4|-massive-[0-9]+)?/")',
+            WORKFLOW,
+        )
+
+    def test_both_fixed_disjoint_samples_are_evaluated(self):
+        self.assertIn("- { name: primary, skip: 0 }", WORKFLOW)
+        self.assertIn("- { name: holdout, skip: 500 }", WORKFLOW)
+
+    def test_aggregate_requires_paired_casewise_zero_regressions(self):
+        self.assertIn('required_samples = ("primary", "holdout")', WORKFLOW)
+        self.assertIn('report.get("archive_md5_verified") is True', WORKFLOW)
+        self.assertIn("regressions == 0", WORKFLOW)
+        self.assertIn('row["combined"] > baseline_total', WORKFLOW)
+
+    def test_workflow_never_merges_or_updates_benchmark_record(self):
+        self.assertIn("No PR is merged", WORKFLOW)
+        self.assertIn("benchmark record is not changed", WORKFLOW)
+
+
+if __name__ == "__main__":
+    unittest.main()

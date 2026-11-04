@@ -258,3 +258,41 @@ Tras integrar la PR #315 en `main`, se podrá lanzar el workflow desde GitHub Ac
 Cada despacho añade una ejecución de `main` como baseline en la misma matriz. Las candidatas se congelan por SHA, pasan por suite completa y benchmark externo, y se comparan por los mismos IDs. La concurrencia de pruebas unitarias se limita a 8 jobs y la del benchmark a 4 jobs para evitar lanzar 100 ejecuciones simultáneas sin control. El informe agregado se añade al resumen de Actions y, si se ha producido un ranking verificable, el job agregador lo incorpora al final de este documento mediante un commit de `github-actions[bot]` en main. El job agregador es el único que recibe permiso `contents: write`; los jobs que ejecutan candidatas no reciben ese permiso.
 
 **Importante:** el workflow no genera código COBOL/Python aleatorio ni inventa candidatas. Cada una de las 212 PRs debe contener una mutación funcional, reproducible y revisable. Si no existe exactamente el número solicitado de PRs candidatas para un lote, el despacho falla de forma explícita en descubrimiento y no presenta un resultado parcial como torneo completo. La PR #315 contiene el protocolo y esta orquestación; todavía no contiene las 212 implementaciones candidatas ni activa los despachos hasta que se integre.
+
+
+---
+
+## 14. Reanudación 2026-11-04 — evaluación pareada obligatoria
+
+### Estado inspeccionado
+
+- `main` al iniciar esta iteración: `b63304e430ca45fa3d96910c2a867ef4aeb37a27`.
+- Récord histórico persistente en `benchmarks/holdout_best.json`: **499/1.000 (49,9 %)**, primaria 249/500 y holdout 250/500, medido en el SHA `87eaba8043d6a7280db1902ad36ca41fb2a3885d` (run [#41602383991](https://github.com/orbitalronin94/cobol2py/actions/runs/41602383991)).
+- No había ejecuciones activas al iniciar la revisión.
+- El último intento del coordinador, [#41692990275](https://github.com/orbitalronin94/cobol2py/actions/runs/41692990275), falló en descubrimiento/salida antes de crear la matriz de pruebas o benchmark. El log muestra que `cohort_size` llegó vacío y que el JSON multilínea escrito directamente en `GITHUB_OUTPUT` fue rechazado (`Invalid format`). **Ese run no produjo puntuación.**
+
+### Mejor resultado parcial encontrado
+
+Los benchmarks individuales más altos de la cohorte masiva alcanzaron **251/500 (50,2 %) en holdout**, no un resultado combinado:
+
+- PR #327, `STRING DELIMITED BY ZEROES`: [run #41703250168](https://github.com/orbitalronin94/cobol2py/actions/runs/41703250168).
+- PR #332, estado 46 de `READ` después de EOF: [run #41701037354](https://github.com/orbitalronin94/cobol2py/actions/runs/41701037354).
+- PR #326, modos mixtos de `OPEN`: [run #41700052067](https://github.com/orbitalronin94/cobol2py/actions/runs/41700052067).
+- PR #328, offsets de modificación de referencia aritmética: [run #41697158085](https://github.com/orbitalronin94/cobol2py/actions/runs/41697158085).
+
+Son mediciones completas de la mitad holdout sobre SHAs de candidata distintos. No se suman entre sí, no prueban cero regresiones y no actualizan el récord 499/1.000. Varias candidatas empatan en 251/500; la ganadora solo puede decidirse con comparación por ID contra el mismo baseline.
+
+### Corrección del gate
+
+El coordinador ahora debe:
+
+1. Usar 16 como tamaño por defecto si un despacho no trae `cohort_size`, y rechazar tamaños fuera de 16/32/64/100.
+2. Emitir el JSON de candidatas en una sola línea para que GitHub Actions lo acepte como output.
+3. Descubrir también ramas `experiment-massive-N/` en los pushes de coordinación.
+4. Ejecutar **primaria (skip=0, 500 casos) y holdout (skip=500, 500 casos)** para `main` y cada candidata, con el mismo archivo X-COBOL v2 y checksum.
+5. Aceptar un resultado solo si ambos informes están completos, el SHA y la rama coinciden, la suite completa pasa y los 1.000 IDs coinciden con el baseline.
+6. Calcular ganancias y regresiones por ID sobre las dos mitades. Una candidata solo queda cualificada para revisión humana si mejora el combinado y tiene cero regresiones en las 1.000 muestras.
+
+El workflow no hace merge, no modifica `holdout_best.json` ni cambia corpus, selección, timeout o criterio exact-match. La prueba de contrato `tests/test_tournament_workflow.py` protege el default, el formato de output, las dos muestras y la puerta de cero regresiones.
+
+**Pendiente de validación:** el siguiente run completo debe establecer primero el baseline pareado del `main` actual y comparar las 16 candidatas contra él. Hasta que los 34 shards (17 SHAs × 2 muestras) terminen, no se declara ganadora ni se promueve código.

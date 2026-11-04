@@ -8,6 +8,7 @@ on:
     paths:
       - "cobol2py.py"
       - "tests/test_cobol2py.py"
+      - "tests/test_tournament_workflow.py"
       - "web/index.html"
       - ".github/workflows/seven-candidate-tournament.yml"
       - "benchmarks/holdout-record.json"
@@ -30,9 +31,9 @@ concurrency:
   cancel-in-progress: true
 
 # One coordinator only: run on main workflow updates or explicit workflow_dispatch, never once per candidate PR.
-# Candidate PRs are refreshed against main; only the unchanged external holdout (skip=500, 500 cases) decides ranking.
-# Candidate scores are advisory: this workflow measures frozen PR SHAs and never merges candidates automatically.
-# Re-run the coordinator after candidate branch updates; primary-sample scoring is intentionally disabled.
+# Freeze candidate SHAs, then measure both disjoint 500-case samples for main and every candidate.
+# Ranking requires complete paired exact-match results, green tests, and zero regressions by case ID.
+# This workflow publishes evidence only; it never merges candidates or changes the benchmark record.
 
 jobs:
   discover:
@@ -50,9 +51,13 @@ jobs:
           main_sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
           pulls=$(gh api --paginate "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" | jq -s 'add')
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
-            batch_size="${{ inputs.cohort_size }}"
+            batch_size="${{ inputs.cohort_size || '16' }}"
+            case "$batch_size" in
+              16|32|64|100) ;;
+              *) echo "Unsupported cohort size: $batch_size" >&2; exit 1 ;;
+            esac
             prefix="experiment-massive-${batch_size}/"
-            candidates=$(jq --arg main_sha "$main_sha" --arg prefix "$prefix" --argjson n "$batch_size" '
+            candidates=$(jq -c --arg main_sha "$main_sha" --arg prefix "$prefix" --argjson n "$batch_size" '
               ([.[] | select(.base.ref == "main" and .draft == false and (.head.ref | startswith($prefix))) |
                 {name:(.head.ref | gsub("/"; "-")), branch:.head.ref, sha:.head.sha, pr:.number}] |
                 unique_by(.branch) | sort_by(.branch) | .[0:$n]) as $selected |
@@ -62,9 +67,9 @@ jobs:
                 [{name:"main-baseline",branch:"main",sha:$main_sha,pr:0}] + $selected
               end' <<< "$pulls")
           else
-            candidates=$(jq --arg main_sha "$main_sha" '
+            candidates=$(jq -c --arg main_sha "$main_sha" '
               [{name:"main-baseline",branch:"main",sha:$main_sha,pr:0}] +
-              ([.[] | select(.base.ref == "main" and .draft == false and (.head.ref | test("^experiment(-v2|-v3|-v4)?/"))) |
+              ([.[] | select(.base.ref == "main" and .draft == false and (.head.ref | test("^experiment(-v2|-v3|-v4|-massive-[0-9]+)?/"))) |
                 {name:(.head.ref | gsub("/"; "-")), branch:.head.ref, sha:.head.sha, pr:.number}] | unique_by(.branch))' <<< "$pulls")
           fi
           echo "candidates=$candidates" >> "$GITHUB_OUTPUT"
@@ -142,6 +147,7 @@ jobs:
       matrix:
         candidate: ${{ fromJSON(needs.discover.outputs.candidates) }}
         sample:
+          - { name: primary, skip: 0 }
           - { name: holdout, skip: 500 }
     steps:
       - name: Checkout exact candidate revision
@@ -188,7 +194,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          docker run --name "$CONTAINER_NAME"             --network none             --cap-drop=ALL             --security-opt=no-new-privileges             --pids-limit=128             --memory=4g             --cpus=2             --read-only             --tmpfs /tmp:rw,exec,nosuid,nodev,size=3g             --mount "type=bind,source=$GITHUB_WORKSPACE,target=/workspace,readonly"             --mount "type=bind,source=/tmp/COBOL_Files.zip,target=/input.zip,readonly"             --mount "type=bind,source=$OUTPUT_DIR,target=/output"             --workdir /workspace             cobol2py-seven-candidate             benchmarks/run_external_corpus.py             --translator /workspace/cobol2py.py             --archive /input.zip             --output "/output/$SAMPLE_NAME"             --target 500             --skip "$SKIP"             --diagnostics
+          docker run --name "$CONTAINER_NAME"             --network none             --cap-drop=ALL             --security-opt=no-new-privileges             --pids-limit=128             --memory=4g             --cpus=2             --read-only             --tmpfs /tmp:rw,exec,nosuid,nodev,size=3g             --mount "type=bind,source=$GITHUB_WORKSPACE,target=/workspace,readonly"             --mount "type=bind,source=/tmp/COBOL_Files.zip,target=/input.zip,readonly"             --mount "type=bind,source=$OUTPUT_DIR,target=/output"             --workdir /workspace             cobol2py-seven-candidate             benchmarks/run_external_corpus.py             --translator /workspace/cobol2py.py             --archive /input.zip             --output "/output/$SAMPLE_NAME"             --target 500             --skip "$SKIP"
           benchmark_status=$?
           docker rm "$CONTAINER_NAME" >/dev/null 2>&1 || true
           exit "$benchmark_status"
@@ -229,7 +235,7 @@ jobs:
           retention-days: 90
 
   aggregate:
-    name: Verified holdout ranking
+    name: Verified paired ranking
     if: always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'push') && needs.external-benchmark.result != 'skipped'
     needs: [discover, candidate-tests, external-benchmark]
     outputs:
@@ -251,7 +257,7 @@ jobs:
           pattern: candidate-*-${{ github.run_id }}
           path: ${{ runner.temp }}/tournament-artifacts
           merge-multiple: false
-      - name: Rank complete holdout results against main with zero regressions
+      - name: Rank complete paired results against main with zero regressions
         id: score
         env:
           REPORT_ROOT: ${{ runner.temp }}/tournament-artifacts
@@ -261,27 +267,36 @@ jobs:
           python - <<'PY'
           import json, os
           from pathlib import Path
-
+          
           root = Path(os.environ["REPORT_ROOT"])
           candidates = {item["name"]: item for item in json.loads(os.environ["CANDIDATES_JSON"])}
+          required_samples = ("primary", "holdout")
+          expected_skip = {"primary": 0, "holdout": 500}
           tests = {}
           reports = {}
+          rejected = {}
+          
           for path in root.rglob("candidate-test-result.json"):
               try:
                   item = json.loads(path.read_text(encoding="utf-8"))
                   tests[item["candidate"]] = item
               except Exception as exc:
                   print(f"Reject invalid test result {path}: {exc}")
-
+          
           for meta_path in root.rglob("candidate-meta.json"):
               try:
                   meta = json.loads(meta_path.read_text(encoding="utf-8"))
                   name = meta.get("candidate")
-                  if name not in candidates or meta.get("sample") != "holdout" or meta.get("skip") != 500:
+                  sample = meta.get("sample")
+                  if name not in candidates or sample not in expected_skip:
+                      continue
+                  if meta.get("skip") != expected_skip[sample]:
+                      rejected.setdefault(name, []).append(f"{sample}: unexpected skip")
                       continue
                   report_path = meta_path.parent / "external-corpus-report.json"
                   status_path = meta_path.parent / "candidate-run-status.json"
                   if not report_path.is_file() or not status_path.is_file():
+                      rejected.setdefault(name, []).append(f"{sample}: missing report/status")
                       continue
                   report = json.loads(report_path.read_text(encoding="utf-8"))
                   status = json.loads(status_path.read_text(encoding="utf-8"))
@@ -295,52 +310,133 @@ jobs:
                       and meta.get("sha") == candidates[name]["sha"]
                       and report.get("tested") == 500
                       and report.get("target") == 500
-                      and report.get("skip") == 500
+                      and report.get("skip") == expected_skip[sample]
                       and report.get("sample_complete") is True
                       and report.get("archive_md5_verified") is True
-                      and len(rows) == 500 and len(set(ids)) == 500
+                      and len(rows) == 500
+                      and len(set(ids)) == 500
+                      and all(isinstance(case_id, str) and case_id for case_id in ids)
                       and passed == report.get("passed")
                       and test.get("sha") == meta.get("sha")
                       and test.get("tests_passed") is True
                   )
                   if not valid:
-                      print(f"REJECTED {name}: incomplete, mismatched SHA, failed tests, or invalid holdout")
+                      rejected.setdefault(name, []).append(f"{sample}: incomplete, checksum/SHA mismatch, or failed tests")
                       continue
-                  reports[name] = {row["id"]: row.get("status") == "passed" for row in rows}
+                  sample_reports = reports.setdefault(name, {})
+                  if sample in sample_reports:
+                      rejected.setdefault(name, []).append(f"{sample}: duplicate report")
+                      sample_reports.pop(sample, None)
+                      continue
+                  sample_reports[sample] = {
+                      row["id"]: row.get("status") == "passed"
+                      for row in rows
+                  }
               except Exception as exc:
                   print(f"Reject invalid artifact {meta_path}: {exc}")
-
-          if "main-baseline" not in reports:
-              raise SystemExit("Cannot rank candidates: complete, checksum-verified main baseline is missing.")
-          baseline = reports["main-baseline"]
-          baseline_passed = sum(baseline.values())
-          print(f"Same-run main baseline: {baseline_passed}/500 ({baseline_passed/5:.1f}%)")
+          
+          baseline_reports = reports.get("main-baseline", {})
+          if set(baseline_reports) != set(required_samples):
+              raise SystemExit("Cannot rank candidates: main baseline lacks complete primary and holdout reports.")
+          
+          baseline = baseline_reports
+          primary_ids = set(baseline["primary"])
+          holdout_ids = set(baseline["holdout"])
+          if primary_ids & holdout_ids:
+              raise SystemExit("Invalid corpus split: primary and holdout IDs overlap.")
+          
+          baseline_primary = sum(baseline["primary"].values())
+          baseline_holdout = sum(baseline["holdout"].values())
+          baseline_total = baseline_primary + baseline_holdout
+          print(
+              f"Same-run main baseline: primary {baseline_primary}/500, "
+              f"holdout {baseline_holdout}/500, combined {baseline_total}/1000 "
+              f"({baseline_total/10:.1f}%)."
+          )
+          
           scores = []
-          for name, outcomes in reports.items():
+          for name, candidate in candidates.items():
               if name == "main-baseline":
                   continue
-              gains = sum(not baseline[k] and outcomes[k] for k in baseline)
-              regressions = sum(baseline[k] and not outcomes[k] for k in baseline)
-              passed = sum(outcomes.values())
-              scores.append((passed, gains, regressions, name, candidates[name]["sha"]))
-          scores.sort(reverse=True)
-
-          lines = [
-              "## Holdout-only tournament — no automatic promotion",
-              "",
-              f"Same-run main baseline: **{baseline_passed}/500 ({baseline_passed/5:.1f}%)**.",
-              "A candidate qualifies only with a complete 500/500 run, green full tests, at least one gained case, and **zero regressions by case ID**.",
-              "",
-              "| Rank | Candidate | Exact matches | Gains | Regressions | SHA |",
-              "|---:|---|---:|---:|---:|---|",
+              test = tests.get(name, {})
+              if test.get("sha") != candidate["sha"] or test.get("tests_passed") is not True:
+                  rejected.setdefault(name, []).append("full unit/compile suite did not pass on frozen SHA")
+                  continue
+              outcomes = reports.get(name, {})
+              if set(outcomes) != set(required_samples):
+                  missing = sorted(set(required_samples) - set(outcomes))
+                  rejected.setdefault(name, []).append("missing complete sample(s): " + ", ".join(missing))
+                  continue
+          
+              gains = 0
+              regressions = 0
+              case_set_matches = True
+              for sample in required_samples:
+                  if set(outcomes[sample]) != set(baseline[sample]):
+                      rejected.setdefault(name, []).append(f"{sample}: case ID set differs from main")
+                      case_set_matches = False
+                      break
+                  for case_id, baseline_passed in baseline[sample].items():
+                      candidate_passed = outcomes[sample][case_id]
+                      if candidate_passed and not baseline_passed:
+                          gains += 1
+                      elif baseline_passed and not candidate_passed:
+                          regressions += 1
+              if not case_set_matches:
+                  continue
+              primary_passed = sum(outcomes["primary"].values())
+              holdout_passed = sum(outcomes["holdout"].values())
+              combined = primary_passed + holdout_passed
+              scores.append({
+                  "name": name,
+                  "sha": candidate["sha"],
+                  "primary": primary_passed,
+                  "holdout": holdout_passed,
+                  "combined": combined,
+                  "gains": gains,
+                  "regressions": regressions,
+              })
+          
+          scores.sort(key=lambda row: (-row["combined"], row["regressions"], -row["gains"], row["name"]))
+          qualified = [
+              row for row in scores
+              if row["combined"] > baseline_total and row["gains"] > 0 and row["regressions"] == 0
           ]
-          for rank, (passed, gains, regressions, name, sha) in enumerate(scores, 1):
-              lines.append(f"| {rank} | {name} | {passed}/500 ({passed/5:.1f}%) | {gains} | {regressions} | `{sha[:12]}` |")
-          qualified = [row for row in scores if row[1] >= 1 and row[2] == 0 and row[0] > baseline_passed]
+          
+          lines = [
+              "## Paired exact-match tournament — no automatic promotion",
+              "",
+              f"Same-run main baseline: primary **{baseline_primary}/500 ({baseline_primary/5:.1f}%)**, "
+              f"holdout **{baseline_holdout}/500 ({baseline_holdout/5:.1f}%)**, "
+              f"combined **{baseline_total}/1000 ({baseline_total/10:.1f}%)**.",
+              "A candidate qualifies for human review only with both complete 500-case samples on the frozen SHA, "
+              "green full tests, a higher combined score, and **zero regressions by case ID across all 1,000 cases**.",
+              "",
+              "| Rank | Candidate | Primary | Holdout | Combined | Gains | Regressions | SHA |",
+              "|---:|---|---:|---:|---:|---:|---:|---|",
+          ]
+          for rank, row in enumerate(scores, 1):
+              lines.append(
+                  f"| {rank} | {row['name']} | {row['primary']}/500 ({row['primary']/5:.1f}%) "
+                  f"| {row['holdout']}/500 ({row['holdout']/5:.1f}%) "
+                  f"| **{row['combined']}/1000 ({row['combined']/10:.1f}%)** "
+                  f"| {row['gains']} | {row['regressions']} | {row['sha'][:12]} |"
+              )
           if qualified:
-              lines += ["", "**Qualified for human review only:** " + ", ".join(row[3] for row in qualified) + ". No PR is merged and the baseline record is not changed."]
+              lines += [
+                  "",
+                  "**Qualified for human review only:** " + ", ".join(row["name"] for row in qualified) + ".",
+                  "No PR is merged and the benchmark record is not changed by this workflow.",
+              ]
           else:
-              lines += ["", "**No candidate qualifies.** No merge, no record update, and no automatic follow-up action."]
+              lines += [
+                  "",
+                  "**No candidate qualifies.** No merge and no benchmark-record update.",
+              ]
+          if rejected:
+              lines += ["", "### Rejected candidates"]
+              for name in sorted(rejected):
+                  lines.append(f"- {name}: " + "; ".join(sorted(set(rejected[name]))))
           summary = "\n".join(lines) + "\n"
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as handle:
               handle.write(summary)
