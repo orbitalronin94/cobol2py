@@ -22,7 +22,7 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
         self.assertIn("16|32|64|100)", WORKFLOW)
 
     def test_candidate_output_is_single_line_json(self):
-        self.assertIn("candidates=$(jq -c --arg main_sha", WORKFLOW)
+        self.assertIn("candidates=$(jq -cn --arg main_sha", WORKFLOW)
         self.assertIn('echo "candidates=$candidates" >> "$GITHUB_OUTPUT"', WORKFLOW)
 
     def test_push_discovery_includes_massive_experiment_branches(self):
