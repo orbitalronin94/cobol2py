@@ -295,7 +295,7 @@ El coordinador ahora debe:
 
 El workflow no hace merge, no modifica `holdout_best.json` ni cambia corpus, selección, timeout o criterio exact-match. La prueba de contrato `tests/test_tournament_workflow.py` protege el default, el formato de output, las dos muestras y la puerta de cero regresiones.
 
-**Pendiente de validación:** el siguiente run completo debe establecer primero el baseline pareado del `main` actual y comparar las 16 candidatas contra él. Hasta que los 34 shards (17 SHAs × 2 muestras) terminen, no se declara ganadora ni se promueve código.
+**Pendiente de validación:** el siguiente run completo debe establecer primero el baseline pareado del `main` actual y comparar las 15 candidatas aún abiertas contra él. Hasta que los 32 shards (16 SHAs × 2 muestras) terminen, no se declara ganadora ni se promueve código.
 
 ## 16. PR #322 integrada antes de la evaluación pareada — 2026-11-04
 
