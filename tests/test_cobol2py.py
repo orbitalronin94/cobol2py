@@ -2669,8 +2669,49 @@ class DisplayOperandSplittingRegressionTests(unittest.TestCase):
 
     def test_parenthesized_numeric_display_generates_valid_python(self):
         translated = cobol2py.translate_statement("DISPLAY (01) (01) ERASE", set(), {})
-        self.assertIsNotNone(translated)
+        self.assertEqual(
+            translated,
+            ["_cobol_screen_display(1, 1, '', 'SCREEN')"],
+        )
         compile("\n".join(translated or []), "<display-operands>", "exec")
+
+
+class HeadlessScreenDisplayRegressionTests(unittest.TestCase):
+    def _run_screen_program(self, display_statement):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. SCREENHEADLESS.",
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            f"    {display_statement}.",
+            "    STOP RUN.",
+        ])
+        program = cobol2py.parse_cobol(source, source_format="free")
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<headless-screen-display>", "exec")
+        output = StringIO()
+        with redirect_stdout(output):
+            with self.assertRaises(SystemExit) as raised:
+                exec(generated, {"__name__": "__main__"})
+        self.assertEqual(raised.exception.code, 1)
+        self.assertEqual(output.getvalue(), "")
+
+    def test_positional_erase_matches_gnucobol_headless_terminal_failure(self):
+        self._run_screen_program("DISPLAY (01, 01) ERASE")
+
+    def test_positional_screen_text_is_not_written_to_batch_stdout(self):
+        self._run_screen_program('DISPLAY (23, 12) "SCREEN PROMPT"')
+
+    def test_separate_parenthesized_position_uses_screen_runtime(self):
+        translated = cobol2py.translate_statement("DISPLAY (01) (01) ERASE", set(), {})
+        self.assertEqual(
+            translated,
+            ["_cobol_screen_display(1, 1, '', 'SCREEN')"],
+        )
+        compile("\n".join(translated or []), "<screen-position>", "exec")
 
 
 class ComputeSizeErrorClauseRegressionTests(unittest.TestCase):
