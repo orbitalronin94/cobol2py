@@ -479,7 +479,7 @@ No se promueve todavía a récord reproducible. El caso `rock-paper-scissors-ad6
 En diez fallos del baseline (cuatro en primaria y seis en holdout) la fuente usa la forma antigua `DISPLAY (línea, columna) ...`. La ejecución de referencia está en modo no interactivo: GnuCOBOL informa `Error opening terminal: unknown.` por stderr, termina con código 1 y no escribe stdout. El Python generado trataba esas sentencias como DISPLAY ordinario, imprimía coordenadas/prompts o generaba una referencia a `erase` inexistente.
 
 Casos confirmados:
-- Cuatro `NameError: erase`: `fp201612-3-ae4424744f`, `progr02t-ebdd706b74`, `p20161b-4871fdaff9`, `smp002-508ab1c516`, `smp001-ccd7110609`, `smp005-39d6d84a79`, `pcadamg-ae0a29e0e4` y `pnota-ac81563c54`.
+- Ocho `NameError: erase`: `fp201612-3-ae4424744f`, `progr02t-ebdd706b74`, `p20161b-4871fdaff9`, `smp002-508ab1c516`, `smp001-ccd7110609`, `smp005-39d6d84a79`, `pcadamg-ae0a29e0e4` y `pnota-ac81563c54`.
 - `cep001-1f7cf0de31`: `DISPLAY (08, 27) MASC1` generaba una expresión Python inválida.
 - `progr2-ff3935a6eb`: el candidato agotaba el timeout con stdout vacío, mientras GnuCOBOL terminaba con código 1 y stdout vacío.
 
