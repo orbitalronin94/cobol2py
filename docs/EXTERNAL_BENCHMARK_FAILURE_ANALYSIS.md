@@ -456,3 +456,39 @@ La especificación de alcance, fixtures esperadas y gate está en [EXPERIMENT_TO
 ### Criterio de medición vigente
 
 Solo se utiliza la muestra fija de 500 casos con `skip=500`. El baseline es 250/500 y el mínimo para superar es 251/500. Se exigen cuatro shards completos, checksum verificado, tests completos y SHA exacto. La muestra primaria y el benchmark curado de 105 casos no forman parte del ranking. Esta muestra fija se observa repetidamente y no debe describirse como holdout estadístico intacto.
+
+
+## 2026-11-05 — baseline pareado de main y pantalla posicional
+
+### Medición y variabilidad
+
+El torneo [#41807663012](https://github.com/orbitalronin94/cobol2py/actions/runs/41807663012) produjo dos artefactos completos y checksum-verificados para el candidato `main-baseline`, ambos sobre SHA `cb005cedbb398c102e5e5b3c3c1ce7ce1833a3d2`:
+
+| Muestra | Exact-match |
+|---|---:|
+| Primaria | 253/500 (50,6 %) |
+| Holdout | 251/500 (50,2 %) |
+| **Combinado** | **504/1.000 (50,4 %)** |
+
+El workflow global terminó fallido por una prueba de otra candidata; los dos jobs y artefactos de `main-baseline` terminaron correctamente. He comparado los blobs de `cobol2py.py`, `web/index.html`, tests, reparación guiada, runner, Dockerfile y workflow de benchmark: son idénticos entre `cb005ced` y el main actual `e9f2b9b`. Por tanto, 504/1.000 es una observación pareada del código que sigue en main, no una puntuación de una candidata.
+
+No se promueve todavía a récord reproducible. El caso `rock-paper-scissors-ad6321acf1` es no determinista: en el holdout de main produjo stdout de 83 bytes distinto del de GnuCOBOL, con return code 0 en ambos; en la ejecución holdout de PR #344 pasó. La PR #344 obtuvo 252/500, pero su única ganancia frente a main es exactamente ese caso y no guarda relación causal con el cambio `DIVIDE INTO GIVING`. No hay regresiones en esa comparación, pero tampoco una mejora atribuible. Los ficheros de récord no se sustituyen por esta variación de una ejecución.
+
+### Familia reproducida: DISPLAY posicional de terminal
+
+En diez fallos del baseline (cuatro en primaria y seis en holdout) la fuente usa la forma antigua `DISPLAY (línea, columna) ...`. La ejecución de referencia está en modo no interactivo: GnuCOBOL informa `Error opening terminal: unknown.` por stderr, termina con código 1 y no escribe stdout. El Python generado trataba esas sentencias como DISPLAY ordinario, imprimía coordenadas/prompts o generaba una referencia a `erase` inexistente.
+
+Casos confirmados:
+- Cuatro `NameError: erase`: `fp201612-3-ae4424744f`, `progr02t-ebdd706b74`, `p20161b-4871fdaff9`, `smp002-508ab1c516`, `smp001-ccd7110609`, `smp005-39d6d84a79`, `pcadamg-ae0a29e0e4` y `pnota-ac81563c54`.
+- `cep001-1f7cf0de31`: `DISPLAY (08, 27) MASC1` generaba una expresión Python inválida.
+- `progr2-ff3935a6eb`: el candidato agotaba el timeout con stdout vacío, mientras GnuCOBOL terminaba con código 1 y stdout vacío.
+
+La PR [#345](https://github.com/orbitalronin94/cobol2py/pull/345), SHA `6a557a1c2bb4b491c0aa1e7fbf10a4b22885ddcc`, introduce un helper para `DISPLAY (línea, columna)` y `DISPLAY (línea) (columna)`. En procesos sin TTY/TERM reproduce el fallo de inicialización de terminal con código 1 y cero bytes de stdout; en terminal emite secuencias de cursor/borrado. Añade tres regresiones y sincroniza el HTML independiente.
+
+La suite completa de la PR terminó correctamente en [#41995725922](https://github.com/orbitalronin94/cobol2py/actions/runs/41995725922). El benchmark holdout [#41995725847](https://github.com/orbitalronin94/cobol2py/actions/runs/41995725847) y el smoke [#41995725844](https://github.com/orbitalronin94/cobol2py/actions/runs/41995725844) siguen pendientes en la última inspección. No se atribuyen recuperaciones a #345 hasta que finalicen y se comparen por ID; la promoción requiere después primaria y holdout completos sobre el mismo SHA.
+
+### Siguiente familia después de la pantalla
+
+La siguiente reproducción prometedora es la continuación multilínea de nombres de índice en cláusulas `OCCURS ... INDEXED [BY]`. En `NC244A.CBL`, los nombres `IDX-5` y `IDX-8` a `IDX-15` aparecen en líneas físicas siguientes; el parser actual conserva `IDX-1` a `IDX-4` y `IDX-6`/`IDX-7`, pero omite los nombres continuados. El traceback de `NC2444.2` termina en `NameError: idx_5`. Se debe corregir el plegado de la cláusula, inicializar todos los índices y probar `SET index TO`/ `SET index UP BY` antes de abrir otra candidata.
+
+El caso `NC252A` (`rdf3_5_16`) es distinto: el nombre es un nivel 66 `RENAMES`, no un índice. No se deben mezclar ambos cambios ni resolver el segundo creando una variable ficticia.
