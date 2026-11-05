@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - fix/regressions-unstring-delimiters-vs-48
+      - bench/paired-pr345-screen-display
     paths:
       - "cobol2py.py"
       - "web/index.html"
@@ -42,11 +43,15 @@ jobs:
     if: github.event_name != 'pull_request' || !(startsWith(github.head_ref, 'experiment-v2/') || startsWith(github.head_ref, 'experiment-v3/') || startsWith(github.head_ref, 'experiment-v4/'))
     strategy:
       fail-fast: false
-      # One fixed evaluation sample only: 500 cases, four bounded shards.
-      # Primary-sample runs are intentionally excluded from candidate ranking.
+      # Paired verification for this frozen candidate: all 500 primary and
+      # all 500 holdout cases, in deterministic 125-case shards.
       max-parallel: 4
       matrix:
         sample:
+          - { name: primary-0, skip: 0, target: 125 }
+          - { name: primary-1, skip: 125, target: 125 }
+          - { name: primary-2, skip: 250, target: 125 }
+          - { name: primary-3, skip: 375, target: 125 }
           - { name: holdout-0, skip: 500, target: 125 }
           - { name: holdout-1, skip: 625, target: 125 }
           - { name: holdout-2, skip: 750, target: 125 }
