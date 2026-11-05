@@ -4514,3 +4514,34 @@ class ArithmeticReferenceModificationOffsetRegressionTests(unittest.TestCase):
             eval(translated, {}, {"ws_text": "ABCDEFG", "ws_start": 1, "ws_offset": 1}),
             "CD",
         )
+
+
+class EnvironmentAndStandardErrorCandidateTests(unittest.TestCase):
+    def test_display_upon_syserr_writes_to_stderr(self):
+        from contextlib import redirect_stderr
+        from io import StringIO
+
+        translated = cobol2py.translate_statement('DISPLAY "diagnostic" UPON SYSERR', set())
+        self.assertIsNotNone(translated)
+        self.assertIn("__import__('sys').stderr", translated[0])
+        output = StringIO()
+        with redirect_stderr(output):
+            exec("\\n".join(translated or []), {})
+        self.assertEqual(output.getvalue(), "diagnostic\n")
+
+    def test_accept_from_environment_value_pads_alphanumeric_field(self):
+        from unittest.mock import patch
+
+        variables = {
+            "WS-VALUE": cobol2py.CobolVar(level=1, name="WS-VALUE", pic="X(6)")
+        }
+        translated = cobol2py.translate_statement(
+            'ACCEPT WS-VALUE FROM ENVIRONMENT "COBOL_TEST_VALUE"',
+            set(),
+            variables,
+        )
+        self.assertIsNotNone(translated)
+        namespace = {"ws_value": "      "}
+        with patch.dict("os.environ", {"COBOL_TEST_VALUE": "abc"}):
+            exec("\\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_value"], "abc   ")
