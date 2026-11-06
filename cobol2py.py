@@ -2083,7 +2083,7 @@ def translate_expr(
         r"NUMVAL(?:_C)?|LOWER_CASE|UPPER_CASE|TRIM|LENGTH|ABS|ACOS|ASIN|ATAN|"
         r"COS|EXP|LOG|LOG10|SIN|SQRT|TAN|MIN|MAX|MEAN|MEDIAN|MIDRANGE|RANGE|SUM|VARIANCE|STANDARD_DEVIATION|COBOL_MIN|COBOL_MAX|"
         r"PRESENT_VALUE|ANNUITY|TEST_NUMVAL|INTEGER_PART|INTEGER|ORD|CHAR|MOD|REM|CONCATENATE|RANDOM|REVERSE|FACTORIAL|STORED_CHAR_LENGTH|"
-        r"DATE_OF_INTEGER|INTEGER_OF_DATE|DAY_OF_INTEGER|INTEGER_OF_DAY|SECONDS_PAST_MIDNIGHT"
+        r"DATE_OF_INTEGER|INTEGER_OF_DATE|DAY_OF_INTEGER|INTEGER_OF_DAY|SECONDS_PAST_MIDNIGHT|EXP10"
     )
     translated = re.sub(
         rf"\bfunction\s+(?=(?:{intrinsic_call_names})\s*(?:\[|\())",
@@ -2107,6 +2107,12 @@ def translate_expr(
                 translated,
                 flags=re.IGNORECASE,
             )
+    translated = re.sub(
+        r"\b(?:function\s+)?exp10\s*(?:\[([^\]]*)\]|\(((?:[^()]|\([^()]*\))*)\))",
+        lambda match: f"(10 ** ({intrinsic_argument(match)}))",
+        translated,
+        flags=re.IGNORECASE,
+    )
     for cobol_name, python_name in (("min", "min"), ("max", "max"), ("cobol_min", "min"), ("cobol_max", "max")):
         translated = re.sub(
             rf"\b(?:function\s+)?{cobol_name}\s*(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))",
