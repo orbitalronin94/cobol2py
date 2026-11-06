@@ -87,6 +87,7 @@ class HoldoutRepairRegressionTests(unittest.TestCase):
         )
         generated = "\\n".join(lines or [])
         self.assertNotIn("100.50 =", generated)
+        self.assertIn("0.5 if", generated)
         ast.parse(generated)
 
     def test_set_multiple_index_names(self):
