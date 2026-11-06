@@ -3399,7 +3399,7 @@ def split_cobol_items(s: str) -> list[str]:
     return expanded
 
 
-DATA_REF_PATTERN = r"[A-Za-z0-9_-]+(?:\s*\([A-Za-z0-9_,;:+*/\s-]+\)){0,2}(?:\s+(?:OF|IN)\s+[A-Za-z0-9_-]+(?:\s*\([A-Za-z0-9_,;:+*/\s-]+\)){0,2})*"
+DATA_REF_PATTERN = r"[A-Za-z][A-Za-z0-9_-]*(?:\s*\([A-Za-z0-9_,;:+*/\s-]+\)){0,2}(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9_-]*(?:\s*\([A-Za-z0-9_,;:+*/\s-]+\)){0,2})*"
 
 
 def emit_reference_modification_move(
