@@ -20,7 +20,7 @@ EXPECTED_TOTAL = 500
 def load_shards(directory: Path) -> list[dict[str, Any]]:
     reports = []
     for shard, skip in EXPECTED_SHARDS.items():
-        path = directory / shard / "external-corpus-report.json"
+        path = directory / f"holdout-json-{shard}" / "external-corpus-report.json"
         if not path.is_file():
             raise ValueError(f"Missing required shard report: {path}")
         report = json.loads(path.read_text(encoding="utf-8"))
