@@ -51,5 +51,21 @@ class DivideVerbCompatibilityTests(unittest.TestCase):
         self.assertEqual(ns["ws_res1"], 2)
 
 
+
+    def test_divide_into_giving_accepts_decimal_literal_dividend(self):
+        ns = self.run_statement(
+            "DIVIDE WS-NUM1 INTO 864.36 GIVING WS-NUMT",
+            {"WS-NUM1": 44.1, "WS-NUMT": 0},
+        )
+        self.assertEqual(ns["ws_numt"], 19)
+
+    def test_divide_into_giving_accepts_integer_literal_dividend_and_remainder(self):
+        ns = self.run_statement(
+            "DIVIDE WS-NUM1 INTO 100 GIVING WS-NUMT REMAINDER WS-RES1",
+            {"WS-NUM1": 22, "WS-NUMT": 0, "WS-RES1": 0},
+        )
+        self.assertEqual(ns["ws_numt"], 4)
+        self.assertEqual(ns["ws_res1"], 12)
+
 if __name__ == "__main__":
     unittest.main()

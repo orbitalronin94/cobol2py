@@ -4169,7 +4169,7 @@ def translate_statement(
         divisor, receiving_text = divide_into.groups()
         variable_map = variables or {}
         giving = re.fullmatch(
-            rf"({DATA_REF_PATTERN})\s+GIVING\s+({DATA_REF_PATTERN})(?:\s+REMAINDER\s+({DATA_REF_PATTERN}))?",
+            rf"({DATA_REF_PATTERN}|[+-]?(?:\d+(?:\.\d*)?|\.\d+))\s+GIVING\s+({DATA_REF_PATTERN})(?:\s+REMAINDER\s+({DATA_REF_PATTERN}))?",
             receiving_text,
             re.IGNORECASE,
         )
