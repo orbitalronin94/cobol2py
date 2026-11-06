@@ -77,6 +77,18 @@ class HoldoutRepairRegressionTests(unittest.TestCase):
             ["+2", "INDEX2 - 2", "4"],
         )
 
+    def test_numeric_literal_is_not_a_receiving_data_reference(self):
+        self.assertIsNone(__import__("re").fullmatch(cobol2py.DATA_REF_PATTERN, "100.50"))
+
+    def test_divide_numeric_literal_into_giving_does_not_emit_literal_assignment(self):
+        lines = cobol2py.translate_statement(
+            "DIVIDE 1.0051 INTO 100.50 GIVING DIV8 ROUNDED",
+            set(),
+        )
+        generated = "\\n".join(lines or [])
+        self.assertNotIn("100.50 =", generated)
+        ast.parse(generated)
+
     def test_set_multiple_index_names(self):
         lines = cobol2py.translate_statement("SET IDX1 IDX2 IDX3 TO 001", set())
         self.assertEqual(lines, ["idx1 = 1", "idx2 = 1", "idx3 = 1"])
