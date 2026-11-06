@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   browser-smoke:
-    if: github.event_name != 'pull_request' || (!startsWith(github.head_ref, 'experiment/') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/'))
+    if: github.event_name != 'pull_request' || ((!startsWith(github.head_ref, 'experiment/') || github.head_ref == 'experiment/holdout-error-topography') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -47,7 +47,7 @@ jobs:
         run: python tests/browser_smoke.py
 
   unittest:
-    if: github.event_name != 'pull_request' || (!startsWith(github.head_ref, 'experiment/') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/'))
+    if: github.event_name != 'pull_request' || ((!startsWith(github.head_ref, 'experiment/') || github.head_ref == 'experiment/holdout-error-topography') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/'))
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -63,7 +63,7 @@ jobs:
         run: python -m py_compile cobol2py.py cobol2native.py benchmarks/run_external_corpus.py benchmarks/run_external_multilang.py benchmarks/run_multilang_benchmark.py
 
   gnucobol-reference:
-    if: github.event_name != 'pull_request' || (!startsWith(github.head_ref, 'experiment/') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/'))
+    if: github.event_name != 'pull_request' || ((!startsWith(github.head_ref, 'experiment/') || github.head_ref == 'experiment/holdout-error-topography') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -125,7 +125,7 @@ jobs:
 
 
   java-backend:
-    if: github.event_name != 'pull_request' || (!startsWith(github.head_ref, 'experiment/') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/'))
+    if: github.event_name != 'pull_request' || ((!startsWith(github.head_ref, 'experiment/') || github.head_ref == 'experiment/holdout-error-topography') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -151,7 +151,7 @@ jobs:
 
 
   gnucobol-trace:
-    if: github.event_name != 'pull_request' || (!startsWith(github.head_ref, 'experiment/') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/'))
+    if: github.event_name != 'pull_request' || ((!startsWith(github.head_ref, 'experiment/') || github.head_ref == 'experiment/holdout-error-topography') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -174,7 +174,7 @@ jobs:
 
   modernization-agent:
     name: Modernization agent
-    if: github.event_name != 'pull_request' || (!startsWith(github.head_ref, 'experiment/') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/'))
+    if: github.event_name != 'pull_request' || ((!startsWith(github.head_ref, 'experiment/') || github.head_ref == 'experiment/holdout-error-topography') && !startsWith(github.head_ref, 'experiment-v2/') && !startsWith(github.head_ref, 'experiment-v3/'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
