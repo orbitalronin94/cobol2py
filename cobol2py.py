@@ -1395,6 +1395,33 @@ def emit_assignment(target: str, value: str, variables: Optional[dict[str, Cobol
     return f"{normalize_data_reference(target, variable_map)} = {value}"
 
 
+def split_cobol_subscripts(text: str) -> list[str]:
+    """Split whitespace-separated COBOL subscripts without breaking arithmetic.
+
+    X-COBOL includes comma-separated forms (I, J + 1) and legacy forms such
+    as (I J + 1 K - 1). A new subscript starts when an operand follows another
+    operand without an intervening arithmetic operator.
+    """
+    explicit = [part.strip() for part in re.split(r"[,;]", text) if part.strip()]
+    if len(explicit) > 1:
+        return explicit
+    tokens = re.findall(
+        r"[A-Za-z][A-Za-z0-9_-]*|[+-]?\d+(?:\.\d+)?|[()+*/-]",
+        text.strip(),
+    )
+    if not tokens:
+        return []
+    parts: list[list[str]] = [[tokens[0]]]
+    operators = {"+", "-", "*", "/"}
+    for token in tokens[1:]:
+        current = parts[-1]
+        if token in operators or current[-1] in operators or token == "(" or current[-1] == "(":
+            current.append(token)
+        else:
+            parts.append([token])
+    return [" ".join(part).strip() for part in parts]
+
+
 def normalize_data_reference(
     name: str,
     variables: Optional[dict[str, CobolVar]] = None,
@@ -1451,18 +1478,7 @@ def normalize_data_reference(
             return translate_condition(text, variables)
         return normalize_name(text)
     field_name, subscript_text, qualifier, qualifier_subscript = match.groups()
-    subscripts = [part.strip() for part in re.split(r"[,;]", subscript_text)] if subscript_text else []
-    if subscript_text and len(subscripts) == 1 and re.search(r"\s", subscript_text.strip()):
-        # Some COBOL sources separate multidimensional subscripts with spaces
-        # rather than commas, and individual subscripts may themselves contain
-        # arithmetic (e.g. TABLE(I J + 1 K + 1)). Split only before an identifier
-        # when the preceding token is not an arithmetic operator.
-        candidate_subscripts = re.split(
-            r"(?<![+\-*/])\s+(?=[A-Za-z0-9][A-Za-z0-9_-]*(?:\s|$))",
-            subscript_text.strip(),
-        )
-        if len(candidate_subscripts) > 1:
-            subscripts = candidate_subscripts
+    subscripts = split_cobol_subscripts(subscript_text) if subscript_text else []
     variable_map = variables or {}
     overlay_fields, _overlay_buffers = build_overlay_layout(variable_map)
     if not subscripts and field_name.upper() in overlay_fields:
@@ -1524,16 +1540,7 @@ def normalize_data_reference(
             for child_name, child_subscript_text in reversed(part_matches[:-1]):
                 expression += f"[{normalize_name(child_name)!r}]"
                 if child_subscript_text:
-                    child_subscripts = [
-                        part.strip() for part in re.split(r"[,;]", child_subscript_text)
-                    ]
-                    if len(child_subscripts) == 1 and re.search(r"\s", child_subscript_text.strip()):
-                        candidates = re.split(
-                            r"(?<![+\-*/])\s+(?=[A-Za-z0-9][A-Za-z0-9_-]*(?:\s|$))",
-                            child_subscript_text.strip(),
-                        )
-                        if len(candidates) > 1:
-                            child_subscripts = candidates
+                    child_subscripts = split_cobol_subscripts(child_subscript_text)
                     for child_subscript in child_subscripts:
                         expression += f"[{index_expression(child_subscript)}]"
             return expression
