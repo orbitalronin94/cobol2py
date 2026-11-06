@@ -4215,17 +4215,23 @@ def translate_statement(
         divisor, receiving_text = divide_into.groups()
         variable_map = variables or {}
         giving = re.fullmatch(
-            rf"(.+?)\s+GIVING\s+({DATA_REF_PATTERN})(?:\s+REMAINDER\s+({DATA_REF_PATTERN}))?(?:\s+ROUNDED)?",
+            rf"(.+?)\s+GIVING\s+({DATA_REF_PATTERN})(?:\s+REMAINDER\s+({DATA_REF_PATTERN}))?(\s+ROUNDED)?",
             receiving_text,
             re.IGNORECASE,
         )
         divisor_expr = translate_literal(divisor, variable_map)
         if giving:
-            dividend, target, remainder = giving.groups()
+            dividend, target, remainder, rounded = giving.groups()
+            quotient_expression = (
+                "int((float(_cobol_divide_dividend) / float(_cobol_divide_divisor)) + "
+                "(0.5 if (_cobol_divide_dividend / _cobol_divide_divisor) >= 0 else -0.5))"
+                if rounded else
+                "int(float(_cobol_divide_dividend) / float(_cobol_divide_divisor))"
+            )
             return_lines = [
                 f"_cobol_divide_dividend = {translate_literal(dividend, variable_map)}",
                 f"_cobol_divide_divisor = {divisor_expr}",
-                "_cobol_divide_quotient = int(float(_cobol_divide_dividend) / float(_cobol_divide_divisor))",
+                f"_cobol_divide_quotient = {quotient_expression}",
                 emit_assignment(target, fit_numeric_expression("_cobol_divide_quotient", target, variable_map), variable_map),
             ]
             if remainder:
