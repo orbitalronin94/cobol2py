@@ -1,0 +1,211 @@
+{
+  "schema_version": 1,
+  "title": "30-seed failure-directed repair tournament",
+  "baseline": {
+    "score": 258,
+    "denominator": 500,
+    "percent": 51.6,
+    "source_run": 42266714599,
+    "base_ref": "main"
+  },
+  "benchmark": {
+    "corpus": "X-COBOL v2",
+    "skip": 500,
+    "target": 500,
+    "comparison": "exact stdout bytes and process return code against GnuCOBOL",
+    "casewise": true
+  },
+  "acceptance": {
+    "unit_tests_required": true,
+    "complete_holdout_required": true,
+    "regressions_allowed": 0,
+    "minimum_gain": 1,
+    "ranking": [
+      "new_passes_desc",
+      "regressions_asc",
+      "runtime_asc"
+    ]
+  },
+  "candidates": [
+    {
+      "seed": 1,
+      "id": "syntax-condition-operators",
+      "hypothesis": "Repair duplicated/contradictory relational operators in compound IF/EVALUATE conditions.",
+      "branch": "experiment-failure-seed/01-syntax-condition-operators"
+    },
+    {
+      "seed": 2,
+      "id": "syntax-abbreviated-relations",
+      "hypothesis": "Expand abbreviated combined relation conditions without corrupting operands.",
+      "branch": "experiment-failure-seed/02-syntax-abbreviated-relations"
+    },
+    {
+      "seed": 3,
+      "id": "syntax-multidimensional-subscripts",
+      "hypothesis": "Tokenize nested/multidimensional subscripts and arithmetic index expressions.",
+      "branch": "experiment-failure-seed/03-syntax-multidimensional-subscripts"
+    },
+    {
+      "seed": 4,
+      "id": "syntax-reference-modification",
+      "hypothesis": "Parse COBOL reference modification start:length without leaking COBOL tokens.",
+      "branch": "experiment-failure-seed/04-syntax-reference-modification"
+    },
+    {
+      "seed": 5,
+      "id": "syntax-inspect-before-after",
+      "hypothesis": "Parse INSPECT BEFORE/AFTER INITIAL and replacement clauses.",
+      "branch": "experiment-failure-seed/05-syntax-inspect-before-after"
+    },
+    {
+      "seed": 6,
+      "id": "syntax-inspect-replacing",
+      "hypothesis": "Implement INSPECT REPLACING ALL/LEADING/FIRST semantics.",
+      "branch": "experiment-failure-seed/06-syntax-inspect-replacing"
+    },
+    {
+      "seed": 7,
+      "id": "syntax-string-delimited",
+      "hypothesis": "Parse STRING DELIMITED BY with multiple senders and receivers.",
+      "branch": "experiment-failure-seed/07-syntax-string-delimited"
+    },
+    {
+      "seed": 8,
+      "id": "syntax-unstring-multiple-delimiters",
+      "hypothesis": "Support UNSTRING with multiple delimiters and ALL semantics.",
+      "branch": "experiment-failure-seed/08-syntax-unstring-multiple-delimiters"
+    },
+    {
+      "seed": 9,
+      "id": "syntax-perform-inline",
+      "hypothesis": "Repair nested inline PERFORM block boundaries and indentation.",
+      "branch": "experiment-failure-seed/09-syntax-perform-inline"
+    },
+    {
+      "seed": 10,
+      "id": "syntax-evaluate-also",
+      "hypothesis": "Parse EVALUATE ALSO multi-subject WHEN tuples.",
+      "branch": "experiment-failure-seed/10-syntax-evaluate-also"
+    },
+    {
+      "seed": 11,
+      "id": "runtime-initialize-replacing",
+      "hypothesis": "Correct INITIALIZE REPLACING category and edited-category handling.",
+      "branch": "experiment-failure-seed/11-runtime-initialize-replacing"
+    },
+    {
+      "seed": 12,
+      "id": "runtime-initialize-occurs",
+      "hypothesis": "Correct INITIALIZE over nested OCCURS and OCCURS DEPENDING ON.",
+      "branch": "experiment-failure-seed/12-runtime-initialize-occurs"
+    },
+    {
+      "seed": 13,
+      "id": "runtime-filler-storage",
+      "hypothesis": "Honor WITH FILLER without breaking group storage layout.",
+      "branch": "experiment-failure-seed/13-runtime-filler-storage"
+    },
+    {
+      "seed": 14,
+      "id": "runtime-redefines-overlay",
+      "hypothesis": "Preserve shared storage semantics for REDEFINES during moves and initialization.",
+      "branch": "experiment-failure-seed/14-runtime-redefines-overlay"
+    },
+    {
+      "seed": 15,
+      "id": "runtime-numeric-move",
+      "hypothesis": "Correct numeric/alphanumeric MOVE conversion and truncation rules.",
+      "branch": "experiment-failure-seed/15-runtime-numeric-move"
+    },
+    {
+      "seed": 16,
+      "id": "runtime-decimal-arithmetic",
+      "hypothesis": "Preserve COBOL decimal scale and intermediate arithmetic precision.",
+      "branch": "experiment-failure-seed/16-runtime-decimal-arithmetic"
+    },
+    {
+      "seed": 17,
+      "id": "runtime-rounded-size-error",
+      "hypothesis": "Implement ROUNDED and ON SIZE ERROR across arithmetic verbs.",
+      "branch": "experiment-failure-seed/17-runtime-rounded-size-error"
+    },
+    {
+      "seed": 18,
+      "id": "runtime-divide-remainder",
+      "hypothesis": "Correct DIVIDE quotient/remainder and zero-divisor behavior.",
+      "branch": "experiment-failure-seed/18-runtime-divide-remainder"
+    },
+    {
+      "seed": 19,
+      "id": "runtime-table-boundaries",
+      "hypothesis": "Enforce one-based COBOL subscripts and occurrence bounds.",
+      "branch": "experiment-failure-seed/19-runtime-table-boundaries"
+    },
+    {
+      "seed": 20,
+      "id": "runtime-search-all-key",
+      "hypothesis": "Correct SEARCH ALL binary search key and index behavior.",
+      "branch": "experiment-failure-seed/20-runtime-search-all-key"
+    },
+    {
+      "seed": 21,
+      "id": "runtime-search-serial",
+      "hypothesis": "Implement SEARCH serial scan, VARYING, AT END and WHEN.",
+      "branch": "experiment-failure-seed/21-runtime-search-serial"
+    },
+    {
+      "seed": 22,
+      "id": "runtime-call-static",
+      "hypothesis": "Resolve static CALL targets and argument passing.",
+      "branch": "experiment-failure-seed/22-runtime-call-static"
+    },
+    {
+      "seed": 23,
+      "id": "runtime-call-by-reference",
+      "hypothesis": "Implement BY REFERENCE argument mutation and aliasing.",
+      "branch": "experiment-failure-seed/23-runtime-call-by-reference"
+    },
+    {
+      "seed": 24,
+      "id": "runtime-call-by-content",
+      "hypothesis": "Implement BY CONTENT copy semantics.",
+      "branch": "experiment-failure-seed/24-runtime-call-by-content"
+    },
+    {
+      "seed": 25,
+      "id": "runtime-linkage-using",
+      "hypothesis": "Bind LINKAGE SECTION and PROCEDURE DIVISION USING arguments.",
+      "branch": "experiment-failure-seed/25-runtime-linkage-using"
+    },
+    {
+      "seed": 26,
+      "id": "runtime-file-open-modes",
+      "hypothesis": "Correct OPEN INPUT/OUTPUT/EXTEND/I-O state and file status.",
+      "branch": "experiment-failure-seed/26-runtime-file-open-modes"
+    },
+    {
+      "seed": 27,
+      "id": "runtime-file-read-write",
+      "hypothesis": "Correct READ/WRITE record transfer and EOF behavior.",
+      "branch": "experiment-failure-seed/27-runtime-file-read-write"
+    },
+    {
+      "seed": 28,
+      "id": "runtime-perform-control-flow",
+      "hypothesis": "Fix PERFORM THRU, paragraph return and nested control flow.",
+      "branch": "experiment-failure-seed/28-runtime-perform-control-flow"
+    },
+    {
+      "seed": 29,
+      "id": "runtime-go-to-depending",
+      "hypothesis": "Correct GO TO DEPENDING ON ordinal selection and fall-through.",
+      "branch": "experiment-failure-seed/29-runtime-go-to-depending"
+    },
+    {
+      "seed": 30,
+      "id": "runtime-data-scope-initialization",
+      "hypothesis": "Ensure all declared storage has correct initial state and scope.",
+      "branch": "experiment-failure-seed/30-runtime-data-scope-initialization"
+    }
+  ]
+}
