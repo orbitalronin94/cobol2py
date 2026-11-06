@@ -85,7 +85,7 @@ class HoldoutRepairRegressionTests(unittest.TestCase):
             "DIVIDE 1.0051 INTO 100.50 GIVING DIV8 ROUNDED",
             set(),
         )
-        generated = "\\n".join(lines or [])
+        generated = "\n".join(lines or [])
         self.assertNotIn("100.50 =", generated)
         self.assertIn("0.5 if", generated)
         ast.parse(generated)
