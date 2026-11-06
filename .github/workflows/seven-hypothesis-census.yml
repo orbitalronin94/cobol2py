@@ -1,0 +1,108 @@
+name: seven-hypothesis-corpus-census
+
+on:
+  workflow_dispatch:
+    inputs:
+      eligible_target:
+        description: "Eligible GnuCOBOL programs to classify"
+        required: true
+        default: "1000"
+        type: choice
+        options: ["1000", "1500", "2000"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: seven-hypothesis-census
+  cancel-in-progress: false
+
+jobs:
+  census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install GnuCOBOL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gnucobol
+      - name: Download and verify pinned X-COBOL v2
+        run: |
+          curl --fail --location --retry 3 --retry-delay 2 "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" -o "$RUNNER_TEMP/corpus.zip"
+          echo "cbd974caed72b0836777dc2305928ed3  $RUNNER_TEMP/corpus.zip" | md5sum --check -
+      - name: Census exact eligible sequence and seven feature families
+        env:
+          TARGET: \${{ inputs.eligible_target }}
+          ARCHIVE: \${{ runner.temp }}/corpus.zip
+          OUT: \${{ runner.temp }}/census
+        run: |
+          mkdir -p "$OUT"
+          python - <<'PY'
+          import hashlib,json,os,re,shutil,subprocess,tempfile,zipfile
+          from pathlib import Path,PurePosixPath
+          root=Path(os.environ["OUT"]); srcroot=root/"src"; srcroot.mkdir()
+          patterns={
+            "H1_SORT_MERGE":r"\b(?:SORT|MERGE|RELEASE|RETURN)\b",
+            "H2_CALL_LINKAGE":r"\b(?:CALL|LINKAGE|ENTRY)\b",
+            "H3_EVALUATE_ALSO":r"\bEVALUATE\b[\s\S]{0,500}?\bALSO\b",
+            "H4_SEARCH_INDEX":r"\b(?:SEARCH|INDEXED\s+BY)\b",
+            "H5_OCCURS_DEPENDING":r"\bOCCURS\b[\s\S]{0,180}?\bDEPENDING\s+ON\b",
+            "H6_COPY_REPLACE":r"\b(?:COPY\b[\s\S]{0,200}?\bREPLACING|REPLACE\b)",
+            "H7_ARITHMETIC":r"\b(?:ROUNDED|ON\s+SIZE\s+ERROR|NOT\s+ON\s+SIZE\s+ERROR)\b"}
+          rx={k:re.compile(v,re.I) for k,v in patterns.items()}
+          files=[]
+          with zipfile.ZipFile(os.environ["ARCHIVE"]) as z:
+            for info in z.infolist():
+              p=PurePosixPath(info.filename)
+              if info.is_dir() or p.is_absolute() or ".." in p.parts or Path(p.name).suffix.lower() not in {".cbl",".cob",".cobol"} or not 0<info.file_size<=1_000_000: continue
+              dest=srcroot.joinpath(*p.parts); dest.parent.mkdir(parents=True,exist_ok=True)
+              with z.open(info) as a,dest.open("wb") as b: shutil.copyfileobj(a,b)
+              digest=hashlib.sha256(dest.read_bytes()).hexdigest()
+              files.append((digest,dest))
+          unique={}
+          for h,p in files: unique.setdefault(h,p)
+          ordered=sorted(unique.items(),key=lambda x:hashlib.sha256((x[1].relative_to(srcroot).as_posix()+"\0"+x[0]).encode()).hexdigest())
+          rows=[]; screened=0; target=int(os.environ["TARGET"])
+          with tempfile.TemporaryDirectory() as td:
+            for digest,path in ordered:
+              if len(rows)>=target: break
+              screened+=1; work=Path(td)/str(screened); work.mkdir()
+              exe=work/"ref"
+              try: c=subprocess.run(["cobc","-x","-I",str(path.parent),"-o",str(exe),str(path)],cwd=work,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=8)
+              except subprocess.TimeoutExpired: continue
+              if c.returncode: continue
+              try: subprocess.run([str(exe)],cwd=work,stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=3)
+              except subprocess.TimeoutExpired: continue
+              rel=path.relative_to(srcroot).as_posix()
+              stem=re.sub(r"[^a-z0-9]+","-",path.stem.lower()).strip("-")
+              stem="-".join(x for x in stem.split("-") if x)[:32] or "program"
+              text=path.read_text(encoding="utf-8",errors="replace")
+              hits=[k for k,v in rx.items() if v.search(text)]
+              rows.append({"ordinal":len(rows)+1,"id":f"{stem}-{digest[:10]}","source":rel,"source_sha256":digest,"features":hits})
+              if len(rows)%50==0: print(f"eligible {len(rows)}/{target}; screened {screened}",flush=True)
+          ids={k:[r["id"] for r in rows if k in r["features"]] for k in patterns}
+          result={"dataset":"X-COBOL v2","archive_md5":"cbd974caed72b0836777dc2305928ed3","selection":"Same unique-content SHA-256 ordering and GnuCOBOL compile/terminate eligibility rule as benchmarks/run_external_corpus.py","requested_eligible":target,"eligible_found":len(rows),"screened":screened,"feature_counts":{k:len(v) for k,v in ids.items()},"feature_case_ids":ids,"cases":rows,"caveat":"Regex presence is triage only, not causal attribution; fixed-format comments/continuations can cause false positives or negatives."}
+          (root/"hypothesis-census.json").write_text(json.dumps(result,indent=2)+"\n")
+          lines=["# Seven-hypothesis corpus census","",f"Eligible: {len(rows)}/{target}","", "| Hypothesis | Cases |","|---|---:|"]+[f"| {k} | {len(v)} |" for k,v in ids.items()]
+          for k,v in ids.items(): lines += ["",f"## {k} ({len(v)})",""]+["- "+x for x in v]
+          (root/"hypothesis-census.md").write_text("\n".join(lines)+"\n")
+          print(json.dumps(result["feature_counts"],indent=2))
+          if len(rows)!=target: raise SystemExit(f"Expected {target} eligible programs, found {len(rows)}")
+          PY
+      - name: Publish report
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/census/hypothesis-census.md" ]; then cat "$RUNNER_TEMP/census/hypothesis-census.md" >> "$GITHUB_STEP_SUMMARY"; fi
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: seven-hypothesis-census-\${{ github.run_id }}
+          path: \${{ runner.temp }}/census/hypothesis-census.*
+          if-no-files-found: warn
+          retention-days: 90
