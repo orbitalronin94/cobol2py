@@ -1373,6 +1373,24 @@ def emit_assignment(target: str, value: str, variables: Optional[dict[str, Cobol
                         index_args.append(f"int({index_value}) - 1")
                     else:
                         index_args.append(f"({translate_expr(subscript, variable_map)}) - 1")
+                raw_subscripts = re.split(r"[,;]", subscript_text)
+                if len(raw_subscripts) == 1 and re.search(r"\s", subscript_text.strip()):
+                    candidates = re.split(
+                        r"(?<![+\-*/])\s+(?=[A-Za-z0-9][A-Za-z0-9_-]*(?:\s|$))",
+                        subscript_text.strip(),
+                    )
+                    if len(candidates) > 1:
+                        raw_subscripts = candidates
+                index_args = []
+                for subscript in raw_subscripts:
+                    subscript = subscript.strip()
+                    if subscript.isdigit():
+                        index_args.append(str(int(subscript) - 1))
+                    elif re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*", subscript):
+                        index_value = normalize_data_reference(subscript, variable_map)
+                        index_args.append(f"int({index_value}) - 1")
+                    else:
+                        index_args.append(f"({translate_expr(subscript, variable_map)}) - 1")
                 return f"_cobol_set({field_name!r}, {value}, {', '.join(index_args)})"
     return f"{normalize_data_reference(target, variable_map)} = {value}"
 
@@ -1875,7 +1893,7 @@ def translate_expr(
         expr,
         flags=re.IGNORECASE,
     )
-    intrinsic_names = {"NUMVAL", "NUMVAL-C", "LOWER-CASE", "UPPER-CASE", "TRIM", "LENGTH", "ABS", "ACOS", "ASIN", "ATAN", "COS", "EXP", "LOG", "LOG10", "SIN", "SQRT", "TAN", "MIN", "MAX", "MEAN", "MEDIAN", "MIDRANGE", "RANGE", "SUM", "VARIANCE", "STANDARD-DEVIATION", "COBOL-MIN", "COBOL-MAX", "PRESENT-VALUE", "ANNUITY", "TEST-NUMVAL", "INTEGER", "INTEGER-PART", "ORD", "CHAR", "MOD", "REM", "CONCATENATE", "RANDOM", "REVERSE", "FACTORIAL", "STORED-CHAR-LENGTH", "DATE-OF-INTEGER", "INTEGER-OF-DATE", "DAY-OF-INTEGER", "INTEGER-OF-DAY", "SECONDS-PAST-MIDNIGHT", "WHEN-COMPILED"}
+    intrinsic_names = {"NUMVAL", "NUMVAL-C", "LOWER-CASE", "UPPER-CASE", "TRIM", "LENGTH", "ABS", "ACOS", "ASIN", "ATAN", "COS", "EXP", "LOG", "LOG10", "SIN", "SQRT", "TAN", "MIN", "MAX", "MEAN", "MEDIAN", "MIDRANGE", "RANGE", "SUM", "VARIANCE", "STANDARD-DEVIATION", "COBOL-MIN", "COBOL-MAX", "PRESENT-VALUE", "ANNUITY", "TEST-NUMVAL", "INTEGER", "INTEGER-PART", "ORD", "CHAR", "MOD", "REM", "CONCATENATE", "RANDOM", "REVERSE", "FACTORIAL", "STORED-CHAR-LENGTH", "DATE-OF-INTEGER", "INTEGER-OF-DATE", "DAY-OF-INTEGER", "INTEGER-OF-DAY", "SECONDS-PAST-MIDNIGHT", "WHEN-COMPILED", "EXP10"}
     # COBOL reference modification uses 1-based (start:length) positions.
     # Convert the start to a zero-based Python offset and retain the requested
     # character count as the slice end.
@@ -2316,7 +2334,7 @@ def translate_expr(
         intrinsic_names = {
             "abs", "acos", "asin", "atan", "cos", "exp", "log", "log10",
             "sin", "sqrt", "tan", "lower_case", "upper_case", "trim", "length",
-            "mod", "rem", "integer", "integer_part", "present_value",
+            "mod", "rem", "integer", "integer_part", "present_value", "exp10",
             "reverse", "factorial", "day_of_integer", "integer_of_day",
         }
         math_names = {
@@ -2410,6 +2428,8 @@ def translate_expr(
                             replacement = f"int(__import__('math').floor(float({args})))"
                         elif key == "integer_part":
                             replacement = f"int(float({args}))"
+                        elif key == "exp10":
+                            replacement = f"(10 ** ({args}))"
                         elif key == "present_value" and len(parts) >= 2:
                             replacement = (
                                 "(lambda _rate, *_payments: sum((_payment / "
@@ -4169,7 +4189,7 @@ def translate_statement(
         divisor, receiving_text = divide_into.groups()
         variable_map = variables or {}
         giving = re.fullmatch(
-            rf"({DATA_REF_PATTERN})\s+GIVING\s+({DATA_REF_PATTERN})(?:\s+REMAINDER\s+({DATA_REF_PATTERN}))?",
+            rf"(.+?)\s+GIVING\s+({DATA_REF_PATTERN})(?:\s+REMAINDER\s+({DATA_REF_PATTERN}))?",
             receiving_text,
             re.IGNORECASE,
         )
@@ -4471,8 +4491,16 @@ def translate_nodes(
 
         elif node.kind == "evaluate":
             subject = node.text[len("EVALUATE"):].strip()
-            is_boolean = subject.upper() in ("TRUE", "FALSE")
+            numeric_test = re.fullmatch(r"(.+?)\s+(NOT\s+)?NUMERIC", subject, re.IGNORECASE)
+            is_class_test = numeric_test is not None
+            is_boolean = subject.upper() in ("TRUE", "FALSE") or is_class_test
             temp_name = f"_cobol_evaluate_{node.line}"
+            numeric_condition = None
+            if is_class_test:
+                tested_value = translate_expr(numeric_test.group(1), variables)
+                numeric_condition = f"str({tested_value}).strip().isdigit()"
+                if numeric_test.group(2):
+                    numeric_condition = f"not ({numeric_condition})"
             if not is_boolean:
                 out.append("    " * indent + f"{temp_name} = {translate_expr(subject, variables)}")
             subject_base = re.match(r"[A-Za-z][A-Za-z0-9-]*", subject)
@@ -4489,9 +4517,16 @@ def translate_nodes(
                     prefix = "if True:" if condition else "else:"
                 else:
                     if is_boolean:
-                        condition = translate_condition(choice, variables, condition_names)
-                        if subject.upper() == "FALSE":
-                            condition = f"not ({condition})"
+                        if is_class_test:
+                            condition = numeric_condition or "False"
+                            if choice.upper() == "FALSE":
+                                condition = f"not ({condition})"
+                            elif choice.upper() != "TRUE":
+                                condition = translate_condition(choice, variables, condition_names)
+                        else:
+                            condition = translate_condition(choice, variables, condition_names)
+                            if subject.upper() == "FALSE":
+                                condition = f"not ({condition})"
                     elif re.search(r"\s+(?:THRU|THROUGH)\s+", choice, re.IGNORECASE):
                         low, high = re.split(r"\s+(?:THRU|THROUGH)\s+", choice, maxsplit=1, flags=re.IGNORECASE)
                         condition = (
