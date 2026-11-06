@@ -1,0 +1,28 @@
+name: failure-tournament-manifest
+
+on:
+  pull_request:
+    paths:
+      - "experiments/failure-tournament/**"
+      - "tests/test_failure_tournament_manifest.py"
+      - ".github/workflows/failure-tournament-manifest.yml"
+  push:
+    branches: [main]
+    paths:
+      - "experiments/failure-tournament/**"
+      - "tests/test_failure_tournament_manifest.py"
+      - ".github/workflows/failure-tournament-manifest.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Validate 30 independent hypotheses and no-regression gate
+        run: python -m unittest tests.test_failure_tournament_manifest -v
