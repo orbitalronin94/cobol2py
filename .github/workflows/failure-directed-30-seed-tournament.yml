@@ -47,7 +47,7 @@ jobs:
           PY
           candidates='[]'
           while IFS=$'\t' read -r seed candidate_id branch; do
-            encoded_branch=$(python -c 'import os,urllib.parse; print(urllib.parse.quote(os.environ["BRANCH"], safe="/"))' BRANCH="$branch")
+            encoded_branch=$(BRANCH="$branch" python -c 'import os,urllib.parse; print(urllib.parse.quote(os.environ["BRANCH"], safe="/"))')
             if ! ref=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$encoded_branch" 2>/dev/null); then
               echo "::error::Missing candidate branch for seed $seed: $branch"
               echo "Create and implement all 30 isolated candidate branches before dispatching."
@@ -198,7 +198,7 @@ jobs:
           ref: main
       - uses: actions/download-artifact@v7
         with:
-          pattern: failure-tournament-*- ${{ github.run_id }}
+          pattern: failure-tournament-*-${{ github.run_id }}
           path: ${{ runner.temp }}/artifacts
           merge-multiple: false
       - name: Compare all candidates by exact case ID
