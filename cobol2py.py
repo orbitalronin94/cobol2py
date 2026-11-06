@@ -3990,6 +3990,19 @@ def translate_statement(
             return ["_cobol_accept_value = _cobol_input('0')", emit_assignment(target, value, variables)]
         return [f"{target_expr} = _cobol_input()"]
 
+    # SET can initialize several index-names in one statement (SET I J K TO 1).
+    multi_set = re.fullmatch(
+        r"SET\s+([A-Za-z][A-Za-z0-9_-]*(?:\s+[A-Za-z][A-Za-z0-9_-]*)+)\s+TO\s+(.+)",
+        s, re.IGNORECASE,
+    )
+    if multi_set:
+        targets_text, source = multi_set.groups()
+        source_expr = translate_literal(source, variables)
+        return [
+            emit_assignment(target, source_expr, variables)
+            for target in targets_text.split()
+        ]
+
     m = re.fullmatch(r"SET\s+([A-Za-z0-9_-]+)\s+TO\s+TRUE", s, re.IGNORECASE)
     if m and condition_names:
         condition = condition_names.get(m.group(1).upper())
