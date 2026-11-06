@@ -177,6 +177,14 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
           compression-level: 1
+      - name: Upload compact JSON for cross-shard aggregation
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: holdout-json-${{ matrix.sample.name }}
+          path: ${{ runner.temp }}/external-python-artifacts/${{ matrix.sample.name }}/external-corpus-report.json
+          if-no-files-found: error
+          retention-days: 90
 
 
   holdout-topography:
