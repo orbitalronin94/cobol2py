@@ -184,26 +184,26 @@ def sanitize_exception_message(message: str) -> str:
 def detect_source_features(source_text: str) -> list[str]:
     """Conservative source-feature tags for failure topography, not causal attribution."""
     patterns = {
-        "CALL": r"\\bCALL\\b",
-        "LINKAGE_SECTION": r"\\bLINKAGE\\s+SECTION\\b",
-        "EVALUATE_ALSO": r"\\bEVALUATE\\b[\\s\\S]{0,500}?\\bALSO\\b",
-        "SEARCH": r"\\bSEARCH\\b",
-        "OCCURS_DEPENDING_ON": r"\\bOCCURS\\b[\\s\\S]{0,120}?\\bDEPENDING\\s+ON\\b",
-        "COPY_REPLACING": r"\\bCOPY\\b[\\s\\S]{0,300}?\\bREPLACING\\b|\\bREPLACE\\s+OFF\\b",
-        "ROUNDED_SIZE_ERROR": r"\\bROUNDED\\b|\\bSIZE\\s+ERROR\\b",
-        "STRING_UNSTRING": r"\\bSTRING\\b|\\bUNSTRING\\b",
-        "SORT_MERGE": r"\\bSORT\\b|\\bMERGE\\b",
-        "PERFORM": r"\\bPERFORM\\b",
-        "TABLES_OCCURS": r"\\bOCCURS\\b",
-        "REDEFINES": r"\\bREDEFINES\\b",
-        "FILE_IO": r"\\bOPEN\\b|\\bREAD\\b|\\bWRITE\\b|\\bREWRITE\\b|\\bDELETE\\b|\\bSTART\\b|\\bCLOSE\\b",
-        "FILE_CONTROL": r"\\bSELECT\\b[\\s\\S]{0,200}?\\bASSIGN\\b|\\bFD\\s+|\\bSD\\s+",
-        "ARITHMETIC": r"\\bCOMPUTE\\b|\\bADD\\b|\\bSUBTRACT\\b|\\bMULTIPLY\\b|\\bDIVIDE\\b",
-        "INSPECT": r"\\bINSPECT\\b",
-        "INITIALIZE": r"\\bINITIALIZE\\b",
-        "CONDITION_NAMES_88": r"(?m)^\\s*88\\s+",
-        "GO_TO": r"\\bGO\\s+TO\\b",
-        "ACCEPT_DISPLAY": r"\\bACCEPT\\b|\\bDISPLAY\\b",
+        "CALL": r"\bCALL\b",
+        "LINKAGE_SECTION": r"\bLINKAGE\s+SECTION\b",
+        "EVALUATE_ALSO": r"\bEVALUATE\b[\s\S]{0,500}?\bALSO\b",
+        "SEARCH": r"\bSEARCH\b",
+        "OCCURS_DEPENDING_ON": r"\bOCCURS\b[\s\S]{0,120}?\bDEPENDING\s+ON\b",
+        "COPY_REPLACING": r"\bCOPY\b[\s\S]{0,300}?\bREPLACING\b|\bREPLACE\s+OFF\b",
+        "ROUNDED_SIZE_ERROR": r"\bROUNDED\b|\bSIZE\s+ERROR\b",
+        "STRING_UNSTRING": r"\bSTRING\b|\bUNSTRING\b",
+        "SORT_MERGE": r"\bSORT\b|\bMERGE\b",
+        "PERFORM": r"\bPERFORM\b",
+        "TABLES_OCCURS": r"\bOCCURS\b",
+        "REDEFINES": r"\bREDEFINES\b",
+        "FILE_IO": r"\bOPEN\b|\bREAD\b|\bWRITE\b|\bREWRITE\b|\bDELETE\b|\bSTART\b|\bCLOSE\b",
+        "FILE_CONTROL": r"\bSELECT\b[\s\S]{0,200}?\bASSIGN\b|\bFD\s+|\bSD\s+",
+        "ARITHMETIC": r"\bCOMPUTE\b|\bADD\b|\bSUBTRACT\b|\bMULTIPLY\b|\bDIVIDE\b",
+        "INSPECT": r"\bINSPECT\b",
+        "INITIALIZE": r"\bINITIALIZE\b",
+        "CONDITION_NAMES_88": r"(?m)^\s*88\s+",
+        "GO_TO": r"\bGO\s+TO\b",
+        "ACCEPT_DISPLAY": r"\bACCEPT\b|\bDISPLAY\b",
     }
     # Ignore full-line fixed-format comments and free-format inline comments.
     lines = []
@@ -211,7 +211,7 @@ def detect_source_features(source_text: str) -> list[str]:
         if len(line) > 6 and line[6] in "*/" and (line[:6].strip() == "" or line[:6].strip().isdigit()):
             continue
         lines.append(line.split("*>", 1)[0])
-    code = "\\n".join(lines).upper()
+    code = "\n".join(lines).upper()
     return [name for name, pattern in patterns.items() if re.search(pattern, code, re.IGNORECASE)]
 
 
