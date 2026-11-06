@@ -1,0 +1,289 @@
+name: 30-seed failure-directed tournament
+
+run-name: 30-seed COBOL failure tournament
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_parallel:
+        description: "Maximum simultaneous candidate benchmarks"
+        required: true
+        type: choice
+        options: ["2", "4", "6", "8"]
+        default: "4"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cobol2py-failure-tournament
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    name: Freeze baseline and 30 candidate revisions
+    runs-on: ubuntu-latest
+    outputs:
+      baseline_sha: ${{ steps.freeze.outputs.baseline_sha }}
+      candidates: ${{ steps.freeze.outputs.candidates }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - name: Resolve all 30 manifest branches to immutable SHAs
+        id: freeze
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          baseline_sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          manifest = json.loads(Path("experiments/failure-tournament/manifest.json").read_text())
+          assert len(manifest["candidates"]) == 30, "Manifest must contain exactly 30 seeds"
+          assert len({item["seed"] for item in manifest["candidates"]}) == 30, "Duplicate seed"
+          assert len({item["branch"] for item in manifest["candidates"]}) == 30, "Duplicate branch"
+          PY
+          candidates='[]'
+          while IFS=$'\t' read -r seed candidate_id branch; do
+            encoded_branch=$(python -c 'import os,urllib.parse; print(urllib.parse.quote(os.environ["BRANCH"], safe="/"))' BRANCH="$branch")
+            if ! ref=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$encoded_branch" 2>/dev/null); then
+              echo "::error::Missing candidate branch for seed $seed: $branch"
+              echo "Create and implement all 30 isolated candidate branches before dispatching."
+              exit 1
+            fi
+            sha=$(jq -r '.object.sha' <<<"$ref")
+            if [ "$sha" = "$baseline_sha" ]; then
+              echo "::error::Seed $seed points to baseline unchanged ($branch)"
+              exit 1
+            fi
+            item=$(jq -cn --arg seed "$seed" --arg id "$candidate_id" --arg branch "$branch" --arg sha "$sha" \
+              '{seed:($seed|tonumber),id:$id,branch:$branch,sha:$sha}')
+            candidates=$(jq -cn --argjson old "$candidates" --argjson item "$item" '$old + [$item]')
+          done < <(python - <<'PY'
+          import json
+          from pathlib import Path
+          for item in json.loads(Path("experiments/failure-tournament/manifest.json").read_text())["candidates"]:
+              print(f'{item["seed"]}\t{item["id"]}\t{item["branch"]}')
+          PY
+          )
+          test "$(jq 'length' <<<"$candidates")" -eq 30
+          echo "baseline_sha=$baseline_sha" >> "$GITHUB_OUTPUT"
+          echo "candidates=$candidates" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Frozen tournament revisions"
+            echo "- Baseline: `$baseline_sha`"
+            echo "- Candidate branches: $(jq 'length' <<<"$candidates")"
+            echo "$candidates" | jq -r '.[] | "- Seed \(.seed): `\(.id)` — `\(.sha)`"'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  baseline:
+    name: Frozen main baseline — 500 holdout cases
+    needs: discover
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.discover.outputs.baseline_sha }}
+      - name: Download pinned X-COBOL v2 archive
+        run: curl --fail --location --retry 3 --retry-delay 2 "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" --output /tmp/COBOL_Files.zip
+      - name: Build isolated benchmark image
+        run: docker build -f benchmarks/Dockerfile.external -t cobol2py-failure-tournament .
+      - name: Run exact 500-case holdout baseline
+        run: |
+          mkdir -p "$RUNNER_TEMP/baseline"
+          chmod 0777 "$RUNNER_TEMP/baseline"
+          docker run --rm --network none --cap-drop=ALL --security-opt=no-new-privileges \
+            --pids-limit=128 --memory=4g --cpus=2 --read-only \
+            --tmpfs /tmp:rw,exec,nosuid,nodev,size=3g \
+            --mount "type=bind,source=$GITHUB_WORKSPACE,target=/workspace,readonly" \
+            --mount "type=bind,source=/tmp/COBOL_Files.zip,target=/input.zip,readonly" \
+            --mount "type=bind,source=$RUNNER_TEMP/baseline,target=/output" \
+            --workdir /workspace cobol2py-failure-tournament \
+            benchmarks/run_external_corpus.py --translator /workspace/cobol2py.py \
+            --archive /input.zip --output /output --target 500 --skip 500
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: failure-tournament-baseline-${{ github.run_id }}
+          path: ${{ runner.temp }}/baseline/
+          if-no-files-found: error
+          retention-days: 30
+
+  candidates:
+    name: Seed ${{ matrix.candidate.seed }} — ${{ matrix.candidate.id }}
+    needs: discover
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ fromJSON(inputs.max_parallel) }}
+      matrix:
+        candidate: ${{ fromJSON(needs.discover.outputs.candidates) }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ matrix.candidate.sha }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Run complete unit and regression suite
+        id: unit
+        run: python -m unittest discover -s tests -v
+      - name: Download pinned X-COBOL v2 archive
+        if: steps.unit.outcome == 'success'
+        run: curl --fail --location --retry 3 --retry-delay 2 "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" --output /tmp/COBOL_Files.zip
+      - name: Build isolated benchmark image
+        if: steps.unit.outcome == 'success'
+        run: docker build -f benchmarks/Dockerfile.external -t cobol2py-failure-tournament .
+      - name: Run exact 500-case holdout
+        if: steps.unit.outcome == 'success'
+        env:
+          SEED: ${{ matrix.candidate.seed }}
+          CANDIDATE_ID: ${{ matrix.candidate.id }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/candidate"
+          chmod 0777 "$RUNNER_TEMP/candidate"
+          docker run --rm --network none --cap-drop=ALL --security-opt=no-new-privileges \
+            --pids-limit=128 --memory=4g --cpus=2 --read-only \
+            --tmpfs /tmp:rw,exec,nosuid,nodev,size=3g \
+            --mount "type=bind,source=$GITHUB_WORKSPACE,target=/workspace,readonly" \
+            --mount "type=bind,source=/tmp/COBOL_Files.zip,target=/input.zip,readonly" \
+            --mount "type=bind,source=$RUNNER_TEMP/candidate,target=/output" \
+            --workdir /workspace cobol2py-failure-tournament \
+            benchmarks/run_external_corpus.py --translator /workspace/cobol2py.py \
+            --archive /input.zip --output /output --target 500 --skip 500
+      - name: Record candidate identity and test outcome
+        if: always()
+        env:
+          SEED: ${{ matrix.candidate.seed }}
+          CANDIDATE_ID: ${{ matrix.candidate.id }}
+          BRANCH: ${{ matrix.candidate.branch }}
+          EXPECTED_SHA: ${{ matrix.candidate.sha }}
+          UNIT_OUTCOME: ${{ steps.unit.outcome }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          data = {
+              "seed": int(os.environ["SEED"]),
+              "id": os.environ["CANDIDATE_ID"],
+              "branch": os.environ["BRANCH"],
+              "sha": os.environ["EXPECTED_SHA"],
+              "unit_tests": os.environ.get("UNIT_OUTCOME"),
+              "tests_passed": os.environ.get("UNIT_OUTCOME") == "success",
+          }
+          Path(os.environ["RUNNER_TEMP"], "candidate-result.json").write_text(json.dumps(data, indent=2))
+          PY
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: failure-tournament-seed-${{ matrix.candidate.seed }}-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/candidate/
+            ${{ runner.temp }}/candidate-result.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  aggregate:
+    name: Casewise zero-regression ranking
+    if: always()
+    needs: [discover, baseline, candidates]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: failure-tournament-*- ${{ github.run_id }}
+          path: ${{ runner.temp }}/artifacts
+          merge-multiple: false
+      - name: Compare all candidates by exact case ID
+        env:
+          ARTIFACT_ROOT: ${{ runner.temp }}/artifacts
+          CANDIDATES_JSON: ${{ needs.discover.outputs.candidates }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ["ARTIFACT_ROOT"])
+          candidates = json.loads(os.environ["CANDIDATES_JSON"])
+          baseline_files = list(root.glob("failure-tournament-baseline-*/external-corpus-report.json"))
+          if len(baseline_files) != 1:
+              raise SystemExit(f"Expected one baseline report, found {len(baseline_files)}")
+          baseline = json.loads(baseline_files[0].read_text())
+          if baseline.get("tested") != 500 or baseline.get("sample_complete") is not True or baseline.get("archive_md5_verified") is not True:
+              raise SystemExit("Frozen main baseline is incomplete or archive checksum is unverified")
+          base = {row["id"]: row["status"] == "passed" for row in baseline["results"]}
+          if len(base) != 500:
+              raise SystemExit(f"Baseline has {len(base)} unique case IDs, expected 500")
+          rows = []
+          for candidate in candidates:
+              folders = list(root.glob(f"failure-tournament-seed-{candidate['seed']}-*/"))
+              if len(folders) != 1:
+                  rows.append({**candidate, "eligible": False, "reason": "missing or duplicate artifact"})
+                  continue
+              folder = folders[0]
+              identity_path = folder / "candidate-result.json"
+              report_path = folder / "candidate" / "external-corpus-report.json"
+              if not identity_path.is_file():
+                  rows.append({**candidate, "eligible": False, "reason": "missing identity/test result"})
+                  continue
+              identity = json.loads(identity_path.read_text())
+              if identity.get("sha") != candidate["sha"] or not identity.get("tests_passed"):
+                  rows.append({**candidate, "eligible": False, "reason": "wrong SHA or unit tests failed"})
+                  continue
+              if not report_path.is_file():
+                  rows.append({**candidate, "eligible": False, "reason": "benchmark report missing"})
+                  continue
+              report = json.loads(report_path.read_text())
+              result_map = {row["id"]: row["status"] == "passed" for row in report.get("results", [])}
+              if (report.get("tested") != 500 or report.get("sample_complete") is not True
+                  or report.get("archive_md5_verified") is not True or len(result_map) != 500
+                  or set(result_map) != set(base)):
+                  rows.append({**candidate, "eligible": False, "reason": "incomplete or non-comparable holdout"})
+                  continue
+              regressions = sorted(case for case in base if base[case] and not result_map[case])
+              new_passes = sorted(case for case in base if not base[case] and result_map[case])
+              rows.append({
+                  **candidate, "score": sum(result_map.values()), "new_passes": len(new_passes),
+                  "regressions": len(regressions), "eligible": len(new_passes) >= 1 and not regressions,
+                  "reason": "eligible" if len(new_passes) >= 1 and not regressions else "zero-regression/gain gate failed",
+                  "candidate_translation_seconds": report.get("candidate_translation_seconds"),
+                  "new_pass_case_ids": new_passes, "regressed_case_ids": regressions,
+              })
+          eligible = sorted((r for r in rows if r.get("eligible")),
+                            key=lambda r: (-r["new_passes"], r["regressions"], r.get("candidate_translation_seconds") or 1e99))
+          summary = {
+              "baseline_sha": "${{ needs.discover.outputs.baseline_sha }}",
+              "baseline_score": baseline.get("passed"),
+              "baseline_tested": baseline.get("tested"),
+              "candidates": rows,
+              "winner": eligible[0] if eligible else None,
+              "promotion": "not automatic",
+          }
+          out = Path(os.environ["GITHUB_WORKSPACE"], "failure-tournament-summary.json")
+          out.write_text(json.dumps(summary, indent=2))
+          print(json.dumps({k:v for k,v in summary.items() if k != "candidates"}, indent=2))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as handle:
+              handle.write(f"## 30-seed tournament\n\nBaseline: **{baseline.get('passed')}/500**\n\n")
+              handle.write("| Seed | Candidate | Score | New passes | Regressions | Eligible |\n|---:|---|---:|---:|---:|---|\n")
+              for row in sorted(rows, key=lambda r: r["seed"]):
+                  handle.write(f"| {row['seed']} | {row['id']} | {row.get('score','—')} | {row.get('new_passes','—')} | {row.get('regressions','—')} | {row.get('eligible',False)} |\n")
+              if eligible:
+                  winner = eligible[0]
+                  handle.write(f"\n### Winner: seed {winner['seed']} — {winner['id']} ({winner['score']}/500; +{winner['new_passes']}; 0 regressions)\n")
+              else:
+                  handle.write("\n**No eligible winner.** No candidate met the gain and zero-regression gates.\n")
+              handle.write("\nPromotion is manual; this workflow never merges candidates or changes the benchmark record.\n")
+          PY
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: failure-tournament-final-${{ github.run_id }}
+          path: failure-tournament-summary.json
+          if-no-files-found: warn
+          retention-days: 90
