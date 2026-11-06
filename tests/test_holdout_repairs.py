@@ -59,6 +59,24 @@ class HoldoutRepairRegressionTests(unittest.TestCase):
         self.assertNotIn("100 =", generated)
         ast.parse(generated)
 
+    def test_legacy_whitespace_subscripts_preserve_three_dimensions(self):
+        self.assertEqual(
+            cobol2py.split_cobol_subscripts("3 1 INDEX3 - 1"),
+            ["3", "1", "INDEX3 - 1"],
+        )
+
+    def test_legacy_whitespace_subscripts_keep_arithmetic_with_its_index(self):
+        self.assertEqual(
+            cobol2py.split_cobol_subscripts("INDEX1 + 1 INDEX2 + 3"),
+            ["INDEX1 + 1", "INDEX2 + 3"],
+        )
+
+    def test_legacy_whitespace_subscripts_keep_signed_literals(self):
+        self.assertEqual(
+            cobol2py.split_cobol_subscripts("+2 INDEX2 - 2 4"),
+            ["+2", "INDEX2 - 2", "4"],
+        )
+
     def test_set_multiple_index_names(self):
         lines = cobol2py.translate_statement("SET IDX1 IDX2 IDX3 TO 001", set())
         self.assertEqual(lines, ["idx1 = 1", "idx2 = 1", "idx3 = 1"])
