@@ -1,6 +1,6 @@
 # cobol2py
 
-> **Estado de evaluación (2026-11-04):** la comparación pareada de `main` antes y después de los PR [#322](https://github.com/orbitalronin94/cobol2py/pull/322) y [#328](https://github.com/orbitalronin94/cobol2py/pull/328), validada en el torneo [#41794173313](https://github.com/orbitalronin94/cobol2py/actions/runs/41794173313), sube de **500/1.000 (50,00 %)** a **505/1.000 (50,50 %)**: **+5 aciertos exactos (+0,50 puntos porcentuales)**. Las dos muestras de 500 terminaron correctamente. La línea base fija de ranking iterativo sigue siendo **250/500 (50,0 %)** según [holdout-record.json](benchmarks/holdout-record.json); la comparación pareada de 1.000 casos es una medición adicional y no cambia ese protocolo. El corpus se consulta durante el desarrollo: no es un holdout estadístico intacto ni una estimación de compatibilidad universal.
+> **Estado de evaluación (2026-11-06):** PR [#347](https://github.com/orbitalronin94/cobol2py/pull/347), ya integrada en `main`, elevó la muestra fija X-COBOL v2 de **255/500 (51,0 %)** a **258/500 (51,6 %)**: **+3 aciertos exactos (+0,6 puntos porcentuales)**. La ejecución completa terminó correctamente en [run #42266714599](https://github.com/orbitalronin94/cobol2py/actions/runs/42266714599), sobre el SHA `77c50aa1ec1cfc9957fd1fd8991448eb30542bd8`. Es una mejora real pero pequeña; quedan 242 casos fallidos. La topografía se usa para priorizar correcciones, no para afirmar causalidad ni compatibilidad general.
 
 > Traductor COBOL a Python, con prototipos experimentales a C y Rust. El núcleo de análisis COBOL se comparte; los backends nativos tienen cobertura limitada y no prometen equivalencia general.
 
@@ -72,7 +72,7 @@ Este es el roadmap de producto canónico: **el objetivo vigente es v1.0**. Los h
 5. **Validar generalización:** congelar un candidato y comprobar el umbral en la muestra disjunta sin usarla para ajustar las correcciones.
 6. **Autorizar v1.0:** exigir ambas metas, CI completa verde, informes reproducibles, limitaciones documentadas y revisión final de release.
 
-El 75 % es una **puerta de aceptación pendiente**, no una capacidad actual ni una promesa de compatibilidad universal. El análisis técnico de los fallos y las prioridades de la siguiente iteración se mantiene en [`docs/EXTERNAL_BENCHMARK_FAILURE_ANALYSIS.md`](docs/EXTERNAL_BENCHMARK_FAILURE_ANALYSIS.md).
+El 75 % es una **puerta de aceptación pendiente**, no una capacidad actual ni una promesa de compatibilidad universal. El análisis técnico de los fallos y las prioridades de la siguiente iteración se mantiene en [`docs/EXTERNAL_BENCHMARK_FAILURE_ANALYSIS.md`](docs/EXTERNAL_BENCHMARK_FAILURE_ANALYSIS.md). Tras #347, las siguientes hipótesis se centran en `CALL/LINKAGE`, `SEARCH` secuencial y casos de `INITIALIZE`, con pruebas mínimas compiladas por GnuCOBOL antes de atribuir mejoras al holdout.
 ---
 
 ## Por qué existe
@@ -291,9 +291,9 @@ Y lo dice. No falla en silencio.
 |---|---|
 | `EVALUATE/WHEN/WHEN OTHER` | Traducción básica a `if/elif/else`; rangos `THRU` y `EVALUATE TRUE` acotados. |
 | `COPY` / copybooks | Expansión recursiva desde el directorio fuente y rutas `--copybook-path`; ciclos y faltantes quedan como advertencias. También admite pares de pseudo-texto `==texto== BY ==texto==` en `REPLACING`; bibliotecas y reglas avanzadas siguen pendientes. |
-| `CALL` a subprogramas | Pendiente. |
+| `CALL` a subprogramas | Cobertura parcial/experimental; `CALL USING`, resolución de subprogramas y semántica de parámetros requieren validación diferencial. |
 | `FILE SECTION`, I/O | Pendiente. |
-| `SORT`, `SEARCH`, `MERGE` | Pendiente. |
+| `SORT`, `SEARCH`, `MERGE` | `SEARCH ALL` tiene una ruta acotada para tablas con `OCCURS`, `ASCENDING KEY` e índice; `SEARCH` secuencial, variantes y `SORT/MERGE` siguen pendientes o parciales. |
 | `REDEFINES` | Se genera como campos independientes. No hay `Union`. |
 | `STRING`, `UNSTRING`, `INSPECT` | Pendiente. |
 | `CICS`, `DB2`, `IMS` | Fuera de alcance. |
