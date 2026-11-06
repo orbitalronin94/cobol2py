@@ -198,7 +198,6 @@ jobs:
         with:
           pattern: holdout-json-*
           path: ${{ runner.temp }}/holdout-reports
-          merge-multiple: true
       - name: Aggregate scorecard and error topography
         env:
           CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
