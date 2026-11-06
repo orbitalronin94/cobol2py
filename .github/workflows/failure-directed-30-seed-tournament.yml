@@ -3,6 +3,8 @@ name: 30-seed failure-directed tournament
 run-name: 30-seed COBOL failure tournament
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       max_parallel:
@@ -119,7 +121,7 @@ jobs:
     timeout-minutes: 90
     strategy:
       fail-fast: false
-      max-parallel: ${{ fromJSON(inputs.max_parallel) }}
+      max-parallel: ${{ fromJSON(inputs.max_parallel || '4') }}
       matrix:
         candidate: ${{ fromJSON(needs.discover.outputs.candidates) }}
     steps:
