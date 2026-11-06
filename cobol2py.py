@@ -3891,6 +3891,42 @@ def translate_statement(
             display_operands = re.sub(
                 r"\s+(?:WITH\s+)?NO\s+ADVANCING\s*$", "", display_operands, flags=re.IGNORECASE
             ).rstrip()
+        screen_match = re.fullmatch(
+            r"\(\s*(?P<line>[^,()]+)\s*,\s*(?P<column>[^,()]+)\s*\)\s*(?P<body>.*)",
+            display_operands,
+            re.IGNORECASE | re.DOTALL,
+        )
+        if screen_match is None:
+            screen_match = re.fullmatch(
+                r"\(\s*(?P<line>[^()]+)\s*\)\s+\(\s*(?P<column>[^()]+)\s*\)\s*(?P<body>.*)",
+                display_operands,
+                re.IGNORECASE | re.DOTALL,
+            )
+        if screen_match:
+            line_expr = translate_literal(screen_match.group("line").strip(), variables)
+            column_expr = translate_literal(screen_match.group("column").strip(), variables)
+            screen_body = screen_match.group("body").strip()
+            erase_mode = None
+            erase_match = re.match(
+                r"^ERASE(?:\s+(SCREEN|LINE|EOL|EOS|END\s+OF\s+LINE|END\s+OF\s+SCREEN))?(?:\s+|$)",
+                screen_body,
+                re.IGNORECASE,
+            )
+            if erase_match:
+                raw_erase_mode = (erase_match.group(1) or "SCREEN").upper()
+                erase_mode = {
+                    "END OF LINE": "EOL",
+                    "END OF SCREEN": "EOS",
+                }.get(raw_erase_mode, raw_erase_mode)
+                screen_body = screen_body[erase_match.end():].strip()
+            screen_args = split_cobol_items(screen_body) if screen_body else []
+            screen_items = ", ".join(
+                translate_display_item(item, variables or {}) for item in screen_args
+            )
+            screen_value = f"''.join([{screen_items}])" if screen_args else "''"
+            return [
+                f"_cobol_screen_display({line_expr}, {column_expr}, {screen_value}, {erase_mode!r})"
+            ]
         args = split_cobol_items(display_operands)
         # COBOL DISPLAY concatenates operands. Numeric DISPLAY items also
         # retain the zero-filled width specified by their PIC clause.
@@ -5111,6 +5147,24 @@ def emit_python(prog: Program) -> str:
     lines.append("    def __init__(self, target):")
     lines.append("        super().__init__(target)")
     lines.append("        self.target = target")
+    lines.append("")
+    lines.append("def _cobol_screen_display(line, column, value='', erase=None):")
+    lines.append("    screen = __import__('sys').stdout")
+    lines.append("    if not screen.isatty() or not __import__('os').environ.get('TERM'):")
+    lines.append("        raise SystemExit(1)")
+    lines.append("    if erase == 'SCREEN':")
+    lines.append("        screen.write('\\x1b[2J\\x1b[H')")
+    lines.append("    else:")
+    lines.append("        screen.write(f'\\x1b[{int(line)};{int(column)}H')")
+    lines.append("        if erase == 'LINE':")
+    lines.append("            screen.write('\\x1b[2K')")
+    lines.append("        elif erase == 'EOL':")
+    lines.append("            screen.write('\\x1b[K')")
+    lines.append("        elif erase == 'EOS':")
+    lines.append("            screen.write('\\x1b[J')")
+    lines.append("    if value:")
+    lines.append("        screen.write(str(value))")
+    lines.append("    screen.flush()")
     lines.append("")
     lines.append("def _cobol_input(default=''):")
     lines.append("    try:")
