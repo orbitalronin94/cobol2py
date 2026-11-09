@@ -92,7 +92,10 @@ jobs:
       - name: Download pinned X-COBOL v2 archive
         run: curl --fail --location --retry 3 --retry-delay 2 "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" --output /tmp/COBOL_Files.zip
       - name: Build isolated benchmark image
-        run: docker build -f benchmarks/Dockerfile.external -t cobol2py-failure-tournament .
+        run: |
+          set -euo pipefail
+          git show "${{ needs.discover.outputs.baseline_sha }}:benchmarks/Dockerfile.external" > "$RUNNER_TEMP/Dockerfile.external"
+          docker build -f "$RUNNER_TEMP/Dockerfile.external" -t cobol2py-failure-tournament .
       - name: Run exact 500-case holdout baseline
         run: |
           mkdir -p "$RUNNER_TEMP/baseline"
@@ -139,7 +142,10 @@ jobs:
         run: curl --fail --location --retry 3 --retry-delay 2 "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" --output /tmp/COBOL_Files.zip
       - name: Build isolated benchmark image
         if: steps.unit.outcome == 'success'
-        run: docker build -f benchmarks/Dockerfile.external -t cobol2py-failure-tournament .
+        run: |
+          set -euo pipefail
+          git show "${{ needs.discover.outputs.baseline_sha }}:benchmarks/Dockerfile.external" > "$RUNNER_TEMP/Dockerfile.external"
+          docker build -f "$RUNNER_TEMP/Dockerfile.external" -t cobol2py-failure-tournament .
       - name: Run exact 500-case holdout
         if: steps.unit.outcome == 'success'
         env:
