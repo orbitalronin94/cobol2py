@@ -1419,7 +1419,17 @@ def split_cobol_subscripts(text: str) -> list[str]:
             current.append(token)
         else:
             parts.append([token])
-    return [" ".join(part).strip() for part in parts]
+    normalized_parts: list[str] = []
+    for part in parts:
+        value = " ".join(part).strip()
+        # Preserve the compact spelling used by existing callers for a
+        # standalone signed literal, while keeping signs separate inside
+        # arithmetic expressions such as INDEX + 1.
+        signed_literal = re.fullmatch(r"([+-])\\s+(\\d+(?:\\.\\d+)?)", value)
+        if signed_literal:
+            value = signed_literal.group(1) + signed_literal.group(2)
+        normalized_parts.append(value)
+    return normalized_parts
 
 
 def normalize_data_reference(
