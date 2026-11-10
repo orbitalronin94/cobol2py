@@ -3,8 +3,6 @@ name: 30-seed failure-directed tournament
 run-name: 30-seed COBOL failure tournament
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       max_parallel:
@@ -46,6 +44,8 @@ jobs:
           assert len(manifest["candidates"]) == 30, "Manifest must contain exactly 30 seeds"
           assert len({item["seed"] for item in manifest["candidates"]}) == 30, "Duplicate seed"
           assert len({item["branch"] for item in manifest["candidates"]}) == 30, "Duplicate branch"
+          if manifest.get("readiness", {}).get("status") != "ready":
+              raise SystemExit("Tournament blocked: candidate branches must be rebuilt and audited before dispatch")
           PY
           candidates='[]'
           while IFS=$'\t' read -r seed candidate_id branch; do
@@ -58,6 +58,22 @@ jobs:
             sha=$(jq -r '.object.sha' <<<"$ref")
             if [ "$sha" = "$baseline_sha" ]; then
               echo "::error::Seed $seed points to baseline unchanged ($branch)"
+              exit 1
+            fi
+            comparison=$(gh api "repos/$GITHUB_REPOSITORY/compare/$baseline_sha...$sha")
+            comparison_status=$(jq -r '.status' <<<"$comparison")
+            if [ "$comparison_status" != "ahead" ]; then
+              echo "::error::Seed $seed is stale or diverged from frozen main ($branch; compare=$comparison_status)"
+              echo "Rebuild this isolated candidate on top of the frozen main SHA before running the tournament."
+              exit 1
+            fi
+            changed_paths=$(jq -r '.files[]?.filename' <<<"$comparison")
+            if ! grep -Eq '^(cobol2py\.py|ronin/|web/index\.html$)' <<<"$changed_paths"; then
+              echo "::error::Seed $seed has no translator implementation change ($branch)"
+              exit 1
+            fi
+            if ! grep -Eq '^tests/' <<<"$changed_paths"; then
+              echo "::error::Seed $seed has no regression test or reproducer change ($branch)"
               exit 1
             fi
             item=$(jq -cn --arg seed "$seed" --arg id "$candidate_id" --arg branch "$branch" --arg sha "$sha" \
@@ -74,9 +90,9 @@ jobs:
           echo "baseline_sha=$baseline_sha" >> "$GITHUB_OUTPUT"
           echo "candidates=$candidates" >> "$GITHUB_OUTPUT"
           {
-            echo "## Frozen tournament revisions"
-            echo "- Baseline: `$baseline_sha`"
-            echo "- Candidate branches: $(jq 'length' <<<"$candidates")"
+            printf '%s\n' "## Frozen tournament revisions"
+            printf '%s\n' "- Baseline: `$baseline_sha`"
+            printf '%s\n' "- Candidate branches: $(jq 'length' <<<"$candidates")"
             echo "$candidates" | jq -r '.[] | "- Seed \(.seed): `\(.id)` — `\(.sha)`"'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -92,10 +108,7 @@ jobs:
       - name: Download pinned X-COBOL v2 archive
         run: curl --fail --location --retry 3 --retry-delay 2 "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" --output /tmp/COBOL_Files.zip
       - name: Build isolated benchmark image
-        run: |
-          set -euo pipefail
-          git show "${{ needs.discover.outputs.baseline_sha }}:benchmarks/Dockerfile.external" > "$RUNNER_TEMP/Dockerfile.external"
-          docker build -f "$RUNNER_TEMP/Dockerfile.external" -t cobol2py-failure-tournament .
+        run: docker build -f benchmarks/Dockerfile.external -t cobol2py-failure-tournament .
       - name: Run exact 500-case holdout baseline
         run: |
           mkdir -p "$RUNNER_TEMP/baseline"
@@ -131,6 +144,15 @@ jobs:
       - uses: actions/checkout@v5
         with:
           ref: ${{ matrix.candidate.sha }}
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.discover.outputs.baseline_sha }}
+          path: benchmark-harness
+      - name: Freeze benchmark runner from main baseline
+        run: |
+          set -euo pipefail
+          mkdir -p benchmarks
+          cp benchmark-harness/benchmarks/run_external_corpus.py benchmarks/run_external_corpus.py
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -142,10 +164,7 @@ jobs:
         run: curl --fail --location --retry 3 --retry-delay 2 "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" --output /tmp/COBOL_Files.zip
       - name: Build isolated benchmark image
         if: steps.unit.outcome == 'success'
-        run: |
-          set -euo pipefail
-          git show "${{ needs.discover.outputs.baseline_sha }}:benchmarks/Dockerfile.external" > "$RUNNER_TEMP/Dockerfile.external"
-          docker build -f "$RUNNER_TEMP/Dockerfile.external" -t cobol2py-failure-tournament .
+        run: docker build -f benchmark-harness/benchmarks/Dockerfile.external -t cobol2py-failure-tournament .
       - name: Run exact 500-case holdout
         if: steps.unit.outcome == 'success'
         env:
@@ -223,8 +242,11 @@ jobs:
           if len(baseline_files) != 1:
               raise SystemExit(f"Expected one baseline report, found {len(baseline_files)}")
           baseline = json.loads(baseline_files[0].read_text())
-          if baseline.get("tested") != 500 or baseline.get("sample_complete") is not True or baseline.get("archive_md5_verified") is not True:
-              raise SystemExit("Frozen main baseline is incomplete or archive checksum is unverified")
+          if (baseline.get("tested") != 500 or baseline.get("target") != 500 or baseline.get("skip") != 500
+              or baseline.get("sample_complete") is not True or baseline.get("archive_md5_verified") is not True
+              or baseline.get("archive_md5_expected") != "cbd974caed72b0836777dc2305928ed3"
+              or baseline.get("dataset_url") != "https://zenodo.org/records/14269462"):
+              raise SystemExit("Frozen main baseline is incomplete or violates the pinned X-COBOL v2 contract")
           base = {row["id"]: row["status"] == "passed" for row in baseline["results"]}
           if len(base) != 500:
               raise SystemExit(f"Baseline has {len(base)} unique case IDs, expected 500")
@@ -249,9 +271,13 @@ jobs:
                   continue
               report = json.loads(report_path.read_text())
               result_map = {row["id"]: row["status"] == "passed" for row in report.get("results", [])}
-              if (report.get("tested") != 500 or report.get("sample_complete") is not True
-                  or report.get("archive_md5_verified") is not True or len(result_map) != 500
-                  or set(result_map) != set(base)):
+              contract_keys = ("dataset_url", "archive_md5_expected", "target", "skip", "selection", "pass_definition")
+              if any(report.get(key) != baseline.get(key) for key in contract_keys):
+                  rows.append({**candidate, "eligible": False, "reason": "corpus, selection, or options differ from baseline"})
+                  continue
+              if (report.get("tested") != 500 or report.get("target") != 500 or report.get("skip") != 500
+                  or report.get("sample_complete") is not True or report.get("archive_md5_verified") is not True
+                  or len(result_map) != 500 or set(result_map) != set(base)):
                   rows.append({**candidate, "eligible": False, "reason": "incomplete or non-comparable holdout"})
                   continue
               regressions = sorted(case for case in base if base[case] and not result_map[case])
