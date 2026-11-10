@@ -4431,6 +4431,31 @@ MAIN.
         )
         self.assertEqual(namespace["_cobol_open_modes"], {})
 
+
+
+class UnstringTallyIncrementTests(unittest.TestCase):
+    def test_unstring_tallying_in_adds_to_existing_counter(self):
+        variables = {
+            "WS-SOURCE": cobol2py.CobolVar(level=1, name="WS-SOURCE", pic="X(10)"),
+            "WS-FIRST": cobol2py.CobolVar(level=1, name="WS-FIRST", pic="X(3)"),
+            "WS-SECOND": cobol2py.CobolVar(level=1, name="WS-SECOND", pic="X(3)"),
+            "WS-TALLY": cobol2py.CobolVar(level=1, name="WS-TALLY", pic="9(2)"),
+        }
+        lines = cobol2py.translate_statement(
+            'UNSTRING WS-SOURCE DELIMITED BY "," INTO WS-FIRST WS-SECOND TALLYING IN WS-TALLY',
+            set(),
+            variables,
+        )
+        namespace = {
+            "ws_source": "A,B,C     ",
+            "ws_first": "   ",
+            "ws_second": "   ",
+            "ws_tally": 5,
+        }
+        exec("\n".join(lines or []), namespace)
+        self.assertEqual(namespace["ws_first"], "A  ")
+        self.assertEqual(namespace["ws_second"], "B  ")
+        self.assertEqual(namespace["ws_tally"], 7)
     def test_write_to_input_file_sets_group_file_status_48(self):
         from contextlib import redirect_stdout
         from io import StringIO
