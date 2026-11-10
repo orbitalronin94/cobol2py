@@ -3008,7 +3008,7 @@ class NestedAndMiscIntrinsicRegressionTests(unittest.TestCase):
         )
         self.assertEqual(
             cobol2py.split_cobol_subscripts("+1 INDEX2 +3"),
-            ["+ 1", "INDEX2", "+ 3"],
+            ["+1", "INDEX2", "+3"],
         )
 
     def test_statistical_intrinsics_accept_space_separated_arguments(self):
