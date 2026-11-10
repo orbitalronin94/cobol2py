@@ -740,9 +740,26 @@ def build_overlay_layout(
     for overlay in variables.values():
         if not overlay.redefines:
             continue
-        base = variables.get(overlay.redefines.upper())
-        if base is None or base.parent_name != overlay.parent_name:
+        direct_base = variables.get(overlay.redefines.upper())
+        if direct_base is None or direct_base.parent_name != overlay.parent_name:
             continue
+
+        # Chained REDEFINES views must all address the original storage buffer.
+        base = direct_base
+        visited_bases = {overlay.name.upper()}
+        while base.redefines:
+            if base.name.upper() in visited_bases:
+                base = None
+                break
+            visited_bases.add(base.name.upper())
+            parent_view = variables.get(base.redefines.upper())
+            if parent_view is None or parent_view.parent_name != overlay.parent_name:
+                base = None
+                break
+            base = parent_view
+        if base is None:
+            continue
+
         base_width = _simple_storage_width(base, variables)
         overlay_width = _simple_storage_width(overlay, variables)
         if base_width is None or overlay_width is None:
@@ -4414,13 +4431,19 @@ def translate_statement(
         divisor, receiving_text = divide_into.groups()
         variable_map = variables or {}
         giving = re.fullmatch(
-            rf"(.+?)\s+GIVING\s+({DATA_REF_PATTERN})(?:\s+REMAINDER\s+({DATA_REF_PATTERN}))?(\s+ROUNDED)?",
+            rf"(?P<dividend>.+?)\s+GIVING\s+(?P<target>{DATA_REF_PATTERN})"
+            rf"(?:\s+(?P<rounded_before>ROUNDED))?"
+            rf"(?:\s+REMAINDER\s+(?P<remainder>{DATA_REF_PATTERN}))?"
+            rf"(?:\s+(?P<rounded_after>ROUNDED))?",
             receiving_text,
             re.IGNORECASE,
         )
         divisor_expr = translate_literal(divisor, variable_map)
         if giving:
-            dividend, target, remainder, rounded = giving.groups()
+            dividend = giving.group("dividend")
+            target = giving.group("target")
+            remainder = giving.group("remainder")
+            rounded = giving.group("rounded_before") or giving.group("rounded_after")
             quotient_expression = (
                 "int((float(_cobol_divide_dividend) / float(_cobol_divide_divisor)) + "
                 "(0.5 if (_cobol_divide_dividend / _cobol_divide_divisor) >= 0 else -0.5))"
@@ -4455,17 +4478,30 @@ def translate_statement(
             return return_lines
 
     divide_by = re.fullmatch(
-        rf"DIVIDE\s+(.+?)\s+BY\s+(.+?)\s+GIVING\s+({DATA_REF_PATTERN})(?:\s+REMAINDER\s+({DATA_REF_PATTERN}))?(?:\s+END-DIVIDE)?",
+        rf"DIVIDE\s+(?P<dividend>.+?)\s+BY\s+(?P<divisor>.+?)\s+GIVING\s+(?P<target>{DATA_REF_PATTERN})"
+        rf"(?:\s+(?P<rounded_before>ROUNDED))?"
+        rf"(?:\s+REMAINDER\s+(?P<remainder>{DATA_REF_PATTERN}))?"
+        rf"(?:\s+(?P<rounded_after>ROUNDED))?(?:\s+END-DIVIDE)?",
         s,
         re.IGNORECASE,
     )
     if divide_by:
-        dividend, divisor, target, remainder = divide_by.groups()
+        dividend = divide_by.group("dividend")
+        divisor = divide_by.group("divisor")
+        target = divide_by.group("target")
+        remainder = divide_by.group("remainder")
+        rounded = divide_by.group("rounded_before") or divide_by.group("rounded_after")
         variable_map = variables or {}
+        quotient_expression = (
+            "int((float(_cobol_divide_dividend) / float(_cobol_divide_divisor)) + "
+            "(0.5 if (_cobol_divide_dividend / _cobol_divide_divisor) >= 0 else -0.5))"
+            if rounded else
+            "int(float(_cobol_divide_dividend) / float(_cobol_divide_divisor))"
+        )
         return_lines = [
             f"_cobol_divide_dividend = {translate_literal(dividend, variable_map)}",
             f"_cobol_divide_divisor = {translate_literal(divisor, variable_map)}",
-            "_cobol_divide_quotient = int(float(_cobol_divide_dividend) / float(_cobol_divide_divisor))",
+            f"_cobol_divide_quotient = {quotient_expression}",
             emit_assignment(target, fit_numeric_expression("_cobol_divide_quotient", target, variable_map), variable_map),
         ]
         if remainder:
@@ -4500,7 +4536,8 @@ def translate_statement(
             ]
 
     m = re.match(
-        r"PERFORM\s+([A-Za-z0-9_-]+)\s+(?:THRU|THROUGH)\s+([A-Za-z0-9_-]+)\s+UNTIL\s+(.+)",
+        r"PERFORM\s+([A-Za-z0-9_-]+)\s+(?:THRU|THROUGH)\s+([A-Za-z0-9_-]+)"
+        r"(?:\s+WITH\s+TEST\s+BEFORE)?\s+UNTIL\s+(.+)",
         s,
         re.IGNORECASE,
     )
@@ -4523,7 +4560,11 @@ def translate_statement(
     if m and m.group(1).upper() in paragraphs:
         return [f"for _ in range({int(m.group(2))}):", f"{normalize_name(m.group(1))}()"]
 
-    m = re.match(r"PERFORM\s+([A-Za-z0-9_\-]+)\s+UNTIL\s+(.+)", s, re.IGNORECASE)
+    m = re.match(
+        r"PERFORM\s+([A-Za-z0-9_\-]+)(?:\s+WITH\s+TEST\s+BEFORE)?\s+UNTIL\s+(.+)",
+        s,
+        re.IGNORECASE,
+    )
     if m and m.group(1).upper() in paragraphs:
         return [
             f"while not ({translate_condition(m.group(2), variables or {}, condition_names)}):",
