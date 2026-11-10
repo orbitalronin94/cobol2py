@@ -2966,6 +2966,24 @@ class NestedAndMiscIntrinsicRegressionTests(unittest.TestCase):
         self.assertEqual(eval(positive), 1)
         self.assertEqual(eval(negative), -1)
 
+    def test_mod_and_rem_intrinsics_accept_space_separated_arguments(self):
+        translated_mod = cobol2py.translate_expr("FUNCTION MOD(DIGIT-COUNTER 2)")
+        translated_rem = cobol2py.translate_expr("FUNCTION REM(DIGIT-COUNTER 3)")
+        compile(translated_mod, "<space-separated-mod>", "eval")
+        compile(translated_rem, "<space-separated-rem>", "eval")
+        self.assertEqual(eval(translated_mod, {"digit_counter": 4}), 0)
+        self.assertEqual(eval(translated_rem, {"digit_counter": 7}), 1)
+
+    def test_relative_subscripts_keep_signed_numeric_offsets_with_adjacent_operands(self):
+        self.assertEqual(
+            cobol2py.split_cobol_subscripts("INDEX1 + 1 INDEX2 + 3 INDEX3 - 1"),
+            ["INDEX1 + 1", "INDEX2 + 3", "INDEX3 - 1"],
+        )
+        self.assertEqual(
+            cobol2py.split_cobol_subscripts("+1 INDEX2 +3"),
+            ["+ 1", "INDEX2", "+ 3"],
+        )
+
     def test_statistical_intrinsics_accept_space_separated_arguments(self):
         translated = cobol2py.translate_expr("FUNCTION MEAN(1 2 6)")
         self.assertEqual(eval(translated), 3)
