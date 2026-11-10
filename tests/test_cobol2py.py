@@ -948,7 +948,7 @@ MAIN.
         output = StringIO()
         with redirect_stdout(output):
             namespace["main"]()
-        self.assertEqual(output.getvalue(), "IN A-PARA\\n", generated)
+        self.assertEqual(output.getvalue(), "IN A-PARA\n", generated)
 
 
 class RedefinesStorageTests(unittest.TestCase):
