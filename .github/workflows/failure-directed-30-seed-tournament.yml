@@ -91,7 +91,7 @@ jobs:
           echo "candidates=$candidates" >> "$GITHUB_OUTPUT"
           {
             printf '%s\n' "## Frozen tournament revisions"
-            printf '%s\n' "- Baseline: `$baseline_sha`"
+            printf '%s\n' "- Baseline SHA: $baseline_sha"
             printf '%s\n' "- Candidate branches: $(jq 'length' <<<"$candidates")"
             echo "$candidates" | jq -r '.[] | "- Seed \(.seed): `\(.id)` — `\(.sha)`"'
           } >> "$GITHUB_STEP_SUMMARY"
@@ -216,7 +216,7 @@ jobs:
 
   aggregate:
     name: Casewise zero-regression ranking
-    if: always()
+    if: always() && needs.discover.result == 'success'
     needs: [discover, baseline, candidates]
     runs-on: ubuntu-latest
     steps:
