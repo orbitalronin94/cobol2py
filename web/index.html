@@ -3968,8 +3968,10 @@ def translate_statement(
                 targets_and_options = unstring_text[into_start + into_match.end() - into_match.start():].strip()
                 tally_match = re.search(rf"\bTALLYING\s+IN\s+({DATA_REF_PATTERN})", targets_and_options, re.IGNORECASE)
                 pointer_match = re.search(rf"\bWITH\s+POINTER\s+({DATA_REF_PATTERN})", targets_and_options, re.IGNORECASE)
+                delimiter_in_match = re.search(rf"\bDELIMITER\s+IN\s+({DATA_REF_PATTERN})", targets_and_options, re.IGNORECASE)
+                count_in_match = re.search(rf"\bCOUNT\s+IN\s+({DATA_REF_PATTERN})", targets_and_options, re.IGNORECASE)
                 targets_text = re.split(
-                    r"\s+(?:TALLYING\s+IN|WITH\s+POINTER|ON\s+OVERFLOW|NOT\s+ON\s+OVERFLOW)\b",
+                    r"\s+(?:DELIMITER\s+IN|COUNT\s+IN|TALLYING\s+IN|WITH\s+POINTER|ON\s+OVERFLOW|NOT\s+ON\s+OVERFLOW)\b",
                     targets_and_options,
                     maxsplit=1,
                     flags=re.IGNORECASE,
@@ -4024,6 +4026,18 @@ def translate_statement(
                             elif "9" in pic:
                                 value = f"(int(float({value})) if str({value}).strip() else 0)"
                         lines.append(emit_assignment(target, value, variable_map))
+                    if len(targets) == 1 and len(delimiter_exprs) == 1 and not all_delimiters:
+                        lines.append(f"_cobol_unstring_source = str({source_expr})")
+                        lines.append(f"_cobol_unstring_delimiter = str({delimiter_expr})")
+                        lines.append("_cobol_unstring_position = _cobol_unstring_source.find(_cobol_unstring_delimiter) if _cobol_unstring_delimiter else -1")
+                        lines.append("_cobol_unstring_count = len(_cobol_unstring_parts[0]) if _cobol_unstring_parts else 0")
+                        if delimiter_in_match:
+                            delimiter_target = delimiter_in_match.group(1).strip()
+                            delimiter_value = "(_cobol_unstring_delimiter if _cobol_unstring_position >= 0 else '')"
+                            lines.append(emit_assignment(delimiter_target, delimiter_value, variable_map))
+                        if count_in_match:
+                            count_target = count_in_match.group(1).strip()
+                            lines.append(emit_assignment(count_target, "_cobol_unstring_count", variable_map))
                     if tally_match:
                         tally = normalize_data_reference(tally_match.group(1), variable_map)
                         lines.append(f"{tally} = min(len(_cobol_unstring_parts), {len(targets)})")
