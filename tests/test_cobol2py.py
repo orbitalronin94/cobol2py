@@ -3007,6 +3007,10 @@ class NestedAndMiscIntrinsicRegressionTests(unittest.TestCase):
             ["INDEX1 + 1", "INDEX2 + 3", "INDEX3 - 1"],
         )
         self.assertEqual(
+            cobol2py.split_cobol_subscripts("INDEX1 + 1, 1 INDEX3 - 1"),
+            ["INDEX1 + 1", "1", "INDEX3 - 1"],
+        )
+        self.assertEqual(
             cobol2py.split_cobol_subscripts("+1 INDEX2 +3"),
             ["+1", "INDEX2", "+3"],
         )
