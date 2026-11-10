@@ -3,6 +3,7 @@ name: external-python-benchmark
 on:
   push:
     branches:
+      - main
       - fix/regressions-unstring-delimiters-vs-48
     paths:
       - "cobol2py.py"
