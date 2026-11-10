@@ -4587,7 +4587,7 @@ STEP-PARA.
     ADD 1 TO WS-I.
 """
         output, _namespace, generated = self._run_program(source)
-        self.assertEqual(output, "3\\n", generated)
+        self.assertEqual(output, "3\n", generated)
 
     def test_divide_by_giving_rounded(self):
         source = """IDENTIFICATION DIVISION.
@@ -4602,7 +4602,7 @@ MAIN.
     STOP RUN.
 """
         output, _namespace, generated = self._run_program(source)
-        self.assertEqual(output, "03\\n", generated)
+        self.assertEqual(output, "03\n", generated)
 
     def test_chained_redefines_share_original_storage(self):
         source = """IDENTIFICATION DIVISION.
@@ -4622,5 +4622,5 @@ MAIN.
     STOP RUN.
 """
         output, namespace, generated = self._run_program(source)
-        self.assertEqual(output, "1234\\n5678\\n5678\\n", generated)
+        self.assertEqual(output, "1234\n5678\n5678\n", generated)
         self.assertEqual(namespace["_cobol_storage"]["WS-RAW"], "5678")
