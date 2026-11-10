@@ -1595,30 +1595,35 @@ def emit_assignment(target: str, value: str, variables: Optional[dict[str, Cobol
 
 
 def split_cobol_subscripts(text: str) -> list[str]:
-    """Split whitespace-separated COBOL subscripts without breaking arithmetic.
+    """Split COBOL subscripts, including mixed comma/space-separated forms.
 
-    X-COBOL includes comma-separated forms (I, J + 1) and legacy forms such
-    as (I J + 1 K - 1). A new subscript starts when an operand follows another
-    operand without an intervening arithmetic operator.
+    Some legacy sources mix explicit commas with adjacent subscript operands,
+    e.g. (INDEX1 + 1, 1 INDEX3 - 1). Each comma-delimited segment must still
+    be split into its own arithmetic subscript expressions.
     """
-    explicit = [part.strip() for part in re.split(r"[,;]", text) if part.strip()]
-    if len(explicit) > 1:
-        return explicit
-    tokens = re.findall(
-        r"[A-Za-z][A-Za-z0-9_-]*|[+-]?\d+(?:\.\d+)?|[()+*/-]",
-        text.strip(),
-    )
-    if not tokens:
-        return []
-    parts: list[list[str]] = [[tokens[0]]]
-    operators = {"+", "-", "*", "/"}
-    for token in tokens[1:]:
-        current = parts[-1]
-        if token in operators or current[-1] in operators or token == "(" or current[-1] == "(":
-            current.append(token)
-        else:
-            parts.append([token])
-    return [" ".join(part).strip() for part in parts]
+    def split_segment(segment: str) -> list[str]:
+        tokens = re.findall(
+            r"[A-Za-z][A-Za-z0-9_-]*|[+-]?\\d+(?:\\.\\d+)?|[()+*/-]",
+            segment.strip(),
+        )
+        if not tokens:
+            return []
+        parts: list[list[str]] = [[tokens[0]]]
+        operators = {"+", "-", "*", "/"}
+        for token in tokens[1:]:
+            current = parts[-1]
+            if token in operators or current[-1] in operators or token == "(" or current[-1] == "(":
+                current.append(token)
+            else:
+                parts.append([token])
+        return [" ".join(part).strip() for part in parts]
+
+    comma_segments = [part.strip() for part in re.split(r"[,;]", text) if part.strip()]
+    return [
+        subscript
+        for segment in comma_segments
+        for subscript in split_segment(segment)
+    ]
 
 
 def normalize_data_reference(
