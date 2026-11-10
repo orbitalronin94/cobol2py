@@ -4555,3 +4555,72 @@ class ArithmeticReferenceModificationOffsetRegressionTests(unittest.TestCase):
             eval(translated, {}, {"ws_text": "ABCDEFG", "ws_start": 1, "ws_offset": 1}),
             "CD",
         )
+
+
+class FocusedExternalSemanticRecoveryTests(unittest.TestCase):
+    def _run_program(self, source):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        program = cobol2py.parse_cobol(source, source_format="free")
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<focused-semantic-recovery>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        return output.getvalue(), namespace, generated
+
+    def test_out_of_line_perform_with_explicit_test_before(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. TESTBEFORE.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-I PIC 9 VALUE 0.
+PROCEDURE DIVISION.
+MAIN.
+    PERFORM STEP-PARA WITH TEST BEFORE UNTIL WS-I >= 3
+    DISPLAY WS-I
+    STOP RUN.
+STEP-PARA.
+    ADD 1 TO WS-I.
+"""
+        output, _namespace, generated = self._run_program(source)
+        self.assertEqual(output, "3\\n", generated)
+
+    def test_divide_by_giving_rounded(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. DIVIDEROUNDED.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-RESULT PIC 9(2) VALUE 0.
+PROCEDURE DIVISION.
+MAIN.
+    DIVIDE 5 BY 2 GIVING WS-RESULT ROUNDED
+    DISPLAY WS-RESULT
+    STOP RUN.
+"""
+        output, _namespace, generated = self._run_program(source)
+        self.assertEqual(output, "03\\n", generated)
+
+    def test_chained_redefines_share_original_storage(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. CHAINEDREDEFINES.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-RAW PIC X(4).
+01 WS-TEXT REDEFINES WS-RAW PIC X(4).
+01 WS-NUM REDEFINES WS-TEXT PIC 9(4).
+PROCEDURE DIVISION.
+MAIN.
+    MOVE "1234" TO WS-RAW
+    DISPLAY WS-NUM
+    MOVE 5678 TO WS-NUM
+    DISPLAY WS-RAW
+    DISPLAY WS-TEXT
+    STOP RUN.
+"""
+        output, namespace, generated = self._run_program(source)
+        self.assertEqual(output, "1234\\n5678\\n5678\\n", generated)
+        self.assertEqual(namespace["_cobol_storage"]["WS-RAW"], "5678")
