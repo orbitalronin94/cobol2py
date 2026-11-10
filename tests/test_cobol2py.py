@@ -4555,3 +4555,137 @@ class ArithmeticReferenceModificationOffsetRegressionTests(unittest.TestCase):
             eval(translated, {}, {"ws_text": "ABCDEFG", "ws_start": 1, "ws_offset": 1}),
             "CD",
         )
+
+
+
+class UnifiedFileAndTextSemanticsTests(unittest.TestCase):
+    def _run_program(self, source, directory, initial_files=None):
+        from contextlib import redirect_stdout
+        from io import StringIO
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<unified-semantics>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        previous = Path.cwd()
+        try:
+            os.chdir(directory)
+            for name, content in (initial_files or {}).items():
+                Path(name).write_text(content, encoding="latin-1")
+            with redirect_stdout(output):
+                namespace["main"]()
+        finally:
+            os.chdir(previous)
+        return output.getvalue(), namespace, generated
+
+    def test_duplicate_open_returns_41_and_keeps_original_output_handle(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. REOPEN-STATUS.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT TEST-FILE ASSIGN TO "reopen-status.dat"
+        ORGANIZATION IS LINE SEQUENTIAL
+        FILE STATUS IS WS-STATUS.
+DATA DIVISION.
+FILE SECTION.
+FD TEST-FILE.
+01 TEST-RECORD PIC X(4).
+WORKING-STORAGE SECTION.
+01 WS-STATUS PIC XX.
+PROCEDURE DIVISION.
+MAIN.
+    OPEN OUTPUT TEST-FILE.
+    OPEN INPUT TEST-FILE.
+    DISPLAY WS-STATUS.
+    MOVE "DATA" TO TEST-RECORD.
+    WRITE TEST-RECORD.
+    CLOSE TEST-FILE.
+    GOBACK.
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            output, _namespace, generated = self._run_program(source, directory)
+            contents = Path(directory, "reopen-status.dat").read_text(encoding="latin-1")
+        self.assertEqual(output, "41\n", generated)
+        self.assertEqual(contents, "DATA\n", generated)
+
+    def test_one_open_statement_supports_multiple_file_modes(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. OPEN-MIXED-MODES.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT INPUT-FILE ASSIGN TO "input-mixed.dat"
+        ORGANIZATION IS LINE SEQUENTIAL.
+    SELECT OUTPUT-FILE ASSIGN TO "output-mixed.dat"
+        ORGANIZATION IS LINE SEQUENTIAL.
+DATA DIVISION.
+FILE SECTION.
+FD INPUT-FILE.
+01 INPUT-RECORD PIC X(4).
+FD OUTPUT-FILE.
+01 OUTPUT-RECORD PIC X(4).
+PROCEDURE DIVISION.
+MAIN.
+    OPEN INPUT INPUT-FILE OUTPUT OUTPUT-FILE.
+    READ INPUT-FILE
+        AT END DISPLAY "EOF"
+        NOT AT END MOVE INPUT-RECORD TO OUTPUT-RECORD
+    END-READ.
+    WRITE OUTPUT-RECORD.
+    CLOSE INPUT-FILE OUTPUT-FILE.
+    GOBACK.
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            output, _namespace, generated = self._run_program(
+                source, directory, {"input-mixed.dat": "ABCD\n"}
+            )
+            written = Path(directory, "output-mixed.dat").read_text(encoding="latin-1")
+        self.assertEqual(output, "", generated)
+        self.assertEqual(written, "ABCD\n", generated)
+
+    def test_sequential_read_consumes_fixed_width_records_without_newlines(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. FIXED-SEQUENTIAL-READ.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT DATA-FILE ASSIGN TO "fixed-sequential.dat"
+        ORGANIZATION IS SEQUENTIAL
+        FILE STATUS IS WS-STATUS.
+DATA DIVISION.
+FILE SECTION.
+FD DATA-FILE.
+01 DATA-RECORD PIC X(4).
+WORKING-STORAGE SECTION.
+01 WS-STATUS PIC XX.
+PROCEDURE DIVISION.
+MAIN.
+    OPEN INPUT DATA-FILE.
+    READ DATA-FILE.
+    DISPLAY DATA-RECORD.
+    READ DATA-FILE.
+    DISPLAY DATA-RECORD.
+    READ DATA-FILE.
+    DISPLAY WS-STATUS.
+    CLOSE DATA-FILE.
+    GOBACK.
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            output, _namespace, generated = self._run_program(
+                source, directory, {"fixed-sequential.dat": "ONE!TWO!"}
+            )
+        self.assertEqual(output, "ONE!\nTWO!\n10\n", generated)
+
+    def test_inspect_replacing_all_and_first(self):
+        variables = {"WS-TEXT": cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(5)")}
+        cases = [
+            ('INSPECT WS-TEXT REPLACING ALL "A" BY "Z"', "ZZBZZ"),
+            ('INSPECT WS-TEXT REPLACING FIRST "A" BY "Z"', "ZABAA"),
+        ]
+        for statement, expected in cases:
+            with self.subTest(statement=statement):
+                lines = cobol2py.translate_statement(statement, set(), variables)
+                namespace = {"ws_text": "AABAA"}
+                exec("\n".join(lines or []), namespace)
+                self.assertEqual(namespace["ws_text"], expected, lines)
