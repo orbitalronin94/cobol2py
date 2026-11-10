@@ -1406,7 +1406,7 @@ def split_cobol_subscripts(text: str) -> list[str]:
     if len(explicit) > 1:
         return explicit
     tokens = re.findall(
-        r"[A-Za-z][A-Za-z0-9_-]*|[+-]?\d+(?:\.\d+)?|[()+*/-]",
+        r"[A-Za-z][A-Za-z0-9_-]*|\d+(?:\.\d+)?|[()+*/-]",
         text.strip(),
     )
     if not tokens:
@@ -2061,18 +2061,27 @@ def translate_expr(
         translated,
         flags=re.IGNORECASE,
     )
-    translated = re.sub(
-        r"\b(?:function\s+)?rem\s*\(([^(),]+),\s*([^()]*)\)",
-        lambda match: (
-            "(lambda _a, _b: _a - int(_a / _b) * _b)("
-            + match.group(1) + ", " + match.group(2) + ")"
-        ),
-        translated,
-        flags=re.IGNORECASE,
+    def translate_binary_intrinsic(match: re.Match[str], operation: str) -> str:
+        # COBOL permits both comma-separated and space-separated arguments:
+        # FUNCTION MOD(I, 2) and FUNCTION MOD(I 2) are equivalent.
+        arguments = intrinsic_argument_list(match)
+        parts = [part.strip() for part in arguments.split(",")]
+        if len(parts) != 2 or not all(parts):
+            return match.group(0)
+        left, right = parts
+        if operation == "mod":
+            return f"({left} % ({right}))"
+        return f"(lambda _a, _b: _a - int(_a / _b) * _b)({left}, {right})"
+
+    binary_intrinsic_pattern = (
+        r"\b(?:function\s+)?(?:rem|mod)\s*"
+        r"(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))"
     )
     translated = re.sub(
-        r"\b(?:function\s+)?mod\s*\(([^(),]+),\s*([^()]*)\)",
-        r"(\1 % (\2))",
+        binary_intrinsic_pattern,
+        lambda match: translate_binary_intrinsic(
+            match, "rem" if re.match(r"\s*(?:function\s+)?rem\b", match.group(0), re.IGNORECASE) else "mod"
+        ),
         translated,
         flags=re.IGNORECASE,
     )
