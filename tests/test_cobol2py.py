@@ -4431,6 +4431,54 @@ MAIN.
         )
         self.assertEqual(namespace["_cobol_open_modes"], {})
 
+
+
+class FixedLengthSequentialReadRegressionTests(unittest.TestCase):
+    def test_sequential_read_consumes_fixed_width_records_without_newlines(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. FIXED-SEQUENTIAL-READ.
+ENVIRONMENT DIVISION.
+INPUT-OUTPUT SECTION.
+FILE-CONTROL.
+    SELECT DATA-FILE ASSIGN TO "fixed-sequential.dat"
+        ORGANIZATION IS SEQUENTIAL
+        FILE STATUS IS WS-STATUS.
+DATA DIVISION.
+FILE SECTION.
+FD DATA-FILE.
+01 DATA-RECORD PIC X(4).
+WORKING-STORAGE SECTION.
+01 WS-STATUS PIC XX.
+PROCEDURE DIVISION.
+MAIN.
+    OPEN INPUT DATA-FILE.
+    READ DATA-FILE.
+    DISPLAY DATA-RECORD.
+    READ DATA-FILE.
+    DISPLAY DATA-RECORD.
+    READ DATA-FILE.
+    DISPLAY WS-STATUS.
+    CLOSE DATA-FILE.
+    GOBACK.
+"""
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<fixed-sequential-read>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        previous = Path.cwd()
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "fixed-sequential.dat").write_text("ONE!TWO!", encoding="latin-1")
+            try:
+                os.chdir(directory)
+                with redirect_stdout(output):
+                    namespace["main"]()
+            finally:
+                os.chdir(previous)
+        self.assertEqual(output.getvalue(), "ONE!\nTWO!\n10\n", generated)
     def test_write_to_input_file_sets_group_file_status_48(self):
         from contextlib import redirect_stdout
         from io import StringIO
