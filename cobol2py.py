@@ -3924,13 +3924,11 @@ def translate_statement(
     m = re.match(r"DISPLAY\s+(.+)", s, re.IGNORECASE)
     if m:
         display_operands = m.group(1).strip()
-        # UPON selects the output device; it is not another DISPLAY operand.
-        display_operands = re.sub(
-            r"\s+UPON\s+[A-Za-z0-9_-]+\s*$",
-            "",
-            display_operands,
-            flags=re.IGNORECASE,
-        ).rstrip()
+        # UPON SYSERR/STDERR routes DISPLAY to the process error stream.
+        device_match = re.search(r"\s+UPON\s+([A-Za-z0-9_-]+)\s*$", display_operands, re.IGNORECASE)
+        device = device_match.group(1).upper() if device_match else ""
+        if device_match:
+            display_operands = display_operands[:device_match.start()].rstrip()
         no_advancing = bool(
             re.search(r"\s+(?:WITH\s+)?NO\s+ADVANCING\s*$", display_operands, re.IGNORECASE)
         )
@@ -3980,9 +3978,29 @@ def translate_statement(
         items = ", ".join(
             translate_display_item(a, variables or {}) for a in args
         )
+        stream = ", file=__import__('sys').stderr" if device in ("SYSERR", "STDERR") else ""
         if no_advancing:
-            return [f'print("".join([{items}]), end="")']
-        return [f'print("".join([{items}]))']
+            return [f'print("".join([{items}]), end=""{stream})']
+        return [f'print("".join([{items}]){stream})']
+
+    environment_accept = re.fullmatch(
+        rf"ACCEPT\s+({DATA_REF_PATTERN})\s+FROM\s+ENVIRONMENT(?:-VALUE)?\s+(.+)",
+        s,
+        re.IGNORECASE,
+    )
+    if environment_accept:
+        target, environment_name = environment_accept.groups()
+        base_match = re.match(r"[A-Za-z0-9_-]+", target)
+        target_var = (variables or {}).get(base_match.group(0).upper()) if base_match else None
+        if target_var is None or not target_var.pic or not any(
+            char in target_var.pic.upper() for char in ("X", "A")
+        ):
+            return [f"# ACCEPT FROM ENVIRONMENT no traducido (solo PIC X/A): {s}"]
+        width = pic_character_count(target_var.pic)
+        value_expr = f"__import__('os').environ.get(str({translate_literal(environment_name, variables)}), '')"
+        if width:
+            value_expr = f"str({value_expr})[:{width}].ljust({width})"
+        return [emit_assignment(target, value_expr, variables)]
 
     m = re.match(rf"ACCEPT\s+({DATA_REF_PATTERN})$", s, re.IGNORECASE)
     if m:
