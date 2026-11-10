@@ -3548,7 +3548,7 @@ def translate_statement(
         return ["raise _CobolStopRun"]
     open_match = re.fullmatch(r"OPEN\s+(.+)", s, re.IGNORECASE)
     if open_match:
-        clauses = re.split(r"\b(INPUT|OUTPUT|EXTEND|I-O)\b", open_match.group(1), flags=re.IGNORECASE)
+        clauses = re.split(r"(?<![A-Za-z0-9_-])(INPUT|OUTPUT|EXTEND|I-O)(?![A-Za-z0-9_-])", open_match.group(1), flags=re.IGNORECASE)
         mode = None
         operations = []
         modifiers = {"WITH", "NO", "REWIND", "LOCK", "SHARING", "ALL", "OTHER", "READ", "ONLY", "REVERSED"}
