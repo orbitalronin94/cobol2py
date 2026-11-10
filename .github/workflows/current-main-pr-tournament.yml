@@ -1,0 +1,299 @@
+name: Current-main PR tournament
+
+run-name: PR tournament against current main
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_prs:
+        description: "Open experiment PR numbers, comma-separated"
+        required: true
+        default: "344,343,341,340,339,338,337,334,333,332,331,330,329,327,326,324,321"
+        type: string
+      max_parallel:
+        description: "Maximum simultaneous candidate benchmarks"
+        required: true
+        type: choice
+        options: ["2", "4", "6", "8"]
+        default: "4"
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: cobol2py-current-main-pr-tournament
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    name: Freeze current main and PR merge revisions
+    runs-on: ubuntu-latest
+    outputs:
+      baseline_sha: ${{ steps.freeze.outputs.baseline_sha }}
+      candidates: ${{ steps.freeze.outputs.candidates }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - name: Resolve comparable PR merge commits
+        id: freeze
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_PRS: ${{ inputs.candidate_prs }}
+        run: |
+          set -euo pipefail
+          baseline_sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+          candidates='[]'
+          IFS=',' read -ra prs <<< "$REQUESTED_PRS"
+          for raw in "${prs[@]}"; do
+            pr=$(echo "$raw" | tr -d '[:space:]')
+            [[ "$pr" =~ ^[0-9]+$ ]] || { echo "::warning::Ignoring invalid PR value: $raw"; continue; }
+            data=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$pr" 2>/dev/null) || { echo "::warning::PR #$pr not found; skipped"; continue; }
+            state=$(jq -r '.state' <<<"$data")
+            head_sha=$(jq -r '.head.sha' <<<"$data")
+            if [ "$state" != "open" ]; then
+              echo "::warning::PR #$pr is not open; skipped"
+              continue
+            fi
+            merge_sha=$(git ls-remote "https://github.com/$GITHUB_REPOSITORY.git" "refs/pull/$pr/merge" | awk 'NR==1 {print $1}')
+            if [ -z "$merge_sha" ]; then
+              echo "::warning::PR #$pr has no GitHub merge ref (likely conflicts); skipped"
+              continue
+            fi
+            item=$(jq -cn --arg pr "$pr" --arg head "$head_sha" --arg merge "$merge_sha" \
+              '{pr:($pr|tonumber),head_sha:$head,merge_sha:$merge}')
+            candidates=$(jq -cn --argjson old "$candidates" --argjson item "$item" '$old + [$item]')
+          done
+          count=$(jq 'length' <<<"$candidates")
+          if [ "$count" -lt 1 ]; then
+            echo "::error::No open, mergeable PRs were found. Supply PR numbers with available GitHub merge refs."
+            exit 1
+          fi
+          echo "baseline_sha=$baseline_sha" >> "$GITHUB_OUTPUT"
+          echo "candidates=$candidates" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Frozen comparison set"
+            echo "- Current main: `$baseline_sha`"
+            echo "- Eligible PR merge refs: $count"
+            echo "$candidates" | jq -r '.[] | "- PR #\(.pr): head `\(.head_sha)`, tested merge `\(.merge_sha)`"'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  baseline:
+    name: Current main — 500 holdout cases
+    needs: discover
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.discover.outputs.baseline_sha }}
+      - name: Download pinned X-COBOL v2 archive
+        run: curl --fail --location --retry 3 --retry-delay 2 "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" --output /tmp/COBOL_Files.zip
+      - name: Build isolated benchmark image
+        run: docker build -f benchmarks/Dockerfile.external -t cobol2py-pr-tournament .
+      - name: Run exact 500-case baseline
+        run: |
+          mkdir -p "$RUNNER_TEMP/baseline"
+          chmod 0777 "$RUNNER_TEMP/baseline"
+          docker run --rm --network none --cap-drop=ALL --security-opt=no-new-privileges \
+            --pids-limit=128 --memory=4g --cpus=2 --read-only \
+            --tmpfs /tmp:rw,exec,nosuid,nodev,size=3g \
+            --mount "type=bind,source=$GITHUB_WORKSPACE,target=/workspace,readonly" \
+            --mount "type=bind,source=/tmp/COBOL_Files.zip,target=/input.zip,readonly" \
+            --mount "type=bind,source=$RUNNER_TEMP/baseline,target=/output" \
+            --workdir /workspace cobol2py-pr-tournament \
+            benchmarks/run_external_corpus.py --translator /workspace/cobol2py.py \
+            --archive /input.zip --output /output --target 500 --skip 500
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: pr-tournament-baseline-${{ github.run_id }}
+          path: ${{ runner.temp }}/baseline/
+          if-no-files-found: error
+          retention-days: 30
+
+  candidates:
+    name: PR #${{ matrix.candidate.pr }} — paired 500-case holdout
+    needs: discover
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ fromJSON(inputs.max_parallel || '4') }}
+      matrix:
+        candidate: ${{ fromJSON(needs.discover.outputs.candidates) }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ matrix.candidate.merge_sha }}
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.discover.outputs.baseline_sha }}
+          path: benchmark-harness
+      - name: Freeze benchmark runner from current main
+        run: |
+          set -euo pipefail
+          mkdir -p benchmarks
+          cp benchmark-harness/benchmarks/run_external_corpus.py benchmarks/run_external_corpus.py
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Run complete unit and regression suite
+        id: unit
+        run: python -m unittest discover -s tests -v
+      - name: Download pinned X-COBOL v2 archive
+        if: steps.unit.outcome == 'success'
+        run: curl --fail --location --retry 3 --retry-delay 2 "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" --output /tmp/COBOL_Files.zip
+      - name: Build isolated benchmark image
+        if: steps.unit.outcome == 'success'
+        run: docker build -f benchmark-harness/benchmarks/Dockerfile.external -t cobol2py-pr-tournament .
+      - name: Run exact 500-case candidate holdout
+        if: steps.unit.outcome == 'success'
+        run: |
+          mkdir -p "$RUNNER_TEMP/candidate"
+          chmod 0777 "$RUNNER_TEMP/candidate"
+          docker run --rm --network none --cap-drop=ALL --security-opt=no-new-privileges \
+            --pids-limit=128 --memory=4g --cpus=2 --read-only \
+            --tmpfs /tmp:rw,exec,nosuid,nodev,size=3g \
+            --mount "type=bind,source=$GITHUB_WORKSPACE,target=/workspace,readonly" \
+            --mount "type=bind,source=/tmp/COBOL_Files.zip,target=/input.zip,readonly" \
+            --mount "type=bind,source=$RUNNER_TEMP/candidate,target=/output" \
+            --workdir /workspace cobol2py-pr-tournament \
+            benchmarks/run_external_corpus.py --translator /workspace/cobol2py.py \
+            --archive /input.zip --output /output --target 500 --skip 500
+      - name: Record immutable candidate identity
+        if: always()
+        env:
+          PR_NUMBER: ${{ matrix.candidate.pr }}
+          PR_HEAD_SHA: ${{ matrix.candidate.head_sha }}
+          MERGE_SHA: ${{ matrix.candidate.merge_sha }}
+          UNIT_OUTCOME: ${{ steps.unit.outcome }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          data = {
+              "pr": int(os.environ["PR_NUMBER"]),
+              "head_sha": os.environ["PR_HEAD_SHA"],
+              "merge_sha": os.environ["MERGE_SHA"],
+              "unit_tests": os.environ.get("UNIT_OUTCOME"),
+              "tests_passed": os.environ.get("UNIT_OUTCOME") == "success",
+          }
+          Path(os.environ["RUNNER_TEMP"], "candidate-result.json").write_text(json.dumps(data, indent=2))
+          PY
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: pr-tournament-candidate-${{ matrix.candidate.pr }}-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/candidate/
+            ${{ runner.temp }}/candidate-result.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  aggregate:
+    name: Casewise zero-regression ranking
+    if: always() && needs.discover.result == 'success'
+    needs: [discover, baseline, candidates]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.discover.outputs.baseline_sha }}
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: pr-tournament-*-${{ github.run_id }}
+          path: ${{ runner.temp }}/artifacts
+          merge-multiple: false
+      - name: Compare candidates against current main by exact case ID
+        env:
+          ARTIFACT_ROOT: ${{ runner.temp }}/artifacts
+          CANDIDATES_JSON: ${{ needs.discover.outputs.candidates }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ["ARTIFACT_ROOT"])
+          candidates = json.loads(os.environ["CANDIDATES_JSON"])
+          baseline_files = list(root.glob("pr-tournament-baseline-*/external-corpus-report.json"))
+          if len(baseline_files) != 1:
+              raise SystemExit(f"Expected one main report, found {len(baseline_files)}")
+          baseline = json.loads(baseline_files[0].read_text())
+          if (baseline.get("tested") != 500 or baseline.get("target") != 500 or baseline.get("skip") != 500
+              or baseline.get("sample_complete") is not True or baseline.get("archive_md5_verified") is not True
+              or baseline.get("archive_md5_expected") != "cbd974caed72b0836777dc2305928ed3"
+              or baseline.get("dataset_url") != "https://zenodo.org/records/14269462"):
+              raise SystemExit("Current main baseline is incomplete or violates the pinned X-COBOL v2 contract")
+          base = {row["id"]: row["status"] == "passed" for row in baseline["results"]}
+          if len(base) != 500:
+              raise SystemExit(f"Main baseline has {len(base)} unique case IDs, expected 500")
+          rows = []
+          for candidate in candidates:
+              folders = list(root.glob(f"pr-tournament-candidate-{candidate['pr']}-*/"))
+              if len(folders) != 1:
+                  rows.append({**candidate, "eligible": False, "reason": "missing or duplicate artifact"})
+                  continue
+              folder = folders[0]
+              identity_path = folder / "candidate-result.json"
+              report_path = folder / "candidate" / "external-corpus-report.json"
+              if not identity_path.is_file():
+                  rows.append({**candidate, "eligible": False, "reason": "missing identity/test result"})
+                  continue
+              identity = json.loads(identity_path.read_text())
+              if identity.get("merge_sha") != candidate["merge_sha"] or not identity.get("tests_passed"):
+                  rows.append({**candidate, "eligible": False, "reason": "wrong merge SHA or unit tests failed"})
+                  continue
+              if not report_path.is_file():
+                  rows.append({**candidate, "eligible": False, "reason": "benchmark report missing"})
+                  continue
+              report = json.loads(report_path.read_text())
+              result_map = {row["id"]: row["status"] == "passed" for row in report.get("results", [])}
+              contract_keys = ("dataset_url", "archive_md5_expected", "target", "skip", "selection", "pass_definition")
+              if any(report.get(key) != baseline.get(key) for key in contract_keys):
+                  rows.append({**candidate, "eligible": False, "reason": "corpus, selection, or options differ from main"})
+                  continue
+              if (report.get("tested") != 500 or report.get("target") != 500 or report.get("skip") != 500
+                  or report.get("sample_complete") is not True or report.get("archive_md5_verified") is not True
+                  or len(result_map) != 500 or set(result_map) != set(base)):
+                  rows.append({**candidate, "eligible": False, "reason": "incomplete or non-comparable holdout"})
+                  continue
+              regressions = sorted(case for case in base if base[case] and not result_map[case])
+              new_passes = sorted(case for case in base if not base[case] and result_map[case])
+              rows.append({
+                  **candidate, "score": sum(result_map.values()), "new_passes": len(new_passes),
+                  "regressions": len(regressions), "eligible": len(new_passes) >= 1 and not regressions,
+                  "reason": "eligible" if len(new_passes) >= 1 and not regressions else "zero-regression/gain gate failed",
+                  "new_pass_case_ids": new_passes, "regressed_case_ids": regressions,
+              })
+          eligible = sorted((r for r in rows if r.get("eligible")),
+                            key=lambda r: (-r["new_passes"], r["regressions"]))
+          summary = {
+              "baseline_sha": "${{ needs.discover.outputs.baseline_sha }}",
+              "baseline_score": baseline.get("passed"),
+              "baseline_tested": baseline.get("tested"),
+              "candidates": rows,
+              "winner": eligible[0] if eligible else None,
+              "promotion": "manual; no merge is performed by this workflow",
+          }
+          Path("pr-tournament-summary.json").write_text(json.dumps(summary, indent=2))
+          print(json.dumps({k:v for k,v in summary.items() if k != "candidates"}, indent=2))
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as handle:
+              handle.write(f"## PR tournament against current main\n\nBaseline: **{baseline.get('passed')}/500**\n\n")
+              handle.write("| PR | Score | New passes | Regressions | Eligible |\n|---:|---:|---:|---:|---|\n")
+              for row in sorted(rows, key=lambda r: r["pr"]):
+                  handle.write(f"| #{row['pr']} | {row.get('score','—')} | {row.get('new_passes','—')} | {row.get('regressions','—')} | {row.get('eligible',False)} |\n")
+              if eligible:
+                  winner = eligible[0]
+                  handle.write(f"\n### Winner: PR #{winner['pr']} ({winner['score']}/500; +{winner['new_passes']}; 0 regressions)\n")
+              else:
+                  handle.write("\n**No eligible winner.** No PR met the gain and zero-regression gates.\n")
+              handle.write("\nThis workflow does not merge candidates or update the benchmark record.\n")
+          PY
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: pr-tournament-final-${{ github.run_id }}
+          path: pr-tournament-summary.json
+          if-no-files-found: warn
+          retention-days: 90
