@@ -1404,7 +1404,7 @@ def split_cobol_subscripts(text: str) -> list[str]:
     """
     def split_segment(segment: str) -> list[str]:
         tokens = re.findall(
-            r"[A-Za-z][A-Za-z0-9_-]*|[+-]?\\d+(?:\\.\\d+)?|[()+*/-]",
+            r"[A-Za-z][A-Za-z0-9_-]*|[+-]?\d+(?:\.\d+)?|[()+*/-]",
             segment.strip(),
         )
         if not tokens:
