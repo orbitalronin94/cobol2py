@@ -1396,30 +1396,35 @@ def emit_assignment(target: str, value: str, variables: Optional[dict[str, Cobol
 
 
 def split_cobol_subscripts(text: str) -> list[str]:
-    """Split whitespace-separated COBOL subscripts without breaking arithmetic.
+    """Split COBOL subscripts, including mixed comma/space-separated forms.
 
-    X-COBOL includes comma-separated forms (I, J + 1) and legacy forms such
-    as (I J + 1 K - 1). A new subscript starts when an operand follows another
-    operand without an intervening arithmetic operator.
+    Some legacy sources mix explicit commas with adjacent subscript operands,
+    e.g. (INDEX1 + 1, 1 INDEX3 - 1). Each comma-delimited segment must still
+    be split into its own arithmetic subscript expressions.
     """
-    explicit = [part.strip() for part in re.split(r"[,;]", text) if part.strip()]
-    if len(explicit) > 1:
-        return explicit
-    tokens = re.findall(
-        r"[A-Za-z][A-Za-z0-9_-]*|[+-]?\d+(?:\.\d+)?|[()+*/-]",
-        text.strip(),
-    )
-    if not tokens:
-        return []
-    parts: list[list[str]] = [[tokens[0]]]
-    operators = {"+", "-", "*", "/"}
-    for token in tokens[1:]:
-        current = parts[-1]
-        if token in operators or current[-1] in operators or token == "(" or current[-1] == "(":
-            current.append(token)
-        else:
-            parts.append([token])
-    return [" ".join(part).strip() for part in parts]
+    def split_segment(segment: str) -> list[str]:
+        tokens = re.findall(
+            r"[A-Za-z][A-Za-z0-9_-]*|[+-]?\d+(?:\.\d+)?|[()+*/-]",
+            segment.strip(),
+        )
+        if not tokens:
+            return []
+        parts: list[list[str]] = [[tokens[0]]]
+        operators = {"+", "-", "*", "/"}
+        for token in tokens[1:]:
+            current = parts[-1]
+            if token in operators or current[-1] in operators or token == "(" or current[-1] == "(":
+                current.append(token)
+            else:
+                parts.append([token])
+        return [" ".join(part).strip() for part in parts]
+
+    comma_segments = [part.strip() for part in re.split(r"[,;]", text) if part.strip()]
+    return [
+        subscript
+        for segment in comma_segments
+        for subscript in split_segment(segment)
+    ]
 
 
 def normalize_data_reference(
@@ -2061,18 +2066,27 @@ def translate_expr(
         translated,
         flags=re.IGNORECASE,
     )
-    translated = re.sub(
-        r"\b(?:function\s+)?rem\s*\(([^(),]+),\s*([^()]*)\)",
-        lambda match: (
-            "(lambda _a, _b: _a - int(_a / _b) * _b)("
-            + match.group(1) + ", " + match.group(2) + ")"
-        ),
-        translated,
-        flags=re.IGNORECASE,
+    def translate_binary_intrinsic(match: re.Match[str], operation: str) -> str:
+        # COBOL permits both comma-separated and space-separated arguments:
+        # FUNCTION MOD(I, 2) and FUNCTION MOD(I 2) are equivalent.
+        arguments = intrinsic_argument_list(match)
+        parts = [part.strip() for part in arguments.split(",")]
+        if len(parts) != 2 or not all(parts):
+            return match.group(0)
+        left, right = parts
+        if operation == "mod":
+            return f"({left} % ({right}))"
+        return f"(lambda _a, _b: _a - int(_a / _b) * _b)({left}, {right})"
+
+    binary_intrinsic_pattern = (
+        r"\b(?:function\s+)?(?:rem|mod)\s*"
+        r"(?:\[([^\]]*)\]|\(((?:[^()]|\((?:[^()]*)\))*)\))"
     )
     translated = re.sub(
-        r"\b(?:function\s+)?mod\s*\(([^(),]+),\s*([^()]*)\)",
-        r"(\1 % (\2))",
+        binary_intrinsic_pattern,
+        lambda match: translate_binary_intrinsic(
+            match, "rem" if re.match(r"\s*(?:function\s+)?rem\b", match.group(0), re.IGNORECASE) else "mod"
+        ),
         translated,
         flags=re.IGNORECASE,
     )
@@ -4463,12 +4477,11 @@ def translate_nodes(
                 out.extend(body)
 
         elif node.kind == "perform_inline":
+            # An inline PERFORM without TIMES/UNTIL executes its imperative
+            # body once. It does not introduce a Python control-flow block,
+            # so the body must retain the surrounding indentation.
             out.append("    " * indent + f"# PERFORM inline: {node.text}")
-            body = translate_nodes(node.body, paragraphs, indent + 1, variables, current_paragraph, condition_names)
-            if not body:
-                body = ["    " * (indent + 1) + "pass"]
-            elif all(not line.strip() or line.strip().startswith("#") for line in body):
-                body.append("    " * (indent + 1) + "pass")
+            body = translate_nodes(node.body, paragraphs, indent, variables, current_paragraph, condition_names)
             out.extend(body)
 
         elif node.kind == "perform_times_inline":

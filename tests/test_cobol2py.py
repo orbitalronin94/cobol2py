@@ -924,6 +924,33 @@ P-B.
         self.assertEqual(namespace["ws_control_vars"]["ws_accumulator"], 222240)
         self.assertEqual(namespace["_cobol_alter_targets"]["PUNTO-X"], "PUNTO-Y")
 
+class InlinePerformTests(unittest.TestCase):
+    def test_plain_inline_perform_executes_body_once_without_extra_indent(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. INLINEPERFORM.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+PROCEDURE DIVISION.
+MAIN.
+    PERFORM
+        DISPLAY "IN A-PARA"
+    END-PERFORM.
+    STOP RUN.
+"""
+        program = cobol2py.parse_cobol(source, source_format="free")
+        generated = cobol2py.emit_python(program)
+        compile(generated, "<inline-perform-once>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "IN A-PARA\n", generated)
+
+
 class RedefinesStorageTests(unittest.TestCase):
     def test_redefines_group_fields_share_the_base_buffer(self):
         from contextlib import redirect_stdout
@@ -2965,6 +2992,28 @@ class NestedAndMiscIntrinsicRegressionTests(unittest.TestCase):
         negative = cobol2py.translate_expr("FUNCTION REM(-7, 3)")
         self.assertEqual(eval(positive), 1)
         self.assertEqual(eval(negative), -1)
+
+    def test_mod_and_rem_intrinsics_accept_space_separated_arguments(self):
+        translated_mod = cobol2py.translate_expr("FUNCTION MOD(DIGIT-COUNTER 2)")
+        translated_rem = cobol2py.translate_expr("FUNCTION REM(DIGIT-COUNTER 3)")
+        compile(translated_mod, "<space-separated-mod>", "eval")
+        compile(translated_rem, "<space-separated-rem>", "eval")
+        self.assertEqual(eval(translated_mod, {"digit_counter": 4}), 0)
+        self.assertEqual(eval(translated_rem, {"digit_counter": 7}), 1)
+
+    def test_relative_subscripts_keep_signed_numeric_offsets_with_adjacent_operands(self):
+        self.assertEqual(
+            cobol2py.split_cobol_subscripts("INDEX1 + 1 INDEX2 + 3 INDEX3 - 1"),
+            ["INDEX1 + 1", "INDEX2 + 3", "INDEX3 - 1"],
+        )
+        self.assertEqual(
+            cobol2py.split_cobol_subscripts("INDEX1 + 1, 1 INDEX3 - 1"),
+            ["INDEX1 + 1", "1", "INDEX3 - 1"],
+        )
+        self.assertEqual(
+            cobol2py.split_cobol_subscripts("+1 INDEX2 +3"),
+            ["+1", "INDEX2", "+3"],
+        )
 
     def test_statistical_intrinsics_accept_space_separated_arguments(self):
         translated = cobol2py.translate_expr("FUNCTION MEAN(1 2 6)")
