@@ -225,7 +225,7 @@
     "comparison": "exact stdout bytes and process return code against GnuCOBOL",
     "note": "Same 500 case IDs as the 257/500 main holdout. The only score difference was exec84-2-03eae98697: translator timeout at 20.003376s in the earlier run, versus a completed translation at 19.109681s here. Treat 257/258 as timeout-boundary variance, not a model improvement.",
     "current_main_sha": "1ff7de2be6a2588d22f5e707b25607f09ce54e8a",
-    "current_main_note": "Current main is a docs/workflow-only descendant of this frozen baseline; the comparison from 393b6f5 to current main contains no translator implementation file changes."
+    "current_main_note": "Current main is exactly one commit ahead of this frozen baseline; the only changed file is docs/MASSIVE_PARALLEL_EXPERIMENT_PROTOCOL.md. Translator implementation is unchanged."
   },
   "last_tournament_attempt": {
     "run": 42272058313,
