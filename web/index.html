@@ -4671,12 +4671,11 @@ def translate_nodes(
                 out.extend(body)
 
         elif node.kind == "perform_inline":
+            # An inline PERFORM without TIMES/UNTIL executes its imperative
+            # body once. It does not introduce a Python control-flow block,
+            # so the body must retain the surrounding indentation.
             out.append("    " * indent + f"# PERFORM inline: {node.text}")
-            body = translate_nodes(node.body, paragraphs, indent + 1, variables, current_paragraph, condition_names)
-            if not body:
-                body = ["    " * (indent + 1) + "pass"]
-            elif all(not line.strip() or line.strip().startswith("#") for line in body):
-                body.append("    " * (indent + 1) + "pass")
+            body = translate_nodes(node.body, paragraphs, indent, variables, current_paragraph, condition_names)
             out.extend(body)
 
         elif node.kind == "perform_times_inline":
