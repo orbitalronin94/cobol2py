@@ -1,37 +1,41 @@
 # 30-seed failure-directed repair tournament
 
-The 30-seed tournament is defined, but **not currently ready to run**. The branch names exist; their contents are stale and several do not implement the hypotheses assigned in the manifest.
+**Status: blocked — the 30 candidate refs exist, but none is currently a valid candidate against current main.**
 
-## Main baseline record
+## Main baseline and remeasurement
 
-- Historical main reference: **257/500 (51.4%)**, [run 42268813592](https://github.com/orbitalronin94/cobol2py/actions/runs/42268813592), SHA `393b6f5d98eb0a0f2f1af41eb5d937e6bb274d28`.
-- Latest main remeasurement: **258/500 (51.6%)**, [30-seed attempt 42272058313](https://github.com/orbitalronin94/cobol2py/actions/runs/42272058313), frozen baseline SHA `3485bbd36daee6c3c2319d204bf33fddac6a32a4`.
-- Current main SHA: `1ff7de2be6a2588d22f5e707b25607f09ce54e8a`; it is one docs-only commit ahead of the frozen baseline, changing only `docs/MASSIVE_PARALLEL_EXPERIMENT_PROTOCOL.md`. Translator implementation is unchanged.
-- Both reports use X-COBOL v2, `skip=500`, `target=500`, archive MD5 `cbd974caed72b0836777dc2305928ed3`, and the same 500 case IDs.
-- The one-case difference is timing-sensitive: `exec84-2-03eae98697` hit the 20-second translator timeout at 20.003376s in the earlier holdout and completed in 19.109681s in the later run. This is not evidence of a translator improvement. Keep the historical 257 reference and the latest 258 remeasurement separate.
-- [Run 42266714599](https://github.com/orbitalronin94/cobol2py/actions/runs/42266714599) is an experimental branch result, not the main baseline.
+- Historical main reference: **257/500 (51.4%)**, [run 42268813592](https://github.com/orbitalronin94/cobol2py/actions/runs/42268813592), translator SHA `393b6f5d98eb0a0f2f1af41eb5d937e6bb274d28`.
+- Later main remeasurement: **258/500 (51.6%)**, [run 42272058313](https://github.com/orbitalronin94/cobol2py/actions/runs/42272058313), frozen SHA `3485bbd36daee6c3c2319d204bf33fddac6a32a4`.
+- These two reports use the same 500 case IDs, X-COBOL v2 archive MD5 `cbd974caed72b0836777dc2305928ed3`, `skip=500`, `target=500`, and exact stdout-byte plus process-return-code comparison. Both samples are complete and checksum-verified.
+- The only changed case is `exec84-2-03eae98697`: translator timeout at 20.003376s in the 257 report, versus a completed translation at 19.109681s in the 258 report. This is timeout-boundary variance, not evidence of a translator improvement. Keep **257/500 as the historical reference** and **258/500 as a separate main remeasurement**; do not collapse them into a new record.
+- The **258/500 in run 42266714599 is an experimental-branch result**, not a main baseline.
+- Main SHA audited on 2026-11-10: `c80f7f2252e0637fde3a987f7991cbc6bdd98b5e`. Compared with the frozen 30-seed baseline SHA `3485bbd36daee6c3c2319d204bf33fddac6a32a4`, main is two commits ahead. The changed files are the tournament workflow, manifest/README/test, and experiment protocol; no translator implementation file changed. The 258 remeasurement therefore remains the latest direct measurement of the unchanged translator implementation, subject to the single timeout variance above.
 
-## Audit of the 30-seed attempt
+## Existing 16-candidate tournament — do not duplicate
 
-[Run 42272058313](https://github.com/orbitalronin94/cobol2py/actions/runs/42272058313) was cancelled. Its baseline completed 500/500 at 258/500, but only 9 candidate holdout reports were available. No candidate met the zero-regression gate; no winner was produced and nothing was promoted.
+[Run 42268813592](https://github.com/orbitalronin94/cobol2py/actions/runs/42268813592) contains a complete main holdout report (257/500) and **15 complete candidate holdout reports**, all using the same 500 case IDs. The run concluded `failure`; the `unstring-pointer` candidate's test job failed. No candidate passed the zero-regression gate.
 
-The available reports show why stale branches must not be accepted: seeds 1–8 scored 234–236/500 with 27–28 regressions each; seed 16 scored 155/500 with 113 regressions. These are not valid comparisons against current main because the candidate branches do not contain the frozen main history.
+- Candidate holdout scores ranged from **246/500 to 252/500**.
+- Best score: `experiment-massive-16/open-mixed-modes-verified`, **252/500**, with 4 new passes but **9 regressions**.
+- Its new-pass IDs were `exec84-2-03eae98697`, `rl105a-3725db9cec`, `rock-paper-scissors-ad6321acf1`, and `sq206a-3536dcf7c2`.
+- Its regression IDs were `cep001-1f7cf0de31`, `ic233a-4698d35ce6`, `nc134a-58dbc1f548`, `nc134a-ff40dc4c31`, `nc135a-a977eda638`, `nc243a-04e83cd675`, `pnota-ac81563c54`, `progr2-ff3935a6eb`, and `smp001-ccd7110609`.
 
-The branch histories are also mislabelled in the manifest. For example, seed 1 contains an EVALUATE-padding candidate, seed 2 EXIT PARAGRAPH, seed 3 EXIT SECTION, seed 4 INSPECT CONVERTING, seed 5 INSPECT REPLACING ALL, seed 6 IS NUMERIC, seed 9 multiple UNSTRING delimiters, and seed 10 UNSTRING POINTER—not the hypotheses currently assigned to those seeds.
+The 16-candidate artifacts already cover several adjacent hypotheses (file OPEN modes, sequential READ/WRITE/REWRITE, INSPECT REPLACING, STRING/UNSTRING, date/time ACCEPT, and arithmetic reference modification). Treat these as historical evidence, not as promotion-ready candidates; avoid rerunning the same stale snapshots.
 
-## Readiness gate
+## Audit of the 30-seed tournament
 
-Before dispatching, each of the 30 candidates must:
+- [PR #349](https://github.com/orbitalronin94/cobol2py/pull/349) and [PR #350](https://github.com/orbitalronin94/cobol2py/pull/350) are merged. [PR #351](https://github.com/orbitalronin94/cobol2py/pull/351), merged 2026-11-10, hardened the 30-seed workflow and recorded the branch audit.
+- The current workflow `.github/workflows/failure-directed-30-seed-tournament.yml` is manual-dispatch only. It freezes main and candidate SHAs, requires candidate ancestry, translator and test changes, runs the full 500-case holdout, and ranks by case ID with a strict zero-regression/+1 gate. It never promotes automatically.
+- All **30 candidate branch refs exist**, but all 30 compare as **diverged** from audited main SHA `c80f7f2252e0637fde3a987f7991cbc6bdd98b5e`. Seeds 11–15 additionally have no translator implementation change and no test change relative to current main. Other branches are also stale; several sampled histories do not implement their declared manifest hypotheses.
+- The manifest readiness flag is therefore `blocked`. The workflow deliberately exits before matrix execution while readiness is blocked. Do not dispatch it until all branches have been rebuilt from current main, with one isolated implementation hypothesis, a minimal reproducer/regression test, and a passing full suite.
+- The previous attempt, [run 42272058313](https://github.com/orbitalronin94/cobol2py/actions/runs/42272058313), was **cancelled**. Its frozen-main baseline completed at 258/500, but only 9 candidate holdout reports were available (seeds 1–8 and 16). The best reported score was 236/500 with 5 gains and 27 regressions; no candidate was eligible. The other seeds failed, were cancelled, or lacked valid reports.
+- The later [manifest validation run 42815007670](https://github.com/orbitalronin94/cobol2py/actions/runs/42815007670) and [main tests run 42815007686](https://github.com/orbitalronin94/cobol2py/actions/runs/42815007686) succeeded. These are validation/test runs, **not** a completed 30-seed tournament.
+- [PR #352](https://github.com/orbitalronin94/cobol2py/pull/352) is an open documentation-only modernization strategy PR; it does not provide candidate benchmark evidence.
 
-1. Be rebuilt from the current main SHA (the frozen main commit must be an ancestor of the candidate).
-2. Change the translator implementation for its declared hypothesis.
-3. Include a minimal reproducer and regression test.
-4. Pass the complete unit/regression suite.
-5. Run the same 500 X-COBOL v2 cases with `skip=500`, `target=500`, the pinned archive checksum and the frozen benchmark harness.
-6. Compare all 500 exact case IDs; any regression rejects the candidate, and at least one new pass is required.
+## Next work
 
-The workflow now checks branch ancestry and translator/test changes before running any holdout, uses the benchmark runner and Dockerfile from the frozen main SHA, and validates the corpus/options contract before ranking. It is manual-dispatch only while the candidate set is blocked.
-
-## Promotion
-
-No candidate qualifies. No merge, no benchmark-record update, and no automatic promotion. Once all 30 branches have been rebuilt and audited, the tournament can be dispatched. A winner still requires a separate manual review and a fresh comparison if main has moved.
+1. Rebuild each of the 30 candidate branches on the current main SHA; do not merge stale branch snapshots.
+2. Audit that each branch implements its exact manifest hypothesis and includes a minimal reproducer plus a regression test. In particular, seeds 11–15 currently lack translator/test changes.
+3. Reuse the existing 16-candidate artifacts for overlapping file, STRING/UNSTRING, INSPECT and arithmetic hypotheses rather than creating duplicate experiments.
+4. Investigate the malformed generated condition line `if filler_17['numeric_1'] == > (than == 0):` as a **hypothesis** for a condition-operator parser defect. Recover the exact source and make a minimal failing reproducer before changing the translator; the generated line alone is not a proven root cause.
+5. Dispatch the 30-seed workflow only after readiness becomes `ready`. Re-run the full holdout against the then-current main SHA before any promotion. No winner, PR, merge, or benchmark-record update is currently justified.

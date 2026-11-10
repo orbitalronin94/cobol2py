@@ -223,9 +223,9 @@
     "archive_md5_verified": true,
     "sample_complete": true,
     "comparison": "exact stdout bytes and process return code against GnuCOBOL",
-    "note": "Same 500 case IDs as the 257/500 main holdout. The only score difference was exec84-2-03eae98697: translator timeout at 20.003376s in the earlier run, versus a completed translation at 19.109681s here. Treat 257/258 as timeout-boundary variance, not a model improvement.",
-    "current_main_sha": "1ff7de2be6a2588d22f5e707b25607f09ce54e8a",
-    "current_main_note": "Current main is exactly one commit ahead of this frozen baseline; the only changed file is docs/MASSIVE_PARALLEL_EXPERIMENT_PROTOCOL.md. Translator implementation is unchanged."
+    "note": "Same 500 case IDs as the 257/500 main holdout. The only score difference was exec84-2-03eae98697: translator timeout at 20.003376s in the earlier run, versus a completed translation at 19.109681s here. Treat 257/258 as timeout-boundary variance, not a model improvement. This 258/500 report is the main remeasurement from run 42272058313; run 42266714599 is an experimental-branch result and is not a main baseline.",
+    "current_main_sha": "c80f7f2252e0637fde3a987f7991cbc6bdd98b5e",
+    "current_main_note": "Audited 2026-11-10. Main is two commits ahead of the frozen baseline; changes are workflow hardening and documentation/manifest/test updates only. Translator implementation is unchanged. The sole 257→258 case difference is exec84-2-03eae98697, a translator-timeout boundary variance."
   },
   "last_tournament_attempt": {
     "run": 42272058313,
@@ -236,14 +236,70 @@
     "candidate_holdout_reports": 9,
     "eligible_candidates": 0,
     "winner": null,
-    "note": "Only 9 candidate holdout reports were available; remaining candidates failed, were cancelled, or had missing reports. No promotion."
+    "note": "Only 9 candidate holdout reports were available (seeds 1-8 and 16); the remaining candidates failed, were cancelled, or had missing reports. Seeds 1-8 scored 234-236/500 with 27-28 regressions each; seed 16 scored 155/500 with 113 regressions. No candidate was eligible and nothing was promoted.",
+    "reported_seeds": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      16
+    ]
   },
   "readiness": {
     "status": "blocked",
     "reasons": [
-      "The 30 candidate refs exist but their heads are not descendants of current main; they are stale/diverged snapshots.",
-      "The sampled branch histories do not match several declared hypotheses (for example seeds 1-6 and 9-10).",
-      "All 30 branches must be rebuilt on current main with one isolated translator change plus a minimal reproducer/regression test before dispatch."
+      "All 30 candidate refs exist, but all 30 branch heads compare as diverged from the audited current main SHA c80f7f2252e0637fde3a987f7991cbc6bdd98b5e.",
+      "Seeds 11-15 have no translator implementation change and no tests change relative to current main.",
+      "Other candidate branches are also stale; sampled histories do not match several declared hypotheses (including seeds 1-6 and 9-10).",
+      "All 30 branches must be rebuilt from current main with one isolated translator hypothesis, a minimal reproducer/regression test, and a passing full suite before dispatch."
+    ],
+    "audit_date": "2026-11-10",
+    "audit_main_sha": "c80f7f2252e0637fde3a987f7991cbc6bdd98b5e",
+    "candidate_branch_refs": 30,
+    "candidate_branches_diverged": 30,
+    "candidates_without_translator_or_tests": [
+      11,
+      12,
+      13,
+      14,
+      15
     ]
+  },
+  "prior_16_candidate_tournament": {
+    "source_run": 42268813592,
+    "status": "failure",
+    "baseline_score": 257,
+    "baseline_tested": 500,
+    "candidate_holdout_reports": 15,
+    "eligible_candidates": 0,
+    "best_candidate": {
+      "id": "experiment-massive-16-open-mixed-modes-verified",
+      "score": 252,
+      "denominator": 500,
+      "new_passes": 4,
+      "regressions": 9,
+      "new_pass_case_ids": [
+        "exec84-2-03eae98697",
+        "rl105a-3725db9cec",
+        "rock-paper-scissors-ad6321acf1",
+        "sq206a-3536dcf7c2"
+      ],
+      "regressed_case_ids": [
+        "cep001-1f7cf0de31",
+        "ic233a-4698d35ce6",
+        "nc134a-58dbc1f548",
+        "nc134a-ff40dc4c31",
+        "nc135a-a977eda638",
+        "nc243a-04e83cd675",
+        "pnota-ac81563c54",
+        "progr2-ff3935a6eb",
+        "smp001-ccd7110609"
+      ]
+    },
+    "note": "Historical 16-candidate artifacts already cover several adjacent hypotheses; no candidate passed the zero-regression gate. Do not duplicate these stale snapshots."
   }
 }
