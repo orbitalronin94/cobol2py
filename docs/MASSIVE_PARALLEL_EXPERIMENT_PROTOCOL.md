@@ -409,3 +409,39 @@ A candidate qualifies for human review only with both complete 500-case samples 
 
 ### Rejected candidates
 - experiment-massive-16-unstring-pointer: full unit/compile suite did not pass on frozen SHA; holdout: incomplete, checksum/SHA mismatch, or failed tests; primary: incomplete, checksum/SHA mismatch, or failed tests
+
+
+---
+
+## Ejecución automática #319 (run 42838239904)
+
+- Evento: `push`
+- Tamaño solicitado: `16` candidatas (más baseline main)
+- Informe: https://github.com/orbitalronin94/cobol2py/actions/runs/42838239904
+
+## Paired exact-match tournament — no automatic promotion
+
+Same-run main baseline: primary **259/500 (51.8%)**, holdout **260/500 (52.0%)**, combined **519/1000 (51.9%)**.
+A candidate qualifies for human review only with both complete 500-case samples on the frozen SHA, green full tests, a higher combined score, and **zero regressions by case ID across all 1,000 cases**.
+
+| Rank | Candidate | Primary | Holdout | Combined | Gains | Regressions | SHA |
+|---:|---|---:|---:|---:|---:|---:|---|
+| 1 | experiment-massive-16-accept-date-time | 249/500 (49.8%) | 250/500 (50.0%) | **499/1000 (49.9%)** | 3 | 23 | d31182977d17 |
+
+**No candidate qualifies.** No merge and no benchmark-record update.
+
+### Rejected candidates
+- experiment-massive-16-arithmetic-reference-length: holdout: missing report/status; missing complete sample(s): holdout, primary; primary: missing report/status
+- experiment-massive-16-environment-and-stderr: holdout: missing report/status; missing complete sample(s): holdout, primary; primary: missing report/status
+- experiment-massive-16-fixed-length-sequential-read: missing complete sample(s): holdout, primary
+- experiment-massive-16-inspect-replacing-final: missing complete sample(s): holdout, primary
+- experiment-massive-16-open-mixed-modes-verified: missing complete sample(s): holdout, primary
+- experiment-massive-16-read-after-eof-status46: missing complete sample(s): holdout, primary
+- experiment-massive-16-reopen-already-open-status41-verified: missing complete sample(s): holdout, primary
+- experiment-massive-16-sequential-rewrite: missing complete sample(s): holdout, primary
+- experiment-massive-16-split-level-declaration: missing complete sample(s): holdout, primary
+- experiment-massive-16-string-zeroes-delimiter: missing complete sample(s): holdout, primary
+- experiment-massive-16-unstring-delimiter-count-in-verified: missing complete sample(s): holdout, primary
+- experiment-massive-16-unstring-pointer: full unit/compile suite did not pass on frozen SHA
+- experiment-massive-16-unstring-tally-increment: missing complete sample(s): holdout, primary
+- experiment-massive-16-write-from-literal: missing complete sample(s): holdout, primary
