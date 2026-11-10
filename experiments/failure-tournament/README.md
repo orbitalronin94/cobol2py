@@ -6,7 +6,7 @@ The 30-seed tournament is defined, but **not currently ready to run**. The branc
 
 - Historical main reference: **257/500 (51.4%)**, [run 42268813592](https://github.com/orbitalronin94/cobol2py/actions/runs/42268813592), SHA `393b6f5d98eb0a0f2f1af41eb5d937e6bb274d28`.
 - Latest main remeasurement: **258/500 (51.6%)**, [30-seed attempt 42272058313](https://github.com/orbitalronin94/cobol2py/actions/runs/42272058313), frozen baseline SHA `3485bbd36daee6c3c2319d204bf33fddac6a32a4`.
-- Current main SHA: `1ff7de2be6a2588d22f5e707b25607f09ce54e8a`; changes since the frozen 30-seed baseline are documentation/workflow/manifest/test files, not translator implementation files.
+- Current main SHA: `1ff7de2be6a2588d22f5e707b25607f09ce54e8a`; it is one docs-only commit ahead of the frozen baseline, changing only `docs/MASSIVE_PARALLEL_EXPERIMENT_PROTOCOL.md`. Translator implementation is unchanged.
 - Both reports use X-COBOL v2, `skip=500`, `target=500`, archive MD5 `cbd974caed72b0836777dc2305928ed3`, and the same 500 case IDs.
 - The one-case difference is timing-sensitive: `exec84-2-03eae98697` hit the 20-second translator timeout at 20.003376s in the earlier holdout and completed in 19.109681s in the later run. This is not evidence of a translator improvement. Keep the historical 257 reference and the latest 258 remeasurement separate.
 - [Run 42266714599](https://github.com/orbitalronin94/cobol2py/actions/runs/42266714599) is an experimental branch result, not the main baseline.
