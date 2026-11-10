@@ -3546,12 +3546,22 @@ def translate_statement(
 
     if upper in ("STOP RUN", "STOP RUN."):
         return ["raise _CobolStopRun"]
-    open_match = re.fullmatch(r"OPEN\s+(INPUT|OUTPUT|EXTEND|I-O)\s+(.+)", s, re.IGNORECASE)
+    open_match = re.fullmatch(r"OPEN\s+(.+)", s, re.IGNORECASE)
     if open_match:
-        mode, names = open_match.groups()
-        file_names = re.findall(r"[A-Za-z0-9_-]+", names)
-        if file_names:
-            return [f"_cobol_open({name.upper()!r}, {mode.upper()!r})" for name in file_names]
+        clauses = re.split(r"\b(INPUT|OUTPUT|EXTEND|I-O)\b", open_match.group(1), flags=re.IGNORECASE)
+        mode = None
+        operations = []
+        modifiers = {"WITH", "NO", "REWIND", "LOCK", "SHARING", "ALL", "OTHER", "READ", "ONLY", "REVERSED"}
+        for clause in clauses:
+            token = clause.strip().upper()
+            if token in {"INPUT", "OUTPUT", "EXTEND", "I-O"}:
+                mode = token
+                continue
+            if mode:
+                file_names = [name for name in re.findall(r"[A-Za-z0-9_-]+", clause) if name.upper() not in modifiers]
+                operations.extend(f"_cobol_open({name.upper()!r}, {mode!r})" for name in file_names)
+        if operations:
+            return operations
     close_match = re.fullmatch(r"CLOSE\s+(.+)", s, re.IGNORECASE)
     if close_match:
         file_names = re.findall(r"[A-Za-z0-9_-]+", close_match.group(1))
@@ -3654,6 +3664,25 @@ def translate_statement(
             else:
                 initialize_group(root, target_expr, set())
         return assignments or [f"# INITIALIZE sin campos traducibles: {s}"]
+    # INSPECT REPLACING supports ALL and FIRST literal substitutions.
+    replacing_match = re.fullmatch(
+        rf"INSPECT\s+({DATA_REF_PATTERN})\s+REPLACING\s+(ALL|FIRST)\s+(.+?)\s+BY\s+(.+?)(?:\s+END-INSPECT)?",
+        s,
+        re.IGNORECASE,
+    )
+    if replacing_match:
+        target, mode, old_operand, new_operand = (part.strip() for part in replacing_match.groups())
+        variable_map = variables or {}
+        source_expr = translate_literal(target, variable_map)
+        old_expr = translate_literal(old_operand, variable_map)
+        new_expr = translate_literal(new_operand, variable_map)
+        count_arg = ", 1" if mode.upper() == "FIRST" else ""
+        replacement_expr = (
+            f"(str({source_expr}).replace(str({old_expr}), str({new_expr}){count_arg}) "
+            f"if str({old_expr}) else str({source_expr}))"
+        )
+        return [emit_assignment(target, replacement_expr, variable_map)]
+
     # INSPECT CONVERTING performs a character-position mapping on the
     # receiving data item. Reverse construction makes the first occurrence
     # of a repeated source character win, rather than Python dict's last one.
@@ -5380,6 +5409,11 @@ def emit_python(prog: Program) -> str:
     lines.append("    spec = _cobol_file_specs.get(key)")
     lines.append("    if spec is None:")
     lines.append("        raise SystemExit(1)")
+    lines.append("    if key in _cobol_open_files:")
+    lines.append("        if spec.get('status'):")
+    lines.append("            _cobol_set_file_status(spec, '41')")
+    lines.append("            return '41'")
+    lines.append("        raise SystemExit(1)")
     lines.append("    path = spec.get('assign') or name")
     lines.append("    python_mode = {'INPUT': 'r', 'OUTPUT': 'w', 'EXTEND': 'a', 'I-O': 'r+'}.get(mode.upper())")
     lines.append("    if python_mode is None:")
@@ -5422,7 +5456,11 @@ def emit_python(prog: Program) -> str:
     lines.append("            _cobol_set_file_status(spec, '47')")
     lines.append("            return None")
     lines.append("        raise SystemExit(1)")
-    lines.append("    raw = handle.readline()")
+    lines.append("    record_width = int(spec.get('record_width') or 0)")
+    lines.append("    if spec.get('organization') == 'LINE SEQUENTIAL' or not record_width:")
+    lines.append("        raw = handle.readline()")
+    lines.append("    else:")
+    lines.append("        raw = handle.read(record_width)")
     lines.append("    if raw == '':")
     lines.append("        _cobol_set_file_status(spec, '10')")
     lines.append("        return False")
