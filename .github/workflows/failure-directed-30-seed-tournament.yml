@@ -497,13 +497,20 @@ jobs:
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as handle:
               handle.write(f"## 30-seed tournament\n\nComplete: **{complete}**\n\n")
               handle.write(f"Baseline: **{baseline_score}/500**\n\n")
-              handle.write("| Seed | Candidate | Score | New passes | Regressions | Complete | Eligible |\n|---:|---|---:|---:|---:|---:|---:|\n")
+              handle.write("| Seed | Candidate | Score | New passes | Regressions | Oracle stable | Drift IDs | Complete | Eligible |\n|---:|---|---:|---:|---:|---:|---:|---:|---:|\n")
               for item in sorted(rows, key=lambda value: value["seed"]):
                   handle.write(
                       f"| {item['seed']} | {item['id']} | {item.get('score','—')} | "
                       f"{item.get('new_passes','—')} | {item.get('regressions','—')} | "
+                      f"{item.get('oracle_stable', False)} | {item.get('oracle_drift_count', 0)} | "
                       f"{item.get('complete', False)} | {item.get('eligible', False)} |\n"
                   )
+                  if item.get("oracle_drift_case_ids"):
+                      handle.write(
+                          f"\nOracle drift — seed {item['seed']}: "
+                          + ", ".join(item["oracle_drift_case_ids"])
+                          + "\n"
+                      )
               if summary["winner"]:
                   winner = summary["winner"]
                   handle.write(
