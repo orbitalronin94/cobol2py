@@ -4173,7 +4173,7 @@ class InspectTallyingRegressionTests(unittest.TestCase):
         )
         self.assertIsNotNone(translated)
         namespace = {"ws_str": "AEDCILIDVALDV  ", "ws_n": 2}
-        exec("\\n".join(translated or []), namespace)
+        exec("\n".join(translated or []), namespace)
         self.assertEqual(namespace["ws_n"], 17)
 
 class MoveFigurativeZeroAlphanumericTests(unittest.TestCase):
