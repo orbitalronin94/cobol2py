@@ -1,41 +1,52 @@
 # 30-seed failure-directed repair tournament
 
-**Status: blocked — the 30 candidate refs exist, but none is currently a valid candidate against current main.**
+**Estado: bloqueado.** El baseline vigente de main ya se ha revalidado; la cohorte de 30 ramas aún no está lista para ejecutarse. La auditoría reproducible y sus enlaces se mantienen aquí y en [manifest.json](./manifest.json).
 
-## Main baseline and remeasurement
+## Baseline vigente de main
 
-- Historical main reference: **257/500 (51.4%)**, [run 42268813592](https://github.com/orbitalronin94/cobol2py/actions/runs/42268813592), translator SHA `393b6f5d98eb0a0f2f1af41eb5d937e6bb274d28`.
-- Later main remeasurement: **258/500 (51.6%)**, [run 42272058313](https://github.com/orbitalronin94/cobol2py/actions/runs/42272058313), frozen SHA `3485bbd36daee6c3c2319d204bf33fddac6a32a4`.
-- These two reports use the same 500 case IDs, X-COBOL v2 archive MD5 `cbd974caed72b0836777dc2305928ed3`, `skip=500`, `target=500`, and exact stdout-byte plus process-return-code comparison. Both samples are complete and checksum-verified.
-- The only changed case is `exec84-2-03eae98697`: translator timeout at 20.003376s in the 257 report, versus a completed translation at 19.109681s in the 258 report. This is timeout-boundary variance, not evidence of a translator improvement. Keep **257/500 as the historical reference** and **258/500 as a separate main remeasurement**; do not collapse them into a new record.
-- The **258/500 in run 42266714599 is an experimental-branch result**, not a main baseline.
-- Main SHA audited on 2026-11-10: `c80f7f2252e0637fde3a987f7991cbc6bdd98b5e`. Compared with the frozen 30-seed baseline SHA `3485bbd36daee6c3c2319d204bf33fddac6a32a4`, main is two commits ahead. The changed files are the tournament workflow, manifest/README/test, and experiment protocol; no translator implementation file changed. The 258 remeasurement therefore remains the latest direct measurement of the unchanged translator implementation, subject to the single timeout variance above.
+- **261/500 (52,2%)** — [run 42844666181](https://github.com/orbitalronin94/cobol2py/actions/runs/42844666181).
+- SHA de main medido: \`17f219460fb7a3e75bd462cd3be73faa17a1a64b\`.
+- Corpus X-COBOL v2, MD5 esperado y verificado \`cbd974caed72b0836777dc2305928ed3\`.
+- Comparación exacta: bytes de stdout y código de retorno del proceso frente a GnuCOBOL.
+- Cuatro shards completos de 125 casos (\`skip=500,625,750,875\`), 500 IDs únicos, sin duplicados. Recuento: 63 + 54 + 71 + 73 = 261.
 
-## Existing 16-candidate tournament — do not duplicate
+## Récord histórico separado
 
-[Run 42268813592](https://github.com/orbitalronin94/cobol2py/actions/runs/42268813592) contains a complete main holdout report (257/500) and **15 complete candidate holdout reports**, all using the same 500 case IDs. The run concluded `failure`; the `unstring-pointer` candidate's test job failed. No candidate passed the zero-regression gate.
+- **257/500 (51,4%)** sigue siendo la referencia histórica de main: [run 42268813592](https://github.com/orbitalronin94/cobol2py/actions/runs/42268813592), SHA \`393b6f5d98eb0a0f2f1af41eb5d937e6bb274d28\`.
+- **258/500 (51,6%)** en [run 42272058313](https://github.com/orbitalronin94/cobol2py/actions/runs/42272058313) fue una re-medición posterior de main con una variación de timeout en un caso; no sustituye el récord histórico.
+- **258/500** en [run 42266714599](https://github.com/orbitalronin94/cobol2py/actions/runs/42266714599) fue una rama experimental, no main.
 
-- Candidate holdout scores ranged from **246/500 to 252/500**.
-- Best score: `experiment-massive-16/open-mixed-modes-verified`, **252/500**, with 4 new passes but **9 regressions**.
-- Its new-pass IDs were `exec84-2-03eae98697`, `rl105a-3725db9cec`, `rock-paper-scissors-ad6321acf1`, and `sq206a-3536dcf7c2`.
-- Its regression IDs were `cep001-1f7cf0de31`, `ic233a-4698d35ce6`, `nc134a-58dbc1f548`, `nc134a-ff40dc4c31`, `nc135a-a977eda638`, `nc243a-04e83cd675`, `pnota-ac81563c54`, `progr2-ff3935a6eb`, and `smp001-ccd7110609`.
+## Candidatos comparados contra el holdout vigente
 
-The 16-candidate artifacts already cover several adjacent hypotheses (file OPEN modes, sequential READ/WRITE/REWRITE, INSPECT REPLACING, STRING/UNSTRING, date/time ACCEPT, and arithmetic reference modification). Treat these as historical evidence, not as promotion-ready candidates; avoid rerunning the same stale snapshots.
+| PR | Hipótesis | Resultado | Ganancias | Regresiones | Decisión |
+|---|---|---:|---:|---:|---|
+| [#359](https://github.com/orbitalronin94/cobol2py/pull/359) | UNSTRING TALLYING IN acumulativo | 260/500 | 0 | 1 | No elegible |
+| [#362](https://github.com/orbitalronin94/cobol2py/pull/362) | READ SEQUENTIAL de ancho fijo | 261/500 | 0 | 0 | No elegible: no añade casos |
 
-## Audit of the 30-seed tournament
+La regresión de #359 es \`exec84-2-03eae98697\`. #362 conserva el mismo conjunto de aprobados, pero no aporta una ganancia nueva. Runs de candidato: [42839228540](https://github.com/orbitalronin94/cobol2py/actions/runs/42839228540) y [42839464387](https://github.com/orbitalronin94/cobol2py/actions/runs/42839464387). Ambos se compararon por los mismos 500 IDs, checksum, selección y definición de pase que el baseline actual; ninguno cumple el gate de promoción.
 
-- [PR #349](https://github.com/orbitalronin94/cobol2py/pull/349) and [PR #350](https://github.com/orbitalronin94/cobol2py/pull/350) are merged. [PR #351](https://github.com/orbitalronin94/cobol2py/pull/351), merged 2026-11-10, hardened the 30-seed workflow and recorded the branch audit.
-- The current workflow `.github/workflows/failure-directed-30-seed-tournament.yml` is manual-dispatch only. It freezes main and candidate SHAs, requires candidate ancestry, translator and test changes, runs the full 500-case holdout, and ranks by case ID with a strict zero-regression/+1 gate. It never promotes automatically.
-- All **30 candidate branch refs exist**, but all 30 compare as **diverged** from audited main SHA `c80f7f2252e0637fde3a987f7991cbc6bdd98b5e`. Seeds 11–15 additionally have no translator implementation change and no test change relative to current main. Other branches are also stale; several sampled histories do not implement their declared manifest hypotheses.
-- The manifest readiness flag is therefore `blocked`. The workflow deliberately exits before matrix execution while readiness is blocked. Do not dispatch it until all branches have been rebuilt from current main, with one isolated implementation hypothesis, a minimal reproducer/regression test, and a passing full suite.
-- The previous attempt, [run 42272058313](https://github.com/orbitalronin94/cobol2py/actions/runs/42272058313), was **cancelled**. Its frozen-main baseline completed at 258/500, but only 9 candidate holdout reports were available (seeds 1–8 and 16). The best reported score was 236/500 with 5 gains and 27 regressions; no candidate was eligible. The other seeds failed, were cancelled, or lacked valid reports.
-- The later [manifest validation run 42815007670](https://github.com/orbitalronin94/cobol2py/actions/runs/42815007670) and [main tests run 42815007686](https://github.com/orbitalronin94/cobol2py/actions/runs/42815007686) succeeded. These are validation/test runs, **not** a completed 30-seed tournament.
-- [PR #352](https://github.com/orbitalronin94/cobol2py/pull/352) is an open documentation-only modernization strategy PR; it does not provide candidate benchmark evidence.
+## Candidato en curso: EVALUATE ALSO
 
-## Next work
+- [PR #365](https://github.com/orbitalronin94/cobol2py/pull/365) reconstruye la hipótesis de la semilla 10 sobre el main actual.
+- Reproductor externo: NIST \`NC225A.CBL\`, caso \`nc225a-a777e5ee71\`; seis sujetos y selecciones \`WHEN ... ALSO ...\` en varias líneas, con \`NOT\`, \`ANY\` y sujetos booleanos.
+- La suite completa del PR terminó verde en Python 3.10–3.13, Java, navegador y referencias/trazas GnuCOBOL: [run 43013196680](https://github.com/orbitalronin94/cobol2py/actions/runs/43013196680).
+- El smoke externo [run 43013196679](https://github.com/orbitalronin94/cobol2py/actions/runs/43013196679) y el holdout de 500 [run 43013196673](https://github.com/orbitalronin94/cobol2py/actions/runs/43013196673) estaban en curso al cerrar esta auditoría. No hay puntuación ni IDs de ganancia/regresión publicados todavía; no fusionar.
 
-1. Rebuild each of the 30 candidate branches on the current main SHA; do not merge stale branch snapshots.
-2. Audit that each branch implements its exact manifest hypothesis and includes a minimal reproducer plus a regression test. In particular, seeds 11–15 currently lack translator/test changes.
-3. Reuse the existing 16-candidate artifacts for overlapping file, STRING/UNSTRING, INSPECT and arithmetic hypotheses rather than creating duplicate experiments.
-4. Investigate the malformed generated condition line `if filler_17['numeric_1'] == > (than == 0):` as a **hypothesis** for a condition-operator parser defect. Recover the exact source and make a minimal failing reproducer before changing the translator; the generated line alone is not a proven root cause.
-5. Dispatch the 30-seed workflow only after readiness becomes `ready`. Re-run the full holdout against the then-current main SHA before any promotion. No winner, PR, merge, or benchmark-record update is currently justified.
+## Cohorte de 16 candidatos
+
+El intento más reciente, [run 42844557468](https://github.com/orbitalronin94/cobol2py/actions/runs/42844557468), falló en descubrimiento: el manifiesto esperaba 15 PRs no fusionadas y encontró solo 10. No se ejecutaron candidatos ni se generaron artifacts de torneo. Hay resultados históricos de candidatos individuales en PRs previas, pero no constituyen una comparación pareada vigente; no se vuelve a lanzar esa cohorte sin reconciliar sus PRs y SHA.
+
+## Auditoría de las 30 semillas
+
+- [PR #349](https://github.com/orbitalronin94/cobol2py/pull/349) integró el arnés de torneo; el workflow de main sigue siendo manual (\`workflow_dispatch\`) y no se ha despachado.
+- Las 30 referencias originales existen, pero sus cabezas no son válidas contra el main actual. La semilla 10 del manifiesto ahora apunta al candidato reconstruido de [PR #365](https://github.com/orbitalronin94/cobol2py/pull/365); las otras 29 ramas siguen divergidas del SHA actual.
+- Las semillas 11–15 carecen de cambios de traductor y de tests/reproducers. Otras ramas requieren rebase y revisión de que el diff corresponda a la hipótesis declarada.
+- La preparación continúa **bloqueada**. No hay ganador ni promoción automática.
+
+[PR #366](https://github.com/orbitalronin94/cobol2py/pull/366) propone endurecer el workflow antes de usarlo: SHA de candidato único y verificado, identidad del baseline, validación explícita de stdout/return-code, 500 IDs y checksum; cualquier artifact incompleto hace fallar el torneo completo en vez de publicar una clasificación parcial. Esa corrección todavía no está en main.
+
+No se ha lanzado el torneo de 30: además de la preparación bloqueada, las herramientas disponibles permiten leer runs y artifacts, pero no exponer un dispatch de Actions.
+
+## Siguiente hipótesis
+
+**INSPECT TALLYING FOR ALL CHARACTERS.** El caso \`cbl0701v01statementinspect-31f6d501b1\` falla con \`NameError: characters\`; el código generado cuenta \`str(characters)\` en vez de sumar la longitud de \`WS-STR\`. El fuente reproducible es [CBL0701v01StatementInspect.cbl](https://github.com/mainframe-projects/CICS-Cobol/blob/master/CBL0701v01StatementInspect.cbl): \`WS-STR PIC X(15)\` y \`INSPECT WS-STR TALLYING WS-N FOR ALL CHARACTERS\`. La hipótesis es que \`CHARACTERS\` debe contar los 15 caracteres inspeccionados y acumularlos en el tally, sin alterar los otros formatos \`INSPECT ... TALLYING\`.
