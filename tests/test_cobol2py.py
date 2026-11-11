@@ -4161,6 +4161,21 @@ class InspectTallyingRegressionTests(unittest.TestCase):
         self.assertEqual(namespace["ws_count"], 2)
 
 
+    def test_inspect_tallying_for_all_characters_counts_fixed_width_item(self):
+        variables = {
+            "WS-STR": cobol2py.CobolVar(level=1, name="WS-STR", pic="X(15)"),
+            "WS-N": cobol2py.CobolVar(level=1, name="WS-N", pic="9(3)"),
+        }
+        translated = cobol2py.translate_statement(
+            "INSPECT WS-STR TALLYING WS-N FOR ALL CHARACTERS",
+            set(),
+            variables,
+        )
+        self.assertIsNotNone(translated)
+        namespace = {"ws_str": "AEDCILIDVALDV  ", "ws_n": 2}
+        exec("\\n".join(translated or []), namespace)
+        self.assertEqual(namespace["ws_n"], 17)
+
 class MoveFigurativeZeroAlphanumericTests(unittest.TestCase):
     def test_move_zero_fills_alphanumeric_receiver_with_zero_characters(self):
         variables = {
