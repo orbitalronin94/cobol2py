@@ -4657,3 +4657,80 @@ class EnvironmentAndStandardErrorCandidateTests(unittest.TestCase):
         with patch.dict("os.environ", {"COBOL_TEST_VALUE": "abc"}):
             exec("\\n".join(translated or []), namespace)
         self.assertEqual(namespace["ws_value"], "abc   ")
+
+
+class EvaluateAlsoRegressionTests(unittest.TestCase):
+    def _run_program(self, source):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        generated = cobol2py.emit_python(
+            cobol2py.parse_cobol(source, source_format="free")
+        )
+        compile(generated, "<evaluate-also-regression>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            try:
+                namespace["main"]()
+            except SystemExit as exc:
+                self.assertIn(exc.code, (None, 0))
+        return output.getvalue(), generated
+
+    def test_evaluate_also_continuations_negation_and_boolean_subjects(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. EVALALSO.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-A PIC 9(3) VALUE 81.
+01 WS-B PIC 9(3) VALUE 81.
+01 WS-D PIC 9 VALUE 0.
+01 WS-E PIC 9(3) VALUE 567.
+01 WS-OUT PIC X VALUE SPACE.
+PROCEDURE DIVISION.
+MAIN.
+    EVALUATE WS-A
+        ALSO 81
+        ALSO (WS-A * 9)
+        ALSO TRUE
+        ALSO FALSE
+        WHEN NOT 1
+            ALSO WS-B
+            ALSO 729
+            ALSO WS-D = 0
+            ALSO WS-E < 9
+                MOVE "A" TO WS-OUT.
+        WHEN OTHER
+                MOVE "Z" TO WS-OUT.
+    END-EVALUATE.
+    DISPLAY WS-OUT.
+    GOBACK.
+"""
+        output, generated = self._run_program(source)
+        self.assertEqual(output, "A\n", generated)
+        self.assertNotIn("COBOL no traducido dentro de EVALUATE: ALSO", generated)
+
+    def test_evaluate_also_any_wildcard_matches_other_subjects(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. EVALANY.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-A PIC 9 VALUE 1.
+01 WS-B PIC 9 VALUE 2.
+01 WS-OUT PIC X VALUE SPACE.
+PROCEDURE DIVISION.
+MAIN.
+    EVALUATE WS-A
+        ALSO WS-B
+        WHEN ANY
+            ALSO 2
+                MOVE "Y" TO WS-OUT.
+        WHEN OTHER
+                MOVE "N" TO WS-OUT.
+    END-EVALUATE.
+    DISPLAY WS-OUT.
+    GOBACK.
+"""
+        output, generated = self._run_program(source)
+        self.assertEqual(output, "Y\n", generated)
