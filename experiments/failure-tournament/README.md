@@ -44,14 +44,13 @@ El intento más reciente, [run 42844557468](https://github.com/orbitalronin94/co
 
 ## Auditoría de las 30 semillas
 
-- [PR #349](https://github.com/orbitalronin94/cobol2py/pull/349) integró el arnés de torneo; el workflow de main sigue siendo manual (\`workflow_dispatch\`) y no se ha despachado.
-- Las 30 referencias originales existen, pero sus cabezas no son válidas contra el main actual. La semilla 10 del manifiesto ahora apunta al candidato reconstruido de [PR #365](https://github.com/orbitalronin94/cobol2py/pull/365); las otras 29 ramas siguen divergidas del SHA actual.
-- Las semillas 11–15 carecen de cambios de traductor y de tests/reproducers. Otras ramas requieren rebase y revisión de que el diff corresponda a la hipótesis declarada.
-- La preparación continúa **bloqueada**. No hay ganador ni promoción automática.
+- [PR #349](https://github.com/orbitalronin94/cobol2py/pull/349) integró el arnés de torneo. [PR #366](https://github.com/orbitalronin94/cobol2py/pull/366) ya está mergeada en main ([commit 4d89d51](https://github.com/orbitalronin94/cobol2py/commit/4d89d51b658c2f721afe0affdeb1a5ad61c9b65f)): verifica SHA únicos, identidad real del checkout, tests y evidencia completa por caso, y rechaza artifacts parciales.
+- Las 30 ramas existen, pero las 30 están divergidas del main actual `4d89d51b658c2f721afe0affdeb1a5ad61c9b65f`. La semilla 10 también está divergida: su rama reconstruida conserva como merge-base el SHA anterior `17f219460fb7a3e75bd462cd3be73faa17a1a64b`.
+- Las semillas 11–15 carecen de cambios de traductor y tests/reproducers. Las demás necesitan reconstrucción aislada desde el main actual y auditoría de que el diff implementa la hipótesis declarada.
+- El workflow continúa manual (`workflow_dispatch`); no se ha lanzado un torneo de 30 semillas. La integración disponible permite inspeccionar Actions, pero no despachar el workflow directamente.
+- La comparación por estado de pase no basta: el oráculo GnuCOBOL también puede variar entre ejecuciones. [PR #368](https://github.com/orbitalronin94/cobol2py/pull/368) añade la comparación por caso de `reference_stdout_sha256` y `reference_returncode`; cualquier deriva invalida la elegibilidad aunque la puntuación bruta suba.
 
-[PR #366](https://github.com/orbitalronin94/cobol2py/pull/366) propone endurecer el workflow antes de usarlo: SHA de candidato único y verificado, identidad del baseline, validación explícita de stdout/return-code, 500 IDs y checksum; cualquier artifact incompleto hace fallar el torneo completo en vez de publicar una clasificación parcial. Esa corrección todavía no está en main.
-
-No se ha lanzado el torneo de 30: además de la preparación bloqueada, las herramientas disponibles permiten leer runs y artifacts, pero no exponer un dispatch de Actions.
+No se ha promovido ningún candidato de la cohorte de 30. La preparación sigue **bloqueada** hasta reconstruir las 30 ramas y ejecutar suite + holdout completo con oráculo estable.
 
 ## Siguiente hipótesis
 
