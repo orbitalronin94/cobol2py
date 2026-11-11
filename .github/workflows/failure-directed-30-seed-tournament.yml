@@ -320,16 +320,22 @@ jobs:
           if len(baseline_rows) != 500:
               raise SystemExit(f"Baseline has {len(baseline_rows)} result rows, expected 500")
           base = {}
+          baseline_reference = {}
           for item in baseline_rows:
               case_id = item.get("id")
               status = item.get("status")
+              reference_hash = item.get("reference_stdout_sha256")
+              reference_returncode = item.get("reference_returncode")
               if not case_id or case_id in base or status not in ("passed", "failed"):
                   raise SystemExit("Baseline has a missing/duplicate case ID or invalid result status")
+              if not isinstance(reference_hash, str) or len(reference_hash) != 64 or not isinstance(reference_returncode, int):
+                  raise SystemExit(f"Baseline lacks a complete GnuCOBOL oracle fingerprint: {case_id}")
               if status == "passed" and (
                   item.get("stdout_match") is not True or item.get("returncode_match") is not True
               ):
                   raise SystemExit(f"Baseline pass does not prove exact stdout and return-code match: {case_id}")
               base[case_id] = status == "passed"
+              baseline_reference[case_id] = (reference_hash, reference_returncode)
           baseline_score = sum(base.values())
           if (
               len(base) != 500
@@ -382,13 +388,20 @@ jobs:
               report = json.loads(report_path.read_text())
               report_rows = report.get("results", [])
               result_map = {}
+              reference_map = {}
               valid_rows = len(report_rows) == 500
               for item in report_rows:
                   case_id = item.get("id")
                   status = item.get("status")
+                  reference_hash = item.get("reference_stdout_sha256")
+                  reference_returncode = item.get("reference_returncode")
                   if not case_id or case_id in result_map or status not in ("passed", "failed"):
                       valid_rows = False
                       continue
+                  if not isinstance(reference_hash, str) or len(reference_hash) != 64 or not isinstance(reference_returncode, int):
+                      valid_rows = False
+                  else:
+                      reference_map[case_id] = (reference_hash, reference_returncode)
                   if status == "passed" and (
                       item.get("stdout_match") is not True or item.get("returncode_match") is not True
                   ):
@@ -411,7 +424,9 @@ jobs:
                   and report.get("archive_md5_expected") == "cbd974caed72b0836777dc2305928ed3"
                   and valid_rows
                   and len(result_map) == 500
+                  and len(reference_map) == 500
                   and set(result_map) == set(base)
+                  and set(reference_map) == set(base)
                   and report.get("passed") == candidate_score
                   and report.get("failed") == 500 - candidate_score
               )
@@ -421,16 +436,35 @@ jobs:
                   rows.append({**candidate, "complete": False, "eligible": False, "reason": reason})
                   continue
 
-              regressions = sorted(case for case in base if base[case] and not result_map[case])
-              new_passes = sorted(case for case in base if not base[case] and result_map[case])
+              oracle_drift = sorted(
+                  case for case in base if reference_map[case] != baseline_reference[case]
+              )
+              comparable_cases = sorted(set(base) - set(oracle_drift))
+              regressions = sorted(
+                  case for case in comparable_cases if base[case] and not result_map[case]
+              )
+              new_passes = sorted(
+                  case for case in comparable_cases if not base[case] and result_map[case]
+              )
+              oracle_stable = not oracle_drift
+              eligible_candidate = oracle_stable and len(new_passes) >= 1 and not regressions
+              reason = (
+                  "eligible" if eligible_candidate else
+                  f"GnuCOBOL oracle drift on {len(oracle_drift)} case(s)" if oracle_drift else
+                  "zero-regression/gain gate failed"
+              )
               rows.append({
                   **candidate,
                   "complete": True,
                   "score": candidate_score,
+                  "comparable_cases": len(comparable_cases),
+                  "oracle_stable": oracle_stable,
+                  "oracle_drift_count": len(oracle_drift),
+                  "oracle_drift_case_ids": oracle_drift,
                   "new_passes": len(new_passes),
                   "regressions": len(regressions),
-                  "eligible": len(new_passes) >= 1 and not regressions,
-                  "reason": "eligible" if len(new_passes) >= 1 and not regressions else "zero-regression/gain gate failed",
+                  "eligible": eligible_candidate,
+                  "reason": reason,
                   "candidate_translation_seconds": report.get("candidate_translation_seconds"),
                   "new_pass_case_ids": new_passes,
                   "regressed_case_ids": regressions,
@@ -451,6 +485,7 @@ jobs:
               "baseline_score": baseline_score,
               "baseline_tested": baseline.get("tested"),
               "baseline_translator_sha256": baseline_identity["translator_sha256"],
+              "oracle_stability_required": True,
               "candidates": rows,
               "incomplete_candidates": incomplete,
               "winner": eligible[0] if eligible and complete else None,
