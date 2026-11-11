@@ -5,7 +5,7 @@
 ## Baseline vigente de main
 
 - **261/500 (52,2%)** — [run 42844666181](https://github.com/orbitalronin94/cobol2py/actions/runs/42844666181).
-- SHA de main medido: \`17f219460fb7a3e75bd462cd3be73faa17a1a64b\`.
+- SHA medido: \`17f219460fb7a3e75bd462cd3be73faa17a1a64b\`. Main actual: \`4d89d51b658c2f721afe0affdeb1a5ad61c9b65f\` tras mergear #366; el blob del traductor sigue idéntico (\`b2b7605281141cb7c9df50611dfce18b52322c2c\`), por lo que 261/500 continúa siendo el baseline de código.
 - Corpus X-COBOL v2, MD5 esperado y verificado \`cbd974caed72b0836777dc2305928ed3\`.
 - Comparación exacta: bytes de stdout y código de retorno del proceso frente a GnuCOBOL.
 - Cuatro shards completos de 125 casos (\`skip=500,625,750,875\`), 500 IDs únicos, sin duplicados. Recuento: 63 + 54 + 71 + 73 = 261.
@@ -25,12 +25,18 @@
 
 La regresión de #359 es \`exec84-2-03eae98697\`. #362 conserva el mismo conjunto de aprobados, pero no aporta una ganancia nueva. Runs de candidato: [42839228540](https://github.com/orbitalronin94/cobol2py/actions/runs/42839228540) y [42839464387](https://github.com/orbitalronin94/cobol2py/actions/runs/42839464387). Ambos se compararon por los mismos 500 IDs, checksum, selección y definición de pase que el baseline actual; ninguno cumple el gate de promoción.
 
-## Candidato en curso: EVALUATE ALSO
+## Candidato EVALUATE ALSO — cerrado sin merge
 
-- [PR #365](https://github.com/orbitalronin94/cobol2py/pull/365) reconstruye la hipótesis de la semilla 10 sobre el main actual.
-- Reproductor externo: NIST \`NC225A.CBL\`, caso \`nc225a-a777e5ee71\`; seis sujetos y selecciones \`WHEN ... ALSO ...\` en varias líneas, con \`NOT\`, \`ANY\` y sujetos booleanos.
-- La suite completa del PR terminó verde en Python 3.10–3.13, Java, navegador y referencias/trazas GnuCOBOL: [run 43013196680](https://github.com/orbitalronin94/cobol2py/actions/runs/43013196680).
-- El smoke externo [run 43013196679](https://github.com/orbitalronin94/cobol2py/actions/runs/43013196679) y el holdout de 500 [run 43013196673](https://github.com/orbitalronin94/cobol2py/actions/runs/43013196673) estaban en curso al cerrar esta auditoría. No hay puntuación ni IDs de ganancia/regresión publicados todavía; no fusionar.
+- [PR #365](https://github.com/orbitalronin94/cobol2py/pull/365) pasó suite, smoke y holdout: [tests 43013196680](https://github.com/orbitalronin94/cobol2py/actions/runs/43013196680), [smoke 43013196679](https://github.com/orbitalronin94/cobol2py/actions/runs/43013196679), [holdout 43013196673](https://github.com/orbitalronin94/cobol2py/actions/runs/43013196673).
+- Puntuación bruta: 262/500 frente a 261/500. Ganancia aparente: `rock-paper-scissors-ad6321acf1`; regresiones brutas: ninguna.
+- No es una mejora válida: 12 casos cambiaron su oráculo GnuCOBOL entre ejecuciones (hash de stdout o código de retorno). El único pase aparente pertenece a uno de esos casos. Por tanto, no hay ganancia estable ni candidato elegible.
+- El reproductor motivador `nc225a-a777e5ee71` continúa fallando con la condición generada inválida. [PR #365](https://github.com/orbitalronin94/cobol2py/pull/365) se cerró sin merge.
+
+## Candidato INSPECT CHARACTERS — evaluación en curso
+
+- [PR #367](https://github.com/orbitalronin94/cobol2py/pull/367) corrige el operando especial `FOR ALL CHARACTERS` del caso `cbl0701v01statementinspect-31f6d501b1`.
+- Suite completa: [run 43022570224](https://github.com/orbitalronin94/cobol2py/actions/runs/43022570224), éxito en todos los jobs.
+- Smoke [run 43022570165](https://github.com/orbitalronin94/cobol2py/actions/runs/43022570165) y holdout externo [run 43022570154](https://github.com/orbitalronin94/cobol2py/actions/runs/43022570154) seguían en curso al redactar esta auditoría. Sin puntuación ni promoción todavía.
 
 ## Cohorte de 16 candidatos
 
