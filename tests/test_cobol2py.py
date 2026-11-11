@@ -4657,3 +4657,37 @@ class EnvironmentAndStandardErrorCandidateTests(unittest.TestCase):
         with patch.dict("os.environ", {"COBOL_TEST_VALUE": "abc"}):
             exec("\\n".join(translated or []), namespace)
         self.assertEqual(namespace["ws_value"], "abc   ")
+
+class UnstringPointerRegressionTests(unittest.TestCase):
+    def _translate_and_run(self, source_value, pointer_value):
+        variables = {
+            "WS-SOURCE": cobol2py.CobolVar(level=1, name="WS-SOURCE", pic="X(10)"),
+            "WS-FIRST": cobol2py.CobolVar(level=1, name="WS-FIRST", pic="X(3)"),
+            "WS-SECOND": cobol2py.CobolVar(level=1, name="WS-SECOND", pic="X(3)"),
+            "WS-PTR": cobol2py.CobolVar(level=1, name="WS-PTR", pic="9(2)"),
+        }
+        lines = cobol2py.translate_statement(
+            'UNSTRING WS-SOURCE DELIMITED BY "," INTO WS-FIRST WS-SECOND WITH POINTER WS-PTR',
+            set(),
+            variables,
+        )
+        namespace = {
+            "ws_source": source_value,
+            "ws_first": "   ",
+            "ws_second": "   ",
+            "ws_ptr": pointer_value,
+        }
+        exec("\\n".join(lines or []), namespace)
+        return namespace
+
+    def test_pointer_starts_at_current_position_and_excludes_final_pic_padding(self):
+        namespace = self._translate_and_run("X,A,B     ", 3)
+        self.assertEqual(namespace["ws_first"], "A  ")
+        self.assertEqual(namespace["ws_second"], "B  ")
+        self.assertEqual(namespace["ws_ptr"], 6)
+
+    def test_pointer_consumes_delimiter_after_last_receiver_when_more_source_remains(self):
+        namespace = self._translate_and_run("A,B,C     ", 1)
+        self.assertEqual(namespace["ws_first"], "A  ")
+        self.assertEqual(namespace["ws_second"], "B  ")
+        self.assertEqual(namespace["ws_ptr"], 5)
