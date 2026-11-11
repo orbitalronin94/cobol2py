@@ -52,6 +52,6 @@ El intento más reciente, [run 42844557468](https://github.com/orbitalronin94/co
 
 No se ha promovido ningún candidato de la cohorte de 30. La preparación sigue **bloqueada** hasta reconstruir las 30 ramas y ejecutar suite + holdout completo con oráculo estable.
 
-## Siguiente hipótesis
+## Siguiente paso
 
-**INSPECT TALLYING FOR ALL CHARACTERS.** El caso \`cbl0701v01statementinspect-31f6d501b1\` falla con \`NameError: characters\`; el código generado cuenta \`str(characters)\` en vez de sumar la longitud de \`WS-STR\`. El fuente reproducible es [CBL0701v01StatementInspect.cbl](https://github.com/mainframe-projects/CICS-Cobol/blob/master/CBL0701v01StatementInspect.cbl): \`WS-STR PIC X(15)\` y \`INSPECT WS-STR TALLYING WS-N FOR ALL CHARACTERS\`. La hipótesis es que \`CHARACTERS\` debe contar los 15 caracteres inspeccionados y acumularlos en el tally, sin alterar los otros formatos \`INSPECT ... TALLYING\`.
+Cerrar la evaluación de [PR #367](https://github.com/orbitalronin94/cobol2py/pull/367) con los 500 IDs y fingerprints del oráculo antes de abrir otro candidato INSPECT. No duplicar la familia CHARACTERS ni aceptar una puntuación bruta sin comparación estable.
