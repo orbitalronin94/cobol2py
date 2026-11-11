@@ -42,6 +42,13 @@ class FailureTournamentManifestTests(unittest.TestCase):
         self.assertEqual(MANIFEST["readiness"]["status"], "blocked")
         self.assertEqual(MANIFEST["last_tournament_attempt"]["eligible_candidates"], 0)
 
+    def test_reference_oracle_stability_is_required_for_ranking(self):
+        self.assertTrue(MANIFEST["acceptance"]["reference_oracle_stability_required"])
+        self.assertEqual(
+            MANIFEST["benchmark"]["reference_oracle_fields"],
+            ["reference_stdout_sha256", "reference_returncode"],
+        )
+
     def test_every_candidate_is_a_single_named_hypothesis(self):
         for candidate in MANIFEST["candidates"]:
             with self.subTest(seed=candidate["seed"]):
