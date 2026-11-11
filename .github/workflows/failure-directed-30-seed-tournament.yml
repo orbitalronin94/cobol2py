@@ -48,6 +48,7 @@ jobs:
               raise SystemExit("Tournament blocked: candidate branches must be rebuilt and audited before dispatch")
           PY
           candidates='[]'
+          candidate_shas='[]'
           while IFS=$'\t' read -r seed candidate_id branch; do
             encoded_branch=$(BRANCH="$branch" python -c 'import os,urllib.parse; print(urllib.parse.quote(os.environ["BRANCH"], safe="/"))')
             if ! ref=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$encoded_branch" 2>/dev/null); then
@@ -60,6 +61,11 @@ jobs:
               echo "::error::Seed $seed points to baseline unchanged ($branch)"
               exit 1
             fi
+            if jq -e --arg sha "$sha" 'index($sha) != null' <<<"$candidate_shas" >/dev/null; then
+              echo "::error::Two manifest seeds resolve to the same candidate SHA: $sha"
+              exit 1
+            fi
+            candidate_shas=$(jq -cn --argjson old "$candidate_shas" --arg sha "$sha" '$old + [$sha]')
             comparison=$(gh api "repos/$GITHUB_REPOSITORY/compare/$baseline_sha...$sha")
             comparison_status=$(jq -r '.status' <<<"$comparison")
             if [ "$comparison_status" != "ahead" ]; then
@@ -105,6 +111,25 @@ jobs:
       - uses: actions/checkout@v5
         with:
           ref: ${{ needs.discover.outputs.baseline_sha }}
+      - name: Record frozen baseline identity
+        env:
+          EXPECTED_SHA: ${{ needs.discover.outputs.baseline_sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/baseline"
+          actual_sha=$(git rev-parse HEAD)
+          test "$actual_sha" = "$EXPECTED_SHA"
+          python - <<'PY'
+          import hashlib, json, os, subprocess
+          from pathlib import Path
+          data = {
+              "sha": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+              "translator_sha256": hashlib.sha256(Path("cobol2py.py").read_bytes()).hexdigest(),
+          }
+          Path(os.environ["RUNNER_TEMP"], "baseline", "baseline-identity.json").write_text(
+              json.dumps(data, indent=2) + "\n", encoding="utf-8"
+          )
+          PY
       - name: Download pinned X-COBOL v2 archive
         run: curl --fail --location --retry 3 --retry-delay 2 "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" --output /tmp/COBOL_Files.zip
       - name: Build isolated benchmark image
@@ -153,6 +178,15 @@ jobs:
           set -euo pipefail
           mkdir -p benchmarks
           cp benchmark-harness/benchmarks/run_external_corpus.py benchmarks/run_external_corpus.py
+      - name: Verify candidate checkout SHA
+        id: checkout-sha
+        env:
+          EXPECTED_SHA: ${{ matrix.candidate.sha }}
+        run: |
+          set -euo pipefail
+          actual_sha=$(git rev-parse HEAD)
+          echo "actual_sha=$actual_sha" >> "$GITHUB_OUTPUT"
+          test "$actual_sha" = "$EXPECTED_SHA"
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -192,17 +226,22 @@ jobs:
           UNIT_OUTCOME: ${{ steps.unit.outcome }}
         run: |
           python - <<'PY'
-          import json, os
+          import hashlib, json, os, subprocess
           from pathlib import Path
+          actual_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          translator_sha256 = hashlib.sha256(Path("cobol2py.py").read_bytes()).hexdigest()
+          expected_sha = os.environ["EXPECTED_SHA"]
           data = {
               "seed": int(os.environ["SEED"]),
               "id": os.environ["CANDIDATE_ID"],
               "branch": os.environ["BRANCH"],
-              "sha": os.environ["EXPECTED_SHA"],
+              "sha": expected_sha,
+              "head_sha": actual_sha,
+              "translator_sha256": translator_sha256,
               "unit_tests": os.environ.get("UNIT_OUTCOME"),
-              "tests_passed": os.environ.get("UNIT_OUTCOME") == "success",
+              "tests_passed": os.environ.get("UNIT_OUTCOME") == "success" and actual_sha == expected_sha,
           }
-          Path(os.environ["RUNNER_TEMP"], "candidate-result.json").write_text(json.dumps(data, indent=2))
+          Path(os.environ["RUNNER_TEMP"], "candidate-result.json").write_text(json.dumps(data, indent=2) + "\n")
           PY
       - uses: actions/upload-artifact@v6
         if: always()
@@ -232,87 +271,219 @@ jobs:
         env:
           ARTIFACT_ROOT: ${{ runner.temp }}/artifacts
           CANDIDATES_JSON: ${{ needs.discover.outputs.candidates }}
+          BASELINE_SHA: ${{ needs.discover.outputs.baseline_sha }}
         run: |
           python - <<'PY'
           import json, os
           from pathlib import Path
+
           root = Path(os.environ["ARTIFACT_ROOT"])
           candidates = json.loads(os.environ["CANDIDATES_JSON"])
+          if len(candidates) != 30:
+              raise SystemExit(f"Expected 30 frozen candidates, found {len(candidates)}")
+
           baseline_files = list(root.glob("failure-tournament-baseline-*/external-corpus-report.json"))
           if len(baseline_files) != 1:
               raise SystemExit(f"Expected one baseline report, found {len(baseline_files)}")
-          baseline = json.loads(baseline_files[0].read_text())
-          if (baseline.get("tested") != 500 or baseline.get("target") != 500 or baseline.get("skip") != 500
-              or baseline.get("sample_complete") is not True or baseline.get("archive_md5_verified") is not True
+          baseline_path = baseline_files[0]
+          baseline = json.loads(baseline_path.read_text())
+          baseline_identity_path = baseline_path.parent / "baseline-identity.json"
+          if not baseline_identity_path.is_file():
+              raise SystemExit("Frozen baseline identity artifact is missing")
+          baseline_identity = json.loads(baseline_identity_path.read_text())
+          if baseline_identity.get("sha") != os.environ["BASELINE_SHA"]:
+              raise SystemExit("Baseline artifact SHA does not match the frozen main SHA")
+          if len(baseline_identity.get("translator_sha256", "")) != 64:
+              raise SystemExit("Baseline translator fingerprint is missing or malformed")
+
+          expected_selection = (
+              "Deterministic SHA-256 ordering of unique source contents; skip the first --skip "
+              "sources that compile and terminate under GnuCOBOL, then test the next --target eligible sources."
+          )
+          expected_pass_definition = (
+              "Exact stdout and process return-code match against a compiled GnuCOBOL executable."
+          )
+          if (
+              baseline.get("tested") != 500
+              or baseline.get("target") != 500
+              or baseline.get("skip") != 500
+              or baseline.get("sample_complete") is not True
+              or baseline.get("archive_md5_verified") is not True
               or baseline.get("archive_md5_expected") != "cbd974caed72b0836777dc2305928ed3"
-              or baseline.get("dataset_url") != "https://zenodo.org/records/14269462"):
+              or baseline.get("dataset_url") != "https://zenodo.org/records/14269462"
+              or baseline.get("selection") != expected_selection
+              or baseline.get("pass_definition") != expected_pass_definition
+          ):
               raise SystemExit("Frozen main baseline is incomplete or violates the pinned X-COBOL v2 contract")
-          base = {row["id"]: row["status"] == "passed" for row in baseline["results"]}
-          if len(base) != 500:
-              raise SystemExit(f"Baseline has {len(base)} unique case IDs, expected 500")
+
+          baseline_rows = baseline.get("results", [])
+          if len(baseline_rows) != 500:
+              raise SystemExit(f"Baseline has {len(baseline_rows)} result rows, expected 500")
+          base = {}
+          for item in baseline_rows:
+              case_id = item.get("id")
+              status = item.get("status")
+              if not case_id or case_id in base or status not in ("passed", "failed"):
+                  raise SystemExit("Baseline has a missing/duplicate case ID or invalid result status")
+              if status == "passed" and (
+                  item.get("stdout_match") is not True or item.get("returncode_match") is not True
+              ):
+                  raise SystemExit(f"Baseline pass does not prove exact stdout and return-code match: {case_id}")
+              base[case_id] = status == "passed"
+          baseline_score = sum(base.values())
+          if (
+              len(base) != 500
+              or baseline.get("passed") != baseline_score
+              or baseline.get("failed") != 500 - baseline_score
+          ):
+              raise SystemExit("Baseline counts do not agree with its 500 unique case results")
+
           rows = []
+          incomplete = []
           for candidate in candidates:
               folders = list(root.glob(f"failure-tournament-seed-{candidate['seed']}-*/"))
               if len(folders) != 1:
-                  rows.append({**candidate, "eligible": False, "reason": "missing or duplicate artifact"})
+                  reason = "missing or duplicate candidate artifact"
+                  incomplete.append({"seed": candidate["seed"], "id": candidate["id"], "reason": reason})
+                  rows.append({**candidate, "complete": False, "eligible": False, "reason": reason})
                   continue
+
               folder = folders[0]
               identity_path = folder / "candidate-result.json"
               report_path = folder / "candidate" / "external-corpus-report.json"
               if not identity_path.is_file():
-                  rows.append({**candidate, "eligible": False, "reason": "missing identity/test result"})
+                  reason = "missing identity/test result"
+                  incomplete.append({"seed": candidate["seed"], "id": candidate["id"], "reason": reason})
+                  rows.append({**candidate, "complete": False, "eligible": False, "reason": reason})
                   continue
+
               identity = json.loads(identity_path.read_text())
-              if identity.get("sha") != candidate["sha"] or not identity.get("tests_passed"):
-                  rows.append({**candidate, "eligible": False, "reason": "wrong SHA or unit tests failed"})
+              identity_ok = (
+                  identity.get("seed") == candidate["seed"]
+                  and identity.get("id") == candidate["id"]
+                  and identity.get("branch") == candidate["branch"]
+                  and identity.get("sha") == candidate["sha"]
+                  and identity.get("head_sha") == candidate["sha"]
+                  and len(identity.get("translator_sha256", "")) == 64
+                  and identity.get("tests_passed") is True
+              )
+              if not identity_ok:
+                  reason = "candidate identity/SHA mismatch or full unit suite failed"
+                  incomplete.append({"seed": candidate["seed"], "id": candidate["id"], "reason": reason})
+                  rows.append({**candidate, "complete": False, "eligible": False, "reason": reason})
                   continue
+
               if not report_path.is_file():
-                  rows.append({**candidate, "eligible": False, "reason": "benchmark report missing"})
+                  reason = "complete 500-case benchmark report missing"
+                  incomplete.append({"seed": candidate["seed"], "id": candidate["id"], "reason": reason})
+                  rows.append({**candidate, "complete": False, "eligible": False, "reason": reason})
                   continue
+
               report = json.loads(report_path.read_text())
-              result_map = {row["id"]: row["status"] == "passed" for row in report.get("results", [])}
-              contract_keys = ("dataset_url", "archive_md5_expected", "target", "skip", "selection", "pass_definition")
-              if any(report.get(key) != baseline.get(key) for key in contract_keys):
-                  rows.append({**candidate, "eligible": False, "reason": "corpus, selection, or options differ from baseline"})
+              report_rows = report.get("results", [])
+              result_map = {}
+              valid_rows = len(report_rows) == 500
+              for item in report_rows:
+                  case_id = item.get("id")
+                  status = item.get("status")
+                  if not case_id or case_id in result_map or status not in ("passed", "failed"):
+                      valid_rows = False
+                      continue
+                  if status == "passed" and (
+                      item.get("stdout_match") is not True or item.get("returncode_match") is not True
+                  ):
+                      valid_rows = False
+                  result_map[case_id] = status == "passed"
+
+              contract_keys = (
+                  "dataset_url", "archive_md5_expected", "target", "skip",
+                  "selection", "pass_definition",
+              )
+              contract_matches = all(report.get(key) == baseline.get(key) for key in contract_keys)
+              candidate_score = sum(result_map.values())
+              report_complete = (
+                  contract_matches
+                  and report.get("tested") == 500
+                  and report.get("target") == 500
+                  and report.get("skip") == 500
+                  and report.get("sample_complete") is True
+                  and report.get("archive_md5_verified") is True
+                  and report.get("archive_md5_expected") == "cbd974caed72b0836777dc2305928ed3"
+                  and valid_rows
+                  and len(result_map) == 500
+                  and set(result_map) == set(base)
+                  and report.get("passed") == candidate_score
+                  and report.get("failed") == 500 - candidate_score
+              )
+              if not report_complete:
+                  reason = "incomplete/non-comparable holdout, checksum, denominator, IDs, or exact-match contract"
+                  incomplete.append({"seed": candidate["seed"], "id": candidate["id"], "reason": reason})
+                  rows.append({**candidate, "complete": False, "eligible": False, "reason": reason})
                   continue
-              if (report.get("tested") != 500 or report.get("target") != 500 or report.get("skip") != 500
-                  or report.get("sample_complete") is not True or report.get("archive_md5_verified") is not True
-                  or len(result_map) != 500 or set(result_map) != set(base)):
-                  rows.append({**candidate, "eligible": False, "reason": "incomplete or non-comparable holdout"})
-                  continue
+
               regressions = sorted(case for case in base if base[case] and not result_map[case])
               new_passes = sorted(case for case in base if not base[case] and result_map[case])
               rows.append({
-                  **candidate, "score": sum(result_map.values()), "new_passes": len(new_passes),
-                  "regressions": len(regressions), "eligible": len(new_passes) >= 1 and not regressions,
+                  **candidate,
+                  "complete": True,
+                  "score": candidate_score,
+                  "new_passes": len(new_passes),
+                  "regressions": len(regressions),
+                  "eligible": len(new_passes) >= 1 and not regressions,
                   "reason": "eligible" if len(new_passes) >= 1 and not regressions else "zero-regression/gain gate failed",
                   "candidate_translation_seconds": report.get("candidate_translation_seconds"),
-                  "new_pass_case_ids": new_passes, "regressed_case_ids": regressions,
+                  "new_pass_case_ids": new_passes,
+                  "regressed_case_ids": regressions,
               })
-          eligible = sorted((r for r in rows if r.get("eligible")),
-                            key=lambda r: (-r["new_passes"], r["regressions"], r.get("candidate_translation_seconds") or 1e99))
+
+          eligible = sorted(
+              (item for item in rows if item.get("complete") and item.get("eligible")),
+              key=lambda item: (
+                  -item["new_passes"],
+                  item["regressions"],
+                  item.get("candidate_translation_seconds") or 1e99,
+              ),
+          )
+          complete = len(candidates) == 30 and not incomplete
           summary = {
-              "baseline_sha": "${{ needs.discover.outputs.baseline_sha }}",
-              "baseline_score": baseline.get("passed"),
+              "complete": complete,
+              "baseline_sha": os.environ["BASELINE_SHA"],
+              "baseline_score": baseline_score,
               "baseline_tested": baseline.get("tested"),
+              "baseline_translator_sha256": baseline_identity["translator_sha256"],
               "candidates": rows,
-              "winner": eligible[0] if eligible else None,
+              "incomplete_candidates": incomplete,
+              "winner": eligible[0] if eligible and complete else None,
               "promotion": "not automatic",
           }
           out = Path(os.environ["GITHUB_WORKSPACE"], "failure-tournament-summary.json")
-          out.write_text(json.dumps(summary, indent=2))
-          print(json.dumps({k:v for k,v in summary.items() if k != "candidates"}, indent=2))
+          out.write_text(json.dumps(summary, indent=2) + "\n")
+          print(json.dumps({key: value for key, value in summary.items() if key != "candidates"}, indent=2))
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as handle:
-              handle.write(f"## 30-seed tournament\n\nBaseline: **{baseline.get('passed')}/500**\n\n")
-              handle.write("| Seed | Candidate | Score | New passes | Regressions | Eligible |\n|---:|---|---:|---:|---:|---|\n")
-              for row in sorted(rows, key=lambda r: r["seed"]):
-                  handle.write(f"| {row['seed']} | {row['id']} | {row.get('score','—')} | {row.get('new_passes','—')} | {row.get('regressions','—')} | {row.get('eligible',False)} |\n")
-              if eligible:
-                  winner = eligible[0]
-                  handle.write(f"\n### Winner: seed {winner['seed']} — {winner['id']} ({winner['score']}/500; +{winner['new_passes']}; 0 regressions)\n")
+              handle.write(f"## 30-seed tournament\n\nComplete: **{complete}**\n\n")
+              handle.write(f"Baseline: **{baseline_score}/500**\n\n")
+              handle.write("| Seed | Candidate | Score | New passes | Regressions | Complete | Eligible |\n|---:|---|---:|---:|---:|---:|---:|\n")
+              for item in sorted(rows, key=lambda value: value["seed"]):
+                  handle.write(
+                      f"| {item['seed']} | {item['id']} | {item.get('score','—')} | "
+                      f"{item.get('new_passes','—')} | {item.get('regressions','—')} | "
+                      f"{item.get('complete', False)} | {item.get('eligible', False)} |\n"
+                  )
+              if summary["winner"]:
+                  winner = summary["winner"]
+                  handle.write(
+                      f"\n### Winner: seed {winner['seed']} — {winner['id']} "
+                      f"({winner['score']}/500; +{winner['new_passes']}; 0 regressions)\n"
+                  )
+              elif not complete:
+                  handle.write("\n**Tournament incomplete. No ranking or winner is valid.**\n")
               else:
-                  handle.write("\n**No eligible winner.** No candidate met the gain and zero-regression gates.\n")
+                  handle.write("\n**No eligible winner.** All 30 candidates completed, but none met the gain and zero-regression gates.\n")
               handle.write("\nPromotion is manual; this workflow never merges candidates or changes the benchmark record.\n")
+          if not complete:
+              raise SystemExit(
+                  f"Refusing to publish a complete 30-seed result: {len(incomplete)} candidate(s) lack verified full evidence"
+              )
           PY
       - uses: actions/upload-artifact@v6
         if: always()

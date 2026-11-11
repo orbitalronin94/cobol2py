@@ -87,7 +87,7 @@
       "seed": 10,
       "id": "syntax-evaluate-also",
       "hypothesis": "Parse EVALUATE ALSO multi-subject WHEN tuples.",
-      "branch": "experiment-failure-seed/10-syntax-evaluate-also"
+      "branch": "experiment-failure-seed/10-syntax-evaluate-also-rebuilt"
     },
     {
       "seed": 11,
@@ -252,22 +252,40 @@
   "readiness": {
     "status": "blocked",
     "reasons": [
-      "All 30 candidate refs exist, but all 30 branch heads compare as diverged from the audited current main SHA c80f7f2252e0637fde3a987f7991cbc6bdd98b5e.",
-      "Seeds 11-15 have no translator implementation change and no tests change relative to current main.",
-      "Other candidate branches are also stale; sampled histories do not match several declared hypotheses (including seeds 1-6 and 9-10).",
-      "All 30 branches must be rebuilt from current main with one isolated translator hypothesis, a minimal reproducer/regression test, and a passing full suite before dispatch."
+      "29 of 30 manifest candidate heads still compare as diverged from current main SHA 17f219460fb7a3e75bd462cd3be73faa17a1a64b; seed 10 now points to the rebuilt EVALUATE ALSO candidate PR #365.",
+      "Seeds 11-15 still have no translator implementation change and no tests change relative to current main.",
+      "The remaining stale branches need a fresh hypothesis audit; earlier sampled diffs did not match several declared hypotheses, including seeds 1-6 and 9.",
+      "Do not dispatch until all 30 branches are distinct, ahead of the frozen main SHA, each contains an isolated translator change plus a minimal reproducer, and every candidate has a green full suite and complete checksum-verified 500-case holdout."
     ],
-    "audit_date": "2026-11-10",
-    "audit_main_sha": "c80f7f2252e0637fde3a987f7991cbc6bdd98b5e",
+    "audit_date": "2026-11-11",
+    "audit_main_sha": "17f219460fb7a3e75bd462cd3be73faa17a1a64b",
     "candidate_branch_refs": 30,
-    "candidate_branches_diverged": 30,
+    "candidate_branches_diverged": 29,
+    "candidate_branches_ahead": [
+      10
+    ],
     "candidates_without_translator_or_tests": [
       11,
       12,
       13,
       14,
       15
-    ]
+    ],
+    "rebuilt_candidate_prs": [
+      {
+        "seed": 10,
+        "id": "syntax-evaluate-also",
+        "branch": "experiment-failure-seed/10-syntax-evaluate-also-rebuilt",
+        "pr": 365,
+        "head_sha": "7aa52ae026349d076e4b04d0b160d658f95ac0e1",
+        "unit_suite_run": 43013196680,
+        "unit_suite_conclusion": "success",
+        "holdout_run": 43013196673,
+        "holdout_status": "in_progress",
+        "pr_branch": "fix/evaluate-also-multi-subject"
+      }
+    ],
+    "latest_main_holdout_run": 42844666181
   },
   "prior_16_candidate_tournament": {
     "source_run": 42268813592,
@@ -301,5 +319,50 @@
       ]
     },
     "note": "Historical 16-candidate artifacts already cover several adjacent hypotheses; no candidate passed the zero-regression gate. Do not duplicate these stale snapshots."
+  },
+  "current_baseline": {
+    "score": 261,
+    "denominator": 500,
+    "percent": 52.2,
+    "source_run": 42844666181,
+    "source_sha": "17f219460fb7a3e75bd462cd3be73faa17a1a64b",
+    "base_ref": "main",
+    "kind": "current_main_verified",
+    "dataset": "X-COBOL v2",
+    "dataset_url": "https://zenodo.org/records/14269462",
+    "archive_md5_expected": "cbd974caed72b0836777dc2305928ed3",
+    "archive_md5_verified": true,
+    "unique_case_ids": 500,
+    "exact_comparison": "stdout bytes and process return code against GnuCOBOL",
+    "shards": [
+      {
+        "skip": 500,
+        "target": 125,
+        "tested": 125,
+        "passed": 63,
+        "failed": 62
+      },
+      {
+        "skip": 625,
+        "target": 125,
+        "tested": 125,
+        "passed": 54,
+        "failed": 71
+      },
+      {
+        "skip": 750,
+        "target": 125,
+        "tested": 125,
+        "passed": 71,
+        "failed": 54
+      },
+      {
+        "skip": 875,
+        "target": 125,
+        "tested": 125,
+        "passed": 73,
+        "failed": 52
+      }
+    ]
   }
 }
