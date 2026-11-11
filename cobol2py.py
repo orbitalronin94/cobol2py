@@ -3704,10 +3704,15 @@ def translate_statement(
         source_expr = translate_literal(source, variable_map)
         operand_expr = translate_literal(tally_operand, variable_map)
         counter_expr = normalize_data_reference(counter, variable_map)
-        value_expr = (
-            f"int({counter_expr}) + (str({source_expr}).count(str({operand_expr})) "
-            f"if str({operand_expr}) else 0)"
-        )
+        if tally_operand.upper() == "CHARACTERS":
+            # CHARACTERS is a COBOL tallying figurative operand, not a data name.
+            # Count the complete inspected item, including fixed-width trailing spaces.
+            value_expr = f"int({counter_expr}) + len(str({source_expr}))"
+        else:
+            value_expr = (
+                f"int({counter_expr}) + (str({source_expr}).count(str({operand_expr})) "
+                f"if str({operand_expr}) else 0)"
+            )
         return [emit_assignment(counter, value_expr, variable_map)]
 
     # ALTER changes the destination of a later GO TO to the altered paragraph.
