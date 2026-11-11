@@ -87,7 +87,7 @@
       "seed": 10,
       "id": "syntax-evaluate-also",
       "hypothesis": "Parse EVALUATE ALSO multi-subject WHEN tuples.",
-      "branch": "fix/evaluate-also-multi-subject"
+      "branch": "experiment-failure-seed/10-syntax-evaluate-also-rebuilt"
     },
     {
       "seed": 11,
@@ -275,13 +275,14 @@
       {
         "seed": 10,
         "id": "syntax-evaluate-also",
-        "branch": "fix/evaluate-also-multi-subject",
+        "branch": "experiment-failure-seed/10-syntax-evaluate-also-rebuilt",
         "pr": 365,
         "head_sha": "7aa52ae026349d076e4b04d0b160d658f95ac0e1",
         "unit_suite_run": 43013196680,
         "unit_suite_conclusion": "success",
         "holdout_run": 43013196673,
-        "holdout_status": "in_progress"
+        "holdout_status": "in_progress",
+        "pr_branch": "fix/evaluate-also-multi-subject"
       }
     ],
     "latest_main_holdout_run": 42844666181
