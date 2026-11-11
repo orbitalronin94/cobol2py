@@ -3797,6 +3797,11 @@ def translate_statement(
                             delimiter_exprs.append(translate_literal(delimiter_part, variable_map))
                     delimiter_expr = delimiter_exprs[0] if delimiter_exprs else "''"
                     source_expr = translate_literal(source, variable_map)
+                    pointer_expr = normalize_data_reference(pointer_match.group(1), variable_map) if pointer_match else None
+                    pointer_start = f"max(int({pointer_expr}) - 1, 0)" if pointer_expr else None
+                    pointer_supported = bool(pointer_expr and len(delimiter_exprs) == 1 and not all_delimiters)
+                    if pointer_supported:
+                        source_expr = f"str({source_expr})[{pointer_start}:]"
                     if len(delimiter_exprs) > 1:
                         delimiter_list = "[" + ", ".join(delimiter_exprs) + "]"
                         suffix = r")+" if all_delimiters else r")"
@@ -3842,6 +3847,15 @@ def translate_statement(
                     if tally_match:
                         tally = normalize_data_reference(tally_match.group(1), variable_map)
                         lines.append(f"{tally} = min(len(_cobol_unstring_parts), {len(targets)})")
+                    if pointer_supported:
+                        lines.extend([
+                            f"_cobol_unstring_filled = min(len(_cobol_unstring_parts), {len(targets)})",
+                            "_cobol_unstring_delimiters_consumed = min(_cobol_unstring_filled, max(len(_cobol_unstring_parts) - 1, 0))",
+                            "_cobol_unstring_consumed = sum(len(_part) for _part in _cobol_unstring_parts[:_cobol_unstring_filled])",
+                            "if _cobol_unstring_filled and _cobol_unstring_delimiters_consumed < _cobol_unstring_filled:",
+                            "    _cobol_unstring_consumed -= len(_cobol_unstring_parts[_cobol_unstring_filled - 1]) - len(_cobol_unstring_parts[_cobol_unstring_filled - 1].rstrip())",
+                            f"{pointer_expr} = {pointer_start} + _cobol_unstring_consumed + _cobol_unstring_delimiters_consumed * len(str({delimiter_expr})) + 1",
+                        ])
                     return lines
         return [f"# UNSTRING no traducido: {s}"]
 
