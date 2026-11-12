@@ -262,7 +262,8 @@
       "Seeds 11-15 still have no translator implementation change and no tests change relative to the audited main.",
       "The remaining stale branches need a fresh hypothesis audit; sampled diffs do not reliably match several declared hypotheses.",
       "Do not dispatch until all 30 branches are distinct and rebuilt from current main, each contains one isolated translator hypothesis and reproducer, and each has a green full suite plus complete checksum-verified 500-case holdout.",
-      "The tournament must compare reference_stdout_sha256 and reference_returncode per case; any GnuCOBOL oracle drift makes that candidate ineligible."
+      "The tournament must compare reference_stdout_sha256 and reference_returncode per case; any GnuCOBOL oracle drift makes that candidate ineligible.",
+      "The stored 261/500 baseline artifact predates full oracle-fingerprint capture and lacks reference hashes/return codes on 28 translator-failure rows; regenerate main baseline after the runner fix is merged."
     ],
     "audit_date": "2026-11-11",
     "audit_main_sha": "4d89d51b658c2f721afe0affdeb1a5ad61c9b65f",
@@ -394,6 +395,33 @@
     ],
     "main_sha_at_audit": "4d89d51b658c2f721afe0affdeb1a5ad61c9b65f",
     "translator_blob_sha": "b2b7605281141cb7c9df50611dfce18b52322c2c",
-    "note": "The measured run is at source_sha 17f219460fb7a3e75bd462cd3be73faa17a1a64b. Main advanced to 4d89d51b658c2f721afe0affdeb1a5ad61c9b65f only through the infrastructure/documentation merge #366; the translator blob is unchanged, so 261/500 remains the current code baseline."
+    "note": "The measured run is at source_sha 17f219460fb7a3e75bd462cd3be73faa17a1a64b. Main advanced to 4d89d51b658c2f721afe0affdeb1a5ad61c9b65f only through the infrastructure/documentation merge #366; the translator blob is unchanged, so 261/500 remains the current code baseline. The stored report also lacks reference stdout fingerprints for 28 translator-failure rows; PR #368 records the oracle before translation and requires a fresh main holdout before the 30-seed workflow can use it.",
+    "reference_fingerprint_coverage": {
+      "complete_cases": 472,
+      "missing_cases": 28,
+      "missing_case_ids": []
+    }
+  },
+  "additional_candidate_evaluations": {
+    "inspect_characters": {
+      "pr": 367,
+      "branch": "fix/inspect-all-characters",
+      "head_sha": "0983a12c23b7fb619d4c9623bb0badb81f257c0f",
+      "unit_suite_run": 43022570224,
+      "unit_suite_conclusion": "success",
+      "smoke_run": 43022570165,
+      "smoke_conclusion": "success",
+      "holdout_run": 43022570154,
+      "holdout_conclusion": "success",
+      "raw_score": 261,
+      "denominator": 500,
+      "new_pass_case_ids": [],
+      "regressed_case_ids": [],
+      "oracle_drift_count": 12,
+      "motivating_case": "cbl0701v01statementinspect-31f6d501b1",
+      "motivating_case_status": "failed_stdout_encoding_mismatch",
+      "motivating_case_note": "CHARACTERS tally is 15 and return code matches, but GnuCOBOL emits CP850 byte 0xDA while Python emits UTF-8 replacement bytes EF BF BD.",
+      "decision": "not_eligible_no_gain_and_oracle_drift"
+    }
   }
 }
