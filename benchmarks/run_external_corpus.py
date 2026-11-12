@@ -376,6 +376,13 @@ def main() -> int:
                     if args.diagnostics:
                         preserve_exclusion_diagnostics(args.output, case_root, source, result, compiled)
                     continue
+                # Record the complete GnuCOBOL oracle before attempting translation.
+                # Translator timeouts/syntax errors are still tested cases and must retain
+                # the reference fingerprint for later casewise candidate comparisons.
+                result["reference_returncode"] = reference["returncode"]
+                result["reference_stdout_length"] = reference["stdout_length"]
+                result["reference_stdout_sha256"] = reference["stdout_sha256"]
+                result["reference_stdout_truncated"] = reference["stdout_truncated"]
                 if eligible_seen < args.skip:
                     eligible_seen += 1
                     report["eligible_skipped"] = eligible_seen
