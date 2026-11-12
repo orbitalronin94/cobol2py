@@ -325,17 +325,22 @@ jobs:
               case_id = item.get("id")
               status = item.get("status")
               reference_hash = item.get("reference_stdout_sha256")
+              reference_length = item.get("reference_stdout_length")
               reference_returncode = item.get("reference_returncode")
               if not case_id or case_id in base or status not in ("passed", "failed"):
                   raise SystemExit("Baseline has a missing/duplicate case ID or invalid result status")
-              if not isinstance(reference_hash, str) or len(reference_hash) != 64 or not isinstance(reference_returncode, int):
+              if (
+                  not isinstance(reference_hash, str) or len(reference_hash) != 64
+                  or not isinstance(reference_length, int) or reference_length < 0
+                  or not isinstance(reference_returncode, int)
+              ):
                   raise SystemExit(f"Baseline lacks a complete GnuCOBOL oracle fingerprint: {case_id}")
               if status == "passed" and (
                   item.get("stdout_match") is not True or item.get("returncode_match") is not True
               ):
                   raise SystemExit(f"Baseline pass does not prove exact stdout and return-code match: {case_id}")
               base[case_id] = status == "passed"
-              baseline_reference[case_id] = (reference_hash, reference_returncode)
+              baseline_reference[case_id] = (reference_hash, reference_length, reference_returncode)
           baseline_score = sum(base.values())
           if (
               len(base) != 500
@@ -394,14 +399,19 @@ jobs:
                   case_id = item.get("id")
                   status = item.get("status")
                   reference_hash = item.get("reference_stdout_sha256")
+                  reference_length = item.get("reference_stdout_length")
                   reference_returncode = item.get("reference_returncode")
                   if not case_id or case_id in result_map or status not in ("passed", "failed"):
                       valid_rows = False
                       continue
-                  if not isinstance(reference_hash, str) or len(reference_hash) != 64 or not isinstance(reference_returncode, int):
+                  if (
+                      not isinstance(reference_hash, str) or len(reference_hash) != 64
+                      or not isinstance(reference_length, int) or reference_length < 0
+                      or not isinstance(reference_returncode, int)
+                  ):
                       valid_rows = False
                   else:
-                      reference_map[case_id] = (reference_hash, reference_returncode)
+                      reference_map[case_id] = (reference_hash, reference_length, reference_returncode)
                   if status == "passed" and (
                       item.get("stdout_match") is not True or item.get("returncode_match") is not True
                   ):
