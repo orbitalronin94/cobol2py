@@ -46,7 +46,7 @@ class FailureTournamentManifestTests(unittest.TestCase):
         self.assertTrue(MANIFEST["acceptance"]["reference_oracle_stability_required"])
         self.assertEqual(
             MANIFEST["benchmark"]["reference_oracle_fields"],
-            ["reference_stdout_sha256", "reference_returncode"],
+            ["reference_stdout_sha256", "reference_stdout_length", "reference_returncode"],
         )
 
     def test_every_candidate_is_a_single_named_hypothesis(self):
