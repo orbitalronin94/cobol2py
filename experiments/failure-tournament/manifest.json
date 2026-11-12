@@ -18,6 +18,7 @@
     "casewise": true,
     "reference_oracle_fields": [
       "reference_stdout_sha256",
+      "reference_stdout_length",
       "reference_returncode"
     ]
   },
