@@ -9,6 +9,7 @@
 - Corpus X-COBOL v2, MD5 esperado y verificado \`cbd974caed72b0836777dc2305928ed3\`.
 - Comparación exacta: bytes de stdout y código de retorno del proceso frente a GnuCOBOL.
 - Cuatro shards completos de 125 casos (\`skip=500,625,750,875\`), 500 IDs únicos, sin duplicados. Recuento: 63 + 54 + 71 + 73 = 261.
+- El artifact histórico 42844666181 no contiene fingerprints del oráculo en 28 filas donde el traductor termina en timeout/error de sintaxis: el runner ejecuta GnuCOBOL primero, pero antes solo copiaba hash/longitud/código de retorno cuando la traducción llegaba a ejecutar Python. La rama #368 corrige esto y exige fingerprints completos para los 500 IDs; el baseline debe regenerarse desde main después de integrar el arreglo.
 
 ## Récord histórico separado
 
@@ -32,11 +33,12 @@ La regresión de #359 es \`exec84-2-03eae98697\`. #362 conserva el mismo conjunt
 - No es una mejora válida: 12 casos cambiaron su oráculo GnuCOBOL entre ejecuciones (hash de stdout o código de retorno). El único pase aparente pertenece a uno de esos casos. Por tanto, no hay ganancia estable ni candidato elegible.
 - El reproductor motivador `nc225a-a777e5ee71` continúa fallando con la condición generada inválida. [PR #365](https://github.com/orbitalronin94/cobol2py/pull/365) se cerró sin merge.
 
-## Candidato INSPECT CHARACTERS — evaluación en curso
+## Candidato INSPECT CHARACTERS — sin ganancia exacta
 
-- [PR #367](https://github.com/orbitalronin94/cobol2py/pull/367) corrige el operando especial `FOR ALL CHARACTERS` del caso `cbl0701v01statementinspect-31f6d501b1`.
-- Suite completa: [run 43022570224](https://github.com/orbitalronin94/cobol2py/actions/runs/43022570224), éxito en todos los jobs.
-- Smoke [run 43022570165](https://github.com/orbitalronin94/cobol2py/actions/runs/43022570165) y holdout externo [run 43022570154](https://github.com/orbitalronin94/cobol2py/actions/runs/43022570154) seguían en curso al redactar esta auditoría. Sin puntuación ni promoción todavía.
+- [PR #367](https://github.com/orbitalronin94/cobol2py/pull/367) pasó suite [43022570224](https://github.com/orbitalronin94/cobol2py/actions/runs/43022570224), smoke [43022570165](https://github.com/orbitalronin94/cobol2py/actions/runs/43022570165) y holdout completo [43022570154](https://github.com/orbitalronin94/cobol2py/actions/runs/43022570154).
+- Resultado: **261/500**, 0 ganancias y 0 regresiones por los mismos 500 IDs y hashes de fuente; no supera el gate de +1.
+- El caso motivador `cbl0701v01statementinspect-31f6d501b1` ya no lanza `NameError`: el tally de caracteres da 15 y el código de retorno coincide. Aun así falla por bytes de salida: GnuCOBOL emite el byte CP850 `0xDA` en «NÚMERO», mientras Python produce `EF BF BD` por reemplazar el byte de origen no UTF-8. La diferencia es de codificación del fuente/salida, no del tally.
+- También aparecen 12 IDs con deriva del oráculo entre baseline y candidata (la misma cohorte observada en #365). No se promueve; #367 queda abierto sin merge mientras se separa y prueba la hipótesis de codificación.
 
 ## Cohorte de 16 candidatos
 
@@ -48,10 +50,10 @@ El intento más reciente, [run 42844557468](https://github.com/orbitalronin94/co
 - Las 30 ramas existen, pero las 30 están divergidas del main actual `4d89d51b658c2f721afe0affdeb1a5ad61c9b65f`. La semilla 10 también está divergida: su rama reconstruida conserva como merge-base el SHA anterior `17f219460fb7a3e75bd462cd3be73faa17a1a64b`.
 - Las semillas 11–15 carecen de cambios de traductor y tests/reproducers. Las demás necesitan reconstrucción aislada desde el main actual y auditoría de que el diff implementa la hipótesis declarada.
 - El workflow continúa manual (`workflow_dispatch`); no se ha lanzado un torneo de 30 semillas. La integración disponible permite inspeccionar Actions, pero no despachar el workflow directamente.
-- La comparación por estado de pase no basta: el oráculo GnuCOBOL también puede variar entre ejecuciones. [PR #368](https://github.com/orbitalronin94/cobol2py/pull/368) añade la comparación por caso de `reference_stdout_sha256` y `reference_returncode`; cualquier deriva invalida la elegibilidad aunque la puntuación bruta suba.
+- La comparación por estado de pase no basta: el oráculo GnuCOBOL también puede variar entre ejecuciones. [PR #368](https://github.com/orbitalronin94/cobol2py/pull/368) exige `reference_stdout_sha256`, longitud de stdout y `reference_returncode` por cada ID; cualquier deriva invalida la elegibilidad aunque la puntuación bruta suba. Además, el workflow de main volverá a medir cuando cambie el runner o su imagen Docker.
 
 No se ha promovido ningún candidato de la cohorte de 30. La preparación sigue **bloqueada** hasta reconstruir las 30 ramas y ejecutar suite + holdout completo con oráculo estable.
 
-## Siguiente paso
+## Siguiente hipótesis
 
-Cerrar la evaluación de [PR #367](https://github.com/orbitalronin94/cobol2py/pull/367) con los 500 IDs y fingerprints del oráculo antes de abrir otro candidato INSPECT. No duplicar la familia CHARACTERS ni aceptar una puntuación bruta sin comparación estable.
+Separar la codificación del fuente COBOL de la codificación de stdout. El caso `cbl0701v01statementinspect-31f6d501b1` contiene un literal con byte CP850 `0xDA`; el lector UTF-8 actual lo convierte en U+FFFD y Python emite tres bytes UTF-8 en lugar del byte original. Crear un candidato aislado de detección/preservación de codificación (sin mezclarlo con INSPECT), añadir un reproducer binario CP850 y exigir el holdout completo con oráculo estable.
