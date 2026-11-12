@@ -183,10 +183,10 @@ class ExternalBenchmarkProcessTests(unittest.TestCase):
             self.assertTrue(report["sample_complete"])
             self.assertEqual(len(report["results"]), 5)
             self.assertEqual(report["eligible_skipped"], 0)
-            expected_reference_hash = hashlib.sha256(b"reference\\n").hexdigest()
+            expected_reference_hash = hashlib.sha256(b"reference\n").hexdigest()
             self.assertTrue(all(
                 item.get("reference_returncode") == 0
-                and item.get("reference_stdout_length") == len(b"reference\\n")
+                and item.get("reference_stdout_length") == len(b"reference\n")
                 and item.get("reference_stdout_sha256") == expected_reference_hash
                 and item.get("reference_stdout_truncated") is False
                 for item in report["results"]
