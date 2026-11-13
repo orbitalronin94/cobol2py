@@ -10,21 +10,21 @@ import cobol2py
 class InspectCharactersCp850Tests(unittest.TestCase):
     def test_inspect_characters_and_cp850_display_match_original_bytes(self):
         source_bytes = (
-            b"IDENTIFICATION DIVISION.\\n"
-            b"PROGRAM-ID. CP850-INSPECT.\\n"
-            b"DATA DIVISION.\\n"
-            b"WORKING-STORAGE SECTION.\\n"
-            b"01 WS-STR PIC X(15) VALUE 'AEDCILIDVALDV'.\\n"
-            b"01 WS-N PIC 9(2) VALUE 0.\\n"
-            b"PROCEDURE DIVISION.\\n"
-            b"MAIN.\\n"
-            b"    INSPECT WS-STR TALLYING WS-N FOR ALL CHARACTERS.\\n"
-            b"    DISPLAY \\"N\\xDAmero caracteres: \\" WS-N.\\n"
-            b"    STOP RUN.\\n"
+            b"IDENTIFICATION DIVISION.\n"
+            b"PROGRAM-ID. CP850-INSPECT.\n"
+            b"DATA DIVISION.\n"
+            b"WORKING-STORAGE SECTION.\n"
+            b"01 WS-STR PIC X(15) VALUE 'AEDCILIDVALDV'.\n"
+            b"01 WS-N PIC 9(2) VALUE 0.\n"
+            b"PROCEDURE DIVISION.\n"
+            b"MAIN.\n"
+            b"    INSPECT WS-STR TALLYING WS-N FOR ALL CHARACTERS.\n"
+            b'    DISPLAY "N\xdaMERO caracteres: " WS-N.\n'
+            b"    STOP RUN.\n"
         )
         source, encoding = cobol2py.decode_cobol_source(source_bytes)
         self.assertEqual(encoding, "cp850")
-        self.assertIn("NÚmero caracteres", source)
+        self.assertIn("NÚMERO caracteres", source)
 
         program = cobol2py.parse_cobol(source, source_format="free")
         generated = cobol2py.apply_cobol_output_encoding(
@@ -44,11 +44,11 @@ class InspectCharactersCp850Tests(unittest.TestCase):
             result.returncode, 0,
             result.stderr.decode("cp850", errors="replace"),
         )
-        self.assertEqual(result.stdout, b"N\\xDAMERO caracteres: 15\\n")
+        self.assertEqual(result.stdout, b"N\xdaMERO caracteres: 15\n")
 
     def test_utf8_source_keeps_default_utf8_output(self):
         source, encoding = cobol2py.decode_cobol_source(
-            'IDENTIFICATION DIVISION.\\nDISPLAY "HOLA".\\n'.encode("utf-8")
+            'IDENTIFICATION DIVISION.\nDISPLAY "HOLA".\n'.encode("utf-8")
         )
         self.assertEqual(encoding, "utf-8")
         self.assertIn("HOLA", source)
