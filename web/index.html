@@ -224,12 +224,14 @@ from typing import Optional
 
 RE_DECIMAL_LITERAL = re.compile(r"[+-]?\d+(?:\.\d+)?")
 
+
 def decode_cobol_source(data: bytes) -> tuple[str, str]:
     """Decode UTF-8 COBOL sources, falling back to ISO-8859-1 when the source is not UTF-8."""
     try:
         return data.decode("utf-8-sig"), "utf-8"
     except UnicodeDecodeError:
         return data.decode("latin-1"), "latin-1"
+
 
 def apply_cobol_output_encoding(output: str, encoding: str) -> str:
     """Make generated DISPLAY output use the source code page when it is non-UTF-8."""
@@ -253,7 +255,8 @@ def apply_cobol_output_encoding(output: str, encoding: str) -> str:
         "        _cobol_stream.reconfigure(encoding='latin-1', errors='replace')",
         "",
     ]
-    return "\\n".join(lines) + ("\\n" if output.endswith("\\n") else "")
+    return "\n".join(lines) + ("\n" if output.endswith("\n") else "")
+
 
 # ============================================================================
 # 1. PREPROCESADO
@@ -6385,7 +6388,7 @@ def main() -> int:
         print(f"No existe: {args.input}", file=sys.stderr)
         return 1
 
-    source = args.input.read_text(encoding="utf-8", errors="replace")
+    source, source_encoding = decode_cobol_source(args.input.read_bytes())
     prog = parse_cobol(
         source,
         source_format=args.source_format,
@@ -6406,7 +6409,7 @@ def main() -> int:
     if args.strict and diagnostics:
         return 2
 
-    output = emit_java(prog) if args.lang == "java" else emit_python(prog)
+    output = emit_java(prog) if args.lang == "java" else apply_cobol_output_encoding(emit_python(prog), source_encoding)
 
     if args.out:
         args.out.write_text(output, encoding="utf-8")
