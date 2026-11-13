@@ -23,15 +23,15 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-RE_DECIMAL_LITERAL = re.compile(r"[+-]?\\d+(?:\\.\\d+)?")
+RE_DECIMAL_LITERAL = re.compile(r"[+-]?\d+(?:\.\d+)?")
 
 
 def decode_cobol_source(data: bytes) -> tuple[str, str]:
-    """Decode UTF-8 COBOL sources, falling back to the common IBM CP850 code page."""
+    """Decode UTF-8 COBOL sources, falling back to ISO-8859-1 when the source is not UTF-8."""
     try:
         return data.decode("utf-8-sig"), "utf-8"
     except UnicodeDecodeError:
-        return data.decode("cp850"), "cp850"
+        return data.decode("latin-1"), "latin-1"
 
 
 def apply_cobol_output_encoding(output: str, encoding: str) -> str:
@@ -39,7 +39,7 @@ def apply_cobol_output_encoding(output: str, encoding: str) -> str:
     normalized = encoding.lower().replace("_", "-")
     if normalized in {"utf-8", "utf8"}:
         return output
-    if normalized != "cp850":
+    if normalized != "latin-1":
         raise ValueError(f"Unsupported COBOL output encoding: {encoding}")
 
     lines = output.splitlines()
@@ -53,7 +53,7 @@ def apply_cobol_output_encoding(output: str, encoding: str) -> str:
         "import sys as _cobol_sys",
         "for _cobol_stream in (_cobol_sys.stdout, _cobol_sys.stderr):",
         "    if hasattr(_cobol_stream, 'reconfigure'):",
-        "        _cobol_stream.reconfigure(encoding='cp850', errors='replace')",
+        "        _cobol_stream.reconfigure(encoding='latin-1', errors='replace')",
         "",
     ]
     return "\\n".join(lines) + ("\\n" if output.endswith("\\n") else "")
