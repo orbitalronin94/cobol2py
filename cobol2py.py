@@ -23,7 +23,40 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-RE_DECIMAL_LITERAL = re.compile(r"[+-]?\d+(?:\.\d+)?")
+RE_DECIMAL_LITERAL = re.compile(r"[+-]?\\d+(?:\\.\\d+)?")
+
+
+def decode_cobol_source(data: bytes) -> tuple[str, str]:
+    """Decode UTF-8 COBOL sources, falling back to the common IBM CP850 code page."""
+    try:
+        return data.decode("utf-8-sig"), "utf-8"
+    except UnicodeDecodeError:
+        return data.decode("cp850"), "cp850"
+
+
+def apply_cobol_output_encoding(output: str, encoding: str) -> str:
+    """Make generated DISPLAY output use the source code page when it is non-UTF-8."""
+    normalized = encoding.lower().replace("_", "-")
+    if normalized in {"utf-8", "utf8"}:
+        return output
+    if normalized != "cp850":
+        raise ValueError(f"Unsupported COBOL output encoding: {encoding}")
+
+    lines = output.splitlines()
+    insert_at = 1
+    if len(lines) > 1 and lines[1].strip() == '"""':
+        for index in range(2, len(lines)):
+            if lines[index].strip() == '"""':
+                insert_at = index + 1
+                break
+    lines[insert_at:insert_at] = [
+        "import sys as _cobol_sys",
+        "for _cobol_stream in (_cobol_sys.stdout, _cobol_sys.stderr):",
+        "    if hasattr(_cobol_stream, 'reconfigure'):",
+        "        _cobol_stream.reconfigure(encoding='cp850', errors='replace')",
+        "",
+    ]
+    return "\\n".join(lines) + ("\\n" if output.endswith("\\n") else "")
 
 
 # ============================================================================
@@ -3704,10 +3737,15 @@ def translate_statement(
         source_expr = translate_literal(source, variable_map)
         operand_expr = translate_literal(tally_operand, variable_map)
         counter_expr = normalize_data_reference(counter, variable_map)
-        value_expr = (
-            f"int({counter_expr}) + (str({source_expr}).count(str({operand_expr})) "
-            f"if str({operand_expr}) else 0)"
-        )
+        if tally_operand.upper() == "CHARACTERS":
+            # CHARACTERS is a COBOL tallying figurative operand, not a data name.
+            # Count the complete inspected item, including fixed-width trailing spaces.
+            value_expr = f"int({counter_expr}) + len(str({source_expr}))"
+        else:
+            value_expr = (
+                f"int({counter_expr}) + (str({source_expr}).count(str({operand_expr})) "
+                f"if str({operand_expr}) else 0)"
+            )
         return [emit_assignment(counter, value_expr, variable_map)]
 
     # ALTER changes the destination of a later GO TO to the altered paragraph.
@@ -6151,7 +6189,7 @@ def main() -> int:
         print(f"No existe: {args.input}", file=sys.stderr)
         return 1
 
-    source = args.input.read_text(encoding="utf-8", errors="replace")
+    source, source_encoding = decode_cobol_source(args.input.read_bytes())
     prog = parse_cobol(
         source,
         source_format=args.source_format,
@@ -6172,7 +6210,7 @@ def main() -> int:
     if args.strict and diagnostics:
         return 2
 
-    output = emit_java(prog) if args.lang == "java" else emit_python(prog)
+    output = emit_java(prog) if args.lang == "java" else apply_cobol_output_encoding(emit_python(prog), source_encoding)
 
     if args.out:
         args.out.write_text(output, encoding="utf-8")
