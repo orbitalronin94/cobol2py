@@ -56,7 +56,7 @@ def apply_cobol_output_encoding(output: str, encoding: str) -> str:
         "        _cobol_stream.reconfigure(encoding='latin-1', errors='replace')",
         "",
     ]
-    return "\\n".join(lines) + ("\\n" if output.endswith("\\n") else "")
+    return "\n".join(lines) + ("\n" if output.endswith("\n") else "")
 
 
 # ============================================================================
