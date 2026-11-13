@@ -15,7 +15,12 @@
     "skip": 500,
     "target": 500,
     "comparison": "exact stdout bytes and process return code against GnuCOBOL",
-    "casewise": true
+    "casewise": true,
+    "reference_oracle_fields": [
+      "reference_stdout_sha256",
+      "reference_stdout_length",
+      "reference_returncode"
+    ]
   },
   "acceptance": {
     "unit_tests_required": true,
@@ -26,7 +31,8 @@
       "new_passes_desc",
       "regressions_asc",
       "runtime_asc"
-    ]
+    ],
+    "reference_oracle_stability_required": true
   },
   "candidates": [
     {
@@ -252,18 +258,18 @@
   "readiness": {
     "status": "blocked",
     "reasons": [
-      "29 of 30 manifest candidate heads still compare as diverged from current main SHA 17f219460fb7a3e75bd462cd3be73faa17a1a64b; seed 10 now points to the rebuilt EVALUATE ALSO candidate PR #365.",
-      "Seeds 11-15 still have no translator implementation change and no tests change relative to current main.",
-      "The remaining stale branches need a fresh hypothesis audit; earlier sampled diffs did not match several declared hypotheses, including seeds 1-6 and 9.",
-      "Do not dispatch until all 30 branches are distinct, ahead of the frozen main SHA, each contains an isolated translator change plus a minimal reproducer, and every candidate has a green full suite and complete checksum-verified 500-case holdout."
+      "All 30 manifest branches exist but all 30 diverge from current main SHA 4d89d51b658c2f721afe0affdeb1a5ad61c9b65f; seed 10 still has merge base 17f219460fb7a3e75bd462cd3be73faa17a1a64b.",
+      "Seeds 11-15 still have no translator implementation change and no tests change relative to the audited main.",
+      "The remaining stale branches need a fresh hypothesis audit; sampled diffs do not reliably match several declared hypotheses.",
+      "Do not dispatch until all 30 branches are distinct and rebuilt from current main, each contains one isolated translator hypothesis and reproducer, and each has a green full suite plus complete checksum-verified 500-case holdout.",
+      "The tournament must compare reference_stdout_sha256 and reference_returncode per case; any GnuCOBOL oracle drift makes that candidate ineligible.",
+      "The stored 261/500 baseline artifact predates full oracle-fingerprint capture and lacks reference hashes/return codes on 28 translator-failure rows; regenerate main baseline after the runner fix is merged."
     ],
     "audit_date": "2026-11-11",
-    "audit_main_sha": "17f219460fb7a3e75bd462cd3be73faa17a1a64b",
+    "audit_main_sha": "4d89d51b658c2f721afe0affdeb1a5ad61c9b65f",
     "candidate_branch_refs": 30,
-    "candidate_branches_diverged": 29,
-    "candidate_branches_ahead": [
-      10
-    ],
+    "candidate_branches_diverged": 30,
+    "candidate_branches_ahead": [],
     "candidates_without_translator_or_tests": [
       11,
       12,
@@ -277,12 +283,35 @@
         "id": "syntax-evaluate-also",
         "branch": "experiment-failure-seed/10-syntax-evaluate-also-rebuilt",
         "pr": 365,
+        "pr_state": "closed",
+        "merged": false,
         "head_sha": "7aa52ae026349d076e4b04d0b160d658f95ac0e1",
         "unit_suite_run": 43013196680,
         "unit_suite_conclusion": "success",
         "holdout_run": 43013196673,
-        "holdout_status": "in_progress",
-        "pr_branch": "fix/evaluate-also-multi-subject"
+        "holdout_conclusion": "success",
+        "raw_score": 262,
+        "denominator": 500,
+        "apparent_gain_case_ids": [
+          "rock-paper-scissors-ad6321acf1"
+        ],
+        "raw_regression_case_ids": [],
+        "oracle_drift_case_ids": [
+          "cob-simpleinventory-6af451140a",
+          "collatz-6e335e6eda",
+          "intrdate-0517c3d81c",
+          "pgm-f2e440bd10",
+          "progcob03-dd6c82c5dc",
+          "progcob17-6100f77c6a",
+          "progcobtempodecasaestruturado-930b4ab770",
+          "pullydis-9e45af6c84",
+          "randombingo-e50339cc12",
+          "randomnumbers-d8fc7ee85b",
+          "rock-paper-scissors-ad6321acf1",
+          "rolldice-08e3de1a0e"
+        ],
+        "motivating_case_still_fails": "nc225a-a777e5ee71",
+        "decision": "closed_unmerged_inconclusive_oracle_drift"
       }
     ],
     "latest_main_holdout_run": 42844666181
@@ -363,6 +392,36 @@
         "passed": 73,
         "failed": 52
       }
-    ]
+    ],
+    "main_sha_at_audit": "4d89d51b658c2f721afe0affdeb1a5ad61c9b65f",
+    "translator_blob_sha": "b2b7605281141cb7c9df50611dfce18b52322c2c",
+    "note": "The measured run is at source_sha 17f219460fb7a3e75bd462cd3be73faa17a1a64b. Main advanced to 4d89d51b658c2f721afe0affdeb1a5ad61c9b65f only through the infrastructure/documentation merge #366; the translator blob is unchanged, so 261/500 remains the current code baseline. The stored report also lacks reference stdout fingerprints for 28 translator-failure rows; PR #368 records the oracle before translation and requires a fresh main holdout before the 30-seed workflow can use it.",
+    "reference_fingerprint_coverage": {
+      "complete_cases": 472,
+      "missing_cases": 28,
+      "missing_case_ids": []
+    }
+  },
+  "additional_candidate_evaluations": {
+    "inspect_characters": {
+      "pr": 367,
+      "branch": "fix/inspect-all-characters",
+      "head_sha": "0983a12c23b7fb619d4c9623bb0badb81f257c0f",
+      "unit_suite_run": 43022570224,
+      "unit_suite_conclusion": "success",
+      "smoke_run": 43022570165,
+      "smoke_conclusion": "success",
+      "holdout_run": 43022570154,
+      "holdout_conclusion": "success",
+      "raw_score": 261,
+      "denominator": 500,
+      "new_pass_case_ids": [],
+      "regressed_case_ids": [],
+      "oracle_drift_count": 12,
+      "motivating_case": "cbl0701v01statementinspect-31f6d501b1",
+      "motivating_case_status": "failed_stdout_encoding_mismatch",
+      "motivating_case_note": "CHARACTERS tally is 15 and return code matches, but GnuCOBOL emits CP850 byte 0xDA while Python emits UTF-8 replacement bytes EF BF BD.",
+      "decision": "not_eligible_no_gain_and_oracle_drift"
+    }
   }
 }
