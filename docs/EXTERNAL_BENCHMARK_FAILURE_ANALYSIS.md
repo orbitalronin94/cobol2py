@@ -531,12 +531,12 @@ En #371, #372 y #377 también deriva rock-paper-scissors-ad6321acf1. No se cuent
 
 - PR [#349](https://github.com/orbitalronin94/cobol2py/pull/349) está integrada; el workflow de 30 semillas sigue siendo manual.
 - PR [#368](https://github.com/orbitalronin94/cobol2py/pull/368) integró los fingerprints del oráculo antes de la traducción, también en errores/timeouts del traductor.
-- El workflow de 30 semillas compara ahora hash/longitud/código de retorno del oráculo por cada ID. La preparación sigue bloqueada: las 30 ramas existen, pero las 30 están divergidas respecto a main. Las semillas 11–15 solo muestran cambios de workflow/documentación, sin implementación del traductor ni tests/reproducers. No se ha lanzado el torneo.
+- El workflow de 30 semillas compara hash/longitud/código de retorno del oráculo y exige el mismo SHA-256 del fuente por cada ID; además rechaza stdout del oráculo truncado. La preparación sigue bloqueada: las 30 ramas existen, pero las 30 están divergidas respecto a main. Las semillas 11–15 solo muestran cambios de workflow/documentación, sin implementación del traductor ni tests/reproducers. No se ha lanzado el torneo.
 - El intento de la cohorte de 16 candidatas [#43578366416](https://github.com/orbitalronin94/cobol2py/actions/runs/43578366416) falló en discovery: esperaba 15 PRs de manifiesto y encontró 10. No arrancó jobs de candidatos ni produjo ranking.
 
 ### Siguiente trabajo
 
 1. Congelar reloj y aleatoriedad del entorno GnuCOBOL, o generar una sola referencia por caso y reutilizar exactamente esos bytes/códigos en baseline y candidatas. La opción elegida debe conservar el protocolo y quedar versionada; no se deben aceptar fingerprints diferentes.
-2. Corregir el agregador de current-main-pr-tournament.yml: antes comparaba solo booleanos de pase y podía aceptar una falsa ganancia aunque cambiara el oráculo. La revisión actual añade fingerprints, hashes de fuente, identidad de checkout y rechazo de deriva.
+2. La revisión [#379](https://github.com/orbitalronin94/cobol2py/pull/379) corrige los agregadores: current-main-pr-tournament.yml compara fingerprints del oráculo, hashes de fuente, identidad de checkout y rechaza deriva; el torneo de 30 semillas exige además hashes de fuente idénticos y fingerprints no truncados.
 3. Repetir #375 en una comparación con oráculo idéntico para los 500 IDs. Solo si mantiene sq206a-3536dcf7c2, no pierde ningún caso y no existe deriva, será elegible.
 4. Reconstruir las 30 semillas desde el main actual, una hipótesis y un reproducer por rama, sin reciclar diffs divergidos.
