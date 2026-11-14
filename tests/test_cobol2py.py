@@ -4707,3 +4707,37 @@ MAIN.
                 os.chdir(previous)
         self.assertEqual(output.getvalue(), "", generated)
         self.assertEqual(written, "ABCD\n", generated)
+
+
+class EvaluateNegatedIdentifierSelectionTests(unittest.TestCase):
+    def test_evaluate_when_not_identifier_compiles_and_selects_unequal_branch(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. EVALUATE-NOT-SELECTION.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            '01 WS-LEFT PIC X VALUE "A".',
+            '01 WS-RIGHT PIC X VALUE "B".',
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "    EVALUATE WS-LEFT",
+            "        WHEN NOT WS-RIGHT",
+            '            DISPLAY "DIFFERENT".',
+            "        WHEN OTHER",
+            '            DISPLAY "SAME".',
+            "    END-EVALUATE.",
+        ])
+
+        generated = cobol2py.emit_python(
+            cobol2py.parse_cobol(source, source_format="free")
+        )
+        compile(generated, "<evaluate-not-selection>", "exec")
+        namespace = {"__name__": "not_main"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "DIFFERENT\\n", generated)
