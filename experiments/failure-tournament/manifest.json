@@ -217,21 +217,61 @@
     }
   ],
   "latest_main_remeasurement": {
-    "score": 258,
+    "score": 263,
     "denominator": 500,
-    "percent": 51.6,
-    "source_run": 42272058313,
-    "baseline_sha": "3485bbd36daee6c3c2319d204bf33fddac6a32a4",
+    "percent": 52.6,
+    "source_run": 43578366403,
+    "source_sha": "f2d944c42fa8d6855effa7d97936db843476b9bd",
+    "baseline_sha": "f2d944c42fa8d6855effa7d97936db843476b9bd",
+    "current_main_sha": "f5b9534ddbbc13d3b30c00afd12c1611f7dece47",
+    "base_ref": "main",
+    "kind": "current_main_verified",
     "corpus": "X-COBOL v2",
     "skip": 500,
     "target": 500,
     "archive_md5_expected": "cbd974caed72b0836777dc2305928ed3",
     "archive_md5_verified": true,
     "sample_complete": true,
+    "unique_case_ids": 500,
     "comparison": "exact stdout bytes and process return code against GnuCOBOL",
-    "note": "Same 500 case IDs as the 257/500 main holdout. The only score difference was exec84-2-03eae98697: translator timeout at 20.003376s in the earlier run, versus a completed translation at 19.109681s here. Treat 257/258 as timeout-boundary variance, not a model improvement. This 258/500 report is the main remeasurement from run 42272058313; run 42266714599 is an experimental-branch result and is not a main baseline.",
-    "current_main_sha": "c80f7f2252e0637fde3a987f7991cbc6bdd98b5e",
-    "current_main_note": "Audited 2026-11-10. Main is two commits ahead of the frozen baseline; changes are workflow hardening and documentation/manifest/test updates only. Translator implementation is unchanged. The sole 257→258 case difference is exec84-2-03eae98697, a translator-timeout boundary variance."
+    "reference_fingerprint_coverage": {
+      "complete_cases": 500,
+      "missing_cases": 0,
+      "missing_case_ids": []
+    },
+    "shards": [
+      {
+        "skip": 500,
+        "target": 125,
+        "tested": 125,
+        "passed": 63,
+        "failed": 62
+      },
+      {
+        "skip": 625,
+        "target": 125,
+        "tested": 125,
+        "passed": 54,
+        "failed": 71
+      },
+      {
+        "skip": 750,
+        "target": 125,
+        "tested": 125,
+        "passed": 73,
+        "failed": 52
+      },
+      {
+        "skip": 875,
+        "target": 125,
+        "tested": 125,
+        "passed": 73,
+        "failed": 52
+      }
+    ],
+    "main_sha_at_audit": "f5b9534ddbbc13d3b30c00afd12c1611f7dece47",
+    "translator_blob_sha": "3e8a08ae175e6fd1a5d8daba8d3a77ca19dd5061",
+    "note": "Run 43578366403 completed four fixed 125-case shards at 263/500 with all 500 GnuCOBOL fingerprints. It evaluated translator code at f2d944c42fa8d6855effa7d97936db843476b9bd, the merge of PR #370. Current main f5b9534ddbbc13d3b30c00afd12c1611f7dece47 is one documentation-only commit ahead; README.md is the only changed file. The translator blob is unchanged, so 263/500 is the verified current-code baseline. This does not replace the separate 250/500 holdout-record ranking baseline."
   },
   "last_tournament_attempt": {
     "run": 42272058313,
@@ -258,15 +298,16 @@
   "readiness": {
     "status": "blocked",
     "reasons": [
-      "All 30 manifest branches exist but all 30 diverge from current main SHA 4d89d51b658c2f721afe0affdeb1a5ad61c9b65f; seed 10 still has merge base 17f219460fb7a3e75bd462cd3be73faa17a1a64b.",
-      "Seeds 11-15 still have no translator implementation change and no tests change relative to the audited main.",
-      "The remaining stale branches need a fresh hypothesis audit; sampled diffs do not reliably match several declared hypotheses.",
-      "Do not dispatch until all 30 branches are distinct and rebuilt from current main, each contains one isolated translator hypothesis and reproducer, and each has a green full suite plus complete checksum-verified 500-case holdout.",
-      "The tournament must compare reference_stdout_sha256 and reference_returncode per case; any GnuCOBOL oracle drift makes that candidate ineligible.",
-      "The stored 261/500 baseline artifact predates full oracle-fingerprint capture and lacks reference hashes/return codes on 28 translator-failure rows; regenerate main baseline after the runner fix is merged."
+      "All 30 manifest candidate branches exist, but all 30 compare as diverged from current main SHA f5b9534ddbbc13d3b30c00afd12c1611f7dece47; none is an ahead-only candidate based on this frozen main.",
+      "Seeds 11-15 have no translator implementation change and no tests/reproducer change; their sampled diffs contain workflow/documentation files only.",
+      "Seeds 1-10 and 16-30 are stale/diverged by between 196 and 677 commits and require fresh isolated rebuilds; several sampled diffs include obsolete workflow changes unrelated to their declared hypothesis.",
+      "The new individual PR cohort #371-#378 completed full 500-case runs, but none is eligible: every candidate has GnuCOBOL oracle drift on 8-9 IDs. PR #375 has one stable new pass (sq206a-3536dcf7c2) and no stable regression, but the global 500-case oracle-stability gate still rejects it.",
+      "The current-main PR tournament aggregator is being hardened to compare per-ID reference stdout hash, stdout length, return code and source SHA; do not use its old pass-only aggregator for promotion.",
+      "The 30-seed workflow is manual and refuses to dispatch unless readiness is ready, all branches are ahead-only and each has an isolated translator change, tests, a full suite and a complete 500-case report.",
+      "Do not dispatch until all 30 branches are rebuilt from the same current main SHA and every candidate has stable GnuCOBOL oracle fingerprints across all 500 IDs."
     ],
-    "audit_date": "2026-11-11",
-    "audit_main_sha": "4d89d51b658c2f721afe0affdeb1a5ad61c9b65f",
+    "audit_date": "2026-11-14",
+    "audit_main_sha": "f5b9534ddbbc13d3b30c00afd12c1611f7dece47",
     "candidate_branch_refs": 30,
     "candidate_branches_diverged": 30,
     "candidate_branches_ahead": [],
@@ -314,7 +355,14 @@
         "decision": "closed_unmerged_inconclusive_oracle_drift"
       }
     ],
-    "latest_main_holdout_run": 42844666181
+    "latest_main_holdout_run": 43578366403,
+    "candidate_branch_audit": {
+      "compared_against_main": "f5b9534ddbbc13d3b30c00afd12c1611f7dece47",
+      "all_30_exist": true,
+      "all_30_diverged": true,
+      "ahead_only_candidates": 0,
+      "seed_11_to_15_change_summary": "workflow/documentation only; no cobol2py.py, ronin/ or tests changes"
+    }
   },
   "prior_16_candidate_tournament": {
     "source_run": 42268813592,
@@ -347,14 +395,25 @@
         "smp001-ccd7110609"
       ]
     },
-    "note": "Historical 16-candidate artifacts already cover several adjacent hypotheses; no candidate passed the zero-regression gate. Do not duplicate these stale snapshots."
+    "note": "Historical 16-candidate artifacts already cover several adjacent hypotheses; no candidate passed the zero-regression gate. Do not duplicate these stale snapshots.",
+    "latest_attempt": {
+      "run": 43578366416,
+      "status": "failure",
+      "stage": "discover",
+      "source_sha": "f2d944c42fa8d6855effa7d97936db843476b9bd",
+      "expected_open_manifest_candidates": 15,
+      "found_open_manifest_candidates": 10,
+      "candidate_jobs_started": false,
+      "candidate_artifacts": 0,
+      "note": "The 16-candidate workflow failed at discovery because the manifest expected 15 unmerged experiment PRs but only 10 matching open PRs were found. No candidate holdouts or ranking were produced."
+    }
   },
   "current_baseline": {
-    "score": 261,
+    "score": 263,
     "denominator": 500,
-    "percent": 52.2,
-    "source_run": 42844666181,
-    "source_sha": "17f219460fb7a3e75bd462cd3be73faa17a1a64b",
+    "percent": 52.6,
+    "source_run": 43578366403,
+    "source_sha": "f2d944c42fa8d6855effa7d97936db843476b9bd",
     "base_ref": "main",
     "kind": "current_main_verified",
     "dataset": "X-COBOL v2",
@@ -382,8 +441,8 @@
         "skip": 750,
         "target": 125,
         "tested": 125,
-        "passed": 71,
-        "failed": 54
+        "passed": 73,
+        "failed": 52
       },
       {
         "skip": 875,
@@ -393,14 +452,14 @@
         "failed": 52
       }
     ],
-    "main_sha_at_audit": "4d89d51b658c2f721afe0affdeb1a5ad61c9b65f",
-    "translator_blob_sha": "b2b7605281141cb7c9df50611dfce18b52322c2c",
-    "note": "The measured run is at source_sha 17f219460fb7a3e75bd462cd3be73faa17a1a64b. Main advanced to 4d89d51b658c2f721afe0affdeb1a5ad61c9b65f only through the infrastructure/documentation merge #366; the translator blob is unchanged, so 261/500 remains the current code baseline. The stored report also lacks reference stdout fingerprints for 28 translator-failure rows; PR #368 records the oracle before translation and requires a fresh main holdout before the 30-seed workflow can use it.",
+    "main_sha_at_audit": "f5b9534ddbbc13d3b30c00afd12c1611f7dece47",
+    "translator_blob_sha": "3e8a08ae175e6fd1a5d8daba8d3a77ca19dd5061",
     "reference_fingerprint_coverage": {
-      "complete_cases": 472,
-      "missing_cases": 28,
+      "complete_cases": 500,
+      "missing_cases": 0,
       "missing_case_ids": []
-    }
+    },
+    "note": "Verified current translator baseline: 263/500. Run SHA f2d944c42fa8d6855effa7d97936db843476b9bd; current main f5b9534ddbbc13d3b30c00afd12c1611f7dece47 differs only in README.md. Four complete shards sum to 263. Historical 257/500 and the earlier 258/500 timeout-boundary remeasurement remain separate."
   },
   "additional_candidate_evaluations": {
     "inspect_characters": {
@@ -423,5 +482,260 @@
       "motivating_case_note": "CHARACTERS tally is 15 and return code matches, but GnuCOBOL emits CP850 byte 0xDA while Python emits UTF-8 replacement bytes EF BF BD.",
       "decision": "not_eligible_no_gain_and_oracle_drift"
     }
-  }
+  },
+  "historical_main_remeasurement": {
+    "score": 258,
+    "denominator": 500,
+    "percent": 51.6,
+    "source_run": 42272058313,
+    "baseline_sha": "3485bbd36daee6c3c2319d204bf33fddac6a32a4",
+    "corpus": "X-COBOL v2",
+    "skip": 500,
+    "target": 500,
+    "archive_md5_expected": "cbd974caed72b0836777dc2305928ed3",
+    "archive_md5_verified": true,
+    "sample_complete": true,
+    "comparison": "exact stdout bytes and process return code against GnuCOBOL",
+    "note": "Same 500 case IDs as the 257/500 main holdout. The only score difference was exec84-2-03eae98697: translator timeout at 20.003376s in the earlier run, versus a completed translation at 19.109681s here. Treat 257/258 as timeout-boundary variance, not a model improvement. This 258/500 report is the main remeasurement from run 42272058313; run 42266714599 is an experimental-branch result and is not a main baseline.",
+    "current_main_sha": "c80f7f2252e0637fde3a987f7991cbc6bdd98b5e",
+    "current_main_note": "Audited 2026-11-10. Main is two commits ahead of the frozen baseline; changes are workflow hardening and documentation/manifest/test updates only. Translator implementation is unchanged. The sole 257→258 case difference is exec84-2-03eae98697, a translator-timeout boundary variance."
+  },
+  "recent_individual_candidate_evaluations": [
+    {
+      "pr": 371,
+      "branch": "fix/read-fixed-width-sequential",
+      "head_sha": "0b0fe21530f232f12ccd9aa0c83edf14eeafd044",
+      "unit_suite_run": 43579763976,
+      "smoke_run": 43579763984,
+      "holdout_run": 43579763992,
+      "score": 262,
+      "denominator": 500,
+      "raw_new_pass_case_ids": [],
+      "raw_regressed_case_ids": [
+        "rock-paper-scissors-ad6321acf1"
+      ],
+      "oracle_drift_count": 9,
+      "oracle_drift_case_ids": [
+        "rolldice-08e3de1a0e",
+        "randomnumbers-d8fc7ee85b",
+        "date1-f31ce2734d",
+        "collatz-6e335e6eda",
+        "randombingo-e50339cc12",
+        "intrdate-0517c3d81c",
+        "cob-simpleinventory-6af451140a",
+        "rock-paper-scissors-ad6321acf1",
+        "pullydis-9e45af6c84"
+      ],
+      "decision": "ineligible_oracle_drift_no_stable_gain"
+    },
+    {
+      "pr": 372,
+      "branch": "fix/unstring-tallying-increment",
+      "head_sha": "55c25b6af4d8c0616acb3b7abc9eabd09eb5ce8e",
+      "unit_suite_run": 43579792749,
+      "smoke_run": 43579792687,
+      "holdout_run": 43579792756,
+      "score": 261,
+      "denominator": 500,
+      "raw_new_pass_case_ids": [],
+      "raw_regressed_case_ids": [
+        "exec84-2-03eae98697",
+        "rock-paper-scissors-ad6321acf1"
+      ],
+      "stable_regressed_case_ids": [
+        "exec84-2-03eae98697"
+      ],
+      "oracle_drift_count": 9,
+      "oracle_drift_case_ids": [
+        "rolldice-08e3de1a0e",
+        "randomnumbers-d8fc7ee85b",
+        "date1-f31ce2734d",
+        "collatz-6e335e6eda",
+        "randombingo-e50339cc12",
+        "intrdate-0517c3d81c",
+        "cob-simpleinventory-6af451140a",
+        "rock-paper-scissors-ad6321acf1",
+        "pullydis-9e45af6c84"
+      ],
+      "decision": "ineligible_stable_regression_and_oracle_drift"
+    },
+    {
+      "pr": 373,
+      "branch": "fix/write-from-literal",
+      "head_sha": "e07289a2f4780f25d29541561677d219040beddb",
+      "unit_suite_run": 43579826731,
+      "smoke_run": 43579826791,
+      "holdout_run": 43579827016,
+      "score": 259,
+      "denominator": 500,
+      "raw_new_pass_case_ids": [],
+      "raw_regressed_case_ids": [
+        "ix212a-46ac798dce",
+        "st147a-b72ef771f7",
+        "st137a-94aa1a51a4",
+        "st144a-954867eef4"
+      ],
+      "stable_regressed_case_ids": [
+        "ix212a-46ac798dce",
+        "st147a-b72ef771f7",
+        "st137a-94aa1a51a4",
+        "st144a-954867eef4"
+      ],
+      "oracle_drift_count": 8,
+      "oracle_drift_case_ids": [
+        "rolldice-08e3de1a0e",
+        "randomnumbers-d8fc7ee85b",
+        "date1-f31ce2734d",
+        "collatz-6e335e6eda",
+        "randombingo-e50339cc12",
+        "intrdate-0517c3d81c",
+        "cob-simpleinventory-6af451140a",
+        "pullydis-9e45af6c84"
+      ],
+      "decision": "ineligible_four_stable_regressions_and_oracle_drift"
+    },
+    {
+      "pr": 374,
+      "branch": "fix/read-after-eof-status-46",
+      "head_sha": "165113f83de89f1499e6b58422336d199c66cd9e",
+      "unit_suite_run": 43579872248,
+      "smoke_run": 43579872244,
+      "holdout_run": 43579872195,
+      "score": 262,
+      "denominator": 500,
+      "raw_new_pass_case_ids": [],
+      "raw_regressed_case_ids": [
+        "exec84-2-03eae98697"
+      ],
+      "stable_regressed_case_ids": [
+        "exec84-2-03eae98697"
+      ],
+      "oracle_drift_count": 8,
+      "oracle_drift_case_ids": [
+        "rolldice-08e3de1a0e",
+        "randomnumbers-d8fc7ee85b",
+        "date1-f31ce2734d",
+        "collatz-6e335e6eda",
+        "randombingo-e50339cc12",
+        "intrdate-0517c3d81c",
+        "cob-simpleinventory-6af451140a",
+        "pullydis-9e45af6c84"
+      ],
+      "decision": "ineligible_stable_regression_and_oracle_drift"
+    },
+    {
+      "pr": 375,
+      "branch": "fix/open-mixed-modes",
+      "head_sha": "2056d6bdaa62c4a2ddd9c14daae9d9d98c00259f",
+      "unit_suite_run": 43579902250,
+      "smoke_run": 43579902215,
+      "holdout_run": 43579902217,
+      "score": 264,
+      "denominator": 500,
+      "raw_new_pass_case_ids": [
+        "sq206a-3536dcf7c2"
+      ],
+      "raw_regressed_case_ids": [],
+      "stable_new_pass_case_ids": [
+        "sq206a-3536dcf7c2"
+      ],
+      "stable_regressed_case_ids": [],
+      "oracle_drift_count": 8,
+      "oracle_drift_case_ids": [
+        "rolldice-08e3de1a0e",
+        "randomnumbers-d8fc7ee85b",
+        "date1-f31ce2734d",
+        "collatz-6e335e6eda",
+        "randombingo-e50339cc12",
+        "intrdate-0517c3d81c",
+        "cob-simpleinventory-6af451140a",
+        "pullydis-9e45af6c84"
+      ],
+      "decision": "ineligible_oracle_drift_despite_one_stable_gain"
+    },
+    {
+      "pr": 376,
+      "branch": "fix/inspect-replacing-all-first",
+      "head_sha": "ae11ae5a082cfc4bf4cdb466df30683fe84af34a",
+      "unit_suite_run": 43579954716,
+      "smoke_run": 43579954708,
+      "holdout_run": 43579954809,
+      "score": 263,
+      "denominator": 500,
+      "raw_new_pass_case_ids": [],
+      "raw_regressed_case_ids": [],
+      "oracle_drift_count": 8,
+      "oracle_drift_case_ids": [
+        "rolldice-08e3de1a0e",
+        "randomnumbers-d8fc7ee85b",
+        "date1-f31ce2734d",
+        "collatz-6e335e6eda",
+        "randombingo-e50339cc12",
+        "intrdate-0517c3d81c",
+        "cob-simpleinventory-6af451140a",
+        "pullydis-9e45af6c84"
+      ],
+      "decision": "ineligible_no_gain_and_oracle_drift"
+    },
+    {
+      "pr": 377,
+      "branch": "fix/arithmetic-reference-length",
+      "head_sha": "3b42624818d1f4e005d89a7bc373d61eb522879f",
+      "unit_suite_run": 43579981165,
+      "smoke_run": 43579981180,
+      "holdout_run": 43579981172,
+      "score": 261,
+      "denominator": 500,
+      "raw_new_pass_case_ids": [],
+      "raw_regressed_case_ids": [
+        "exec84-2-03eae98697",
+        "rock-paper-scissors-ad6321acf1"
+      ],
+      "stable_regressed_case_ids": [
+        "exec84-2-03eae98697"
+      ],
+      "oracle_drift_count": 9,
+      "oracle_drift_case_ids": [
+        "rolldice-08e3de1a0e",
+        "randomnumbers-d8fc7ee85b",
+        "date1-f31ce2734d",
+        "collatz-6e335e6eda",
+        "randombingo-e50339cc12",
+        "intrdate-0517c3d81c",
+        "cob-simpleinventory-6af451140a",
+        "rock-paper-scissors-ad6321acf1",
+        "pullydis-9e45af6c84"
+      ],
+      "decision": "ineligible_stable_regression_and_oracle_drift"
+    },
+    {
+      "pr": 378,
+      "branch": "fix/string-zeroes-delimiter",
+      "head_sha": "5f77d4268d284d38cdb848c27731e1b70fc9785a",
+      "unit_suite_run": 43580025395,
+      "smoke_run": 43580025392,
+      "holdout_run": 43580025425,
+      "score": 262,
+      "denominator": 500,
+      "raw_new_pass_case_ids": [],
+      "raw_regressed_case_ids": [
+        "exec84-2-03eae98697"
+      ],
+      "stable_regressed_case_ids": [
+        "exec84-2-03eae98697"
+      ],
+      "oracle_drift_count": 8,
+      "oracle_drift_case_ids": [
+        "rolldice-08e3de1a0e",
+        "randomnumbers-d8fc7ee85b",
+        "date1-f31ce2734d",
+        "collatz-6e335e6eda",
+        "randombingo-e50339cc12",
+        "intrdate-0517c3d81c",
+        "cob-simpleinventory-6af451140a",
+        "pullydis-9e45af6c84"
+      ],
+      "decision": "ineligible_stable_regression_and_oracle_drift"
+    }
+  ]
 }
