@@ -21,6 +21,13 @@ CURRENT_MAIN_PR_WORKFLOW = (
     / "current-main-pr-tournament.yml"
 ).read_text(encoding="utf-8")
 
+FAILURE_30_WORKFLOW = (
+    Path(__file__).resolve().parents[1]
+    / ".github"
+    / "workflows"
+    / "failure-directed-30-seed-tournament.yml"
+).read_text(encoding="utf-8")
+
 
 class MassiveTournamentWorkflowContractTests(unittest.TestCase):
     def test_dispatch_has_safe_default_and_allowed_cohort_sizes(self):
@@ -67,6 +74,13 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
         self.assertIn("eligible_candidate = oracle_stable", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn("actual_merge_sha", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn('base_ref != "main"', CURRENT_MAIN_PR_WORKFLOW)
+
+    def test_30_seed_tournament_requires_source_identity_and_untruncated_oracle(self):
+        self.assertIn("source_sha256", FAILURE_30_WORKFLOW)
+        self.assertIn("baseline_sources", FAILURE_30_WORKFLOW)
+        self.assertIn("source_map", FAILURE_30_WORKFLOW)
+        self.assertIn("source_drift", FAILURE_30_WORKFLOW)
+        self.assertIn('reference_stdout_truncated") is not False', FAILURE_30_WORKFLOW)
 
     def test_workflow_never_merges_or_updates_benchmark_record(self):
         self.assertIn("No PR is merged", WORKFLOW)
