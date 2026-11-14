@@ -4722,7 +4722,6 @@ class EvaluateNegatedIdentifierSelectionTests(unittest.TestCase):
             '01 WS-LEFT PIC X VALUE "A".',
             '01 WS-RIGHT PIC X VALUE "B".',
             "PROCEDURE DIVISION.",
-            "MAIN.",
             "    EVALUATE WS-LEFT",
             "        WHEN NOT WS-RIGHT",
             '            DISPLAY "DIFFERENT".',
