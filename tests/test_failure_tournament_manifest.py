@@ -26,13 +26,20 @@ class FailureTournamentManifestTests(unittest.TestCase):
         self.assertNotEqual(baseline["source_run"], 42266714599)
 
         latest = MANIFEST["latest_main_remeasurement"]
-        self.assertEqual(latest["score"], 258)
+        self.assertEqual(latest["score"], 263)
         self.assertEqual(latest["denominator"], 500)
-        self.assertEqual(latest["percent"], 51.6)
-        self.assertEqual(latest["source_run"], 42272058313)
+        self.assertEqual(latest["percent"], 52.6)
+        self.assertEqual(latest["source_run"], 43578366403)
         self.assertEqual(latest["skip"], 500)
         self.assertEqual(latest["target"], 500)
         self.assertTrue(latest["archive_md5_verified"])
+        self.assertEqual(latest["reference_fingerprint_coverage"]["complete_cases"], 500)
+
+        historical = MANIFEST["historical_main_remeasurement"]
+        self.assertEqual(historical["score"], 258)
+        self.assertEqual(historical["source_run"], 42272058313)
+        self.assertEqual(historical["skip"], 500)
+        self.assertEqual(historical["target"], 500)
 
     def test_zero_regression_gate_and_blocked_readiness(self):
         self.assertEqual(MANIFEST["benchmark"]["skip"], 500)
