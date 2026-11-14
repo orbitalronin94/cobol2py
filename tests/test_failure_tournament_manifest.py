@@ -49,8 +49,9 @@ class FailureTournamentManifestTests(unittest.TestCase):
         self.assertEqual(MANIFEST["readiness"]["status"], "blocked")
         self.assertEqual(MANIFEST["last_tournament_attempt"]["eligible_candidates"], 0)
 
-    def test_reference_oracle_stability_is_required_for_ranking(self):
-        self.assertTrue(MANIFEST["acceptance"]["reference_oracle_stability_required"])
+    def test_frozen_main_oracle_is_required_for_ranking(self):
+        self.assertTrue(MANIFEST["acceptance"]["frozen_baseline_oracle_required"])
+        self.assertTrue(MANIFEST["acceptance"]["candidate_run_oracle_drift_is_diagnostic"])
         self.assertEqual(
             MANIFEST["benchmark"]["reference_oracle_fields"],
             ["reference_stdout_sha256", "reference_stdout_length", "reference_returncode"],
