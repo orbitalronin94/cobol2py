@@ -4657,3 +4657,13 @@ class EnvironmentAndStandardErrorCandidateTests(unittest.TestCase):
         with patch.dict("os.environ", {"COBOL_TEST_VALUE": "abc"}):
             exec("\\n".join(translated or []), namespace)
         self.assertEqual(namespace["ws_value"], "abc   ")
+
+
+class ArithmeticReferenceModificationLengthRegressionTests(unittest.TestCase):
+    def test_arithmetic_length_is_translated_as_an_expression(self):
+        translated = cobol2py.translate_expr("WS-TEXT(1:WS-LENGTH + WS-EXTRA * 2)")
+        compile(translated, "<arithmetic-reference-length>", "eval")
+        self.assertEqual(
+            eval(translated, {}, {"ws_text": "ABCDEFG", "ws_length": 1, "ws_extra": 1}),
+            "ABC",
+        )
