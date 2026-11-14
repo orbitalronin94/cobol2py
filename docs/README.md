@@ -5,6 +5,7 @@ Esta carpeta documenta el diseño actual, las decisiones técnicas, el alcance s
 ## Documentos
 
 - [Arquitectura](architecture.md): flujo de traducción, estructuras internas, límites y arquitectura del agente de repositorio.
+- [Estrategia de ingeniería para preservar la semántica COBOL](SEMANTIC_MODERNIZATION_STRATEGY.md): aritmética/PIC, COMP-3, REDEFINES, EBCDIC, control de párrafos, ODO, E/S, transacciones y validación diferencial.
 - [Agente de modernización](repo-modernization-agent.md): uso del inventario multiarchivo, esquema de informes y plan de migración.
 - [Interfaz web del agente](repo-modernization-agent.md#interfaz-web): demo estática `web/agent.html`, exportación de informes y límites del análisis.
 - [Registro de decisiones](decisions.md): decisiones tomadas, motivación, consecuencias y estado.
