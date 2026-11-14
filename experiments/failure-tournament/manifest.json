@@ -362,8 +362,7 @@
       "all_30_exist": true,
       "all_30_diverged": true,
       "ahead_only_candidates": 0,
-      "seed_11_to_15_change_summary": "workflow/documentation only; no cobol2py.py, ronin/ or tests changes",
-      "current_main_sha": "8ecabaaa7b50d01e9649814a989bbbac7491adef"
+      "seed_11_to_15_change_summary": "workflow/documentation only; no cobol2py.py, ronin/ or tests changes"
     },
     "current_main_sha": "8ecabaaa7b50d01e9649814a989bbbac7491adef"
   },
@@ -462,7 +461,9 @@
       "missing_cases": 0,
       "missing_case_ids": []
     },
-    "note": "Current main is 8ecabaaa7b50d01e9649814a989bbbac7491adef, merge commit of PR #375. Full exact 500-case measurement is run 43592015588: 263/500. Four complete contiguous shards cover the exact skip=500,target=500 deterministic selection. The translator blob is identical to PR #375 head 2056d6bdaa62c4a2ddd9c14daae9d9d98c00259f (blob 4a7562627d161580470f1b0522cda0b094f635b0). The earlier 264/500 candidate observation is retained separately; the post-merge main measurement timed out on exec84-2-03eae98697 at 20.0049s, so do not report 264 as the current main score."
+    "note": "Current main is 8ecabaaa7b50d01e9649814a989bbbac7491adef, merge commit of PR #375. Full exact 500-case measurement is run 43592015588: 263/500. Four complete contiguous shards cover the exact skip=500,target=500 deterministic selection. The translator blob is identical to PR #375 head 2056d6bdaa62c4a2ddd9c14daae9d9d98c00259f (blob 4a7562627d161580470f1b0522cda0b094f635b0). The earlier 264/500 candidate observation is retained separately; the post-merge main measurement timed out on exec84-2-03eae98697 at 20.0049s, so do not report 264 as the current main score.",
+    "skip": 500,
+    "target": 500
   },
   "additional_candidate_evaluations": {
     "inspect_characters": {
