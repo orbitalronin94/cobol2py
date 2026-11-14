@@ -221,10 +221,10 @@
     "score": 263,
     "denominator": 500,
     "percent": 52.6,
-    "source_run": 43578366403,
-    "source_sha": "f2d944c42fa8d6855effa7d97936db843476b9bd",
-    "baseline_sha": "f2d944c42fa8d6855effa7d97936db843476b9bd",
-    "current_main_sha": "f5b9534ddbbc13d3b30c00afd12c1611f7dece47",
+    "source_run": 43592015588,
+    "source_sha": "8ecabaaa7b50d01e9649814a989bbbac7491adef",
+    "baseline_sha": "8ecabaaa7b50d01e9649814a989bbbac7491adef",
+    "current_main_sha": "8ecabaaa7b50d01e9649814a989bbbac7491adef",
     "base_ref": "main",
     "kind": "current_main_verified",
     "corpus": "X-COBOL v2",
@@ -252,15 +252,15 @@
         "skip": 625,
         "target": 125,
         "tested": 125,
-        "passed": 54,
-        "failed": 71
+        "passed": 55,
+        "failed": 70
       },
       {
         "skip": 750,
         "target": 125,
         "tested": 125,
-        "passed": 73,
-        "failed": 52
+        "passed": 72,
+        "failed": 53
       },
       {
         "skip": 875,
@@ -270,9 +270,9 @@
         "failed": 52
       }
     ],
-    "main_sha_at_audit": "f5b9534ddbbc13d3b30c00afd12c1611f7dece47",
-    "translator_blob_sha": "3e8a08ae175e6fd1a5d8daba8d3a77ca19dd5061",
-    "note": "Run 43578366403 completed four fixed 125-case shards at 263/500 with all 500 GnuCOBOL fingerprints. It evaluated translator code at f2d944c42fa8d6855effa7d97936db843476b9bd, the merge of PR #370. Current main f5b9534ddbbc13d3b30c00afd12c1611f7dece47 is one documentation-only commit ahead; README.md is the only changed file. The translator blob is unchanged, so 263/500 is the verified current-code baseline. This does not replace the separate 250/500 holdout-record ranking baseline."
+    "main_sha_at_audit": "8ecabaaa7b50d01e9649814a989bbbac7491adef",
+    "translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
+    "note": "Run 43592015588 evaluated current main 8ecabaaa7b50d01e9649814a989bbbac7491adef. Four complete contiguous 125-case shards (skip 500/625/750/875) form the exact deterministic 500-case slice equivalent to skip=500,target=500. All 500 IDs, source hashes and GnuCOBOL oracle fingerprints are complete; archive MD5 is verified. Score is 263/500. Compared with the prior main run 43578366403 (f2d944..., also 263/500), source hashes and IDs are identical; eight GnuCOBOL oracle fingerprints drifted, sq206a-3536dcf7c2 changed from fail to pass, and exec84-2-03eae98697 hit the 20-second translator timeout (20.0049s), leaving net score unchanged. The merged PR #375 candidate run 43579902217 passed both cases and scored 264/500 against the frozen pre-merge oracle; current main remains recorded at 263 until a fresh run confirms that timeout-boundary case."
   },
   "last_tournament_attempt": {
     "run": 42272058313,
@@ -299,13 +299,13 @@
   "readiness": {
     "status": "blocked",
     "reasons": [
-      "All 30 manifest candidate branches exist, but all 30 compare as diverged from current main SHA f5b9534ddbbc13d3b30c00afd12c1611f7dece47; none is an ahead-only candidate based on this frozen main.",
+      "The 30 manifest branches all existed and were last audited as diverged from main f5b9534ddbbc13d3b30c00afd12c1611f7dece47. Main has since advanced to 8ecabaaa7b50d01e9649814a989bbbac7491adef (PR #375); no candidate branch has been rebuilt or demonstrated ahead-only on this current main.",
       "Seeds 11-15 have no translator implementation change and no tests/reproducer change; their sampled diffs contain workflow/documentation files only.",
       "Seeds 1-10 and 16-30 are stale/diverged by between 196 and 677 commits and require fresh isolated rebuilds; several sampled diffs include obsolete workflow changes unrelated to their declared hypothesis.",
-      "The individual PR cohort #371-#378 completed full 500-case runs. PR #375 is now merged after a frozen-main-oracle comparison: 264/500 versus 263/500, +1 exact pass (sq206a-3536dcf7c2), zero regressions and identical source hashes across all 500 IDs. Eight fresh candidate-run GnuCOBOL fingerprints drifted; these are diagnostic only because scoring uses the frozen main reference. No other candidate met the +1/zero-regression gate.",
+      "Do not dispatch until all 30 branches are rebuilt from current main 8ecabaaa7b50d01e9649814a989bbbac7491adef, each contains one isolated translator hypothesis and reproducer, and each has a green full suite plus complete checksum-verified 500-case holdout.",
       "The current-main PR tournament aggregator now compares each candidate's stdout SHA-256, byte length and return code directly with the frozen main GnuCOBOL fingerprint for the same source ID. Candidate-run oracle drift is recorded but does not alter the scoring oracle; the older pass-only aggregator must not be used for promotion.",
       "The 30-seed workflow is manual and refuses to dispatch unless readiness is ready, all branches are ahead-only and each has an isolated translator change, tests, a full suite and a complete 500-case report.",
-      "Do not dispatch until all 30 branches are rebuilt from the same current main SHA and every candidate has one isolated translator change, a reproducer, tests, the full suite and a complete 500-case report. Candidate-run oracle drift remains diagnostic; the frozen main GnuCOBOL outputs are the scoring oracle."
+      "The 30-seed workflow is manual and refuses to dispatch unless readiness is ready, all branches are ahead-only and each has an isolated translator change, tests, a full suite and a complete 500-case report."
     ],
     "audit_date": "2026-11-14",
     "audit_main_sha": "f5b9534ddbbc13d3b30c00afd12c1611f7dece47",
@@ -356,14 +356,16 @@
         "decision": "closed_unmerged_inconclusive_oracle_drift"
       }
     ],
-    "latest_main_holdout_run": 43578366403,
+    "latest_main_holdout_run": 43592015588,
     "candidate_branch_audit": {
       "compared_against_main": "f5b9534ddbbc13d3b30c00afd12c1611f7dece47",
       "all_30_exist": true,
       "all_30_diverged": true,
       "ahead_only_candidates": 0,
-      "seed_11_to_15_change_summary": "workflow/documentation only; no cobol2py.py, ronin/ or tests changes"
-    }
+      "seed_11_to_15_change_summary": "workflow/documentation only; no cobol2py.py, ronin/ or tests changes",
+      "current_main_sha": "8ecabaaa7b50d01e9649814a989bbbac7491adef"
+    },
+    "current_main_sha": "8ecabaaa7b50d01e9649814a989bbbac7491adef"
   },
   "prior_16_candidate_tournament": {
     "source_run": 42268813592,
@@ -413,8 +415,8 @@
     "score": 263,
     "denominator": 500,
     "percent": 52.6,
-    "source_run": 43578366403,
-    "source_sha": "f2d944c42fa8d6855effa7d97936db843476b9bd",
+    "source_run": 43592015588,
+    "source_sha": "8ecabaaa7b50d01e9649814a989bbbac7491adef",
     "base_ref": "main",
     "kind": "current_main_verified",
     "dataset": "X-COBOL v2",
@@ -435,15 +437,15 @@
         "skip": 625,
         "target": 125,
         "tested": 125,
-        "passed": 54,
-        "failed": 71
+        "passed": 55,
+        "failed": 70
       },
       {
         "skip": 750,
         "target": 125,
         "tested": 125,
-        "passed": 73,
-        "failed": 52
+        "passed": 72,
+        "failed": 53
       },
       {
         "skip": 875,
@@ -453,14 +455,14 @@
         "failed": 52
       }
     ],
-    "main_sha_at_audit": "f5b9534ddbbc13d3b30c00afd12c1611f7dece47",
-    "translator_blob_sha": "3e8a08ae175e6fd1a5d8daba8d3a77ca19dd5061",
+    "main_sha_at_audit": "8ecabaaa7b50d01e9649814a989bbbac7491adef",
+    "translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
     "reference_fingerprint_coverage": {
       "complete_cases": 500,
       "missing_cases": 0,
       "missing_case_ids": []
     },
-    "note": "Verified current translator baseline: 263/500. Run SHA f2d944c42fa8d6855effa7d97936db843476b9bd; current main f5b9534ddbbc13d3b30c00afd12c1611f7dece47 differs only in README.md. Four complete shards sum to 263. Historical 257/500 and the earlier 258/500 timeout-boundary remeasurement remain separate."
+    "note": "Current main is 8ecabaaa7b50d01e9649814a989bbbac7491adef, merge commit of PR #375. Full exact 500-case measurement is run 43592015588: 263/500. Four complete contiguous shards cover the exact skip=500,target=500 deterministic selection. The translator blob is identical to PR #375 head 2056d6bdaa62c4a2ddd9c14daae9d9d98c00259f (blob 4a7562627d161580470f1b0522cda0b094f635b0). The earlier 264/500 candidate observation is retained separately; the post-merge main measurement timed out on exec84-2-03eae98697 at 20.0049s, so do not report 264 as the current main score."
   },
   "additional_candidate_evaluations": {
     "inspect_characters": {
@@ -738,5 +740,168 @@
       ],
       "decision": "ineligible_stable_regression_and_oracle_drift"
     }
-  ]
+  ],
+  "previous_main_remeasurement": {
+    "score": 263,
+    "denominator": 500,
+    "percent": 52.6,
+    "source_run": 43578366403,
+    "source_sha": "f2d944c42fa8d6855effa7d97936db843476b9bd",
+    "translator_blob_sha": "3e8a08ae175e6fd1a5d8daba8d3a77ca19dd5061",
+    "sample_complete": true,
+    "unique_case_ids": 500,
+    "archive_md5_verified": true,
+    "reference_fingerprint_coverage": {
+      "complete_cases": 500,
+      "missing_cases": 0,
+      "missing_case_ids": []
+    },
+    "note": "Pre-PR #375 main baseline used for the paired candidate cohort. Four complete 125-case shards; 263/500."
+  },
+  "post_merge_casewise_comparison": {
+    "baseline_run": 43578366403,
+    "baseline_sha": "f2d944c42fa8d6855effa7d97936db843476b9bd",
+    "current_main_run": 43592015588,
+    "current_main_sha": "8ecabaaa7b50d01e9649814a989bbbac7491adef",
+    "baseline_score": 263,
+    "current_main_score": 263,
+    "denominator": 500,
+    "same_case_ids": 500,
+    "source_hash_matches": 500,
+    "oracle_drift_case_ids": [
+      "cob-simpleinventory-6af451140a",
+      "collatz-6e335e6eda",
+      "date1-f31ce2734d",
+      "intrdate-0517c3d81c",
+      "pullydis-9e45af6c84",
+      "randombingo-e50339cc12",
+      "randomnumbers-d8fc7ee85b",
+      "rolldice-08e3de1a0e"
+    ],
+    "new_pass_case_ids": [
+      "sq206a-3536dcf7c2"
+    ],
+    "regressed_case_ids": [
+      "exec84-2-03eae98697"
+    ],
+    "regression_observation": "Translator timeout at 20.0049 seconds; pre-merge baseline completed the same source in 17.106826 seconds.",
+    "net_delta": 0,
+    "note": "The current main translator blob is identical to the merged PR #375 head; the single observed loss is a timeout-boundary variance, not a source-code difference. It still counts as a failure in the current measured score."
+  },
+  "pr_candidate_cohort_2026_11_14": {
+    "baseline_run": 43578366403,
+    "baseline_sha": "f2d944c42fa8d6855effa7d97936db843476b9bd",
+    "corpus": "X-COBOL v2",
+    "archive_md5": "cbd974caed72b0836777dc2305928ed3",
+    "sample_ids": 500,
+    "source_hashes_match": 500,
+    "scoring": "candidate stdout SHA-256, byte length and return code compared to frozen pre-merge main GnuCOBOL oracle per ID",
+    "candidates": [
+      {
+        "pr": 371,
+        "head_sha": "0b0fe21530f232f12ccd9aa0c83edf14eeafd044",
+        "run": 43579763992,
+        "raw_score": 262,
+        "frozen_score": 263,
+        "new_pass_case_ids": [],
+        "regressed_case_ids": [],
+        "oracle_drift_count": 9,
+        "complete": true
+      },
+      {
+        "pr": 372,
+        "head_sha": "55c25b6af4d8c0616acb3b7abc9eabd09eb5ce8e",
+        "run": 43579792756,
+        "raw_score": 261,
+        "frozen_score": 262,
+        "new_pass_case_ids": [],
+        "regressed_case_ids": [
+          "exec84-2-03eae98697"
+        ],
+        "oracle_drift_count": 9,
+        "complete": true
+      },
+      {
+        "pr": 373,
+        "head_sha": "e07289a2f4780f25d29541561677d219040beddb",
+        "run": 43579827016,
+        "raw_score": 259,
+        "frozen_score": 259,
+        "new_pass_case_ids": [],
+        "regressed_case_ids": [
+          "ix212a-46ac798dce",
+          "st137a-94aa1a51a4",
+          "st144a-954867eef4",
+          "st147a-b72ef771f7"
+        ],
+        "oracle_drift_count": 8,
+        "complete": true
+      },
+      {
+        "pr": 374,
+        "head_sha": "165113f83de89f1499e6b58422336d199c66cd9e",
+        "run": 43579872195,
+        "raw_score": 262,
+        "frozen_score": 262,
+        "new_pass_case_ids": [],
+        "regressed_case_ids": [
+          "exec84-2-03eae98697"
+        ],
+        "oracle_drift_count": 8,
+        "complete": true
+      },
+      {
+        "pr": 375,
+        "head_sha": "2056d6bdaa62c4a2ddd9c14daae9d9d98c00259f",
+        "run": 43579902217,
+        "raw_score": 264,
+        "frozen_score": 264,
+        "new_pass_case_ids": [
+          "sq206a-3536dcf7c2"
+        ],
+        "regressed_case_ids": [],
+        "oracle_drift_count": 8,
+        "complete": true,
+        "merged": true,
+        "merge_commit": "8ecabaaa7b50d01e9649814a989bbbac7491adef"
+      },
+      {
+        "pr": 376,
+        "head_sha": "ae11ae5a082cfc4bf4cdb466df30683fe84af34a",
+        "run": 43579954809,
+        "raw_score": 263,
+        "frozen_score": 263,
+        "new_pass_case_ids": [],
+        "regressed_case_ids": [],
+        "oracle_drift_count": 8,
+        "complete": true
+      },
+      {
+        "pr": 377,
+        "head_sha": "3b42624818d1f4e005d89a7bc373d61eb522879f",
+        "run": 43579981172,
+        "raw_score": 261,
+        "frozen_score": 262,
+        "new_pass_case_ids": [],
+        "regressed_case_ids": [
+          "exec84-2-03eae98697"
+        ],
+        "oracle_drift_count": 9,
+        "complete": true
+      },
+      {
+        "pr": 378,
+        "head_sha": "5f77d4268d284d38cdb848c27731e1b70fc9785a",
+        "run": 43580025425,
+        "raw_score": 262,
+        "frozen_score": 262,
+        "new_pass_case_ids": [],
+        "regressed_case_ids": [
+          "exec84-2-03eae98697"
+        ],
+        "oracle_drift_count": 8,
+        "complete": true
+      }
+    ]
+  }
 }
