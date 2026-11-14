@@ -492,3 +492,51 @@ La suite completa de la PR terminó correctamente en [#41995725922](https://gith
 La siguiente reproducción prometedora es la continuación multilínea de nombres de índice en cláusulas `OCCURS ... INDEXED [BY]`. En `NC244A.CBL`, los nombres `IDX-5` y `IDX-8` a `IDX-15` aparecen en líneas físicas siguientes; el parser actual conserva `IDX-1` a `IDX-4` y `IDX-6`/`IDX-7`, pero omite los nombres continuados. El traceback de `NC2444.2` termina en `NameError: idx_5`. Se debe corregir el plegado de la cláusula, inicializar todos los índices y probar `SET index TO`/ `SET index UP BY` antes de abrir otra candidata.
 
 El caso `NC252A` (`rdf3_5_16`) es distinto: el nombre es un nivel 66 `RENAMES`, no un índice. No se deben mezclar ambos cambios ni resolver el segundo creando una variable ficticia.
+
+
+---
+
+## 8. Estado verificado — 2026-11-14
+
+### Baseline de main
+
+- Main actual: f5b9534ddbbc13d3b30c00afd12c1611f7dece47.
+- Traductor medido: f2d944c42fa8d6855effa7d97936db843476b9bd; el único commit posterior hasta el main actual modifica README.md, por lo que el blob de cobol2py.py sigue siendo 3e8a08ae175e6fd1a5d8daba8d3a77ca19dd5061.
+- Medición completa: [run 43578366403](https://github.com/orbitalronin94/cobol2py/actions/runs/43578366403), **263/500 (52,6 %)**.
+- X-COBOL v2: MD5 cbd974caed72b0836777dc2305928ed3, verificado; skip=500, target=500; cuatro shards completos de 125 (63 + 54 + 73 + 73); 500 IDs únicos.
+- El artefacto contiene los 500 fingerprints del oráculo GnuCOBOL (hash y longitud de stdout, código de retorno). Este es el baseline de código actual. No sustituye el récord histórico 257/500 de [run 42268813592](https://github.com/orbitalronin94/cobol2py/actions/runs/42268813592), ni el baseline de ranking 250/500 de benchmarks/holdout-record.json.
+
+### Ocho candidatas reconstruidas sobre el main actual
+
+Cada PR pasó su suite, smoke externo y benchmark completo de 500 casos. Los reportes se descargaron y se compararon por ID; no se infirió el resultado del nombre del workflow.
+
+| PR | Hipótesis | Resultado | Delta bruto | Deriva del oráculo | Decisión |
+|---:|---|---:|---:|---:|---|
+| [#371](https://github.com/orbitalronin94/cobol2py/pull/371) | READ SEQUENTIAL fijo | 262/500 | 0 ganancias, 1 regresión | 9 IDs | No elegible |
+| [#372](https://github.com/orbitalronin94/cobol2py/pull/372) | UNSTRING TALLYING acumulativo | 261/500 | 0, 2 regresiones | 9 IDs | No elegible; una regresión estable |
+| [#373](https://github.com/orbitalronin94/cobol2py/pull/373) | WRITE FROM literal | 259/500 | 0, 4 regresiones | 8 IDs | No elegible; cuatro regresiones estables |
+| [#374](https://github.com/orbitalronin94/cobol2py/pull/374) | READ después de AT END | 262/500 | 0, 1 regresión | 8 IDs | No elegible; una regresión estable |
+| [#375](https://github.com/orbitalronin94/cobol2py/pull/375) | OPEN con modos mixtos | 264/500 | +1, 0 | 8 IDs | No elegible por deriva |
+| [#376](https://github.com/orbitalronin94/cobol2py/pull/376) | INSPECT REPLACING ALL/FIRST | 263/500 | 0, 0 | 8 IDs | No elegible; no gana casos |
+| [#377](https://github.com/orbitalronin94/cobol2py/pull/377) | Longitud aritmética en reference modification | 261/500 | 0, 2 regresiones | 9 IDs | No elegible; una regresión estable |
+| [#378](https://github.com/orbitalronin94/cobol2py/pull/378) | STRING DELIMITED BY ZEROES | 262/500 | 0, 1 regresión | 8 IDs | No elegible; una regresión estable |
+
+**La candidata más prometedora es #375.** Su única ganancia es sq206a-3536dcf7c2: pasa de código de retorno 1 a 0, con stdout vacío idéntico y fingerprint de GnuCOBOL estable. No introduce regresiones en los 492 casos con oráculo comparable. Sin embargo, los otros ocho fingerprints no coinciden con el baseline; por el gate absoluto de estabilidad en los 500 IDs, no se promociona ni se fusiona.
+
+Los IDs con deriva en #375 son: rolldice-08e3de1a0e, randomnumbers-d8fc7ee85b, date1-f31ce2734d, collatz-6e335e6eda, randombingo-e50339cc12, intrdate-0517c3d81c, cob-simpleinventory-6af451140a y pullydis-9e45af6c84.
+
+En #371, #372 y #377 también deriva rock-paper-scissors-ad6321acf1. No se cuentan esas diferencias como cambios del traductor.
+
+### Estado de los torneos
+
+- PR [#349](https://github.com/orbitalronin94/cobol2py/pull/349) está integrada; el workflow de 30 semillas sigue siendo manual.
+- PR [#368](https://github.com/orbitalronin94/cobol2py/pull/368) integró los fingerprints del oráculo antes de la traducción, también en errores/timeouts del traductor.
+- El workflow de 30 semillas compara ahora hash/longitud/código de retorno del oráculo por cada ID. La preparación sigue bloqueada: las 30 ramas existen, pero las 30 están divergidas respecto a main. Las semillas 11–15 solo muestran cambios de workflow/documentación, sin implementación del traductor ni tests/reproducers. No se ha lanzado el torneo.
+- El intento de la cohorte de 16 candidatas [#43578366416](https://github.com/orbitalronin94/cobol2py/actions/runs/43578366416) falló en discovery: esperaba 15 PRs de manifiesto y encontró 10. No arrancó jobs de candidatos ni produjo ranking.
+
+### Siguiente trabajo
+
+1. Congelar reloj y aleatoriedad del entorno GnuCOBOL, o generar una sola referencia por caso y reutilizar exactamente esos bytes/códigos en baseline y candidatas. La opción elegida debe conservar el protocolo y quedar versionada; no se deben aceptar fingerprints diferentes.
+2. Corregir el agregador de current-main-pr-tournament.yml: antes comparaba solo booleanos de pase y podía aceptar una falsa ganancia aunque cambiara el oráculo. La revisión actual añade fingerprints, hashes de fuente, identidad de checkout y rechazo de deriva.
+3. Repetir #375 en una comparación con oráculo idéntico para los 500 IDs. Solo si mantiene sq206a-3536dcf7c2, no pierde ningún caso y no existe deriva, será elegible.
+4. Reconstruir las 30 semillas desde el main actual, una hipótesis y un reproducer por rama, sin reciclar diffs divergidos.
