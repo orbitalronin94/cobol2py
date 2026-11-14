@@ -4744,7 +4744,7 @@ class EvaluateNegatedIdentifierSelectionTests(unittest.TestCase):
         translated = cobol2py.translate_nodes(
             [node], set(), indent=0, variables=variables
         )
-        generated = "def run():\\n" + "\\n".join("    " + line for line in translated)
+        generated = "def run():\n" + "\n".join("    " + line for line in translated)
         compile(generated, "<evaluate-not-selection>", "exec")
         namespace = {"ws_left": "A", "ws_right": "B"}
         exec(generated, namespace)
@@ -4752,10 +4752,10 @@ class EvaluateNegatedIdentifierSelectionTests(unittest.TestCase):
         output = StringIO()
         with redirect_stdout(output):
             namespace["run"]()
-        self.assertEqual(output.getvalue(), "DIFFERENT\\n", generated)
+        self.assertEqual(output.getvalue(), "DIFFERENT\n", generated)
 
         namespace["ws_right"] = "A"
         output = StringIO()
         with redirect_stdout(output):
             namespace["run"]()
-        self.assertEqual(output.getvalue(), "SAME\\n", generated)
+        self.assertEqual(output.getvalue(), "SAME\n", generated)
