@@ -4714,30 +4714,48 @@ class EvaluateNegatedIdentifierSelectionTests(unittest.TestCase):
         from contextlib import redirect_stdout
         from io import StringIO
 
-        source = "\\n".join([
-            "IDENTIFICATION DIVISION.",
-            "PROGRAM-ID. EVALUATE-NOT-SELECTION.",
-            "DATA DIVISION.",
-            "WORKING-STORAGE SECTION.",
-            '01 WS-LEFT PIC X VALUE "A".',
-            '01 WS-RIGHT PIC X VALUE "B".',
-            "PROCEDURE DIVISION.",
-            "    EVALUATE WS-LEFT",
-            "        WHEN NOT WS-RIGHT",
-            '            DISPLAY "DIFFERENT".',
-            "        WHEN OTHER",
-            '            DISPLAY "SAME".',
-            "    END-EVALUATE.",
-            "    STOP RUN.",
-        ])
-
-        generated = cobol2py.emit_python(
-            cobol2py.parse_cobol(source, source_format="free")
+        variables = {
+            "WS-LEFT": cobol2py.CobolVar(level=1, name="WS-LEFT", pic="X"),
+            "WS-RIGHT": cobol2py.CobolVar(level=1, name="WS-RIGHT", pic="X"),
+        }
+        node = cobol2py.Node(
+            kind="evaluate",
+            text="EVALUATE WS-LEFT",
+            line=450,
+            body=[
+                cobol2py.Node(
+                    kind="when",
+                    text="NOT WS-RIGHT",
+                    line=451,
+                    then_branch=[
+                        cobol2py.Node(kind="stmt", text='DISPLAY "DIFFERENT"', line=452)
+                    ],
+                ),
+                cobol2py.Node(
+                    kind="when",
+                    text="OTHER",
+                    line=453,
+                    then_branch=[
+                        cobol2py.Node(kind="stmt", text='DISPLAY "SAME"', line=454)
+                    ],
+                ),
+            ],
         )
+        translated = cobol2py.translate_nodes(
+            [node], set(), indent=0, variables=variables
+        )
+        generated = "def run():\\n" + "\\n".join("    " + line for line in translated)
         compile(generated, "<evaluate-not-selection>", "exec")
-        namespace = {"__name__": "not_main"}
+        namespace = {"ws_left": "A", "ws_right": "B"}
         exec(generated, namespace)
+
         output = StringIO()
         with redirect_stdout(output):
-            namespace["main"]()
+            namespace["run"]()
         self.assertEqual(output.getvalue(), "DIFFERENT\\n", generated)
+
+        namespace["ws_right"] = "A"
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["run"]()
+        self.assertEqual(output.getvalue(), "SAME\\n", generated)
