@@ -4729,6 +4729,7 @@ class EvaluateNegatedIdentifierSelectionTests(unittest.TestCase):
             "        WHEN OTHER",
             '            DISPLAY "SAME".',
             "    END-EVALUATE.",
+            "    STOP RUN.",
         ])
 
         generated = cobol2py.emit_python(
