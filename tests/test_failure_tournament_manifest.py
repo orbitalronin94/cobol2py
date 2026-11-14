@@ -29,11 +29,16 @@ class FailureTournamentManifestTests(unittest.TestCase):
         self.assertEqual(latest["score"], 263)
         self.assertEqual(latest["denominator"], 500)
         self.assertEqual(latest["percent"], 52.6)
-        self.assertEqual(latest["source_run"], 43578366403)
+        self.assertEqual(latest["source_run"], 43592015588)
         self.assertEqual(latest["skip"], 500)
         self.assertEqual(latest["target"], 500)
         self.assertTrue(latest["archive_md5_verified"])
         self.assertEqual(latest["reference_fingerprint_coverage"]["complete_cases"], 500)
+        self.assertEqual(latest["current_main_sha"], "8ecabaaa7b50d01e9649814a989bbbac7491adef")
+        self.assertEqual(MANIFEST["current_baseline"]["source_run"], 43592015588)
+        self.assertEqual(MANIFEST["current_baseline"]["score"], 263)
+        self.assertEqual(MANIFEST["post_merge_casewise_comparison"]["new_pass_case_ids"], ["sq206a-3536dcf7c2"])
+        self.assertEqual(MANIFEST["post_merge_casewise_comparison"]["regressed_case_ids"], ["exec84-2-03eae98697"])
 
         historical = MANIFEST["historical_main_remeasurement"]
         self.assertEqual(historical["score"], 258)
