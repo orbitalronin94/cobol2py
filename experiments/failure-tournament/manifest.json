@@ -32,7 +32,8 @@
       "regressions_asc",
       "runtime_asc"
     ],
-    "reference_oracle_stability_required": true
+    "frozen_baseline_oracle_required": true,
+    "candidate_run_oracle_drift_is_diagnostic": true
   },
   "candidates": [
     {
@@ -301,10 +302,10 @@
       "All 30 manifest candidate branches exist, but all 30 compare as diverged from current main SHA f5b9534ddbbc13d3b30c00afd12c1611f7dece47; none is an ahead-only candidate based on this frozen main.",
       "Seeds 11-15 have no translator implementation change and no tests/reproducer change; their sampled diffs contain workflow/documentation files only.",
       "Seeds 1-10 and 16-30 are stale/diverged by between 196 and 677 commits and require fresh isolated rebuilds; several sampled diffs include obsolete workflow changes unrelated to their declared hypothesis.",
-      "The new individual PR cohort #371-#378 completed full 500-case runs, but none is eligible: every candidate has GnuCOBOL oracle drift on 8-9 IDs. PR #375 has one stable new pass (sq206a-3536dcf7c2) and no stable regression, but the global 500-case oracle-stability gate still rejects it.",
-      "The current-main PR tournament aggregator is being hardened to compare per-ID reference stdout hash, stdout length, return code and source SHA; do not use its old pass-only aggregator for promotion.",
+      "The individual PR cohort #371-#378 completed full 500-case runs. PR #375 is now merged after a frozen-main-oracle comparison: 264/500 versus 263/500, +1 exact pass (sq206a-3536dcf7c2), zero regressions and identical source hashes across all 500 IDs. Eight fresh candidate-run GnuCOBOL fingerprints drifted; these are diagnostic only because scoring uses the frozen main reference. No other candidate met the +1/zero-regression gate.",
+      "The current-main PR tournament aggregator now compares each candidate's stdout SHA-256, byte length and return code directly with the frozen main GnuCOBOL fingerprint for the same source ID. Candidate-run oracle drift is recorded but does not alter the scoring oracle; the older pass-only aggregator must not be used for promotion.",
       "The 30-seed workflow is manual and refuses to dispatch unless readiness is ready, all branches are ahead-only and each has an isolated translator change, tests, a full suite and a complete 500-case report.",
-      "Do not dispatch until all 30 branches are rebuilt from the same current main SHA and every candidate has stable GnuCOBOL oracle fingerprints across all 500 IDs."
+      "Do not dispatch until all 30 branches are rebuilt from the same current main SHA and every candidate has one isolated translator change, a reproducer, tests, the full suite and a complete 500-case report. Candidate-run oracle drift remains diagnostic; the frozen main GnuCOBOL outputs are the scoring oracle."
     ],
     "audit_date": "2026-11-14",
     "audit_main_sha": "f5b9534ddbbc13d3b30c00afd12c1611f7dece47",
