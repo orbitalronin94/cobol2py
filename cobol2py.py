@@ -3604,9 +3604,11 @@ def translate_statement(
         file_names = re.findall(r"[A-Za-z0-9_-]+", close_match.group(1))
         if file_names:
             return [f"_cobol_close({name.upper()!r})" for name in file_names]
-    write_match = re.fullmatch(r"WRITE\s+([A-Za-z0-9_-]+)(?:\s+FROM\s+([A-Za-z0-9_-]+))?", s, re.IGNORECASE)
+    write_match = re.fullmatch(r"WRITE\s+([A-Za-z0-9_-]+)(?:\s+FROM\s+(.+))?", s, re.IGNORECASE)
     if write_match:
         record_name, from_name = write_match.groups()
+        if from_name and re.fullmatch(r"""(?:"(?:[^"]|"")*"|'(?:[^']|'')*'|[+-]?\d+(?:\.\d+)?)""", from_name.strip()):
+            return [emit_assignment(record_name, translate_literal(from_name.strip(), variables or {}), variables or {}), f"_cobol_write({record_name.upper()!r}, None)"]
         return [f"_cobol_write({record_name.upper()!r}, {normalize_name(from_name) if from_name else None!r})"]
 
 
