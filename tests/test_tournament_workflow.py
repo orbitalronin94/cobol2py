@@ -66,21 +66,33 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
         self.assertIn('row["regressions"] == 0', WORKFLOW)
         self.assertIn('row["combined"] > baseline_total', WORKFLOW)
 
-    def test_current_main_pr_tournament_requires_stable_oracle_and_exact_source_ids(self):
-        for field in ("reference_stdout_sha256", "reference_stdout_length", "reference_returncode", "source_sha256"):
+    def test_current_main_pr_tournament_scores_against_frozen_main_oracle(self):
+        for field in (
+            "reference_stdout_sha256", "reference_stdout_length", "reference_returncode",
+            "source_sha256", "candidate_stdout_sha256", "candidate_stdout_length",
+            "candidate_returncode",
+        ):
             self.assertIn(field, CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("baseline_reference", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("candidate_pass = (", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn("oracle_drift", CURRENT_MAIN_PR_WORKFLOW)
-        self.assertIn("oracle_stable = not oracle_drift", CURRENT_MAIN_PR_WORKFLOW)
-        self.assertIn("eligible_candidate = oracle_stable", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("comparable_cases = sorted(base)", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("eligible_candidate = len(new_passes) >= 1 and not regressions", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertNotIn("eligible_candidate = oracle_stable", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn("actual_merge_sha", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn('[ "$base_ref" != "main" ]', CURRENT_MAIN_PR_WORKFLOW)
 
-    def test_30_seed_tournament_requires_source_identity_and_untruncated_oracle(self):
-        self.assertIn("source_sha256", FAILURE_30_WORKFLOW)
-        self.assertIn("baseline_sources", FAILURE_30_WORKFLOW)
-        self.assertIn("source_map", FAILURE_30_WORKFLOW)
-        self.assertIn("source_drift", FAILURE_30_WORKFLOW)
+    def test_30_seed_tournament_scores_against_frozen_main_oracle(self):
+        for field in (
+            "source_sha256", "baseline_sources", "source_map", "source_drift",
+            "candidate_stdout_sha256", "candidate_stdout_length", "candidate_returncode",
+            "baseline_reference", "candidate_pass",
+        ):
+            self.assertIn(field, FAILURE_30_WORKFLOW)
         self.assertIn('reference_stdout_truncated") is not False', FAILURE_30_WORKFLOW)
+        self.assertIn("comparable_cases = sorted(base)", FAILURE_30_WORKFLOW)
+        self.assertIn("eligible_candidate = len(new_passes) >= 1 and not regressions", FAILURE_30_WORKFLOW)
+        self.assertNotIn("eligible_candidate = oracle_stable", FAILURE_30_WORKFLOW)
 
     def test_workflow_never_merges_or_updates_benchmark_record(self):
         self.assertIn("No PR is merged", WORKFLOW)
