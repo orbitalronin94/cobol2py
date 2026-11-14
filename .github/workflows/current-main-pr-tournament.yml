@@ -3,12 +3,15 @@ name: Current-main PR tournament
 run-name: PR tournament against current main
 
 on:
+  schedule:
+    # Daily paired comparison of open candidates against a freshly frozen main.
+    - cron: "30 11 * * *"
   workflow_dispatch:
     inputs:
       candidate_prs:
         description: "Open experiment PR numbers, comma-separated"
         required: true
-        default: "371,372,373,374,375,376,377,378"
+        default: "371,372,373,374,376,377,378"
         type: string
       max_parallel:
         description: "Maximum simultaneous candidate benchmarks"
@@ -40,7 +43,7 @@ jobs:
         id: freeze
         env:
           GH_TOKEN: ${{ github.token }}
-          REQUESTED_PRS: ${{ inputs.candidate_prs }}
+          REQUESTED_PRS: ${{ inputs.candidate_prs || '371,372,373,374,376,377,378' }}
         run: |
           set -euo pipefail
           baseline_sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
