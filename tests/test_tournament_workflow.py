@@ -14,6 +14,13 @@ WORKFLOW = (
     / "seven-candidate-tournament.yml"
 ).read_text(encoding="utf-8")
 
+CURRENT_MAIN_PR_WORKFLOW = (
+    Path(__file__).resolve().parents[1]
+    / ".github"
+    / "workflows"
+    / "current-main-pr-tournament.yml"
+).read_text(encoding="utf-8")
+
 
 class MassiveTournamentWorkflowContractTests(unittest.TestCase):
     def test_dispatch_has_safe_default_and_allowed_cohort_sizes(self):
@@ -51,6 +58,15 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
         self.assertIn('report.get("archive_md5_verified") is True', WORKFLOW)
         self.assertIn('row["regressions"] == 0', WORKFLOW)
         self.assertIn('row["combined"] > baseline_total', WORKFLOW)
+
+    def test_current_main_pr_tournament_requires_stable_oracle_and_exact_source_ids(self):
+        for field in ("reference_stdout_sha256", "reference_stdout_length", "reference_returncode", "source_sha256"):
+            self.assertIn(field, CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("oracle_drift", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("oracle_stable = not oracle_drift", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("eligible_candidate = oracle_stable", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("actual_merge_sha", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn('base_ref != "main"', CURRENT_MAIN_PR_WORKFLOW)
 
     def test_workflow_never_merges_or_updates_benchmark_record(self):
         self.assertIn("No PR is merged", WORKFLOW)
