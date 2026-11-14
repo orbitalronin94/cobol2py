@@ -73,7 +73,7 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
         self.assertIn("oracle_stable = not oracle_drift", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn("eligible_candidate = oracle_stable", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn("actual_merge_sha", CURRENT_MAIN_PR_WORKFLOW)
-        self.assertIn('base_ref != "main"', CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn('[ "$base_ref" != "main" ]', CURRENT_MAIN_PR_WORKFLOW)
 
     def test_30_seed_tournament_requires_source_identity_and_untruncated_oracle(self):
         self.assertIn("source_sha256", FAILURE_30_WORKFLOW)
