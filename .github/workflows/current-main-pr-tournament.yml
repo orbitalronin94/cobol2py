@@ -3,12 +3,15 @@ name: Current-main PR tournament
 run-name: PR tournament against current main
 
 on:
+  schedule:
+    # Daily paired comparison of open candidates against a freshly frozen main.
+    - cron: "30 11 * * *"
   workflow_dispatch:
     inputs:
       candidate_prs:
         description: "Open experiment PR numbers, comma-separated"
         required: true
-        default: "344,343,341,340,339,338,337,334,333,332,331,330,329,327,326,324,321"
+        default: "371,372,373,374,376,377,378"
         type: string
       max_parallel:
         description: "Maximum simultaneous candidate benchmarks"
@@ -40,7 +43,7 @@ jobs:
         id: freeze
         env:
           GH_TOKEN: ${{ github.token }}
-          REQUESTED_PRS: ${{ inputs.candidate_prs }}
+          REQUESTED_PRS: ${{ inputs.candidate_prs || '371,372,373,374,376,377,378' }}
         run: |
           set -euo pipefail
           baseline_sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
@@ -51,9 +54,12 @@ jobs:
             [[ "$pr" =~ ^[0-9]+$ ]] || { echo "::warning::Ignoring invalid PR value: $raw"; continue; }
             data=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$pr" 2>/dev/null) || { echo "::warning::PR #$pr not found; skipped"; continue; }
             state=$(jq -r '.state' <<<"$data")
+            draft=$(jq -r '.draft' <<<"$data")
+            base_ref=$(jq -r '.base.ref' <<<"$data")
+            head_repo=$(jq -r '.head.repo.full_name // ""' <<<"$data")
             head_sha=$(jq -r '.head.sha' <<<"$data")
-            if [ "$state" != "open" ]; then
-              echo "::warning::PR #$pr is not open; skipped"
+            if [ "$state" != "open" ] || [ "$draft" = "true" ] || [ "$base_ref" != "main" ] || [ "$head_repo" != "$GITHUB_REPOSITORY" ]; then
+              echo "::warning::PR #$pr is not an open, non-draft PR from this repository into main; skipped"
               continue
             fi
             merge_sha=$(git ls-remote "https://github.com/$GITHUB_REPOSITORY.git" "refs/pull/$pr/merge" | awk 'NR==1 {print $1}')
@@ -127,6 +133,15 @@ jobs:
       - uses: actions/checkout@v5
         with:
           ref: ${{ matrix.candidate.merge_sha }}
+      - name: Verify exact candidate merge checkout
+        id: verify-candidate
+        env:
+          EXPECTED_MERGE_SHA: ${{ matrix.candidate.merge_sha }}
+        run: |
+          set -euo pipefail
+          actual_sha=$(git rev-parse HEAD)
+          test "$actual_sha" = "$EXPECTED_MERGE_SHA"
+          echo "actual_sha=$actual_sha" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v5
         with:
           ref: ${{ needs.discover.outputs.baseline_sha }}
@@ -168,6 +183,7 @@ jobs:
           PR_NUMBER: ${{ matrix.candidate.pr }}
           PR_HEAD_SHA: ${{ matrix.candidate.head_sha }}
           MERGE_SHA: ${{ matrix.candidate.merge_sha }}
+          ACTUAL_MERGE_SHA: ${{ steps.verify-candidate.outputs.actual_sha }}
           UNIT_OUTCOME: ${{ steps.unit.outcome }}
         run: |
           python - <<'PY'
@@ -177,6 +193,7 @@ jobs:
               "pr": int(os.environ["PR_NUMBER"]),
               "head_sha": os.environ["PR_HEAD_SHA"],
               "merge_sha": os.environ["MERGE_SHA"],
+              "actual_merge_sha": os.environ.get("ACTUAL_MERGE_SHA"),
               "unit_tests": os.environ.get("UNIT_OUTCOME"),
               "tests_passed": os.environ.get("UNIT_OUTCOME") == "success",
           }
@@ -225,9 +242,56 @@ jobs:
               or baseline.get("archive_md5_expected") != "cbd974caed72b0836777dc2305928ed3"
               or baseline.get("dataset_url") != "https://zenodo.org/records/14269462"):
               raise SystemExit("Current main baseline is incomplete or violates the pinned X-COBOL v2 contract")
-          base = {row["id"]: row["status"] == "passed" for row in baseline["results"]}
-          if len(base) != 500:
-              raise SystemExit(f"Main baseline has {len(base)} unique case IDs, expected 500")
+          baseline_rows = baseline.get("results", [])
+          if len(baseline_rows) != 500:
+              raise SystemExit(f"Main baseline has {len(baseline_rows)} result rows, expected 500")
+          base = {}
+          base_sources = {}
+          baseline_reference = {}
+          for item in baseline_rows:
+              case_id = item.get("id")
+              status = item.get("status")
+              reference_hash = item.get("reference_stdout_sha256")
+              reference_length = item.get("reference_stdout_length")
+              reference_returncode = item.get("reference_returncode")
+              source_sha = item.get("source_sha256")
+              if not case_id or case_id in base or status not in ("passed", "failed"):
+                  raise SystemExit("Baseline has a missing/duplicate case ID or invalid result status")
+              if (
+                  not isinstance(reference_hash, str) or len(reference_hash) != 64
+                  or not isinstance(reference_length, int) or reference_length < 0
+                  or not isinstance(reference_returncode, int)
+                  or item.get("reference_stdout_truncated") is not False
+                  or not isinstance(source_sha, str) or len(source_sha) != 64
+              ):
+                  raise SystemExit(f"Baseline lacks a complete source/oracle fingerprint: {case_id}")
+              baseline_pass = (
+                  item.get("candidate_launched") is True
+                  and item.get("candidate_timeout") is False
+                  and item.get("candidate_stdout_truncated") is False
+                  and isinstance(item.get("candidate_stdout_sha256"), str)
+                  and len(item.get("candidate_stdout_sha256")) == 64
+                  and isinstance(item.get("candidate_stdout_length"), int)
+                  and item.get("candidate_stdout_length") >= 0
+                  and isinstance(item.get("candidate_returncode"), int)
+                  and (
+                      item.get("candidate_stdout_sha256"),
+                      item.get("candidate_stdout_length"),
+                      item.get("candidate_returncode"),
+                  ) == (reference_hash, reference_length, reference_returncode)
+              )
+              if (status == "passed") != baseline_pass:
+                  raise SystemExit(f"Baseline status disagrees with its exact GnuCOBOL comparison: {case_id}")
+              base[case_id] = baseline_pass
+              base_sources[case_id] = source_sha
+              baseline_reference[case_id] = (reference_hash, reference_length, reference_returncode)
+          baseline_score = sum(base.values())
+          if (
+              len(base) != 500
+              or baseline.get("passed") != baseline_score
+              or baseline.get("failed") != 500 - baseline_score
+          ):
+              raise SystemExit("Baseline counts do not agree with its 500 unique case results")
           rows = []
           for candidate in candidates:
               folders = list(root.glob(f"pr-tournament-candidate-{candidate['pr']}-*/"))
@@ -248,30 +312,126 @@ jobs:
                   rows.append({**candidate, "eligible": False, "reason": "benchmark report missing"})
                   continue
               report = json.loads(report_path.read_text())
-              result_map = {row["id"]: row["status"] == "passed" for row in report.get("results", [])}
+              report_rows = report.get("results", [])
+              result_map = {}
+              reference_map = {}
+              source_map = {}
+              valid_rows = len(report_rows) == 500
+              for item in report_rows:
+                  case_id = item.get("id")
+                  status = item.get("status")
+                  reference_hash = item.get("reference_stdout_sha256")
+                  reference_length = item.get("reference_stdout_length")
+                  reference_returncode = item.get("reference_returncode")
+                  source_sha = item.get("source_sha256")
+                  if not case_id or case_id in result_map or status not in ("passed", "failed"):
+                      valid_rows = False
+                      continue
+                  if (
+                      not isinstance(reference_hash, str) or len(reference_hash) != 64
+                      or not isinstance(reference_length, int) or reference_length < 0
+                      or not isinstance(reference_returncode, int)
+                      or item.get("reference_stdout_truncated") is not False
+                      or not isinstance(source_sha, str) or len(source_sha) != 64
+                  ):
+                      valid_rows = False
+                  else:
+                      reference_map[case_id] = (reference_hash, reference_length, reference_returncode)
+                      source_map[case_id] = source_sha
+                  if status == "passed" and (
+                      item.get("stdout_match") is not True or item.get("returncode_match") is not True
+                  ):
+                      valid_rows = False
+                  frozen_oracle = baseline_reference.get(case_id)
+                  candidate_pass = (
+                      frozen_oracle is not None
+                      and item.get("candidate_launched") is True
+                      and item.get("candidate_timeout") is False
+                      and item.get("candidate_stdout_truncated") is False
+                      and isinstance(item.get("candidate_stdout_sha256"), str)
+                      and len(item.get("candidate_stdout_sha256")) == 64
+                      and isinstance(item.get("candidate_stdout_length"), int)
+                      and item.get("candidate_stdout_length") >= 0
+                      and isinstance(item.get("candidate_returncode"), int)
+                      and (
+                          item.get("candidate_stdout_sha256"),
+                          item.get("candidate_stdout_length"),
+                          item.get("candidate_returncode"),
+                      ) == frozen_oracle
+                  )
+                  result_map[case_id] = candidate_pass
+
               contract_keys = ("dataset_url", "archive_md5_expected", "target", "skip", "selection", "pass_definition")
-              if any(report.get(key) != baseline.get(key) for key in contract_keys):
-                  rows.append({**candidate, "eligible": False, "reason": "corpus, selection, or options differ from main"})
+              contract_matches = all(report.get(key) == baseline.get(key) for key in contract_keys)
+              candidate_score = sum(result_map.values())
+              reported_score = sum(1 for item in report_rows if item.get("status") == "passed")
+              report_complete = (
+                  contract_matches
+                  and report.get("tested") == 500
+                  and report.get("target") == 500
+                  and report.get("skip") == 500
+                  and report.get("sample_complete") is True
+                  and report.get("archive_md5_verified") is True
+                  and report.get("archive_md5_expected") == "cbd974caed72b0836777dc2305928ed3"
+                  and valid_rows
+                  and len(result_map) == 500
+                  and len(reference_map) == 500
+                  and len(source_map) == 500
+                  and set(result_map) == set(base)
+                  and set(reference_map) == set(base)
+                  and set(source_map) == set(base)
+                  and report.get("passed") == reported_score
+                  and report.get("failed") == 500 - reported_score
+              )
+              if not report_complete:
+                  rows.append({**candidate, "eligible": False, "reason": "incomplete/non-comparable holdout, checksum, denominator, IDs, source hashes or oracle fingerprints"})
                   continue
-              if (report.get("tested") != 500 or report.get("target") != 500 or report.get("skip") != 500
-                  or report.get("sample_complete") is not True or report.get("archive_md5_verified") is not True
-                  or len(result_map) != 500 or set(result_map) != set(base)):
-                  rows.append({**candidate, "eligible": False, "reason": "incomplete or non-comparable holdout"})
+              identity = json.loads(identity_path.read_text())
+              if identity.get("actual_merge_sha") != candidate["merge_sha"]:
+                  rows.append({**candidate, "eligible": False, "reason": "candidate checkout SHA does not match frozen merge SHA"})
                   continue
-              regressions = sorted(case for case in base if base[case] and not result_map[case])
-              new_passes = sorted(case for case in base if not base[case] and result_map[case])
+
+              source_drift = sorted(case for case in base if source_map[case] != base_sources[case])
+              if source_drift:
+                  rows.append({
+                      **candidate, "eligible": False, "reason": "source SHA changed for one or more fixed case IDs",
+                      "source_drift_case_ids": source_drift,
+                  })
+                  continue
+
+              oracle_drift = sorted(case for case in base if reference_map[case] != baseline_reference[case])
+              # The main run freezes GnuCOBOL stdout SHA-256, byte length and
+              # return code for every ID. Candidate-run oracle drift is diagnostic;
+              # it never changes the scoring oracle.
+              comparable_cases = sorted(base)
+              regressions = sorted(case for case in comparable_cases if base[case] and not result_map[case])
+              new_passes = sorted(case for case in comparable_cases if not base[case] and result_map[case])
+              oracle_stable = not oracle_drift
+              eligible_candidate = len(new_passes) >= 1 and not regressions
+              reason = "eligible" if eligible_candidate else "zero-regression/gain gate failed"
+              if oracle_drift:
+                  reason += f"; fresh candidate-run oracle drift recorded for {len(oracle_drift)} case(s); scoring used frozen main oracle"
               rows.append({
-                  **candidate, "score": sum(result_map.values()), "new_passes": len(new_passes),
-                  "regressions": len(regressions), "eligible": len(new_passes) >= 1 and not regressions,
-                  "reason": "eligible" if len(new_passes) >= 1 and not regressions else "zero-regression/gain gate failed",
-                  "new_pass_case_ids": new_passes, "regressed_case_ids": regressions,
+                  **candidate,
+                  "score": candidate_score,
+                  "comparable_cases": len(comparable_cases),
+                  "oracle_stable": oracle_stable,
+                  "oracle_drift_count": len(oracle_drift),
+                  "oracle_drift_case_ids": oracle_drift,
+                  "new_passes": len(new_passes),
+                  "regressions": len(regressions),
+                  "eligible": eligible_candidate,
+                  "reason": reason,
+                  "new_pass_case_ids": new_passes,
+                  "regressed_case_ids": regressions,
               })
           eligible = sorted((r for r in rows if r.get("eligible")),
                             key=lambda r: (-r["new_passes"], r["regressions"]))
           summary = {
               "baseline_sha": "${{ needs.discover.outputs.baseline_sha }}",
-              "baseline_score": baseline.get("passed"),
+              "baseline_score": baseline_score,
               "baseline_tested": baseline.get("tested"),
+              "scoring_oracle": "frozen main GnuCOBOL stdout SHA-256, byte length and return code per case ID",
               "candidates": rows,
               "winner": eligible[0] if eligible else None,
               "promotion": "manual; no merge is performed by this workflow",

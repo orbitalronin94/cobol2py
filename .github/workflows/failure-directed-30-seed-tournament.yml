@@ -321,26 +321,44 @@ jobs:
               raise SystemExit(f"Baseline has {len(baseline_rows)} result rows, expected 500")
           base = {}
           baseline_reference = {}
+          baseline_sources = {}
           for item in baseline_rows:
               case_id = item.get("id")
               status = item.get("status")
               reference_hash = item.get("reference_stdout_sha256")
               reference_length = item.get("reference_stdout_length")
               reference_returncode = item.get("reference_returncode")
+              source_sha = item.get("source_sha256")
               if not case_id or case_id in base or status not in ("passed", "failed"):
                   raise SystemExit("Baseline has a missing/duplicate case ID or invalid result status")
               if (
                   not isinstance(reference_hash, str) or len(reference_hash) != 64
                   or not isinstance(reference_length, int) or reference_length < 0
                   or not isinstance(reference_returncode, int)
+                  or item.get("reference_stdout_truncated") is not False
+                  or not isinstance(source_sha, str) or len(source_sha) != 64
               ):
                   raise SystemExit(f"Baseline lacks a complete GnuCOBOL oracle fingerprint: {case_id}")
-              if status == "passed" and (
-                  item.get("stdout_match") is not True or item.get("returncode_match") is not True
-              ):
-                  raise SystemExit(f"Baseline pass does not prove exact stdout and return-code match: {case_id}")
-              base[case_id] = status == "passed"
+              baseline_pass = (
+                  item.get("candidate_launched") is True
+                  and item.get("candidate_timeout") is False
+                  and item.get("candidate_stdout_truncated") is False
+                  and isinstance(item.get("candidate_stdout_sha256"), str)
+                  and len(item.get("candidate_stdout_sha256")) == 64
+                  and isinstance(item.get("candidate_stdout_length"), int)
+                  and item.get("candidate_stdout_length") >= 0
+                  and isinstance(item.get("candidate_returncode"), int)
+                  and (
+                      item.get("candidate_stdout_sha256"),
+                      item.get("candidate_stdout_length"),
+                      item.get("candidate_returncode"),
+                  ) == (reference_hash, reference_length, reference_returncode)
+              )
+              if (status == "passed") != baseline_pass:
+                  raise SystemExit(f"Baseline status disagrees with its exact GnuCOBOL comparison: {case_id}")
+              base[case_id] = baseline_pass
               baseline_reference[case_id] = (reference_hash, reference_length, reference_returncode)
+              baseline_sources[case_id] = source_sha
           baseline_score = sum(base.values())
           if (
               len(base) != 500
@@ -394,6 +412,7 @@ jobs:
               report_rows = report.get("results", [])
               result_map = {}
               reference_map = {}
+              source_map = {}
               valid_rows = len(report_rows) == 500
               for item in report_rows:
                   case_id = item.get("id")
@@ -401,6 +420,7 @@ jobs:
                   reference_hash = item.get("reference_stdout_sha256")
                   reference_length = item.get("reference_stdout_length")
                   reference_returncode = item.get("reference_returncode")
+                  source_sha = item.get("source_sha256")
                   if not case_id or case_id in result_map or status not in ("passed", "failed"):
                       valid_rows = False
                       continue
@@ -408,15 +428,35 @@ jobs:
                       not isinstance(reference_hash, str) or len(reference_hash) != 64
                       or not isinstance(reference_length, int) or reference_length < 0
                       or not isinstance(reference_returncode, int)
+                      or item.get("reference_stdout_truncated") is not False
+                      or not isinstance(source_sha, str) or len(source_sha) != 64
                   ):
                       valid_rows = False
                   else:
                       reference_map[case_id] = (reference_hash, reference_length, reference_returncode)
+                      source_map[case_id] = source_sha
                   if status == "passed" and (
                       item.get("stdout_match") is not True or item.get("returncode_match") is not True
                   ):
                       valid_rows = False
-                  result_map[case_id] = status == "passed"
+                  frozen_oracle = baseline_reference.get(case_id)
+                  candidate_pass = (
+                      frozen_oracle is not None
+                      and item.get("candidate_launched") is True
+                      and item.get("candidate_timeout") is False
+                      and item.get("candidate_stdout_truncated") is False
+                      and isinstance(item.get("candidate_stdout_sha256"), str)
+                      and len(item.get("candidate_stdout_sha256")) == 64
+                      and isinstance(item.get("candidate_stdout_length"), int)
+                      and item.get("candidate_stdout_length") >= 0
+                      and isinstance(item.get("candidate_returncode"), int)
+                      and (
+                          item.get("candidate_stdout_sha256"),
+                          item.get("candidate_stdout_length"),
+                          item.get("candidate_returncode"),
+                      ) == frozen_oracle
+                  )
+                  result_map[case_id] = candidate_pass
 
               contract_keys = (
                   "dataset_url", "archive_md5_expected", "target", "skip",
@@ -424,6 +464,7 @@ jobs:
               )
               contract_matches = all(report.get(key) == baseline.get(key) for key in contract_keys)
               candidate_score = sum(result_map.values())
+              reported_score = sum(1 for item in report_rows if item.get("status") == "passed")
               report_complete = (
                   contract_matches
                   and report.get("tested") == 500
@@ -435,10 +476,12 @@ jobs:
                   and valid_rows
                   and len(result_map) == 500
                   and len(reference_map) == 500
+                  and len(source_map) == 500
                   and set(result_map) == set(base)
                   and set(reference_map) == set(base)
-                  and report.get("passed") == candidate_score
-                  and report.get("failed") == 500 - candidate_score
+                  and set(source_map) == set(base)
+                  and report.get("passed") == reported_score
+                  and report.get("failed") == 500 - reported_score
               )
               if not report_complete:
                   reason = "incomplete/non-comparable holdout, checksum, denominator, IDs, or exact-match contract"
@@ -446,10 +489,23 @@ jobs:
                   rows.append({**candidate, "complete": False, "eligible": False, "reason": reason})
                   continue
 
+              source_drift = sorted(case for case in base if source_map[case] != baseline_sources[case])
+              if source_drift:
+                  reason = f"source SHA changed for {len(source_drift)} fixed case ID(s)"
+                  incomplete.append({"seed": candidate["seed"], "id": candidate["id"], "reason": reason})
+                  rows.append({
+                      **candidate, "complete": False, "eligible": False, "reason": reason,
+                      "source_drift_case_ids": source_drift,
+                  })
+                  continue
+
               oracle_drift = sorted(
                   case for case in base if reference_map[case] != baseline_reference[case]
               )
-              comparable_cases = sorted(set(base) - set(oracle_drift))
+              # Score every candidate against the frozen main GnuCOBOL oracle.
+              # A fresh candidate-run oracle is diagnostic only; it cannot
+              # change the expected stdout bytes or return code for a case ID.
+              comparable_cases = sorted(base)
               regressions = sorted(
                   case for case in comparable_cases if base[case] and not result_map[case]
               )
@@ -457,12 +513,10 @@ jobs:
                   case for case in comparable_cases if not base[case] and result_map[case]
               )
               oracle_stable = not oracle_drift
-              eligible_candidate = oracle_stable and len(new_passes) >= 1 and not regressions
-              reason = (
-                  "eligible" if eligible_candidate else
-                  f"GnuCOBOL oracle drift on {len(oracle_drift)} case(s)" if oracle_drift else
-                  "zero-regression/gain gate failed"
-              )
+              eligible_candidate = len(new_passes) >= 1 and not regressions
+              reason = "eligible" if eligible_candidate else "zero-regression/gain gate failed"
+              if oracle_drift:
+                  reason += f"; fresh candidate-run oracle drift recorded for {len(oracle_drift)} case(s); scoring used frozen main oracle"
               rows.append({
                   **candidate,
                   "complete": True,
@@ -495,7 +549,8 @@ jobs:
               "baseline_score": baseline_score,
               "baseline_tested": baseline.get("tested"),
               "baseline_translator_sha256": baseline_identity["translator_sha256"],
-              "oracle_stability_required": True,
+              "frozen_baseline_oracle_required": True,
+              "candidate_run_oracle_drift_is_diagnostic": True,
               "candidates": rows,
               "incomplete_candidates": incomplete,
               "winner": eligible[0] if eligible and complete else None,

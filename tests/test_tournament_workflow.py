@@ -14,6 +14,20 @@ WORKFLOW = (
     / "seven-candidate-tournament.yml"
 ).read_text(encoding="utf-8")
 
+CURRENT_MAIN_PR_WORKFLOW = (
+    Path(__file__).resolve().parents[1]
+    / ".github"
+    / "workflows"
+    / "current-main-pr-tournament.yml"
+).read_text(encoding="utf-8")
+
+FAILURE_30_WORKFLOW = (
+    Path(__file__).resolve().parents[1]
+    / ".github"
+    / "workflows"
+    / "failure-directed-30-seed-tournament.yml"
+).read_text(encoding="utf-8")
+
 
 class MassiveTournamentWorkflowContractTests(unittest.TestCase):
     def test_dispatch_has_safe_default_and_allowed_cohort_sizes(self):
@@ -51,6 +65,39 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
         self.assertIn('report.get("archive_md5_verified") is True', WORKFLOW)
         self.assertIn('row["regressions"] == 0', WORKFLOW)
         self.assertIn('row["combined"] > baseline_total', WORKFLOW)
+
+    def test_current_main_pr_tournament_scores_against_frozen_main_oracle(self):
+        for field in (
+            "reference_stdout_sha256", "reference_stdout_length", "reference_returncode",
+            "source_sha256", "candidate_stdout_sha256", "candidate_stdout_length",
+            "candidate_returncode",
+        ):
+            self.assertIn(field, CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("baseline_reference", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("candidate_pass = (", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("oracle_drift", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("comparable_cases = sorted(base)", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("eligible_candidate = len(new_passes) >= 1 and not regressions", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertNotIn("eligible_candidate = oracle_stable", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("actual_merge_sha", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn('[ "$base_ref" != "main" ]', CURRENT_MAIN_PR_WORKFLOW)
+
+    def test_current_main_pr_tournament_runs_daily_without_manual_dispatch(self):
+        self.assertIn('cron: "30 11 * * *"', CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("inputs.candidate_prs || '371,372,373,374,376,377,378'", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("workflow_dispatch:", CURRENT_MAIN_PR_WORKFLOW)
+
+    def test_30_seed_tournament_scores_against_frozen_main_oracle(self):
+        for field in (
+            "source_sha256", "baseline_sources", "source_map", "source_drift",
+            "candidate_stdout_sha256", "candidate_stdout_length", "candidate_returncode",
+            "baseline_reference", "candidate_pass",
+        ):
+            self.assertIn(field, FAILURE_30_WORKFLOW)
+        self.assertIn('reference_stdout_truncated") is not False', FAILURE_30_WORKFLOW)
+        self.assertIn("comparable_cases = sorted(base)", FAILURE_30_WORKFLOW)
+        self.assertIn("eligible_candidate = len(new_passes) >= 1 and not regressions", FAILURE_30_WORKFLOW)
+        self.assertNotIn("eligible_candidate = oracle_stable", FAILURE_30_WORKFLOW)
 
     def test_workflow_never_merges_or_updates_benchmark_record(self):
         self.assertIn("No PR is merged", WORKFLOW)
