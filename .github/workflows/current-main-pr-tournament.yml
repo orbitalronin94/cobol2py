@@ -67,6 +67,33 @@ jobs:
               echo "::warning::PR #$pr has no GitHub merge ref (likely conflicts); skipped"
               continue
             fi
+            comparison=$(gh api "repos/$GITHUB_REPOSITORY/compare/$baseline_sha...$merge_sha")
+            comparison_status=$(jq -r '.status' <<<"$comparison")
+            if [ "$comparison_status" != "ahead" ]; then
+              echo "::warning::PR #$pr is not an ahead-only change from frozen main; skipped"
+              continue
+            fi
+            changed_paths=$(jq -r '.files[]?.filename' <<<"$comparison")
+            if ! grep -Eq '^(cobol2py\.py|ronin/|web/index\.html$)' <<<"$changed_paths"; then
+              echo "::warning::PR #$pr has no translator implementation change; skipped"
+              continue
+            fi
+            if ! grep -Eq '^tests/' <<<"$changed_paths"; then
+              echo "::warning::PR #$pr has no regression test/reproducer change; skipped"
+              continue
+            fi
+            # Enforce isolation: a candidate may change only translator implementation and tests.
+            if jq -e '
+              any(.files[]?;
+                .filename != "cobol2py.py"
+                and .filename != "web/index.html"
+                and (.filename | startswith("ronin/") | not)
+                and (.filename | startswith("tests/") | not)
+              )
+            ' <<<"$comparison" >/dev/null; then
+              echo "::warning::PR #$pr contains unrelated changes outside translator/tests; skipped"
+              continue
+            fi
             item=$(jq -cn --arg pr "$pr" --arg head "$head_sha" --arg merge "$merge_sha" \
               '{pr:($pr|tonumber),head_sha:$head,merge_sha:$merge}')
             candidates=$(jq -cn --argjson old "$candidates" --argjson item "$item" '$old + [$item]')
