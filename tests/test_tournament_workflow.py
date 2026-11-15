@@ -104,5 +104,15 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
         self.assertIn("benchmark record is not changed", WORKFLOW)
 
 
+    def test_current_main_pr_tournament_rejects_unrelated_candidate_changes(self):
+        self.assertIn("Enforce isolation", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("translator implementation change", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("regression test/reproducer change", CURRENT_MAIN_PR_WORKFLOW)
+
+    def test_30_seed_tournament_rejects_unrelated_candidate_changes(self):
+        self.assertIn("Enforce isolation", FAILURE_30_WORKFLOW)
+        self.assertIn("contains unrelated changes", FAILURE_30_WORKFLOW)
+
+
 if __name__ == "__main__":
     unittest.main()
