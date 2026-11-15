@@ -912,7 +912,23 @@
           "web/index.html"
         ]
       }
-    ]
+    ],
+    "workflow_isolation_audit": {
+      "current_main_pr_tournament": {
+        "enforced": true,
+        "workflow_blob_sha": "58945e4614b85ac84fc1c83710ab1e717c8ac6a1"
+      },
+      "failure_directed_30_seed": {
+        "enforced": true,
+        "workflow_blob_sha": "91d4096a912a2d2ba9b00354e582331b547b4384"
+      },
+      "allowed_paths": [
+        "cobol2py.py",
+        "web/index.html",
+        "ronin/**",
+        "tests/**"
+      ]
+    }
   },
   "prior_16_candidate_tournament": {
     "source_run": 42268813592,
@@ -1972,7 +1988,7 @@
   },
   "current_main_pr_tournament": {
     "workflow": ".github/workflows/current-main-pr-tournament.yml",
-    "workflow_sha": "e9c6effcf2590d787e8a63795ca5ffab02864b22",
+    "workflow_sha": "58945e4614b85ac84fc1c83710ab1e717c8ac6a1",
     "schedule_utc": "30 11 * * *",
     "default_candidate_prs": [
       371,
@@ -2045,7 +2061,18 @@
         "decision": "pending_full_500_casewise_comparison",
         "note": "The full suite passed on Python 3.10, 3.11, 3.12 and 3.13, with GnuCOBOL reference/trace, Java backend and browser smoke. The 50-program GnuCOBOL smoke and 500-case four-shard holdout were still running at this audit."
       }
-    ]
+    ],
+    "isolation_scope": {
+      "enforced": true,
+      "allowed_paths": [
+        "cobol2py.py",
+        "web/index.html",
+        "ronin/**",
+        "tests/**"
+      ],
+      "rejects_unrelated_workflow_benchmark_or_documentation_changes": true,
+      "workflow_blob_sha": "58945e4614b85ac84fc1c83710ab1e717c8ac6a1"
+    }
   },
   "latest_16_candidate_tournament": {
     "run": 43595155564,
