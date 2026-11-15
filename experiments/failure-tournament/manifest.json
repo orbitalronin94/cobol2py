@@ -308,7 +308,8 @@
       "The 30-seed workflow is manual and refuses to proceed unless readiness is ready, all 30 branches are distinct and ahead-only, each has an isolated translator change plus tests, and all 30 full 500-case reports are complete and comparable.",
       "PR #380 was tested against current main bba24a11e20ba8fdb6cd234d7c20fd68c97ff22d with the full 500-case pull_request benchmark (run 43597765222): 263/500 against the frozen main oracle, zero new passes and zero regressions; nine candidate-run oracle drifts are diagnostic. It is not eligible for promotion.",
       "The scheduled current-main PR tournament for 2026-11-15T11:30:00Z was absent from the Actions schedule-event run list at 11:45:18Z. No fresh baseline/matrix was produced; the next expected schedule is 2026-11-16T11:30:00Z.",
-      "The 16-candidate tournament (run 43595155564) failed at discovery: it expected 15 unmerged manifest PRs but found 10. All candidate benchmark jobs were skipped and no artifacts were produced; this is not an active completed cohort."
+      "The 16-candidate tournament (run 43595155564) failed at discovery: it expected 15 unmerged manifest PRs but found 10. All candidate benchmark jobs were skipped and no artifacts were produced; this is not an active completed cohort.",
+      "PR #383 is an isolated candidate on current main bba24a11e20ba8fdb6cd234d7c20fd68c97ff22d for the reproducible EVALUATE NOT failures nc225a-a777e5ee71 and nc2254-2-73142ca32f. Its complete unit suite passed (run 43711953783); the full 500-case holdout run 43711953731 and 50-case smoke run 43711953720 were still in progress at the latest check. No promotion decision is available yet."
     ],
     "audit_date": "2026-11-14",
     "audit_main_sha": "bba24a11e20ba8fdb6cd234d7c20fd68c97ff22d",
@@ -1981,11 +1982,12 @@
       376,
       377,
       378,
-      380
+      380,
+      383
     ],
     "next_expected_run_utc": "2026-11-16T11:30:00Z",
     "contract": "Freeze current main and all 500 per-ID GnuCOBOL stdout SHA-256/length/return-code fingerprints; compare candidate source SHA, stdout bytes and return code on the exact same 500 IDs and archive checksum; require >=1 new pass and zero regressions.",
-    "note": "The 2026-11-15 11:30 UTC scheduled run was not present in Actions when checked at 11:45:18 UTC; no new frozen baseline or candidate matrix was produced. PR #380 has a complete pull_request holdout (run 43597765222) against current main bba24a11e20ba8fdb6cd234d7c20fd68c97ff22d: 500/500 IDs and source hashes, 263/500 against the frozen baseline, zero gains and zero regressions. Nine candidate-run oracle fingerprints drifted and are diagnostic only. PR #380 is not a winner. It is added to the next scheduled current-main PR tournament candidate list.",
+    "note": "The 2026-11-15 11:30 UTC scheduled run was not present in Actions when checked at 11:45:18 UTC; no new frozen baseline or candidate matrix was produced. PR #380 was fully compared against the frozen main oracle (run 43597765222): 263/500, zero gains, zero regressions; nine candidate-run oracle drifts are diagnostic only, so it is ineligible. PR #383 is the new current-main candidate for two reproducible EVALUATE NOT arithmetic syntax failures; its full unit suite passed, while its 50-case smoke and full 500-case holdout were still in progress at this audit. The next scheduled current-main PR tournament is expected 2026-11-16T11:30:00Z and now includes PR #383.",
     "last_schedule_check_utc": "2026-11-15T11:45:18Z",
     "last_scheduled_run_found": false,
     "latest_candidate_evaluation": {
@@ -2023,7 +2025,27 @@
       ],
       "decision": "ineligible_no_gain",
       "note": "All four 125-case shards completed on the same 500 IDs and source hashes. Recomputed candidate stdout SHA-256, byte length and return code against the frozen main GnuCOBOL fingerprints: 263/500, no gains, no regressions. Nine candidate-run GnuCOBOL fingerprints drifted; the candidate's own report therefore shows 262/500, but drift is diagnostic and does not alter the frozen-oracle score."
-    }
+    },
+    "candidate_queue": [
+      {
+        "pr": 383,
+        "branch": "fix/evaluate-not-expression-range-20261115",
+        "head_sha": "36b0c538c90bbc357693fe17a37fa457629bc219",
+        "base_sha": "bba24a11e20ba8fdb6cd234d7c20fd68c97ff22d",
+        "motivating_case_ids": [
+          "nc225a-a777e5ee71",
+          "nc2254-2-73142ca32f"
+        ],
+        "unit_suite_run": 43711953783,
+        "unit_suite_conclusion": "success",
+        "cobol_smoke_run": 43711953720,
+        "cobol_smoke_status": "in_progress",
+        "holdout_run": 43711953731,
+        "holdout_status": "in_progress",
+        "decision": "pending_full_500_casewise_comparison",
+        "note": "The full suite passed on Python 3.10, 3.11, 3.12 and 3.13, with GnuCOBOL reference/trace, Java backend and browser smoke. The 50-program GnuCOBOL smoke and 500-case four-shard holdout were still running at this audit."
+      }
+    ]
   },
   "latest_16_candidate_tournament": {
     "run": 43595155564,
