@@ -1988,7 +1988,7 @@
   },
   "current_main_pr_tournament": {
     "workflow": ".github/workflows/current-main-pr-tournament.yml",
-    "workflow_sha": "58945e4614b85ac84fc1c83710ab1e717c8ac6a1",
+    "workflow_sha": "59ce57c41223bbf597cb0b673d87e839ff341b9c",
     "schedule_utc": "30 11 * * *",
     "default_candidate_prs": [
       371,
@@ -1998,12 +1998,11 @@
       376,
       377,
       378,
-      380,
       383
     ],
     "next_expected_run_utc": "2026-11-16T11:30:00Z",
     "contract": "Freeze current main and all 500 per-ID GnuCOBOL stdout SHA-256/length/return-code fingerprints; compare candidate source SHA, stdout bytes and return code on the exact same 500 IDs and archive checksum; require >=1 new pass and zero regressions.",
-    "note": "The 2026-11-15 11:30 UTC scheduled run was not present in Actions when checked at 11:45:18 UTC; no new frozen baseline or candidate matrix was produced. PR #380 was fully compared against the frozen main oracle (run 43597765222): 263/500, zero gains, zero regressions; nine candidate-run oracle drifts are diagnostic only, so it is ineligible. PR #383 is the new current-main candidate for two reproducible EVALUATE NOT arithmetic syntax failures; its full unit suite passed, while its 50-case smoke and full 500-case holdout were still in progress at this audit. The next scheduled current-main PR tournament is expected 2026-11-16T11:30:00Z and now includes PR #383.",
+    "note": "The 2026-11-15 11:30 UTC scheduled run was not present in Actions when checked at 11:45:18 UTC. PR #380 was fully compared against the frozen main oracle (run 43597765222): 263/500, zero gains, zero regressions; nine candidate-run oracle drifts are diagnostic only, so PR #380 is excluded from the next cohort to avoid duplicate work. PR #383 is the new current-main candidate for two reproducible EVALUATE NOT arithmetic syntax failures; its full unit suite passed, while its 50-case smoke and full 500-case holdout were still in progress at the last check. The current-main tournament now also triggers on main pushes that change its protocol, the 30-seed workflow, or the manifest; merging this checked infrastructure PR will therefore produce a fresh frozen main baseline and paired candidate comparison without an invented dispatch.",
     "last_schedule_check_utc": "2026-11-15T11:45:18Z",
     "last_scheduled_run_found": false,
     "latest_candidate_evaluation": {
@@ -2072,6 +2071,17 @@
       ],
       "rejects_unrelated_workflow_benchmark_or_documentation_changes": true,
       "workflow_blob_sha": "58945e4614b85ac84fc1c83710ab1e717c8ac6a1"
+    },
+    "push_trigger": {
+      "branches": [
+        "main"
+      ],
+      "paths": [
+        ".github/workflows/current-main-pr-tournament.yml",
+        ".github/workflows/failure-directed-30-seed-tournament.yml",
+        "experiments/failure-tournament/manifest.json"
+      ],
+      "purpose": "Run a fresh exact 500-case baseline and paired candidate cohort after tournament protocol/readiness changes; avoids waiting for a manual dispatch."
     }
   },
   "latest_16_candidate_tournament": {
