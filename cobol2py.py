@@ -4640,6 +4640,10 @@ def translate_nodes(
                 if choice.upper() == "OTHER":
                     condition = "True" if emitted == 0 else None
                     prefix = "if True:" if condition else "else:"
+                elif choice.upper() == "ANY" and not re.search(r"\bALSO\b", subject, re.IGNORECASE):
+                    # In a single-subject EVALUATE, ANY is an unconditional selection.
+                    condition = "True"
+                    prefix = ("if " if emitted == 0 else "elif ") + condition + ":"
                 else:
                     if is_boolean:
                         if is_class_test:
@@ -4652,6 +4656,114 @@ def translate_nodes(
                             condition = translate_condition(choice, variables, condition_names)
                             if subject.upper() == "FALSE":
                                 condition = f"not ({condition})"
+                    elif (
+                        choice.upper().startswith("NOT ")
+                        and choice[4:].strip().upper() not in ("", "ANY", "OTHER")
+                        and not re.match(
+                            r"^(?:IS\b|EQUAL\b|GREATER\b|LESS\b|[<>=])",
+                            choice[4:].strip(),
+                            re.IGNORECASE,
+                        )
+                    ):
+                        # A non-boolean EVALUATE subject uses a negated selection
+                        # object: NOT value means subject != value, while NOT low
+                        # THRU high means the subject is outside the inclusive range.
+                        # Translate the operand as an expression, not a literal:
+                        # ANSI tests include nested arithmetic such as
+                        # NOT (33 + (99 - 43)).
+                        selection = choice[4:].strip()
+                        range_parts = re.split(
+                            r"\s+(?:THRU|THROUGH)\s+",
+                            selection,
+                            maxsplit=1,
+                            flags=re.IGNORECASE,
+                        )
+                        if len(range_parts) == 2:
+                            low, high = (part.strip() for part in range_parts)
+                            low_expr = translate_expr(low, variables)
+                            high_expr = translate_expr(high, variables)
+                            low_literal = decode_cobol_quoted_literal(low)
+                            high_literal = decode_cobol_quoted_literal(high)
+                            low_base = re.match(r"[A-Za-z][A-Za-z0-9-]*", low)
+                            high_base = re.match(r"[A-Za-z][A-Za-z0-9-]*", high)
+                            low_var = (
+                                (variables or {}).get(low_base.group(0).upper())
+                                if low_base else None
+                            )
+                            high_var = (
+                                (variables or {}).get(high_base.group(0).upper())
+                                if high_base else None
+                            )
+                            low_width = (
+                                pic_character_count(low_var.pic)
+                                if low_var and low_var.pic
+                                and any(ch in low_var.pic.upper() for ch in ("X", "A"))
+                                else 0
+                            )
+                            high_width = (
+                                pic_character_count(high_var.pic)
+                                if high_var and high_var.pic
+                                and any(ch in high_var.pic.upper() for ch in ("X", "A"))
+                                else 0
+                            )
+                            width = max(
+                                subject_width,
+                                len(low_literal) if low_literal is not None else 0,
+                                len(high_literal) if high_literal is not None else 0,
+                                low_width,
+                                high_width,
+                            )
+                            subject_expr = temp_name
+                            if width:
+                                subject_expr = f"str({temp_name}).ljust({width})"
+                                low_expr = (
+                                    repr(low_literal.ljust(width))
+                                    if low_literal is not None
+                                    else f"str({low_expr}).ljust({width})" if low_width else low_expr
+                                )
+                                high_expr = (
+                                    repr(high_literal.ljust(width))
+                                    if high_literal is not None
+                                    else f"str({high_expr}).ljust({width})" if high_width else high_expr
+                                )
+                            condition = f"({subject_expr} < {low_expr} or {subject_expr} > {high_expr})"
+                        else:
+                            operand_expr = translate_expr(selection, variables)
+                            operand_literal = decode_cobol_quoted_literal(selection)
+                            operand_base = re.match(r"[A-Za-z][A-Za-z0-9-]*", selection)
+                            operand_var = (
+                                (variables or {}).get(operand_base.group(0).upper())
+                                if operand_base else None
+                            )
+                            operand_width = (
+                                pic_character_count(operand_var.pic)
+                                if operand_var and operand_var.pic
+                                and any(ch in operand_var.pic.upper() for ch in ("X", "A"))
+                                else 0
+                            )
+                            padded_special = selection.upper() in (
+                                "SPACE", "SPACES", "QUOTE", "QUOTES",
+                                "LOW-VALUE", "LOW-VALUES", "HIGH-VALUE", "HIGH-VALUES",
+                            )
+                            if subject_width and operand_literal is not None:
+                                width = max(subject_width, len(operand_literal))
+                                condition = (
+                                    f"str({temp_name}).ljust({width}) != "
+                                    f"{operand_literal.ljust(width)!r}"
+                                )
+                            elif subject_width and operand_width:
+                                width = max(subject_width, operand_width)
+                                condition = (
+                                    f"str({temp_name}).ljust({width}) != "
+                                    f"str({operand_expr}).ljust({width})"
+                                )
+                            elif subject_width and padded_special:
+                                condition = (
+                                    f"str({temp_name}).ljust({subject_width}) != "
+                                    f"str({operand_expr}).ljust({subject_width})"
+                                )
+                            else:
+                                condition = f"{temp_name} != {operand_expr}"
                     elif re.search(r"\s+(?:THRU|THROUGH)\s+", choice, re.IGNORECASE):
                         low, high = re.split(r"\s+(?:THRU|THROUGH)\s+", choice, maxsplit=1, flags=re.IGNORECASE)
                         condition = (

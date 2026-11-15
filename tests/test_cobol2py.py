@@ -4707,3 +4707,117 @@ MAIN.
                 os.chdir(previous)
         self.assertEqual(output.getvalue(), "", generated)
         self.assertEqual(written, "ABCD\n", generated)
+
+
+class EvaluateNegatedExpressionAndRangeTests(unittest.TestCase):
+    @staticmethod
+    def run_evaluate(subject, selection, variables, values):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        node = cobol2py.Node(
+            kind="evaluate",
+            text=f"EVALUATE {subject}",
+            line=900,
+            body=[
+                cobol2py.Node(
+                    kind="when",
+                    text=selection,
+                    line=901,
+                    then_branch=[
+                        cobol2py.Node(kind="stmt", text='DISPLAY "MATCH"', line=902)
+                    ],
+                ),
+                cobol2py.Node(
+                    kind="when",
+                    text="OTHER",
+                    line=903,
+                    then_branch=[
+                        cobol2py.Node(kind="stmt", text='DISPLAY "OTHER"', line=904)
+                    ],
+                ),
+            ],
+        )
+        translated = cobol2py.translate_nodes(
+            [node], set(), indent=0, variables=variables
+        )
+        generated = "def run():\n" + "\n".join("    " + line for line in translated)
+        compile(generated, "<evaluate-negated-selection>", "exec")
+        namespace = dict(values)
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["run"]()
+        return output.getvalue(), generated
+
+    def test_when_not_parenthesized_arithmetic_expression(self):
+        variables = {
+            "WS-NUM": cobol2py.CobolVar(level=1, name="WS-NUM", pic="99"),
+        }
+        output, generated = self.run_evaluate(
+            "WS-NUM",
+            "NOT (33 + (99 - 43))",
+            variables,
+            {"ws_num": 89},
+        )
+        self.assertEqual(output, "OTHER\n", generated)
+        output, generated = self.run_evaluate(
+            "WS-NUM",
+            "NOT (33 + (99 - 43))",
+            variables,
+            {"ws_num": 90},
+        )
+        self.assertEqual(output, "MATCH\n", generated)
+
+    def test_when_not_parenthesized_arithmetic_thru_range(self):
+        variables = {
+            "WS-NUM": cobol2py.CobolVar(level=1, name="WS-NUM", pic="999"),
+        }
+        selection = "NOT (11 + (99 - 43)) THRU (20 * 5)"
+        output, generated = self.run_evaluate(
+            "WS-NUM", selection, variables, {"ws_num": 89}
+        )
+        self.assertEqual(output, "OTHER\n", generated)
+        output, generated = self.run_evaluate(
+            "WS-NUM", selection, variables, {"ws_num": 120}
+        )
+        self.assertEqual(output, "MATCH\n", generated)
+
+    def test_when_not_alphanumeric_through_range_uses_fixed_width_comparison(self):
+        variables = {
+            "WS-CODE": cobol2py.CobolVar(level=1, name="WS-CODE", pic="X(1)"),
+        }
+        selection = 'NOT "A" THROUGH "N"'
+        output, generated = self.run_evaluate(
+            "WS-CODE", selection, variables, {"ws_code": "A"}
+        )
+        self.assertEqual(output, "OTHER\n", generated)
+        output, generated = self.run_evaluate(
+            "WS-CODE", selection, variables, {"ws_code": "Z"}
+        )
+        self.assertEqual(output, "MATCH\n", generated)
+
+    def test_when_not_identifier_compares_the_evaluate_subject(self):
+        variables = {
+            "WS-LEFT": cobol2py.CobolVar(level=1, name="WS-LEFT", pic="X"),
+            "WS-RIGHT": cobol2py.CobolVar(level=1, name="WS-RIGHT", pic="X"),
+        }
+        output, generated = self.run_evaluate(
+            "WS-LEFT", "NOT WS-RIGHT", variables,
+            {"ws_left": "A", "ws_right": "B"},
+        )
+        self.assertEqual(output, "MATCH\n", generated)
+        output, generated = self.run_evaluate(
+            "WS-LEFT", "NOT WS-RIGHT", variables,
+            {"ws_left": "A", "ws_right": "A"},
+        )
+        self.assertEqual(output, "OTHER\n", generated)
+
+    def test_when_any_is_unconditional_for_single_subject(self):
+        variables = {
+            "WS-NUM": cobol2py.CobolVar(level=1, name="WS-NUM", pic="99"),
+        }
+        output, generated = self.run_evaluate(
+            "WS-NUM", "ANY", variables, {"ws_num": 42}
+        )
+        self.assertEqual(output, "MATCH\n", generated)
