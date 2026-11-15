@@ -120,5 +120,10 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
         self.assertIn("contains unrelated changes", FAILURE_30_WORKFLOW)
 
 
+    def test_legacy_16_candidate_tournament_is_manual_only_until_rebuilt(self):
+        trigger_section = WORKFLOW.split("permissions:", 1)[0]
+        self.assertIn("workflow_dispatch:", trigger_section)
+        self.assertNotIn("\n  push:", trigger_section)
+
 if __name__ == "__main__":
     unittest.main()

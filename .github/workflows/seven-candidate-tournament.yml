@@ -2,17 +2,9 @@ name: massive-parallel-tournament
 
 run-name: COBOL equivalence tournament — ${{ inputs.cohort_size || '16' }} candidates
 
+# Manual-only legacy cohort: its manifest currently lacks the required open candidate PR set.
+# Use current-main-pr-tournament.yml for active, isolated candidate comparisons.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "cobol2py.py"
-      - "tests/test_cobol2py.py"
-      - "tests/test_tournament_workflow.py"
-      - "experiments/massive-cohorts/16/manifest.json"
-      - "web/index.html"
-      - ".github/workflows/seven-candidate-tournament.yml"
-      - "benchmarks/holdout-record.json"
   workflow_dispatch:
     inputs:
       cohort_size:
@@ -31,7 +23,7 @@ concurrency:
   group: cobol2py-massive-parallel-tournament-${{ github.ref }}
   cancel-in-progress: true
 
-# One coordinator only: run on main workflow updates or explicit workflow_dispatch, never once per candidate PR.
+# Manual-only until the 16-candidate manifest and PR cohort are rebuilt and complete.
 # Freeze candidate SHAs, then measure both disjoint 500-case samples for main and every candidate.
 # Ranking requires complete paired exact-match results, green tests, and zero regressions by case ID.
 # This workflow publishes evidence only; it never merges candidates or changes the benchmark record.
