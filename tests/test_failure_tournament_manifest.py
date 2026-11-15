@@ -72,7 +72,7 @@ class FailureTournamentManifestTests(unittest.TestCase):
 
     def test_current_main_pr_tournament_records_full_casewise_candidate_evaluation(self):
         tournament = MANIFEST["current_main_pr_tournament"]
-        self.assertIn(380, tournament["default_candidate_prs"])
+        self.assertNotIn(380, tournament["default_candidate_prs"])
         self.assertIn(383, tournament["default_candidate_prs"])
         queued = tournament["candidate_queue"][0]
         self.assertEqual(queued["pr"], 383)
