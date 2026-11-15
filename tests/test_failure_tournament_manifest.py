@@ -70,5 +70,26 @@ class FailureTournamentManifestTests(unittest.TestCase):
                 self.assertTrue(candidate["branch"].startswith("experiment-failure-seed/"))
 
 
+    def test_current_main_pr_tournament_records_full_casewise_candidate_evaluation(self):
+        tournament = MANIFEST["current_main_pr_tournament"]
+        self.assertNotIn(380, tournament["default_candidate_prs"])
+        self.assertIn(383, tournament["default_candidate_prs"])
+        queued = tournament["candidate_queue"][0]
+        self.assertEqual(queued["pr"], 383)
+        self.assertEqual(queued["decision"], "pending_full_500_casewise_comparison")
+        result = tournament["latest_candidate_evaluation"]
+        self.assertEqual(result["pr"], 380)
+        self.assertEqual(result["holdout_tested"], 500)
+        self.assertEqual(result["unique_case_ids"], 500)
+        self.assertEqual(result["source_hash_matches"], 500)
+        self.assertEqual(result["baseline_score"], 263)
+        self.assertEqual(result["candidate_score_against_frozen_oracle"], 263)
+        self.assertEqual(result["new_pass_case_ids"], [])
+        self.assertEqual(result["regressed_case_ids"], [])
+        self.assertEqual(result["decision"], "ineligible_no_gain")
+        self.assertFalse(tournament["last_scheduled_run_found"])
+        self.assertEqual(MANIFEST["latest_16_candidate_tournament"]["candidate_jobs_executed"], 0)
+
+
 if __name__ == "__main__":
     unittest.main()

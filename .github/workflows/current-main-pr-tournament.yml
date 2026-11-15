@@ -3,6 +3,12 @@ name: Current-main PR tournament
 run-name: PR tournament against current main
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/current-main-pr-tournament.yml"
+      - ".github/workflows/failure-directed-30-seed-tournament.yml"
+      - "experiments/failure-tournament/manifest.json"
   schedule:
     # Daily paired comparison of open candidates against a freshly frozen main.
     - cron: "30 11 * * *"
@@ -11,7 +17,7 @@ on:
       candidate_prs:
         description: "Open experiment PR numbers, comma-separated"
         required: true
-        default: "371,372,373,374,376,377,378"
+        default: "371,372,373,374,376,377,378,383"
         type: string
       max_parallel:
         description: "Maximum simultaneous candidate benchmarks"
@@ -43,7 +49,7 @@ jobs:
         id: freeze
         env:
           GH_TOKEN: ${{ github.token }}
-          REQUESTED_PRS: ${{ inputs.candidate_prs || '371,372,373,374,376,377,378' }}
+          REQUESTED_PRS: ${{ inputs.candidate_prs || '371,372,373,374,376,377,378,383' }}
         run: |
           set -euo pipefail
           baseline_sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
@@ -65,6 +71,33 @@ jobs:
             merge_sha=$(git ls-remote "https://github.com/$GITHUB_REPOSITORY.git" "refs/pull/$pr/merge" | awk 'NR==1 {print $1}')
             if [ -z "$merge_sha" ]; then
               echo "::warning::PR #$pr has no GitHub merge ref (likely conflicts); skipped"
+              continue
+            fi
+            comparison=$(gh api "repos/$GITHUB_REPOSITORY/compare/$baseline_sha...$merge_sha")
+            comparison_status=$(jq -r '.status' <<<"$comparison")
+            if [ "$comparison_status" != "ahead" ]; then
+              echo "::warning::PR #$pr is not an ahead-only change from frozen main; skipped"
+              continue
+            fi
+            changed_paths=$(jq -r '.files[]?.filename' <<<"$comparison")
+            if ! grep -Eq '^(cobol2py\.py|ronin/|web/index\.html$)' <<<"$changed_paths"; then
+              echo "::warning::PR #$pr has no translator implementation change; skipped"
+              continue
+            fi
+            if ! grep -Eq '^tests/' <<<"$changed_paths"; then
+              echo "::warning::PR #$pr has no regression test/reproducer change; skipped"
+              continue
+            fi
+            # Enforce isolation: a candidate may change only translator implementation and tests.
+            if jq -e '
+              any(.files[]?;
+                .filename != "cobol2py.py"
+                and .filename != "web/index.html"
+                and (.filename | startswith("ronin/") | not)
+                and (.filename | startswith("tests/") | not)
+              )
+            ' <<<"$comparison" >/dev/null; then
+              echo "::warning::PR #$pr contains unrelated changes outside translator/tests; skipped"
               continue
             fi
             item=$(jq -cn --arg pr "$pr" --arg head "$head_sha" --arg merge "$merge_sha" \

@@ -82,6 +82,19 @@ jobs:
               echo "::error::Seed $seed has no regression test or reproducer change ($branch)"
               exit 1
             fi
+            # Enforce isolation: a candidate may change only translator implementation and tests.
+            if jq -e '
+              any(.files[]?;
+                .filename != "cobol2py.py"
+                and .filename != "web/index.html"
+                and (.filename | startswith("ronin/") | not)
+                and (.filename | startswith("tests/") | not)
+              )
+            ' <<<"$comparison" >/dev/null; then
+              echo "::error::Seed $seed contains unrelated changes; keep the candidate isolated to translator files and tests ($branch)"
+              jq -r '.files[]?.filename' <<<"$comparison"
+              exit 1
+            fi
             item=$(jq -cn --arg seed "$seed" --arg id "$candidate_id" --arg branch "$branch" --arg sha "$sha" \
               '{seed:($seed|tonumber),id:$id,branch:$branch,sha:$sha}')
             candidates=$(jq -cn --argjson old "$candidates" --argjson item "$item" '$old + [$item]')
