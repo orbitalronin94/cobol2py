@@ -82,6 +82,10 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
         self.assertIn("actual_merge_sha", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn('[ "$base_ref" != "main" ]', CURRENT_MAIN_PR_WORKFLOW)
 
+    def test_current_main_pr_tournament_summary_escapes_shell_backticks(self):
+        self.assertIn("printf '%s", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("\\`$baseline_sha\\`", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertNotIn('echo "- Current main: `$baseline_sha`"', CURRENT_MAIN_PR_WORKFLOW)
     def test_current_main_pr_tournament_runs_on_protocol_push_and_daily(self):
         self.assertIn("push:", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn(".github/workflows/current-main-pr-tournament.yml", CURRENT_MAIN_PR_WORKFLOW)

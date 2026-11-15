@@ -113,7 +113,7 @@ jobs:
           echo "candidates=$candidates" >> "$GITHUB_OUTPUT"
           {
             echo "## Frozen comparison set"
-            echo "- Current main: `$baseline_sha`"
+            printf '%s\n' "- Current main: \`$baseline_sha\`"
             echo "- Eligible PR merge refs: $count"
             echo "$candidates" | jq -r '.[] | "- PR #\(.pr): head `\(.head_sha)`, tested merge `\(.merge_sha)`"'
           } >> "$GITHUB_STEP_SUMMARY"
