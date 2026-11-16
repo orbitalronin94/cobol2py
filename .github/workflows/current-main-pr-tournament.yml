@@ -17,7 +17,7 @@ on:
       candidate_prs:
         description: "Open experiment PR numbers, comma-separated"
         required: true
-        default: "371,372,373,374,376,377,378,383"
+        default: "386"
         type: string
       max_parallel:
         description: "Maximum simultaneous candidate benchmarks"
@@ -49,7 +49,7 @@ jobs:
         id: freeze
         env:
           GH_TOKEN: ${{ github.token }}
-          REQUESTED_PRS: ${{ inputs.candidate_prs || '371,372,373,374,376,377,378,383' }}
+          REQUESTED_PRS: ${{ inputs.candidate_prs || '386' }}
         run: |
           set -euo pipefail
           baseline_sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
@@ -105,15 +105,14 @@ jobs:
             candidates=$(jq -cn --argjson old "$candidates" --argjson item "$item" '$old + [$item]')
           done
           count=$(jq 'length' <<<"$candidates")
-          if [ "$count" -lt 1 ]; then
-            echo "::error::No open, mergeable PRs were found. Supply PR numbers with available GitHub merge refs."
-            exit 1
+          if [ "$count" -eq 0 ]; then
+            echo "::notice::No eligible candidate PRs; continuing with a baseline-only 500-case run."
           fi
           echo "baseline_sha=$baseline_sha" >> "$GITHUB_OUTPUT"
           echo "candidates=$candidates" >> "$GITHUB_OUTPUT"
           {
             echo "## Frozen comparison set"
-            echo "- Current main: `$baseline_sha`"
+            printf '%s\n' "- Current main: \`$baseline_sha\`"
             echo "- Eligible PR merge refs: $count"
             echo "$candidates" | jq -r '.[] | "- PR #\(.pr): head `\(.head_sha)`, tested merge `\(.merge_sha)`"'
           } >> "$GITHUB_STEP_SUMMARY"
