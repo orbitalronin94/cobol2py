@@ -300,19 +300,17 @@
   "readiness": {
     "status": "blocked",
     "reasons": [
-      "Fresh audit against main bba24a11e20ba8fdb6cd234d7c20fd68c97ff22d: all 30 manifest branches exist, but all 30 are diverged; none is ahead-only. Rebuild candidates from this exact main before any 30-seed dispatch.",
-      "Seeds 11-15 contain only workflow/documentation changes; they have no cobol2py.py or web/index.html translator change and no tests/reproducer change.",
-      "Seeds 1-10 and 16-30 contain translator and test changes, but all are stale and diverged. Seeds 16-30 also carry unrelated historical workflow/benchmark changes; do not treat these snapshots as isolated candidates.",
-      "The current-main PR tournament is the preferred active path: it freezes main's 500 per-ID GnuCOBOL fingerprints and compares candidate stdout hash, byte length and return code against that oracle. It runs daily at 11:30 UTC; the next scheduled execution after this main commit is 2026-11-15T11:30:00Z.",
-      "Open PRs 371-378 were measured against an older frozen baseline and target base f5b9534ddbbc13d3b30c00afd12c1611f7dece47. Their historical results are not promotion evidence against current main; the current-main tournament will skip any PR without a GitHub merge ref.",
-      "The 30-seed workflow is manual and refuses to proceed unless readiness is ready, all 30 branches are distinct and ahead-only, each has an isolated translator change plus tests, and all 30 full 500-case reports are complete and comparable.",
-      "PR #380 was tested against current main bba24a11e20ba8fdb6cd234d7c20fd68c97ff22d with the full 500-case pull_request benchmark (run 43597765222): 263/500 against the frozen main oracle, zero new passes and zero regressions; nine candidate-run oracle drifts are diagnostic. It is not eligible for promotion.",
-      "The scheduled current-main PR tournament for 2026-11-15T11:30:00Z was absent from the Actions schedule-event run list at 11:45:18Z. No fresh baseline/matrix was produced; the next expected schedule is 2026-11-16T11:30:00Z.",
-      "The 16-candidate tournament (run 43595155564) failed at discovery: it expected 15 unmerged manifest PRs but found 10. All candidate benchmark jobs were skipped and no artifacts were produced; this is not an active completed cohort.",
-      "PR #383 is an isolated candidate on current main bba24a11e20ba8fdb6cd234d7c20fd68c97ff22d for the reproducible EVALUATE NOT failures nc225a-a777e5ee71 and nc2254-2-73142ca32f. Its complete unit suite passed (run 43711953783); the full 500-case holdout run 43711953731 and 50-case smoke run 43711953720 were still in progress at the latest check. No promotion decision is available yet."
+      "All 30 manifest branch refs exist, but the last complete compare against main bba24a11 found all 30 diverged and none ahead-only. A fresh 30-way compare against current main 41db26bacf45abcfc9bc26d0535e30a13f74842b has not been run.",
+      "Seeds 11-15 contain workflow/documentation changes only, without translator implementation or regression tests/reproducers.",
+      "Seeds 16-30 contain translator/tests but also unrelated historical workflow/benchmark changes; they are not isolated candidates.",
+      "The 30-seed workflow remains manual-only and blocks dispatch unless readiness is ready and all 30 branches are ahead-only, isolated, tested and benchmarkable.",
+      "The preferred active path is the current-main paired PR tournament, which freezes main's 500 per-ID GnuCOBOL fingerprints and compares complete candidate reports.",
+      "The latest paired tournament, run 43743736691, evaluated PR #383 against baseline SHA 9e7b1279dc3b0f16240a24c4de629d0c61fd3db0: 263/500 vs 263/500, zero new passes, zero regressions, and eight candidate-run oracle drifts. No candidate was eligible.",
+      "Current main advanced to 41db26bacf45abcfc9bc26d0535e30a13f74842b with a README-only commit; translator blob remains 4a7562627d161580470f1b0522cda0b094f635b0. The 263/500 result is code-equivalent, not a fresh run on that exact SHA.",
+      "The 2026-11-16 pending-pr-main-competition run 43834365886 used the 105-case fixture manifest, not the external 500-case X-COBOL v2 holdout; it is not a baseline or candidate promotion result."
     ],
-    "audit_date": "2026-11-14",
-    "audit_main_sha": "bba24a11e20ba8fdb6cd234d7c20fd68c97ff22d",
+    "audit_date": "2026-11-16",
+    "audit_main_sha": "41db26bacf45abcfc9bc26d0535e30a13f74842b",
     "candidate_branch_refs": 30,
     "candidate_branches_diverged": 30,
     "candidate_branches_ahead": [],
@@ -403,7 +401,7 @@
         "note": "All 30 refs were checked against current main bba24a11. Every branch is diverged; none is ahead-only. Seeds 11-15 have no translator or tests/reproducer change. Seeds 16-30 also contain unrelated workflow or benchmark artifacts."
       }
     },
-    "current_main_sha": "bba24a11e20ba8fdb6cd234d7c20fd68c97ff22d",
+    "current_main_sha": "41db26bacf45abcfc9bc26d0535e30a13f74842b",
     "branch_comparisons": [
       {
         "seed": 1,
@@ -928,6 +926,22 @@
         "ronin/**",
         "tests/**"
       ]
+    },
+    "branch_inventory": {
+      "manifest_branches_expected": 30,
+      "manifest_branches_found": 30,
+      "search_extra_branch": "experiment-failure-seed/10-syntax-evaluate-also",
+      "latest_full_compare_main_sha": "bba24a11e20ba8fdb6cd234d7c20fd68c97ff22d",
+      "current_main_sha": "41db26bacf45abcfc9bc26d0535e30a13f74842b",
+      "current_main_full_30_branch_compare_performed": false,
+      "last_known_compare": {
+        "all_30_exist": true,
+        "all_30_diverged": true,
+        "ahead_only": 0,
+        "seeds_11_to_15_without_translator_or_tests": true,
+        "seeds_16_to_30_contain_unrelated_workflow_or_benchmark_changes": true
+      },
+      "note": "All 30 manifest refs were found in the current branch search. The last complete ahead/behind and path-isolation audit was against bba24a11, not 41db26b; no fresh 30-way compare was run against the latter."
     }
   },
   "prior_16_candidate_tournament": {
@@ -2095,5 +2109,48 @@
     "candidate_jobs_executed": 0,
     "artifacts": 0,
     "decision": "discovery_failure_not_a_completed_tournament"
+  },
+  "latest_verified_code_equivalent_main": {
+    "score": 263,
+    "denominator": 500,
+    "percent": 52.6,
+    "measured_run": 43592015588,
+    "measured_sha": "8ecabaaa7b50d01e9649814a989bbbac7491adef",
+    "current_main_sha": "41db26bacf45abcfc9bc26d0535e30a13f74842b",
+    "current_main_translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
+    "measured_translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
+    "code_equivalent": true,
+    "exact_run_on_current_main_sha": false,
+    "reason": "Current main commit 41db26b changes README.md only; the translator blob is identical to the fully measured 8ecabaaa baseline. Do not label this as a fresh run on 41db26b."
+  },
+  "latest_paired_pr_tournament": {
+    "run": 43743736691,
+    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/43743736691",
+    "baseline_sha": "9e7b1279dc3b0f16240a24c4de629d0c61fd3db0",
+    "baseline_score": 263,
+    "denominator": 500,
+    "candidate_pr": 383,
+    "candidate_head_sha": "89f135d461fc2294ee9848db45842aa198975705",
+    "candidate_merge_sha": "994e82a913d0cc93430ebba2e0b8c0d92c972a5e",
+    "candidate_score": 263,
+    "comparable_cases": 500,
+    "new_passes": 0,
+    "new_pass_case_ids": [],
+    "regressions": 0,
+    "regressed_case_ids": [],
+    "oracle_drift_count": 8,
+    "oracle_drift_case_ids": [
+      "cob-simpleinventory-6af451140a",
+      "collatz-6e335e6eda",
+      "date1-f31ce2734d",
+      "intrdate-0517c3d81c",
+      "pullydis-9e45af6c84",
+      "randombingo-e50339cc12",
+      "randomnumbers-d8fc7ee85b",
+      "rolldice-08e3de1a0e"
+    ],
+    "winner": null,
+    "eligible": false,
+    "note": "Full 500-case paired comparison against frozen main GnuCOBOL stdout SHA-256, byte length and return code per ID. PR #383 had no new exact passes and zero regressions; eight candidate-run oracle drifts were diagnostic and did not affect scoring."
   }
 }
