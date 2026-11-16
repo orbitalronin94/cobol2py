@@ -93,3 +93,37 @@ Las excepciones observadas en los fallos incluyen `ValueError` (18), `NameError`
 - El resultado negativo se conserva. No hay merge automático.
 
 La muestra se observa repetidamente durante el desarrollo y por ello es una muestra fija de evaluación, no un holdout estadístico intacto. Una mejora en ella no demuestra compatibilidad general ni aptitud para producción.
+
+
+## Revalidación del 16 de noviembre de 2026
+
+### Estado de main
+
+- Main actual: `41db26bacf45abcfc9bc26d0535e30a13f74842b`.
+- Último holdout externo completo del código de main: **263/500 (52,6 %)**, [run 43592015588](https://github.com/orbitalronin94/cobol2py/actions/runs/43592015588), medido en `8ecabaaa7b50d01e9649814a989bbbac7491adef`.
+- El commit actual `41db26b` solo modifica `README.md`; el blob de `cobol2py.py` sigue siendo `4a7562627d161580470f1b0522cda0b094f635b0`, idéntico al de la medición completa. Por tanto, 263/500 es equivalente para el código actual, pero **no** debe describirse como una ejecución lanzada sobre el SHA exacto `41db26b`.
+- La referencia histórica 257/500 de [run 42268813592](https://github.com/orbitalronin94/cobol2py/actions/runs/42268813592) permanece separada. El 258/500 de [run 42266714599](https://github.com/orbitalronin94/cobol2py/actions/runs/42266714599) fue una rama experimental.
+
+### PR #383 — EVALUATE NOT / ANY
+
+El torneo emparejado [run 43743736691](https://github.com/orbitalronin94/cobol2py/actions/runs/43743736691) completó baseline y candidata con 500/500 casos y comparación por fingerprints congelados del oráculo GnuCOBOL:
+
+| Métrica | Resultado |
+|---|---:|
+| Main congelado (`9e7b1279`) | 263/500 |
+| PR #383 | 263/500 |
+| Nuevos aprobados | 0 |
+| Regresiones | 0 |
+| Derivas del oráculo durante la candidata | 8 |
+
+Los ocho IDs con deriva fueron: `cob-simpleinventory-6af451140a`, `collatz-6e335e6eda`, `date1-f31ce2734d`, `intrdate-0517c3d81c`, `pullydis-9e45af6c84`, `randombingo-e50339cc12`, `randomnumbers-d8fc7ee85b` y `rolldice-08e3de1a0e`. La puntuación se calculó contra el oráculo congelado de main; las derivas son diagnósticas. PR #383 no cumple el gate de promoción y no se fusiona.
+
+### Cohorte de 30 semillas
+
+La búsqueda actual encontró las 30 ramas declaradas en el manifiesto (más una rama antigua adicional de la semilla 10). La última comparación completa de divergencia y aislamiento disponible fue contra `bba24a11`: las 30 ramas estaban divergidas, ninguna era ahead-only; las semillas 11–15 no tenían cambios de traductor/tests y las 16–30 contenían ruido de workflows/benchmarks. No se ha hecho todavía una nueva comparación SHA por SHA contra `41db26b`, por lo que la readiness sigue bloqueada. El workflow de 30 semillas sigue siendo manual y no se ha despachado.
+
+El run [43834365886](https://github.com/orbitalronin94/cobol2py/actions/runs/43834365886) es la competición de fixtures de 105 casos; no sustituye el holdout externo de 500.
+
+### Decisión
+
+Sin ganador, sin promoción y sin merge de código de traductor. La siguiente hipótesis prioritaria sigue siendo EVALUATE NOT/ANY, pero requiere reducirla a los dos reproduceres motivadores y demostrar al menos una ganancia exacta en el holdout congelado; la ejecución actual no ha demostrado esa ganancia.
