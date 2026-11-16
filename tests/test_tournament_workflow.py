@@ -86,7 +86,7 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
         self.assertIn("push:", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn(".github/workflows/current-main-pr-tournament.yml", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn('cron: "30 11 * * *"', CURRENT_MAIN_PR_WORKFLOW)
-        self.assertIn("inputs.candidate_prs || '371,372,373,374,376,377,378,383'", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("inputs.candidate_prs || '386'", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn("workflow_dispatch:", CURRENT_MAIN_PR_WORKFLOW)
 
     def test_30_seed_tournament_scores_against_frozen_main_oracle(self):
@@ -115,6 +115,20 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
         self.assertIn("Enforce isolation", FAILURE_30_WORKFLOW)
         self.assertIn("contains unrelated changes", FAILURE_30_WORKFLOW)
 
+
+    def test_current_main_pr_tournament_allows_baseline_only_without_candidates(self):
+        self.assertIn("No eligible candidate PRs; continuing with a baseline-only 500-case run.", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertNotIn('echo "::error::No open, mergeable PRs were found.', CURRENT_MAIN_PR_WORKFLOW)
+
+    def test_current_main_pr_tournament_summary_escapes_shell_backticks(self):
+        self.assertIn("printf '%s\\n'", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("\\`$baseline_sha\\`", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertNotIn('echo "- Current main: `$baseline_sha`"', CURRENT_MAIN_PR_WORKFLOW)
+
+    def test_legacy_16_candidate_tournament_is_manual_only_until_rebuilt(self):
+        trigger_section = WORKFLOW.split("permissions:", 1)[0]
+        self.assertIn("workflow_dispatch:", trigger_section)
+        self.assertNotIn("\n  push:", trigger_section)
 
 if __name__ == "__main__":
     unittest.main()
