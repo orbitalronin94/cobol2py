@@ -86,7 +86,7 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
         self.assertIn("push:", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn(".github/workflows/current-main-pr-tournament.yml", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn('cron: "30 11 * * *"', CURRENT_MAIN_PR_WORKFLOW)
-        self.assertIn("inputs.candidate_prs || '386'", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("inputs.candidate_prs || '380'", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn("workflow_dispatch:", CURRENT_MAIN_PR_WORKFLOW)
 
     def test_30_seed_tournament_scores_against_frozen_main_oracle(self):
