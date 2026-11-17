@@ -4840,6 +4840,11 @@ def translate_nodes(
                     condition = "True" if emitted == 0 else None
                     prefix = "if True:" if condition else "else:"
                 else:
+                    not_selection = re.fullmatch(
+                        r"""NOT\s+((?:[A-Za-z][A-Za-z0-9_-]*(?:\s*\([^()]*\))?(?:\s+(?:OF|IN)\s+[A-Za-z][A-Za-z0-9_-]*)*)|[+-]?\d+(?:\.\d+)?|"(?:[^"]|"")*"|'(?:[^']|'')*')""",
+                        choice,
+                        re.IGNORECASE,
+                    )
                     if is_boolean:
                         if is_class_test:
                             condition = numeric_condition or "False"
@@ -4851,6 +4856,35 @@ def translate_nodes(
                             condition = translate_condition(choice, variables, condition_names)
                             if subject.upper() == "FALSE":
                                 condition = f"not ({condition})"
+                    elif not_selection:
+                        not_operand = not_selection.group(1).strip()
+                        not_operand_expr = translate_literal(not_operand, variables)
+                        not_operand_literal = decode_cobol_quoted_literal(not_operand)
+                        not_operand_base = re.match(r"[A-Za-z][A-Za-z0-9-]*", not_operand)
+                        not_operand_var = (
+                            (variables or {}).get(not_operand_base.group(0).upper())
+                            if not_operand_base else None
+                        )
+                        not_operand_width = (
+                            pic_character_count(not_operand_var.pic)
+                            if not_operand_var and not_operand_var.pic
+                            and any(ch in not_operand_var.pic.upper() for ch in ("X", "A"))
+                            else 0
+                        )
+                        if subject_width and not_operand_literal is not None:
+                            width = max(subject_width, len(not_operand_literal))
+                            condition = (
+                                f"str({temp_name}).ljust({width}) != "
+                                f"{not_operand_literal.ljust(width)!r}"
+                            )
+                        elif subject_width and not_operand_width:
+                            width = max(subject_width, not_operand_width)
+                            condition = (
+                                f"str({temp_name}).ljust({width}) != "
+                                f"str({not_operand_expr}).ljust({width})"
+                            )
+                        else:
+                            condition = f"{temp_name} != {not_operand_expr}"
                     elif re.search(r"\s+(?:THRU|THROUGH)\s+", choice, re.IGNORECASE):
                         low, high = re.split(r"\s+(?:THRU|THROUGH)\s+", choice, maxsplit=1, flags=re.IGNORECASE)
                         condition = (
