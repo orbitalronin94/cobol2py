@@ -694,10 +694,49 @@ def split_concat_statements(text: str) -> list[str]:
     return statements
 
 
+def split_cobol_also(text: str) -> list[str]:
+    """Split top-level EVALUATE/WHEN ALSO lists without breaking literals or expressions."""
+    parts: list[str] = []
+    start = 0
+    depth = 0
+    quote: Optional[str] = None
+    i = 0
+    while i < len(text):
+        char = text[i]
+        if quote is not None:
+            if char == quote:
+                if i + 1 < len(text) and text[i + 1] == quote:
+                    i += 2
+                    continue
+                quote = None
+            i += 1
+            continue
+        if char in ("'", '"'):
+            quote = char
+        elif char == "(":
+            depth += 1
+        elif char == ")":
+            depth = max(0, depth - 1)
+        elif (
+            depth == 0
+            and text[i:i + 4].upper() == "ALSO"
+            and (i == 0 or text[i - 1].isspace())
+            and (i + 4 == len(text) or text[i + 4].isspace())
+        ):
+            parts.append(text[start:i].strip())
+            i += 4
+            start = i
+            continue
+        i += 1
+    parts.append(text[start:].strip())
+    return [part for part in parts if part]
+
+
 def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, str]]:
     units: list[tuple[int, str]] = []
     buffer: list[str] = []
     buffer_start = 0
+    active_when_index: Optional[int] = None
 
     def flush():
         nonlocal buffer, buffer_start
@@ -717,30 +756,61 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
 
         if re.match(r"^PERFORM(?:\s+WITH\s+TEST\s+(?:BEFORE|AFTER))?\s+(?:UNTIL|VARYING)\b", upper):
             flush()
+            active_when_index = None
             units.append((num, text.strip()))
             continue
 
         if upper == "ELSE":
             flush()
+            active_when_index = None
             units.append((num, "ELSE"))
             continue
 
         if upper.startswith("WHEN "):
             flush()
-            # EVALUATE/SEARCH WHEN clauses may carry an inline imperative
-            # statement on the same source line. Split that action away so
-            # the branch condition remains a condition, not invalid Python
-            # such as "if subject == 1 perform paragraph:".
+            # A WHEN selection object may continue over several ALSO lines.
+            # Keep those values attached to the WHEN header rather than
+            # translating them as independent COBOL statements.
             when_units = split_concat_statements(text)
+            first_index = len(units)
             units.extend((num, unit) for unit in when_units)
+            active_when_index = (
+                first_index
+                if when_units and when_units[0].upper().startswith("WHEN ")
+                else None
+            )
+            continue
+
+        if upper.startswith("ALSO "):
+            if buffer and buffer[0].lstrip().upper().startswith("EVALUATE"):
+                # Multiline EVALUATE subjects use the same ALSO syntax as WHEN
+                # selection objects.
+                buffer.append(text)
+            elif active_when_index is not None:
+                line, when_text = units[active_when_index]
+                units[active_when_index] = (
+                    line,
+                    f"{when_text} ALSO {text[5:].strip()}",
+                )
+            else:
+                if not buffer:
+                    buffer_start = num
+                buffer.append(text)
             continue
 
         # Scope terminators must be standalone parser units. Otherwise a
         # preceding DISPLAY without a period can absorb END-IF as an operand.
         if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH", "END-READ") or upper in SCOPE_END_NOOPS or upper.startswith("AT END") or upper.startswith("NOT AT END") or upper.startswith("SEARCH ALL "):
             flush()
+            active_when_index = None
             units.append((num, upper if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH", "END-READ") or upper in SCOPE_END_NOOPS else text.strip()))
             continue
+
+        # EVALUATE headers may span multiple physical lines. If the next line
+        # is not ALSO, finish the header before starting an unrelated statement.
+        if buffer and buffer[0].lstrip().upper().startswith("EVALUATE"):
+            flush()
+        active_when_index = None
 
         if not buffer:
             buffer_start = num
@@ -754,7 +824,6 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
             or upper.startswith("AT END")
             or upper.startswith("NOT AT END")
             or upper.endswith("THEN")
-            or upper.startswith("EVALUATE")
             or upper.startswith("WHEN ")
         )
         if ends_unit:
@@ -4616,6 +4685,178 @@ def translate_nodes(
 
         elif node.kind == "evaluate":
             subject = node.text[len("EVALUATE"):].strip()
+            subject_parts = split_cobol_also(subject)
+            if len(subject_parts) > 1:
+                temp_name = f"_cobol_evaluate_{node.line}"
+                subject_temp_names: list[str] = []
+                subject_widths: list[int] = []
+                for index, subject_part in enumerate(subject_parts):
+                    subject_temp = f"{temp_name}_{index}"
+                    subject_temp_names.append(subject_temp)
+                    subject_base = re.match(r"[A-Za-z][A-Za-z0-9-]*", subject_part)
+                    subject_var = (variables or {}).get(subject_base.group(0).upper()) if subject_base else None
+                    subject_width = (
+                        pic_character_count(subject_var.pic)
+                        if subject_var and subject_var.pic and any(ch in subject_var.pic.upper() for ch in ("X", "A"))
+                        else 0
+                    )
+                    subject_widths.append(subject_width)
+                    if subject_part.upper() not in ("TRUE", "FALSE"):
+                        out.append("    " * indent + f"{subject_temp} = {translate_expr(subject_part, variables)}")
+
+                emitted = 0
+                for branch in node.body:
+                    if branch.kind != "when":
+                        out.append("    " * indent + f"# COBOL no traducido dentro de EVALUATE: {branch.text}")
+                        continue
+                    choice = branch.text.strip()
+                    if choice.upper() == "OTHER":
+                        prefix = "if True:" if emitted == 0 else "else:"
+                    else:
+                        choice_parts = split_cobol_also(choice)
+                        if len(choice_parts) == 1 and choice_parts[0].upper() == "ANY":
+                            choice_parts = ["ANY"] * len(subject_parts)
+                        if len(choice_parts) != len(subject_parts):
+                            condition = "False"
+                        else:
+                            pair_conditions: list[str] = []
+                            for index, (subject_part, selection) in enumerate(zip(subject_parts, choice_parts)):
+                                subject_upper = subject_part.strip().upper()
+                                selection = selection.strip()
+                                selection_upper = selection.upper()
+                                subject_temp = subject_temp_names[index]
+
+                                if selection_upper == "ANY":
+                                    pair_condition = "True"
+                                elif subject_upper in ("TRUE", "FALSE"):
+                                    if selection_upper in ("TRUE", "FALSE"):
+                                        pair_condition = "True" if subject_upper == selection_upper else "False"
+                                    else:
+                                        pair_condition = translate_condition(selection, variables, condition_names)
+                                        if subject_upper == "FALSE":
+                                            pair_condition = f"not ({pair_condition})"
+                                elif re.match(r"^NOT\s+", selection, re.IGNORECASE):
+                                    negated = re.sub(r"^NOT\s+", "", selection, count=1, flags=re.IGNORECASE).strip()
+                                    subject_width = subject_widths[index]
+                                    if re.search(r"\s+(?:THRU|THROUGH)\s+", negated, re.IGNORECASE):
+                                        low, high = re.split(r"\s+(?:THRU|THROUGH)\s+", negated, maxsplit=1, flags=re.IGNORECASE)
+                                        low_expr = translate_expr(low, variables)
+                                        high_expr = translate_expr(high, variables)
+                                        compare_subject = subject_temp
+                                        if subject_width:
+                                            def range_operand_info(operand):
+                                                literal = decode_cobol_quoted_literal(operand)
+                                                base = re.match(r"[A-Za-z][A-Za-z0-9-]*", operand)
+                                                variable = (variables or {}).get(base.group(0).upper()) if base else None
+                                                width = (
+                                                    pic_character_count(variable.pic)
+                                                    if variable and variable.pic
+                                                    and any(ch in variable.pic.upper() for ch in ("X", "A"))
+                                                    else 0
+                                                )
+                                                return literal, width
+                                            low_literal, low_width = range_operand_info(low)
+                                            high_literal, high_width = range_operand_info(high)
+                                            if (low_literal is not None or low_width) and (high_literal is not None or high_width):
+                                                width = max(subject_width, len(low_literal or ""), low_width, len(high_literal or ""), high_width)
+                                                compare_subject = f"str({subject_temp}).ljust({width})"
+                                                if low_literal is not None:
+                                                    low_expr = repr(low_literal.ljust(width))
+                                                elif low_width:
+                                                    low_expr = f"str({low_expr}).ljust({width})"
+                                                if high_literal is not None:
+                                                    high_expr = repr(high_literal.ljust(width))
+                                                elif high_width:
+                                                    high_expr = f"str({high_expr}).ljust({width})"
+                                        pair_condition = f"{compare_subject} < {low_expr} or {compare_subject} > {high_expr}"
+                                    elif re.match(r"^(?:IS\b|EQUAL\b|GREATER\b|LESS\b|[<>=])", negated, re.IGNORECASE):
+                                        placeholder = f"COBOL-EVALUATE-{node.line}-{index}"
+                                        pair_condition = translate_condition(f"{placeholder} {negated}", variables, condition_names)
+                                        placeholder_name = normalize_name(placeholder)
+                                        pair_condition = rewrite_outside_literals(
+                                            pair_condition,
+                                            lambda chunk: re.sub(rf"\b{re.escape(placeholder_name)}\b", subject_temp, chunk),
+                                        )
+                                        pair_condition = f"not ({pair_condition})"
+                                    else:
+                                        negated_expr = translate_expr(negated, variables)
+                                        negated_literal = decode_cobol_quoted_literal(negated)
+                                        negated_base = re.match(r"[A-Za-z][A-Za-z0-9-]*", negated)
+                                        negated_var = (variables or {}).get(negated_base.group(0).upper()) if negated_base else None
+                                        negated_width = (
+                                            pic_character_count(negated_var.pic)
+                                            if negated_var and negated_var.pic
+                                            and any(ch in negated_var.pic.upper() for ch in ("X", "A"))
+                                            else 0
+                                        )
+                                        if subject_width and negated_literal is not None:
+                                            width = max(subject_width, len(negated_literal))
+                                            pair_condition = f"str({subject_temp}).ljust({width}) != {negated_literal.ljust(width)!r}"
+                                        elif subject_width and negated_width:
+                                            width = max(subject_width, negated_width)
+                                            pair_condition = f"str({subject_temp}).ljust({width}) != str({negated_expr}).ljust({width})"
+                                        else:
+                                            pair_condition = f"{subject_temp} != {negated_expr}"
+                                elif re.search(r"\s+(?:THRU|THROUGH)\s+", selection, re.IGNORECASE):
+                                    low, high = re.split(
+                                        r"\s+(?:THRU|THROUGH)\s+",
+                                        selection,
+                                        maxsplit=1,
+                                        flags=re.IGNORECASE,
+                                    )
+                                    pair_condition = (
+                                        f"{subject_temp} >= {translate_expr(low, variables)} "
+                                        f"and {subject_temp} <= {translate_expr(high, variables)}"
+                                    )
+                                elif re.match(r"^(?:IS\b|NOT\b|EQUAL\b|GREATER\b|LESS\b|[<>=])", selection, re.IGNORECASE):
+                                    placeholder = f"COBOL-EVALUATE-{node.line}-{index}"
+                                    pair_condition = translate_condition(
+                                        f"{placeholder} {selection}", variables, condition_names
+                                    )
+                                    placeholder_name = normalize_name(placeholder)
+                                    pair_condition = rewrite_outside_literals(
+                                        pair_condition,
+                                        lambda chunk: re.sub(
+                                            rf"\b{re.escape(placeholder_name)}\b",
+                                            subject_temp,
+                                            chunk,
+                                        ),
+                                    )
+                                else:
+                                    choice_value = decode_cobol_quoted_literal(selection)
+                                    subject_width = subject_widths[index]
+                                    if subject_width and choice_value is not None:
+                                        width = max(subject_width, len(choice_value))
+                                        pair_condition = (
+                                            f"str({subject_temp}).ljust({width}) == {choice_value.ljust(width)!r}"
+                                        )
+                                    else:
+                                        pair_condition = (
+                                            f"{subject_temp} == {translate_expr(selection, variables)}"
+                                        )
+                                pair_conditions.append(f"({pair_condition})")
+                            condition = " and ".join(pair_conditions) or "False"
+                        prefix = ("if " if emitted == 0 else "elif ") + condition + ":"
+
+                    out.append("    " * indent + prefix)
+                    branch_body = translate_nodes(
+                        branch.then_branch,
+                        paragraphs,
+                        indent + 1,
+                        variables,
+                        current_paragraph,
+                        condition_names,
+                    )
+                    if not branch_body:
+                        branch_body = ["    " * (indent + 1) + "pass"]
+                    elif all(not line.strip() or line.strip().startswith("#") for line in branch_body):
+                        branch_body.append("    " * (indent + 1) + "pass")
+                    out.extend(branch_body)
+                    emitted += 1
+                if emitted == 0:
+                    out.append("    " * indent + f"# EVALUATE sin WHEN: {node.text}")
+                continue
+
             numeric_test = re.fullmatch(r"(.+?)\s+(NOT\s+)?NUMERIC", subject, re.IGNORECASE)
             is_class_test = numeric_test is not None
             is_boolean = subject.upper() in ("TRUE", "FALSE") or is_class_test
