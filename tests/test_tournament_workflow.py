@@ -118,6 +118,7 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
 
     def test_current_main_pr_tournament_allows_baseline_only_without_candidates(self):
         self.assertIn("No eligible candidate PRs; continuing with a baseline-only 500-case run.", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("if: needs.discover.outputs.candidates != '[]'", CURRENT_MAIN_PR_WORKFLOW)
         self.assertNotIn('echo "::error::No open, mergeable PRs were found.', CURRENT_MAIN_PR_WORKFLOW)
 
     def test_current_main_pr_tournament_summary_escapes_shell_backticks(self):
