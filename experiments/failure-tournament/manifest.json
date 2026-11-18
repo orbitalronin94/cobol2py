@@ -221,12 +221,12 @@
     "score": 263,
     "denominator": 500,
     "percent": 52.6,
-    "source_run": 44297062982,
-    "source_sha": "7143e243eec8b6833bbf3f234c53aaf9fa25c360",
-    "baseline_sha": "7143e243eec8b6833bbf3f234c53aaf9fa25c360",
-    "current_main_sha": "293fc04c4dc4d825b4063e8b2b121b919de2c018",
+    "source_run": 43592015588,
+    "source_sha": "8ecabaaa7b50d01e9649814a989bbbac7491adef",
+    "baseline_sha": "8ecabaaa7b50d01e9649814a989bbbac7491adef",
+    "current_main_sha": "8ecabaaa7b50d01e9649814a989bbbac7491adef",
     "base_ref": "main",
-    "kind": "current_main_verified_code_equivalent",
+    "kind": "current_main_verified",
     "corpus": "X-COBOL v2",
     "skip": 500,
     "target": 500,
@@ -243,18 +243,37 @@
     "shards": [
       {
         "skip": 500,
-        "target": 500,
-        "tested": 500,
-        "passed": 263,
-        "failed": 237
+        "target": 125,
+        "tested": 125,
+        "passed": 63,
+        "failed": 62
+      },
+      {
+        "skip": 625,
+        "target": 125,
+        "tested": 125,
+        "passed": 55,
+        "failed": 70
+      },
+      {
+        "skip": 750,
+        "target": 125,
+        "tested": 125,
+        "passed": 72,
+        "failed": 53
+      },
+      {
+        "skip": 875,
+        "target": 125,
+        "tested": 125,
+        "passed": 73,
+        "failed": 52
       }
     ],
-    "main_sha_at_audit": "7143e243eec8b6833bbf3f234c53aaf9fa25c360",
+    "main_sha_at_audit": "8ecabaaa7b50d01e9649814a989bbbac7491adef",
     "translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
-    "run_conclusion": "failure",
-    "baseline_job_conclusion": "success",
-    "final_artifact_candidates": 0,
-    "note": "El artifact pr-tournament-baseline-44297062982 contiene 500/500 IDs y fingerprints completos, 263/500, skip=500,target=500 y checksum verificado. El baseline job terminó success; el run global terminó failure porque el descubrimiento encontró candidates=[] y el artifact final lo confirma. Main avanzó después a 293fc04 con cambios solo de workflow/test; el blob del traductor es idéntico. 263/500 es código-equivalente, no una ejecución fresca sobre el SHA exacto 293fc04."
+    "note": "Run 43592015588 evaluated current main 8ecabaaa7b50d01e9649814a989bbbac7491adef. Four complete contiguous 125-case shards (skip 500/625/750/875) form the exact deterministic 500-case slice equivalent to skip=500,target=500. All 500 IDs, source hashes and GnuCOBOL oracle fingerprints are complete; archive MD5 is verified. Score is 263/500. Compared with the prior main run 43578366403 (f2d944..., also 263/500), source hashes and IDs are identical; eight GnuCOBOL oracle fingerprints drifted, sq206a-3536dcf7c2 changed from fail to pass, and exec84-2-03eae98697 hit the 20-second translator timeout (20.0049s), leaving net score unchanged. The merged PR #375 candidate run 43579902217 passed both cases and scored 264/500 against the frozen pre-merge oracle; current main remains recorded at 263 until a fresh run confirms that timeout-boundary case. Main later advanced to bba24a11e20ba8fdb6cd234d7c20fd68c97ff22d with no translator blob change; no fresh benchmark was run on that exact commit.",
+    "main_head_at_audit": "bba24a11e20ba8fdb6cd234d7c20fd68c97ff22d"
   },
   "last_tournament_attempt": {
     "run": 42272058313,
@@ -290,8 +309,9 @@
       "El SHA main actual 293fc04 solo añade infraestructura respecto a 7143e243; cobol2py.py conserva el blob 4a7562627d161580470f1b0522cda0b094f635b0. Por tanto 263/500 es código-equivalente, no una medición fresca sobre el SHA exacto 293fc04.",
       "PR #395, revisión d42a46c, comparada manualmente por artifacts contra el baseline congelado: 263/500, cero nuevas aprobaciones, cero regresiones y ocho derivas diagnósticas del oráculo. No es elegible.",
       "Los reproduceres NIST nc225a-a777e5ee71 y nc2254-2-73142ca32f dejaron de generar sintaxis inválida, pero seguían fallando por WHEN ANY en EVALUATE de sujeto único. Se añadió soporte explícito y test en PR #395, head 6553ee20; la nueva comparación completa está pendiente.",
-      "El grupo de concurrencia global del torneo emparejado permitió que un baseline-only de PR #396 mantuviera el lock y cancelara el run del candidato #395. PR de infraestructura #397 propone separar el grupo por PR/run; el workflow actual aún no contiene esa corrección.",
-      "El torneo de 16 candidatos sigue sin cohorte válida y no se ha duplicado."
+      "PR de infraestructura #397 está abierta para separar concurrencia por PR/run y disparar el torneo cuando cambien los tests de traductor; sus checks están pendientes.",
+      "El torneo de 16 candidatos sigue sin cohorte válida y no se ha duplicado.",
+      "El primer intento de test para WHEN ANY en PR #395 falló por el test harness (no se generó la entrada main al parsear el fragmento free-format). El test se ha reescrito usando Program/Node directamente; el código de traducción no cambió. La suite debe volver a ejecutarse antes del holdout."
     ],
     "audit_date": "2026-11-18",
     "audit_main_sha": "293fc04c4dc4d825b4063e8b2b121b919de2c018",
@@ -953,7 +973,8 @@
         "note": "Fresh 30-way compare against main 293fc04c4dc4d825b4063e8b2b121b919de2c018: all 30 refs exist and are distinct; all 30 diverged; none is ahead-only. Seeds 11-15 have no translator or tests/reproducer. Seeds 16-30 contain unrelated workflow/benchmark/documentation changes."
       },
       "note": "All 30 manifest refs were found in the current branch search. The last complete ahead/behind and path-isolation audit was against bba24a11, not 41db26b; no fresh 30-way compare was run against the latter."
-    }
+    },
+    "latest_main_baseline_artifact_run": 44297062982
   },
   "prior_16_candidate_tournament": {
     "source_run": 42268813592,
@@ -1003,10 +1024,10 @@
     "score": 263,
     "denominator": 500,
     "percent": 52.6,
-    "source_run": 44297062982,
-    "source_sha": "7143e243eec8b6833bbf3f234c53aaf9fa25c360",
+    "source_run": 43592015588,
+    "source_sha": "8ecabaaa7b50d01e9649814a989bbbac7491adef",
     "base_ref": "main",
-    "kind": "current_main_verified_code_equivalent",
+    "kind": "current_main_verified",
     "dataset": "X-COBOL v2",
     "dataset_url": "https://zenodo.org/records/14269462",
     "archive_md5_expected": "cbd974caed72b0836777dc2305928ed3",
@@ -1016,23 +1037,44 @@
     "shards": [
       {
         "skip": 500,
-        "target": 500,
-        "tested": 500,
-        "passed": 263,
-        "failed": 237
+        "target": 125,
+        "tested": 125,
+        "passed": 63,
+        "failed": 62
+      },
+      {
+        "skip": 625,
+        "target": 125,
+        "tested": 125,
+        "passed": 55,
+        "failed": 70
+      },
+      {
+        "skip": 750,
+        "target": 125,
+        "tested": 125,
+        "passed": 72,
+        "failed": 53
+      },
+      {
+        "skip": 875,
+        "target": 125,
+        "tested": 125,
+        "passed": 73,
+        "failed": 52
       }
     ],
-    "main_sha_at_audit": "7143e243eec8b6833bbf3f234c53aaf9fa25c360",
+    "main_sha_at_audit": "8ecabaaa7b50d01e9649814a989bbbac7491adef",
     "translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
-    "reference_fingerprint_coverage": 500,
-    "note": "El job baseline del run 44297062982 completó 500/500 IDs y 263/500, con checksum y fingerprints completos. El resumen final confirmó candidates=[]; el run global terminó failure y no constituye un torneo de candidatos. Main avanzó después a 293fc04 solo con infraestructura; el blob del traductor es idéntico, por lo que 263/500 es código-equivalente, no una nueva medición sobre ese SHA exacto.",
+    "reference_fingerprint_coverage": {
+      "complete_cases": 500,
+      "missing_cases": 0,
+      "missing_case_ids": []
+    },
+    "note": "Current main is 8ecabaaa7b50d01e9649814a989bbbac7491adef, merge commit of PR #375. Full exact 500-case measurement is run 43592015588: 263/500. Four complete contiguous shards cover the exact skip=500,target=500 deterministic selection. The translator blob is identical to PR #375 head 2056d6bdaa62c4a2ddd9c14daae9d9d98c00259f (blob 4a7562627d161580470f1b0522cda0b094f635b0). The earlier 264/500 candidate observation is retained separately; the post-merge main measurement timed out on exec84-2-03eae98697 at 20.0049s, so do not report 264 as the current main score. Main subsequently advanced to bba24a11e20ba8fdb6cd234d7c20fd68c97ff22d with workflow/documentation/manifest-only changes; translator blob remains 4a7562627d161580470f1b0522cda0b094f635b0. Therefore 263/500 is code-equivalent for current main, but run 43592015588 itself executed on 8ecabaaa7b50d01e9649814a989bbbac7491adef, not bba24.",
     "skip": 500,
     "target": 500,
-    "main_head_at_audit": "7143e243eec8b6833bbf3f234c53aaf9fa25c360",
-    "current_main_sha_equivalent": "293fc04c4dc4d825b4063e8b2b121b919de2c018",
-    "source_run_conclusion": "failure",
-    "baseline_job_conclusion": "success",
-    "final_artifact_candidates": 0
+    "main_head_at_audit": "bba24a11e20ba8fdb6cd234d7c20fd68c97ff22d"
   },
   "additional_candidate_evaluations": {
     "inspect_characters": {
@@ -2104,14 +2146,14 @@
     "score": 263,
     "denominator": 500,
     "percent": 52.6,
-    "measured_run": 44297062982,
-    "measured_sha": "7143e243eec8b6833bbf3f234c53aaf9fa25c360",
+    "measured_run": 43592015588,
+    "measured_sha": "8ecabaaa7b50d01e9649814a989bbbac7491adef",
     "current_main_sha": "293fc04c4dc4d825b4063e8b2b121b919de2c018",
     "current_main_translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
     "measured_translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
     "code_equivalent": true,
     "exact_run_on_current_main_sha": false,
-    "reason": "Main 293fc04 is one infrastructure-only commit after 7143e243 (PR #396). The translator blob is identical to the fully measured 263/500 baseline artifact from run 44297062982. Do not label 263/500 as a fresh run on 293fc04."
+    "reason": "Current main 293fc04 adds only PR #396 paired-workflow/test infrastructure after the measured 8ecabaaa baseline. The translator blob remains 4a7562627d161580470f1b0522cda0b094f635b0; 263/500 is code-equivalent, not a fresh exact-SHA run."
   },
   "latest_paired_pr_tournament": {
     "run": 44301540420,
@@ -2172,5 +2214,26 @@
       }
     ],
     "note": "Comparación manual reproducible entre el artifact baseline pr-tournament-baseline-44297062982 y los cuatro artifacts JSON de 44301540420. Los 500 IDs y source SHA coincidieron; se compararon candidate stdout SHA/longitud/return code contra el fingerprint congelado de main. La candidata d42 obtuvo 263/500, cero nuevas aprobaciones, cero regresiones y ocho derivas del oráculo en su propia ejecución. No es elegible. En nc225a y nc2254 la sintaxis WHEN NOT ya compila, pero el runtime falla con NameError por WHEN ANY en EVALUATE de sujeto único. Se añadió soporte y test en el head posterior 6553ee20; su holdout emparejado sigue pendiente."
+  },
+  "latest_baseline_artifact_check": {
+    "run": 44297062982,
+    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44297062982",
+    "baseline_sha": "7143e243eec8b6833bbf3f234c53aaf9fa25c360",
+    "score": 263,
+    "denominator": 500,
+    "percent": 52.6,
+    "tested": 500,
+    "unique_case_ids": 500,
+    "skip": 500,
+    "target": 500,
+    "corpus": "X-COBOL v2",
+    "archive_md5_expected": "cbd974caed72b0836777dc2305928ed3",
+    "archive_md5_verified": true,
+    "reference_fingerprint_coverage": 500,
+    "baseline_job_conclusion": "success",
+    "workflow_conclusion": "failure",
+    "final_artifact": "pr-tournament-final-44297062982",
+    "candidates": [],
+    "note": "Valid complete baseline artifact; not a candidate tournament because discovery returned an empty candidate list. A later baseline-only run 44298065727 on the same SHA also completed the baseline job and recorded candidates=[]."
   }
 }
