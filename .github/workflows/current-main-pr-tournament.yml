@@ -15,6 +15,7 @@ on:
       - "cobol2py.py"
       - "ronin/**"
       - "web/index.html"
+      - "tests/test_cobol2py.py"
   schedule:
     # Daily paired comparison of open candidates against a freshly frozen main.
     - cron: "30 11 * * *"
@@ -37,8 +38,9 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: cobol2py-current-main-pr-tournament
-  cancel-in-progress: false
+  # PRs get independent groups; a new main run supersedes stale push/schedule runs.
+  group: ${{ github.event.pull_request.number && format('cobol2py-current-main-pr-tournament-pr-{0}', github.event.pull_request.number) || 'cobol2py-current-main-pr-tournament' }}
+  cancel-in-progress: true
 
 jobs:
   discover:
