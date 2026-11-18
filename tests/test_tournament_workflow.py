@@ -156,3 +156,10 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_current_main_pr_tournament_concurrency_is_scoped_per_pr_or_run(self):
+        self.assertIn(
+            "group: cobol2py-current-main-pr-tournament-${{ github.event.pull_request.number || github.run_id }}",
+            CURRENT_MAIN_PR_WORKFLOW,
+        )
+        self.assertIn("cancel-in-progress: false", CURRENT_MAIN_PR_WORKFLOW)
