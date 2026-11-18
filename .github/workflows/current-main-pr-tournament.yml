@@ -266,9 +266,9 @@ jobs:
           root = Path(os.environ["ARTIFACT_ROOT"])
           candidates = json.loads(os.environ["CANDIDATES_JSON"])
           baseline_files = [
-    path for path in root.rglob("external-corpus-report.json")
-    if path.parent == root or path.parent.name.startswith("pr-tournament-baseline-")
-]
+              path for path in root.rglob("external-corpus-report.json")
+              if path.parent == root or path.parent.name.startswith("pr-tournament-baseline-")
+          ]
           if len(baseline_files) != 1:
               raise SystemExit(f"Expected one main report, found {len(baseline_files)}")
           baseline = json.loads(baseline_files[0].read_text())
