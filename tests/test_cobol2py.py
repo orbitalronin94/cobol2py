@@ -5042,7 +5042,7 @@ class EvaluateAnySelectionTests(unittest.TestCase):
                                 kind="when",
                                 text="ANY",
                                 line=2,
-                                body=[
+                                then_branch=[
                                     cobol2py.Node(
                                         kind="stmt",
                                         text='DISPLAY "ANY"',
@@ -5054,7 +5054,7 @@ class EvaluateAnySelectionTests(unittest.TestCase):
                                 kind="when",
                                 text="OTHER",
                                 line=4,
-                                body=[
+                                then_branch=[
                                     cobol2py.Node(
                                         kind="stmt",
                                         text='DISPLAY "OTHER"',
