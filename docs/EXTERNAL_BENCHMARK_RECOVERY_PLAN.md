@@ -1,5 +1,19 @@
 # External benchmark recovery plan
 
+## Verified status — 2026-11-18
+
+- Current main SHA: `293fc04c4dc4d825b4063e8b2b121b919de2c018`. The merge of PR #396 changed only the paired-tournament workflow and its contract test; `cobol2py.py` remains blob `4a7562627d161580470f1b0522cda0b094f635b0`.
+- Latest complete X-COBOL v2 baseline artifact: [run 44297062982](https://github.com/orbitalronin94/cobol2py/actions/runs/44297062982), baseline job successful, 500/500 IDs, `skip=500`, `target=500`, MD5 `cbd974caed72b0836777dc2305928ed3`, 263/500 (52.6%), complete GnuCOBOL fingerprints. The overall run ended `failure` because discovery found no eligible candidates; its final artifact explicitly records `candidates=[]`. It is a valid baseline artifact, not a completed candidate tournament.
+- The current main is code-equivalent to that baseline because the translator blob is unchanged, but a fresh baseline run on the exact current main SHA is still required before calling 263/500 an exact-SHA measurement.
+- PR [#395](https://github.com/orbitalronin94/cobol2py/pull/395), pre-fix head `d42a46c827a08097c642a0a43032d48e3c50973c`, was manually compared from its four complete 125-case artifacts against the frozen baseline artifact: 500 identical IDs and source SHA values, 263/500, zero new passes, zero regressions, and eight candidate-run oracle drifts. It was not eligible for promotion. Candidate run: [44301540420](https://github.com/orbitalronin94/cobol2py/actions/runs/44301540420).
+- NIST reproducers `nc225a-a777e5ee71` and `nc2254-2-73142ca32f` now compile after the earlier `WHEN NOT` syntax repair, but still failed at runtime because single-subject `EVALUATE ... NUMERIC WHEN ANY` emitted an unbound `cobol_any`. PR #395 now includes an explicit unconditional `WHEN ANY` branch plus a focused regression test at head `6553ee20b785a29794bec66526bda756ef42e2c0`. Its complete paired holdout has not yet run.
+- Fresh 30-seed audit against main `293fc04`: all 30 refs exist and are distinct; all 30 are diverged; none is ahead-only. Seeds 11–15 have no translator change or regression reproducer. Seeds 16–30 contain unrelated workflow/benchmark/documentation noise and require isolated rebuilds. The 30-seed workflow remains manual-only and blocked.
+- The paired PR tournament used one global concurrency group. A long baseline-only run for PR #396 held that group and the candidate run for PR #395 was cancelled before discovery. PR [#397](https://github.com/orbitalronin94/cobol2py/pull/397) is intended to scope concurrency by PR/run so independent candidate comparisons cannot cancel each other while waiting for runners.
+
+The historical main reference remains 257/500 (51.4%) in [run 42268813592](https://github.com/orbitalronin94/cobol2py/actions/runs/42268813592). The 258/500 result in [run 42266714599](https://github.com/orbitalronin94/cobol2py/actions/runs/42266714599) remains experimental and is not main.
+
+---
+
 This PR is an incremental, test-first attempt to recover failures in the 500-program X-COBOL primary sample. It must be judged by the external differential report, not by the smaller curated regression suite.
 
 ## Baseline and acceptance criteria
