@@ -5086,7 +5086,9 @@ def translate_nodes(
                         choice,
                         re.IGNORECASE,
                     )
-                    if is_boolean:
+                    if choice.upper() == "ANY":
+                        condition = "True"
+                    elif is_boolean:
                         if is_class_test:
                             condition = numeric_condition or "False"
                             if choice.upper() == "FALSE":
