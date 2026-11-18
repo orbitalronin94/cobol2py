@@ -5044,7 +5044,7 @@ class EvaluateAnySelectionTests(unittest.TestCase):
                                 line=2,
                                 body=[
                                     cobol2py.Node(
-                                        kind="display",
+                                        kind="stmt",
                                         text='DISPLAY "ANY"',
                                         line=3,
                                     )
@@ -5056,7 +5056,7 @@ class EvaluateAnySelectionTests(unittest.TestCase):
                                 line=4,
                                 body=[
                                     cobol2py.Node(
-                                        kind="display",
+                                        kind="stmt",
                                         text='DISPLAY "OTHER"',
                                         line=5,
                                     )
@@ -5076,4 +5076,4 @@ class EvaluateAnySelectionTests(unittest.TestCase):
         output = StringIO()
         with redirect_stdout(output):
             namespace["main"]()
-        self.assertEqual(output.getvalue(), "ANY\\n", generated)
+        self.assertEqual(output.getvalue(), "ANY\n", generated)
