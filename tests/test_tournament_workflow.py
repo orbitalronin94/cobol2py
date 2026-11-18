@@ -130,6 +130,12 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
         self.assertIn('root.rglob("candidate-result.json")', CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn('path.parent == root', CURRENT_MAIN_PR_WORKFLOW)
 
+    def test_current_main_pr_tournament_python_heredoc_indentation_is_valid(self):
+        self.assertIn(
+            '          baseline_files = [\\n              path for path in root.rglob("external-corpus-report.json")\\n              if path.parent == root or path.parent.name.startswith("pr-tournament-baseline-")\\n          ]',
+            CURRENT_MAIN_PR_WORKFLOW,
+        )
+
     def test_current_main_pr_tournament_defaults_to_rebuilt_candidate(self):
         self.assertIn("inputs.candidate_prs || \'391\'", CURRENT_MAIN_PR_WORKFLOW)
 
