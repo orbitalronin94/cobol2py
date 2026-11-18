@@ -4969,7 +4969,7 @@ MAIN.
     GOBACK.
 """
         output, generated = self._run_program(source)
-        self.assertEqual(output, "Y\\n", generated)
+        self.assertEqual(output, "Y\n", generated)
 
     def test_negated_alphanumeric_through_pads_literal_bounds(self):
         source = """IDENTIFICATION DIVISION.
@@ -4993,7 +4993,7 @@ MAIN.
     GOBACK.
 """
         output, generated = self._run_program(source)
-        self.assertEqual(output, "Y\\n", generated)
+        self.assertEqual(output, "Y\n", generated)
 
     def test_negated_alphanumeric_thru_pads_variable_bounds(self):
         source = """IDENTIFICATION DIVISION.
@@ -5019,5 +5019,5 @@ MAIN.
     GOBACK.
 """
         output, generated = self._run_program(source)
-        self.assertEqual(output, "Y\\n", generated)
+        self.assertEqual(output, "Y\n", generated)
 
