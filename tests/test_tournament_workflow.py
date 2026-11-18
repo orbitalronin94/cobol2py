@@ -136,6 +136,13 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
             CURRENT_MAIN_PR_WORKFLOW,
         )
 
+    def test_current_main_pr_tournament_runs_on_candidate_pr_updates(self):
+        self.assertIn("pull_request:", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("types: [opened, synchronize, reopened]", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn('"cobol2py.py"', CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn('"tests/**"', CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("REQUESTED_PRS: ${{ github.event.pull_request.number || inputs.candidate_prs || '395' }}", CURRENT_MAIN_PR_WORKFLOW)
+
     def test_current_main_pr_tournament_defaults_to_rebuilt_candidate(self):
         self.assertIn("inputs.candidate_prs || \'395\'", CURRENT_MAIN_PR_WORKFLOW)
 
