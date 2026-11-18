@@ -15,7 +15,6 @@ on:
       - "cobol2py.py"
       - "ronin/**"
       - "web/index.html"
-      - "tests/**"
   schedule:
     # Daily paired comparison of open candidates against a freshly frozen main.
     - cron: "30 11 * * *"
