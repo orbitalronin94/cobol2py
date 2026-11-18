@@ -137,7 +137,7 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
         )
 
     def test_current_main_pr_tournament_defaults_to_rebuilt_candidate(self):
-        self.assertIn("inputs.candidate_prs || \'391\'", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("inputs.candidate_prs || \'395\'", CURRENT_MAIN_PR_WORKFLOW)
 
     def test_legacy_16_candidate_tournament_is_manual_only_until_rebuilt(self):
         trigger_section = WORKFLOW.split("permissions:", 1)[0]
