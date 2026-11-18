@@ -37,7 +37,8 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: cobol2py-current-main-pr-tournament
+  # Do not let a baseline-only run for one PR block another candidate's paired holdout.
+  group: cobol2py-current-main-pr-tournament-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: false
 
 jobs:
