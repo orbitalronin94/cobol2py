@@ -121,7 +121,7 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
         self.assertNotIn('echo "::error::No open, mergeable PRs were found.', CURRENT_MAIN_PR_WORKFLOW)
 
     def test_current_main_pr_tournament_summary_escapes_shell_backticks(self):
-        self.assertIn("printf '%s\n'", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("printf '%s\\n'", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn("\\`$baseline_sha\\`", CURRENT_MAIN_PR_WORKFLOW)
         self.assertNotIn('echo "- Current main: `$baseline_sha`"', CURRENT_MAIN_PR_WORKFLOW)
 
