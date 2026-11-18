@@ -160,6 +160,7 @@ jobs:
   candidates:
     name: PR #${{ matrix.candidate.pr }} — paired 500-case holdout
     needs: discover
+    if: needs.discover.outputs.candidates != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
