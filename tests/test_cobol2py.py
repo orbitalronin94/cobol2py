@@ -5026,25 +5026,50 @@ class EvaluateAnySelectionTests(unittest.TestCase):
         from contextlib import redirect_stdout
         from io import StringIO
 
-        source = "\\n".join([
-            "IDENTIFICATION DIVISION.",
-            "PROGRAM-ID. EVALANY.",
-            "DATA DIVISION.",
-            "WORKING-STORAGE SECTION.",
-            '01 WS-N PIC X VALUE "A".',
-            "PROCEDURE DIVISION.",
-            "MAIN.",
-            "    EVALUATE WS-N NUMERIC",
-            "        WHEN ANY",
-            '            DISPLAY "ANY".',
-            "        WHEN OTHER",
-            '            DISPLAY "OTHER".',
-            "    END-EVALUATE.",
-            "    GOBACK.",
-        ])
-        generated = cobol2py.emit_python(
-            cobol2py.parse_cobol(source, source_format="free")
+        program = cobol2py.Program(
+            program_id="EVALANY",
+            variables=[
+                cobol2py.CobolVar(level=1, name="WS-N", pic="X", value='"A"')
+            ],
+            paragraphs={
+                "__MAIN__": [
+                    cobol2py.Node(
+                        kind="evaluate",
+                        text="EVALUATE WS-N NUMERIC",
+                        line=1,
+                        body=[
+                            cobol2py.Node(
+                                kind="when",
+                                text="ANY",
+                                line=2,
+                                body=[
+                                    cobol2py.Node(
+                                        kind="display",
+                                        text='DISPLAY "ANY"',
+                                        line=3,
+                                    )
+                                ],
+                            ),
+                            cobol2py.Node(
+                                kind="when",
+                                text="OTHER",
+                                line=4,
+                                body=[
+                                    cobol2py.Node(
+                                        kind="display",
+                                        text='DISPLAY "OTHER"',
+                                        line=5,
+                                    )
+                                ],
+                            ),
+                        ],
+                    )
+                ]
+            },
+            paragraph_order=["__MAIN__"],
         )
+        generated = cobol2py.emit_python(program)
+        self.assertIn("if True:", generated)
         compile(generated, "<evaluate-any>", "exec")
         namespace = {"__name__": "generated_test"}
         exec(generated, namespace)
