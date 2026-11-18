@@ -163,3 +163,6 @@ if __name__ == "__main__":
             CURRENT_MAIN_PR_WORKFLOW,
         )
         self.assertIn("cancel-in-progress: false", CURRENT_MAIN_PR_WORKFLOW)
+
+    def test_current_main_pr_tournament_runs_when_translator_regression_tests_change(self):
+        self.assertIn('      - "tests/test_cobol2py.py"', CURRENT_MAIN_PR_WORKFLOW)
