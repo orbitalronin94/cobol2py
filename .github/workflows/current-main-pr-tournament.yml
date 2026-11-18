@@ -17,7 +17,7 @@ on:
       candidate_prs:
         description: "Open experiment PR numbers, comma-separated"
         required: true
-        default: "389"
+        default: "391"
         type: string
       max_parallel:
         description: "Maximum simultaneous candidate benchmarks"
@@ -49,7 +49,7 @@ jobs:
         id: freeze
         env:
           GH_TOKEN: ${{ github.token }}
-          REQUESTED_PRS: ${{ inputs.candidate_prs || '389' }}
+          REQUESTED_PRS: ${{ inputs.candidate_prs || '391' }}
         run: |
           set -euo pipefail
           baseline_sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
@@ -265,7 +265,10 @@ jobs:
           from pathlib import Path
           root = Path(os.environ["ARTIFACT_ROOT"])
           candidates = json.loads(os.environ["CANDIDATES_JSON"])
-          baseline_files = list(root.glob("pr-tournament-baseline-*/external-corpus-report.json"))
+          baseline_files = [
+    path for path in root.rglob("external-corpus-report.json")
+    if path.parent == root or path.parent.name.startswith("pr-tournament-baseline-")
+]
           if len(baseline_files) != 1:
               raise SystemExit(f"Expected one main report, found {len(baseline_files)}")
           baseline = json.loads(baseline_files[0].read_text())
@@ -326,17 +329,20 @@ jobs:
               raise SystemExit("Baseline counts do not agree with its 500 unique case results")
           rows = []
           for candidate in candidates:
-              folders = list(root.glob(f"pr-tournament-candidate-{candidate['pr']}-*/"))
-              if len(folders) != 1:
-                  rows.append({**candidate, "eligible": False, "reason": "missing or duplicate artifact"})
+              identity_matches = []
+              for identity_path in root.rglob("candidate-result.json"):
+                  try:
+                      identity_data = json.loads(identity_path.read_text())
+                  except (OSError, json.JSONDecodeError):
+                      continue
+                  if identity_data.get("pr") == candidate["pr"]:
+                      identity_matches.append((identity_path, identity_data))
+              if len(identity_matches) != 1:
+                  rows.append({**candidate, "eligible": False, "reason": "missing or duplicate candidate identity artifact"})
                   continue
-              folder = folders[0]
-              identity_path = folder / "candidate-result.json"
+              identity_path, identity = identity_matches[0]
+              folder = identity_path.parent
               report_path = folder / "candidate" / "external-corpus-report.json"
-              if not identity_path.is_file():
-                  rows.append({**candidate, "eligible": False, "reason": "missing identity/test result"})
-                  continue
-              identity = json.loads(identity_path.read_text())
               if identity.get("merge_sha") != candidate["merge_sha"] or not identity.get("tests_passed"):
                   rows.append({**candidate, "eligible": False, "reason": "wrong merge SHA or unit tests failed"})
                   continue
