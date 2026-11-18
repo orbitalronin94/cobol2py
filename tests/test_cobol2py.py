@@ -5021,3 +5021,34 @@ MAIN.
         output, generated = self._run_program(source)
         self.assertEqual(output, "Y\n", generated)
 
+class EvaluateAnySelectionTests(unittest.TestCase):
+    def test_single_subject_when_any_is_unconditional_for_class_test(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. EVALANY.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            '01 WS-N PIC X VALUE "A".',
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "    EVALUATE WS-N NUMERIC",
+            "        WHEN ANY",
+            '            DISPLAY "ANY".',
+            "        WHEN OTHER",
+            '            DISPLAY "OTHER".',
+            "    END-EVALUATE.",
+            "    GOBACK.",
+        ])
+        generated = cobol2py.emit_python(
+            cobol2py.parse_cobol(source, source_format="free")
+        )
+        compile(generated, "<evaluate-any>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "ANY\\n", generated)
