@@ -17,7 +17,7 @@ on:
       candidate_prs:
         description: "Open experiment PR numbers, comma-separated"
         required: true
-        default: "391"
+        default: "395"
         type: string
       max_parallel:
         description: "Maximum simultaneous candidate benchmarks"
@@ -49,7 +49,7 @@ jobs:
         id: freeze
         env:
           GH_TOKEN: ${{ github.token }}
-          REQUESTED_PRS: ${{ inputs.candidate_prs || '391' }}
+          REQUESTED_PRS: ${{ inputs.candidate_prs || '395' }}
         run: |
           set -euo pipefail
           baseline_sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
@@ -266,9 +266,9 @@ jobs:
           root = Path(os.environ["ARTIFACT_ROOT"])
           candidates = json.loads(os.environ["CANDIDATES_JSON"])
           baseline_files = [
-    path for path in root.rglob("external-corpus-report.json")
-    if path.parent == root or path.parent.name.startswith("pr-tournament-baseline-")
-]
+              path for path in root.rglob("external-corpus-report.json")
+              if path.parent == root or path.parent.name.startswith("pr-tournament-baseline-")
+          ]
           if len(baseline_files) != 1:
               raise SystemExit(f"Expected one main report, found {len(baseline_files)}")
           baseline = json.loads(baseline_files[0].read_text())
