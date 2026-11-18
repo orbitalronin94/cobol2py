@@ -9,6 +9,13 @@ on:
       - ".github/workflows/current-main-pr-tournament.yml"
       - ".github/workflows/failure-directed-30-seed-tournament.yml"
       - "experiments/failure-tournament/manifest.json"
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "cobol2py.py"
+      - "ronin/**"
+      - "web/index.html"
+      - "tests/**"
   schedule:
     # Daily paired comparison of open candidates against a freshly frozen main.
     - cron: "30 11 * * *"
@@ -49,7 +56,7 @@ jobs:
         id: freeze
         env:
           GH_TOKEN: ${{ github.token }}
-          REQUESTED_PRS: ${{ inputs.candidate_prs || '395' }}
+          REQUESTED_PRS: ${{ github.event.pull_request.number || inputs.candidate_prs || '395' }}
         run: |
           set -euo pipefail
           baseline_sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
