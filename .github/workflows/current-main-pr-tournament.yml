@@ -38,9 +38,9 @@ permissions:
   pull-requests: read
 
 concurrency:
-  # Do not let a baseline-only run for one PR block another candidate's paired holdout.
-  group: cobol2py-current-main-pr-tournament-${{ github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: false
+  # PRs get independent groups; a new main run supersedes stale push/schedule runs.
+  group: ${{ github.event.pull_request.number && format('cobol2py-current-main-pr-tournament-pr-{0}', github.event.pull_request.number) || 'cobol2py-current-main-pr-tournament' }}
+  cancel-in-progress: true
 
 jobs:
   discover:
