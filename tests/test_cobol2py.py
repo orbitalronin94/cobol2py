@@ -4638,7 +4638,7 @@ class EnvironmentAndStandardErrorCandidateTests(unittest.TestCase):
         self.assertIn("__import__('sys').stderr", translated[0])
         output = StringIO()
         with redirect_stderr(output):
-            exec("\\n".join(translated or []), {})
+            exec("\n".join(translated or []), {})
         self.assertEqual(output.getvalue(), "diagnostic\n")
 
     def test_accept_from_environment_value_pads_alphanumeric_field(self):
@@ -4655,7 +4655,7 @@ class EnvironmentAndStandardErrorCandidateTests(unittest.TestCase):
         self.assertIsNotNone(translated)
         namespace = {"ws_value": "      "}
         with patch.dict("os.environ", {"COBOL_TEST_VALUE": "abc"}):
-            exec("\\n".join(translated or []), namespace)
+            exec("\n".join(translated or []), namespace)
         self.assertEqual(namespace["ws_value"], "abc   ")
 
 
@@ -4707,3 +4707,394 @@ MAIN.
                 os.chdir(previous)
         self.assertEqual(output.getvalue(), "", generated)
         self.assertEqual(written, "ABCD\n", generated)
+
+
+class EvaluateNegatedIdentifierSelectionTests(unittest.TestCase):
+    def test_evaluate_when_not_identifier_compiles_and_selects_unequal_branch(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        source = "\n".join([
+            "IDENTIFICATION DIVISION.",
+            "PROGRAM-ID. EVALNOT.",
+            "DATA DIVISION.",
+            "WORKING-STORAGE SECTION.",
+            '01 WS-LEFT PIC X VALUE "A".',
+            '01 WS-RIGHT PIC X VALUE "B".',
+            "PROCEDURE DIVISION.",
+            "MAIN.",
+            "    EVALUATE WS-LEFT",
+            "        WHEN NOT WS-RIGHT",
+            '            DISPLAY "DIFFERENT".',
+            "        WHEN OTHER",
+            '            DISPLAY "SAME".',
+            "    END-EVALUATE.",
+            "    GOBACK.",
+        ])
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<evaluate-not-identifier>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "DIFFERENT\n", generated)
+
+class EvaluateNegatedArithmeticSelectionTests(unittest.TestCase):
+    def test_evaluate_when_not_parenthesized_arithmetic_expression(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        for initial, expected in (("001", "DIFFERENT\n"), ("089", "SAME\n")):
+            with self.subTest(initial=initial):
+                source = "\n".join([
+                    "IDENTIFICATION DIVISION.",
+                    "PROGRAM-ID. EVALNOTEXPR.",
+                    "DATA DIVISION.",
+                    "WORKING-STORAGE SECTION.",
+                    f"01 WS-LEFT PIC 999 VALUE {initial}.",
+                    "PROCEDURE DIVISION.",
+                    "MAIN.",
+                    "    EVALUATE WS-LEFT",
+                    "        WHEN NOT (33 + (99 - 43))",
+                    '            DISPLAY "DIFFERENT".',
+                    "        WHEN OTHER",
+                    '            DISPLAY "SAME".',
+                    "    END-EVALUATE.",
+                    "    GOBACK.",
+                ])
+                generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+                compile(generated, "<evaluate-not-arithmetic>", "exec")
+                namespace = {"__name__": "generated_test"}
+                exec(generated, namespace)
+                output = StringIO()
+                with redirect_stdout(output):
+                    namespace["main"]()
+                self.assertEqual(output.getvalue(), expected, generated)
+
+class EvaluateNegatedRangeSelectionTests(unittest.TestCase):
+    def _run_program(self, source):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        generated = cobol2py.emit_python(cobol2py.parse_cobol(source, source_format="free"))
+        compile(generated, "<evaluate-not-range>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        return output.getvalue()
+
+    def test_when_not_numeric_thru_arithmetic_bounds(self):
+        for initial, expected in (("050", "OUT\n"), ("089", "IN\n"), ("101", "OUT\n")):
+            with self.subTest(initial=initial):
+                source = "\n".join([
+                    "IDENTIFICATION DIVISION.",
+                    "PROGRAM-ID. EVALNOTNUMRANGE.",
+                    "DATA DIVISION.",
+                    "WORKING-STORAGE SECTION.",
+                    f"01 WS-LEFT PIC 999 VALUE {initial}.",
+                    "PROCEDURE DIVISION.",
+                    "MAIN.",
+                    "    EVALUATE WS-LEFT",
+                    "        WHEN NOT (11 + (99 - 43)) THRU (20 * 5)",
+                    '            DISPLAY "OUT".',
+                    "        WHEN OTHER",
+                    '            DISPLAY "IN".',
+                    "    END-EVALUATE.",
+                    "    GOBACK.",
+                ])
+                self.assertEqual(self._run_program(source), expected)
+
+    def test_when_not_through_string_literals(self):
+        for initial, expected in (("M", "IN\n"), ("Z", "OUT\n")):
+            with self.subTest(initial=initial):
+                source = "\n".join([
+                    "IDENTIFICATION DIVISION.",
+                    "PROGRAM-ID. EVALNOTSTRRANGE.",
+                    "DATA DIVISION.",
+                    "WORKING-STORAGE SECTION.",
+                    f'01 WS-LEFT PIC X VALUE "{initial}".',
+                    "PROCEDURE DIVISION.",
+                    "MAIN.",
+                    "    EVALUATE WS-LEFT",
+                    '        WHEN NOT "A" THROUGH "N"',
+                    '            DISPLAY "OUT".',
+                    "        WHEN OTHER",
+                    '            DISPLAY "IN".',
+                    "    END-EVALUATE.",
+                    "    GOBACK.",
+                ])
+                self.assertEqual(self._run_program(source), expected)
+
+    def test_when_not_thru_alphanumeric_variables(self):
+        for initial, expected in (("M", "IN\n"), ("Z", "OUT\n")):
+            with self.subTest(initial=initial):
+                source = "\n".join([
+                    "IDENTIFICATION DIVISION.",
+                    "PROGRAM-ID. EVALNOTVARRANGE.",
+                    "DATA DIVISION.",
+                    "WORKING-STORAGE SECTION.",
+                    f'01 WS-LEFT PIC X VALUE "{initial}".',
+                    '01 WS-LOW PIC X VALUE "A".',
+                    '01 WS-HIGH PIC X VALUE "N".',
+                    "PROCEDURE DIVISION.",
+                    "MAIN.",
+                    "    EVALUATE WS-LEFT",
+                    "        WHEN NOT WS-LOW THRU WS-HIGH",
+                    '            DISPLAY "OUT".',
+                    "        WHEN OTHER",
+                    '            DISPLAY "IN".',
+                    "    END-EVALUATE.",
+                    "    GOBACK.",
+                ])
+                self.assertEqual(self._run_program(source), expected)
+
+
+class EvaluateAlsoRegressionTests(unittest.TestCase):
+    def _run_program(self, source):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        generated = cobol2py.emit_python(
+            cobol2py.parse_cobol(source, source_format="free")
+        )
+        compile(generated, "<evaluate-also-regression>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            try:
+                namespace["main"]()
+            except SystemExit as exc:
+                self.assertIn(exc.code, (None, 0))
+        return output.getvalue(), generated
+
+    def test_evaluate_also_continuations_negation_and_boolean_subjects(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. EVALALSO.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-A PIC 9(3) VALUE 81.
+01 WS-B PIC 9(3) VALUE 81.
+01 WS-D PIC 9 VALUE 0.
+01 WS-E PIC 9(3) VALUE 567.
+01 WS-OUT PIC X VALUE SPACE.
+PROCEDURE DIVISION.
+MAIN.
+    EVALUATE WS-A
+        ALSO 81
+        ALSO (WS-A * 9)
+        ALSO TRUE
+        ALSO FALSE
+        WHEN NOT 1
+            ALSO WS-B
+            ALSO 729
+            ALSO WS-D = 0
+            ALSO WS-E < 9
+                MOVE "A" TO WS-OUT.
+        WHEN OTHER
+                MOVE "Z" TO WS-OUT.
+    END-EVALUATE.
+    DISPLAY WS-OUT.
+    GOBACK.
+"""
+        output, generated = self._run_program(source)
+        self.assertEqual(output, "A\n", generated)
+        self.assertNotIn("COBOL no traducido dentro de EVALUATE: ALSO", generated)
+
+    def test_evaluate_also_any_wildcard_matches_other_subjects(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. EVALANY.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-A PIC 9 VALUE 1.
+01 WS-B PIC 9 VALUE 2.
+01 WS-OUT PIC X VALUE SPACE.
+PROCEDURE DIVISION.
+MAIN.
+    EVALUATE WS-A
+        ALSO WS-B
+        WHEN ANY
+            ALSO 2
+                MOVE "Y" TO WS-OUT.
+        WHEN OTHER
+                MOVE "N" TO WS-OUT.
+    END-EVALUATE.
+    DISPLAY WS-OUT.
+    GOBACK.
+"""
+        output, generated = self._run_program(source)
+        self.assertEqual(output, "Y\n", generated)
+
+    def test_evaluate_also_level_88_condition_name_subject(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. EVAL88ALSO.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-A PIC 9 VALUE 81.
+   88 IT-IS-81 VALUE 81.
+01 WS-OUT PIC X VALUE SPACE.
+PROCEDURE DIVISION.
+MAIN.
+    EVALUATE WS-A
+        ALSO IT-IS-81
+        WHEN 81
+            ALSO TRUE
+                MOVE "Y" TO WS-OUT.
+        WHEN OTHER
+                MOVE "N" TO WS-OUT.
+    END-EVALUATE.
+    DISPLAY WS-OUT.
+    GOBACK.
+"""
+        output, generated = self._run_program(source)
+        self.assertEqual(output, "Y\n", generated)
+
+class EvaluateAlsoNegatedRangeRegressionTests(unittest.TestCase):
+    def _run_program(self, source):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        generated = cobol2py.emit_python(
+            cobol2py.parse_cobol(source, source_format="free")
+        )
+        compile(generated, "<evaluate-also-negated-range>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        return output.getvalue(), generated
+
+    def test_negated_numeric_thru_with_any_wildcard(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. EVALNOTNUM.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-A PIC 9 VALUE 1.
+01 WS-B PIC 9 VALUE 2.
+01 WS-OUT PIC X VALUE SPACE.
+PROCEDURE DIVISION.
+MAIN.
+    EVALUATE WS-A
+        ALSO WS-B
+        WHEN NOT 2 THRU 4
+            ALSO ANY
+                MOVE "Y" TO WS-OUT.
+        WHEN OTHER
+                MOVE "N" TO WS-OUT.
+    END-EVALUATE.
+    DISPLAY WS-OUT.
+    GOBACK.
+"""
+        output, generated = self._run_program(source)
+        self.assertEqual(output, "Y\n", generated)
+
+    def test_negated_alphanumeric_through_pads_literal_bounds(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. EVALNOTALPHA.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-A PIC X(2) VALUE "Z".
+01 WS-B PIC X VALUE "B".
+01 WS-OUT PIC X VALUE SPACE.
+PROCEDURE DIVISION.
+MAIN.
+    EVALUATE WS-A
+        ALSO WS-B
+        WHEN NOT "A" THROUGH "N"
+            ALSO ANY
+                MOVE "Y" TO WS-OUT.
+        WHEN OTHER
+                MOVE "N" TO WS-OUT.
+    END-EVALUATE.
+    DISPLAY WS-OUT.
+    GOBACK.
+"""
+        output, generated = self._run_program(source)
+        self.assertEqual(output, "Y\n", generated)
+
+    def test_negated_alphanumeric_thru_pads_variable_bounds(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. EVALNOTVARS.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-A PIC X(2) VALUE "Z".
+01 WS-LOW PIC X VALUE "A".
+01 WS-HIGH PIC X VALUE "N".
+01 WS-B PIC X VALUE "B".
+01 WS-OUT PIC X VALUE SPACE.
+PROCEDURE DIVISION.
+MAIN.
+    EVALUATE WS-A
+        ALSO WS-B
+        WHEN NOT WS-LOW THRU WS-HIGH
+            ALSO ANY
+                MOVE "Y" TO WS-OUT.
+        WHEN OTHER
+                MOVE "N" TO WS-OUT.
+    END-EVALUATE.
+    DISPLAY WS-OUT.
+    GOBACK.
+"""
+        output, generated = self._run_program(source)
+        self.assertEqual(output, "Y\n", generated)
+
+class EvaluateAnySelectionTests(unittest.TestCase):
+    def test_single_subject_when_any_is_unconditional_for_class_test(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+
+        program = cobol2py.Program(
+            program_id="EVALANY",
+            variables=[
+                cobol2py.CobolVar(level=1, name="WS-N", pic="X", value='"A"')
+            ],
+            paragraphs={
+                "__MAIN__": [
+                    cobol2py.Node(
+                        kind="evaluate",
+                        text="EVALUATE WS-N NUMERIC",
+                        line=1,
+                        body=[
+                            cobol2py.Node(
+                                kind="when",
+                                text="ANY",
+                                line=2,
+                                then_branch=[
+                                    cobol2py.Node(
+                                        kind="stmt",
+                                        text='DISPLAY "ANY"',
+                                        line=3,
+                                    )
+                                ],
+                            ),
+                            cobol2py.Node(
+                                kind="when",
+                                text="OTHER",
+                                line=4,
+                                then_branch=[
+                                    cobol2py.Node(
+                                        kind="stmt",
+                                        text='DISPLAY "OTHER"',
+                                        line=5,
+                                    )
+                                ],
+                            ),
+                        ],
+                    )
+                ]
+            },
+            paragraph_order=["__MAIN__"],
+        )
+        generated = cobol2py.emit_python(program)
+        self.assertIn("if True:", generated)
+        compile(generated, "<evaluate-any>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "ANY\n", generated)
