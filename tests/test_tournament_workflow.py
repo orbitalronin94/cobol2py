@@ -86,7 +86,7 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
         self.assertIn("push:", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn(".github/workflows/current-main-pr-tournament.yml", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn('cron: "30 11 * * *"', CURRENT_MAIN_PR_WORKFLOW)
-        self.assertIn("inputs.candidate_prs || '395'", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("inputs.candidate_prs || '371'", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn("workflow_dispatch:", CURRENT_MAIN_PR_WORKFLOW)
 
     def test_30_seed_tournament_scores_against_frozen_main_oracle(self):
@@ -144,10 +144,10 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
         self.assertNotIn('"tests/**"', CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn('"web/index.html"', CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn('"ronin/**"', CURRENT_MAIN_PR_WORKFLOW)
-        self.assertIn("REQUESTED_PRS: ${{ github.event.pull_request.number || inputs.candidate_prs || '395' }}", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("REQUESTED_PRS: ${{ github.event.pull_request.number || inputs.candidate_prs || '371' }}", CURRENT_MAIN_PR_WORKFLOW)
 
     def test_current_main_pr_tournament_defaults_to_rebuilt_candidate(self):
-        self.assertIn("inputs.candidate_prs || \'395\'", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("inputs.candidate_prs || \'371\'", CURRENT_MAIN_PR_WORKFLOW)
 
     def test_legacy_16_candidate_tournament_is_manual_only_until_rebuilt(self):
         trigger_section = WORKFLOW.split("permissions:", 1)[0]
@@ -166,3 +166,31 @@ if __name__ == "__main__":
 
     def test_current_main_pr_tournament_runs_when_translator_regression_tests_change(self):
         self.assertIn('      - "tests/test_cobol2py.py"', CURRENT_MAIN_PR_WORKFLOW)
+
+EXTERNAL_COBOL_SMOKE_WORKFLOW = (
+    Path(__file__).resolve().parents[1]
+    / ".github"
+    / "workflows"
+    / "external-cobol-smoke.yml"
+).read_text(encoding="utf-8")
+
+EXTERNAL_PYTHON_WORKFLOW = (
+    Path(__file__).resolve().parents[1]
+    / ".github"
+    / "workflows"
+    / "external-python-benchmark.yml"
+).read_text(encoding="utf-8")
+
+
+class DockerBuildNetworkContractTests(unittest.TestCase):
+    def test_benchmark_images_use_host_network_only_during_build(self):
+        for workflow in (
+            EXTERNAL_COBOL_SMOKE_WORKFLOW,
+            EXTERNAL_PYTHON_WORKFLOW,
+            CURRENT_MAIN_PR_WORKFLOW,
+            FAILURE_30_WORKFLOW,
+        ):
+            self.assertIn("driver-opts: network=host", workflow)
+            self.assertIn("--allow-insecure-entitlement network.host", workflow)
+            self.assertIn("--allow network.host --network host", workflow)
+            self.assertIn("--network none", workflow)
