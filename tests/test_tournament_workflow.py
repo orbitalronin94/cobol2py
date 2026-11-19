@@ -166,3 +166,31 @@ if __name__ == "__main__":
 
     def test_current_main_pr_tournament_runs_when_translator_regression_tests_change(self):
         self.assertIn('      - "tests/test_cobol2py.py"', CURRENT_MAIN_PR_WORKFLOW)
+
+EXTERNAL_COBOL_SMOKE_WORKFLOW = (
+    Path(__file__).resolve().parents[1]
+    / ".github"
+    / "workflows"
+    / "external-cobol-smoke.yml"
+).read_text(encoding="utf-8")
+
+EXTERNAL_PYTHON_WORKFLOW = (
+    Path(__file__).resolve().parents[1]
+    / ".github"
+    / "workflows"
+    / "external-python-benchmark.yml"
+).read_text(encoding="utf-8")
+
+
+class DockerBuildNetworkContractTests(unittest.TestCase):
+    def test_benchmark_images_use_host_network_only_during_build(self):
+        for workflow in (
+            EXTERNAL_COBOL_SMOKE_WORKFLOW,
+            EXTERNAL_PYTHON_WORKFLOW,
+            CURRENT_MAIN_PR_WORKFLOW,
+            FAILURE_30_WORKFLOW,
+        ):
+            self.assertIn("driver-opts: network=host", workflow)
+            self.assertIn("--allow-insecure-entitlement network.host", workflow)
+            self.assertIn("--allow network.host --network host", workflow)
+            self.assertIn("--network none", workflow)

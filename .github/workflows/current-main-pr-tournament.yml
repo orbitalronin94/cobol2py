@@ -136,8 +136,15 @@ jobs:
           ref: ${{ needs.discover.outputs.baseline_sha }}
       - name: Download pinned X-COBOL v2 archive
         run: curl --fail --location --retry 3 --retry-delay 2 "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" --output /tmp/COBOL_Files.zip
+      - name: Set up Docker Buildx with host network entitlement
+        uses: docker/setup-buildx-action@v4
+        with:
+          driver-opts: network=host
+          buildkitd-flags: --debug --allow-insecure-entitlement network.host
       - name: Build isolated benchmark image
-        run: docker build -f benchmarks/Dockerfile.external -t cobol2py-pr-tournament .
+        run: |
+          docker buildx build --allow network.host --network host --load \
+            -f benchmarks/Dockerfile.external -t cobol2py-pr-tournament .
       - name: Run exact 500-case baseline
         run: |
           mkdir -p "$RUNNER_TEMP/baseline"
@@ -201,9 +208,16 @@ jobs:
       - name: Download pinned X-COBOL v2 archive
         if: steps.unit.outcome == 'success'
         run: curl --fail --location --retry 3 --retry-delay 2 "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1" --output /tmp/COBOL_Files.zip
+      - name: Set up Docker Buildx with host network entitlement
+        uses: docker/setup-buildx-action@v4
+        with:
+          driver-opts: network=host
+          buildkitd-flags: --debug --allow-insecure-entitlement network.host
       - name: Build isolated benchmark image
         if: steps.unit.outcome == 'success'
-        run: docker build -f benchmark-harness/benchmarks/Dockerfile.external -t cobol2py-pr-tournament .
+        run: |
+          docker buildx build --allow network.host --network host --load \
+            -f benchmark-harness/benchmarks/Dockerfile.external -t cobol2py-pr-tournament .
       - name: Run exact 500-case candidate holdout
         if: steps.unit.outcome == 'success'
         run: |
