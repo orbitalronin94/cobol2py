@@ -74,24 +74,35 @@ class FailureTournamentManifestTests(unittest.TestCase):
 
     def test_current_main_pr_tournament_records_full_casewise_candidate_evaluation(self):
         tournament = MANIFEST["current_main_pr_tournament"]
-        self.assertEqual(tournament["default_candidate_prs"], [398])
+        self.assertEqual(tournament["default_candidate_prs"], [371])
         queued = tournament["candidate_queue"][0]
-        self.assertEqual(queued["pr"], 398)
+        self.assertEqual(queued["pr"], 371)
+        self.assertEqual(queued["motivating_case_ids"], ["openfilesequential-962ba09d3d"])
         self.assertEqual(queued["decision"], "pending_full_500_casewise_comparison")
         result = tournament["latest_candidate_evaluation"]
-        self.assertEqual(result["pr"], 398)
+        self.assertEqual(result["pr"], 371)
         self.assertEqual(result["baseline_score"], 263)
-        self.assertEqual(result["paired_run"], 44519122785)
-        self.assertEqual(result["holdout_run"], 44519122937)
+        self.assertEqual(result["holdout_run"], 44523489575)
+        self.assertEqual(result["paired_run"], 44523489648)
         self.assertEqual(result["holdout_status"], "in_progress")
-        self.assertEqual(result["unit_suite_conclusion"], "success")
+        self.assertEqual(result["unit_suite_conclusion"], "in_progress")
         self.assertEqual(result["decision"], "pending_full_500_casewise_comparison")
-        previous = MANIFEST["latest_candidate_artifact_comparison"]
-        self.assertEqual(previous["candidate_pr"], 395)
-        self.assertEqual(previous["new_pass_case_ids"], ["exec84-2-03eae98697"])
-        self.assertEqual(previous["regressed_case_ids"], [])
+        previous = tournament["previous_candidate_evaluation"]
+        self.assertEqual(previous["pr"], 398)
+        self.assertEqual(previous["candidate_score"], 263)
+        self.assertEqual(previous["new_passes"], 0)
+        self.assertEqual(previous["regressions"], 0)
+        self.assertEqual(previous["oracle_drift_count"], 8)
         self.assertFalse(previous["eligible"])
-        self.assertEqual(MANIFEST["latest_paired_pr_tournament"]["status"], "in_progress")
+        paired = MANIFEST["latest_paired_pr_tournament"]
+        self.assertEqual(paired["run"], 44519122785)
+        self.assertEqual(paired["status"], "completed")
+        self.assertEqual(paired["candidate_score"], 263)
+        self.assertEqual(paired["comparable_cases"], 500)
+        self.assertEqual(paired["new_passes"], 0)
+        self.assertEqual(paired["regressions"], 0)
+        self.assertEqual(paired["oracle_drift_count"], 8)
+        self.assertFalse(paired["eligible"])
 
     def test_30_seed_audit_is_fresh_and_still_blocked(self):
         audit = MANIFEST["candidate_branch_audit"]

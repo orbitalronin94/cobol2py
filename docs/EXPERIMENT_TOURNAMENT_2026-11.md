@@ -187,3 +187,29 @@ Sin ganador, sin promoción y sin merge de código de traductor. La siguiente hi
 - **PR #349:** fusionó únicamente el arnés. El workflow es manual (`workflow_dispatch`), congela el baseline y rechaza ramas divergidas, duplicadas, sin tests o con cambios ajenos; la promoción no es automática. La readiness sigue correctamente en `blocked`; no se ha iniciado un torneo de 30 semillas.
 
 **Decisión actual:** ningún candidato de traductor se ha fusionado. #398 solo podrá promocionarse si su holdout completo acredita al menos una ganancia exacta atribuible a la hipótesis y cero regresiones contra el mismo baseline congelado.
+
+
+## Revalidación del 19 de noviembre — resultado emparejado de EVALUATE ALSO y nueva candidata FILE I/O
+
+### PR #398 — no elegible
+
+- Baseline exacto: **263/500 (52,6 %)**, main SHA `7b55ce1d5aadc4465549c65e04d2f15bf45b25b9`, [run 44308154079](https://github.com/orbitalronin94/cobol2py/actions/runs/44308154079). X-COBOL v2, MD5 `cbd974caed72b0836777dc2305928ed3`, `skip=500`, `target=500`, 500 IDs y fingerprints completos.
+- El torneo oficial [run 44519122785](https://github.com/orbitalronin94/cobol2py/actions/runs/44519122785) terminó correctamente: main **263/500**, PR #398 **263/500**, 500 casos comparables, **0 nuevas aprobaciones**, **0 regresiones**, 8 derivas del oráculo. El ranking se hizo contra los fingerprints congelados de main.
+- IDs con deriva: `cob-simpleinventory-6af451140a`, `collatz-6e335e6eda`, `date1-f31ce2734d`, `intrdate-0517c3d81c`, `pullydis-9e45af6c84`, `randombingo-e50339cc12`, `randomnumbers-d8fc7ee85b`, `rolldice-08e3de1a0e`.
+- El holdout independiente [run 44519122937](https://github.com/orbitalronin94/cobol2py/actions/runs/44519122937) completó 500/500, pero su ganancia ocasional de `exec84-2-03eae98697` no se reprodujo en el emparejado; es un caso sensible al límite temporal y no una mejora atribuible a EVALUATE.
+- Los dos reproduceres motivadores, `nc225a-a777e5ee71` y `nc2254-2-73142ca32f`, siguen terminando en timeout del programa traducido. Suite [44519122825](https://github.com/orbitalronin94/cobol2py/actions/runs/44519122825) y smoke [44519122846](https://github.com/orbitalronin94/cobol2py/actions/runs/44519122846) verdes, pero sin ganancia exacta. PR #398 se cerró sin merge.
+
+### PR #371 — reconstruida sobre main para FILE I/O SEQUENTIAL
+
+- PR: [#371](https://github.com/orbitalronin94/cobol2py/pull/371).
+- Base: `7b55ce1d5aadc4465549c65e04d2f15bf45b25b9`; head reconstruido: `6e5ec12077ac5c4d9d2ea0ca24a44147bc42ebd9`.
+- Hipótesis: `ORGANIZATION SEQUENTIAL` debe leer registros de ancho fijo según el ancho declarado, no usar `readline()` cuando el archivo no contiene separadores de línea. `LINE SEQUENTIAL` conserva lectura por línea.
+- Caso motivador del holdout: `openfilesequential-962ba09d3d`. Main produce 83 bytes frente a 46 bytes de GnuCOBOL; el candidato cambia la lectura al ancho del FD. Se añade fixture ejecutable con dos registros de cuatro bytes sin newline y comprobación del estado EOF.
+- Cambios aislados en `cobol2py.py`, `web/index.html` y `tests/test_cobol2py.py`; no se modificó corpus, métrica ni workflow.
+- Suite [44523489717](https://github.com/orbitalronin94/cobol2py/actions/runs/44523489717), smoke [44523489851](https://github.com/orbitalronin94/cobol2py/actions/runs/44523489851), holdout [44523489575](https://github.com/orbitalronin94/cobol2py/actions/runs/44523489575) y torneo emparejado [44523489648](https://github.com/orbitalronin94/cobol2py/actions/runs/44523489648) están en curso. No hay puntuación, ganancias ni regresiones elegibles todavía.
+
+### Readiness de las 30 semillas
+
+El manifiesto sigue en `blocked`: 30 ramas existentes y distintas, todas divergidas; semillas 11–15 sin traductor/tests y 16–30 con ruido ajeno de workflows/benchmark/documentación. El workflow de 30 semillas sigue siendo manual (`workflow_dispatch`) y no se ha iniciado. El torneo antiguo de 16 candidatos sigue manual-only y sin cohorte válida; no se ha duplicado.
+
+**Decisión:** ningún parche de traductor promovido ni fusionado. El siguiente gate es el holdout emparejado completo de #371 con los mismos 500 IDs y fingerprints congelados de main, al menos una nueva coincidencia atribuible a FILE I/O SEQUENTIAL y cero regresiones.

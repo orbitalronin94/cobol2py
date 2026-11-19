@@ -286,7 +286,8 @@
       "Exact current-main baseline: run 44308154079 on SHA 7b55ce1, 263/500 (52.6%), 500/500 IDs, skip=500, target=500, X-COBOL v2 MD5 cbd974caed72b0836777dc2305928ed3, and 500 complete GnuCOBOL fingerprints.",
       "PR #395 candidate run 44307154327 covered four complete 125-case shards and the same 500 IDs/source hashes. Against frozen main run 44308154079 it scored 264/500 with zero regressions; the only apparent new pass is exec84-2-03eae98697, a timeout-boundary case (main translator timeout at 20.004175 s; candidate completed at 11.884421 s with the oracle's empty stdout and return code 1). It is not accepted as a semantic gain attributable to EVALUATE.",
       "The NIST cases nc225a-a777e5ee71 and nc2254-2-73142ca32f still fail in PR #395 at runtime with NameError for level-88 condition name it_is_81. PR #398 adds condition-name lowering in EVALUATE ALSO subjects and an integration reproducer.",
-      "PR #398 is based directly on current main SHA 7b55ce1 with one isolated commit and only translator/web/test changes. Its complete unit suite passed on Python 3.10-3.13, GnuCOBOL reference/trace, Java backend and browser smoke. Full paired holdout and 50-case smoke remain in progress."
+      "PR #398 paired run 44519122785 completed: main 263/500, candidate 263/500, 500 comparable cases, zero new passes, zero regressions, eight oracle drifts; ineligible. Both NIST motivating cases still time out; PR #398 was closed unmerged.",
+      "PR #371 was rebuilt as an isolated candidate on exact main 7b55ce1. It targets openfilesequential-962ba09d3d (main stdout 83 bytes versus GnuCOBOL 46 bytes); suite, smoke, four-shard holdout and paired 500-case run are in progress."
     ],
     "audit_date": "2026-11-19",
     "audit_main_sha": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
@@ -2557,26 +2558,26 @@
     "workflow_sha": "41e386f3c9344bb1fa079821ac91ba4d8d180cb3",
     "schedule_utc": "30 11 * * *",
     "default_candidate_prs": [
-      398
+      371
     ],
     "next_expected_run_utc": "2026-11-20T11:30:00Z",
     "contract": "Freeze current main and all 500 per-ID GnuCOBOL stdout SHA-256/length/return-code fingerprints; compare candidate source SHA, stdout bytes and return code on the exact same 500 IDs and archive checksum; require >=1 new pass and zero regressions.",
-    "note": "PR #395 was closed as superseded and ineligible: its only apparent +1 against the later main baseline was the unrelated exec84 timeout-boundary case, while both NIST EVALUATE reproducers still failed on the level-88 condition name. PR #398 is the active isolated candidate, based directly on current main and automatically evaluated by the pull_request workflow.",
+    "note": "Active candidate is PR #371 (fixed-width SEQUENTIAL file records), rebuilt on exact main 7b55ce1. PR #398 is closed as ineligible after a completed paired 500-case result with no new passes.",
     "last_schedule_check_utc": "2026-11-19T11:55:26Z",
     "last_scheduled_run_found": false,
     "latest_candidate_evaluation": {
-      "pr": 398,
-      "title": "[EVALUATE ALSO] Lower level-88 condition-name subjects",
-      "branch": "fix/evaluate-also-condition-name-20261119",
-      "head_sha": "12ac3014966d07148567f69836353097564230b9",
+      "pr": 371,
+      "title": "[FILE I/O] Read fixed-width SEQUENTIAL records without line delimiters",
+      "branch": "fix/read-fixed-width-sequential",
+      "head_sha": "6e5ec12077ac5c4d9d2ea0ca24a44147bc42ebd9",
       "base_sha": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
-      "unit_suite_run": 44519122825,
-      "unit_suite_conclusion": "success",
-      "cobol_smoke_run": 44519122846,
+      "unit_suite_run": 44523489717,
+      "unit_suite_conclusion": "in_progress",
+      "cobol_smoke_run": 44523489851,
       "cobol_smoke_status": "in_progress",
-      "holdout_run": 44519122937,
+      "holdout_run": 44523489575,
       "holdout_status": "in_progress",
-      "paired_run": 44519122785,
+      "paired_run": 44523489648,
       "paired_status": "in_progress",
       "baseline_run": 44308154079,
       "baseline_score": 263,
@@ -2584,25 +2585,26 @@
       "unique_case_ids": null,
       "source_hash_matches": null,
       "decision": "pending_full_500_casewise_comparison",
-      "note": "PR #398 adds level-88 condition-name lowering for EVALUATE ALSO subjects, with a targeted integration test. All four Python unittest versions and GnuCOBOL/Java/browser checks completed successfully. The paired main/candidate 500-case tournament, four-shard external benchmark and 50-case COBOL smoke are still running."
+      "note": "Rebuilt the existing isolated PR #371 onto exact main 7b55ce1. The motivating holdout case openfilesequential-962ba09d3d has a 46-byte GnuCOBOL stdout versus 83 bytes from main; the candidate reads fixed-width records using the declared FD width. Suite, smoke and paired 500-case evaluation are running on head 6e5ec12."
     },
     "candidate_queue": [
       {
-        "pr": 398,
-        "branch": "fix/evaluate-also-condition-name-20261119",
-        "head_sha": "12ac3014966d07148567f69836353097564230b9",
+        "pr": 371,
+        "branch": "fix/read-fixed-width-sequential",
+        "head_sha": "6e5ec12077ac5c4d9d2ea0ca24a44147bc42ebd9",
         "base_sha": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
+        "hypothesis": "Read ORGANIZATION SEQUENTIAL records by declared fixed width, not newline boundaries.",
         "motivating_case_ids": [
-          "nc225a-a777e5ee71",
-          "nc2254-2-73142ca32f"
+          "openfilesequential-962ba09d3d"
         ],
-        "unit_suite_run": 44519122825,
-        "unit_suite_conclusion": "success",
-        "cobol_smoke_run": 44519122846,
+        "unit_suite_run": 44523489717,
+        "unit_suite_conclusion": "in_progress",
+        "cobol_smoke_run": 44523489851,
         "cobol_smoke_status": "in_progress",
-        "holdout_run": 44519122937,
+        "holdout_run": 44523489575,
         "holdout_status": "in_progress",
-        "paired_run": 44519122785,
+        "paired_run": 44523489648,
+        "paired_status": "in_progress",
         "decision": "pending_full_500_casewise_comparison"
       }
     ],
@@ -2627,6 +2629,47 @@
         "experiments/failure-tournament/manifest.json"
       ],
       "purpose": "Run a fresh exact 500-case baseline and paired candidate cohort after tournament protocol/readiness changes; avoids waiting for a manual dispatch."
+    },
+    "previous_candidate_evaluation": {
+      "pr": 398,
+      "title": "[EVALUATE ALSO] Lower level-88 condition-name subjects",
+      "branch": "fix/evaluate-also-condition-name-20261119",
+      "head_sha": "12ac3014966d07148567f69836353097564230b9",
+      "base_sha": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
+      "merge_sha": "e13aaa569fe041061bde8ba5bc1636beedb1a18f",
+      "baseline_score": 263,
+      "candidate_score": 263,
+      "denominator": 500,
+      "comparable_cases": 500,
+      "new_passes": 0,
+      "new_pass_case_ids": [],
+      "regressions": 0,
+      "regressed_case_ids": [],
+      "oracle_drift_count": 8,
+      "oracle_drift_case_ids": [
+        "cob-simpleinventory-6af451140a",
+        "collatz-6e335e6eda",
+        "date1-f31ce2734d",
+        "intrdate-0517c3d81c",
+        "pullydis-9e45af6c84",
+        "randombingo-e50339cc12",
+        "randomnumbers-d8fc7ee85b",
+        "rolldice-08e3de1a0e"
+      ],
+      "unit_suite_run": 44519122825,
+      "unit_suite_conclusion": "success",
+      "holdout_run": 44519122937,
+      "holdout_conclusion": "success",
+      "paired_run": 44519122785,
+      "paired_conclusion": "success",
+      "motivating_case_ids": [
+        "nc225a-a777e5ee71",
+        "nc2254-2-73142ca32f"
+      ],
+      "motivating_cases_fixed": false,
+      "eligible": false,
+      "decision": "ineligible_no_gain_oracle_drift",
+      "note": "Official paired comparison: 263/500 vs 263/500, 500 comparable cases, zero new passes, zero regressions, eight oracle drifts. Both NIST motivating cases still time out. The one-off exec84 timeout-boundary pass in the independent sharded run did not reproduce as a gain in the paired run."
     }
   },
   "latest_16_candidate_tournament": {
@@ -2663,19 +2706,31 @@
     "candidate_pr": 398,
     "candidate_head_sha": "12ac3014966d07148567f69836353097564230b9",
     "candidate_merge_sha": "e13aaa569fe041061bde8ba5bc1636beedb1a18f",
-    "candidate_score": null,
-    "comparable_cases": null,
-    "new_passes": null,
-    "new_pass_case_ids": null,
-    "regressions": null,
-    "regressed_case_ids": null,
+    "candidate_score": 263,
+    "comparable_cases": 500,
+    "new_passes": 0,
+    "new_pass_case_ids": [],
+    "regressions": 0,
+    "regressed_case_ids": [],
+    "oracle_drift_count": 8,
+    "oracle_drift_case_ids": [
+      "cob-simpleinventory-6af451140a",
+      "collatz-6e335e6eda",
+      "date1-f31ce2734d",
+      "intrdate-0517c3d81c",
+      "pullydis-9e45af6c84",
+      "randombingo-e50339cc12",
+      "randomnumbers-d8fc7ee85b",
+      "rolldice-08e3de1a0e"
+    ],
     "winner": null,
     "eligible": false,
-    "status": "in_progress",
+    "status": "completed",
     "candidate_benchmark_run": 44519122937,
     "unit_suite_run": 44519122825,
     "smoke_run": 44519122846,
-    "note": "Paired workflow froze current main and candidate revisions successfully. Baseline and PR #398 500-case jobs are still in progress; no score, gains, regressions or winner are available yet."
+    "promotion": "manual; no merge is performed by this workflow",
+    "note": "Completed official paired run. Main and PR #398 both scored 263/500 on 500 comparable IDs. Zero new passes, zero regressions, eight candidate-run oracle drifts; frozen main oracle used for scoring. Both NIST motivating cases still time out. No winner and no promotion."
   },
   "latest_baseline_artifact_check": {
     "run": 44297062982,
@@ -3280,5 +3335,48 @@
         "web/index.html"
       ]
     }
-  ]
+  ],
+  "previous_paired_pr_tournament": {
+    "run": 44519122785,
+    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44519122785",
+    "baseline_sha": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
+    "baseline_score": 263,
+    "denominator": 500,
+    "candidate_pr": 398,
+    "candidate_head_sha": "12ac3014966d07148567f69836353097564230b9",
+    "candidate_merge_sha": "e13aaa569fe041061bde8ba5bc1636beedb1a18f",
+    "candidate_score": null,
+    "comparable_cases": null,
+    "new_passes": null,
+    "new_pass_case_ids": null,
+    "regressions": null,
+    "regressed_case_ids": null,
+    "winner": null,
+    "eligible": false,
+    "status": "in_progress",
+    "candidate_benchmark_run": 44519122937,
+    "unit_suite_run": 44519122825,
+    "smoke_run": 44519122846,
+    "note": "Paired workflow froze current main and candidate revisions successfully. Baseline and PR #398 500-case jobs are still in progress; no score, gains, regressions or winner are available yet."
+  },
+  "pending_paired_pr_tournament": {
+    "run": 44523489648,
+    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44523489648",
+    "baseline_sha": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
+    "baseline_score": 263,
+    "denominator": 500,
+    "candidate_pr": 371,
+    "candidate_head_sha": "6e5ec12077ac5c4d9d2ea0ca24a44147bc42ebd9",
+    "candidate_score": null,
+    "comparable_cases": null,
+    "new_passes": null,
+    "regressions": null,
+    "winner": null,
+    "eligible": false,
+    "status": "in_progress",
+    "candidate_benchmark_run": 44523489575,
+    "unit_suite_run": 44523489717,
+    "smoke_run": 44523489851,
+    "note": "PR #371 was rebuilt directly on current main; the paired 500-case workflow and independent holdout are in progress."
+  }
 }

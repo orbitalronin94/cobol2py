@@ -24,7 +24,7 @@ on:
       candidate_prs:
         description: "Open experiment PR numbers, comma-separated"
         required: true
-        default: "398"
+        default: "371"
         type: string
       max_parallel:
         description: "Maximum simultaneous candidate benchmarks"
@@ -57,7 +57,7 @@ jobs:
         id: freeze
         env:
           GH_TOKEN: ${{ github.token }}
-          REQUESTED_PRS: ${{ github.event.pull_request.number || inputs.candidate_prs || '398' }}
+          REQUESTED_PRS: ${{ github.event.pull_request.number || inputs.candidate_prs || '371' }}
         run: |
           set -euo pipefail
           baseline_sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
