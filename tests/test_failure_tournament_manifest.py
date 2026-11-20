@@ -24,6 +24,10 @@ class FailureTournamentManifestTests(unittest.TestCase):
         self.assertEqual(baseline["percent"], 51.4)
         self.assertEqual(baseline["source_run"], 42268813592)
         self.assertNotEqual(baseline["source_run"], 42266714599)
+        self.assertEqual(MANIFEST["experimental_reference"]["source_run"], 42266714599)
+        self.assertEqual(MANIFEST["experimental_reference"]["head_branch"], "experiment/holdout-error-topography")
+        self.assertEqual(MANIFEST["experimental_reference"]["score"], 258)
+        self.assertEqual(MANIFEST["experimental_reference"]["kind"], "experimental_only_not_main")
 
         latest = MANIFEST["latest_main_remeasurement"]
         self.assertEqual(latest["score"], 263)
@@ -47,6 +51,8 @@ class FailureTournamentManifestTests(unittest.TestCase):
         self.assertEqual(historical["source_run"], 42272058313)
         self.assertEqual(historical["skip"], 500)
         self.assertEqual(historical["target"], 500)
+        self.assertEqual(historical["workflow_conclusion"], "cancelled")
+        self.assertTrue(historical["baseline_artifact_complete"])
 
     def test_zero_regression_gate_and_blocked_readiness(self):
         self.assertEqual(MANIFEST["benchmark"]["skip"], 500)
@@ -78,6 +84,7 @@ class FailureTournamentManifestTests(unittest.TestCase):
         self.assertTrue(tournament["auto_discover_manifest_queue"])
         self.assertFalse(tournament["auto_discover_open_prs"])
         self.assertEqual(tournament["discovery_source"], "current_main_pr_tournament.candidate_queue")
+        self.assertRegex(tournament["workflow_sha"], r"^[0-9a-f]{40}$")
         self.assertEqual(tournament["candidate_queue"], [])
         result = tournament["latest_candidate_evaluation"]
         self.assertEqual(result["pr"], 400)
