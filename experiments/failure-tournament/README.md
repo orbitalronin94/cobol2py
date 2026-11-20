@@ -4,12 +4,11 @@
 
 ## Baseline vigente de main
 
-- **263/500 (52,6%)** — [run 44599918790](https://github.com/orbitalronin94/cobol2py/actions/runs/44599918790), ejecutado sobre el SHA exacto `4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133`.
+- **263/500 (52,6%)** — [run 44730370716](https://github.com/orbitalronin94/cobol2py/actions/runs/44730370716), ejecutado sobre el SHA exacto `399b55e77d47cdd15367a9b17c3b116a962a39c7`.
 - Traductor: `4a7562627d161580470f1b0522cda0b094f635b0`; 500 IDs únicos, 500 fingerprints completos de GnuCOBOL.
 - Corpus X-COBOL v2, MD5 esperado y verificado `cbd974caed72b0836777dc2305928ed3`.
 - `skip=500`, `target=500`, comparación exacta de stdout bytes y código de retorno.
-- Un único reporte completo de 500 casos; 263 aprobados y 237 fallidos.
-
+- Artefacto de baseline: 500/500 resultados completos; 263 aprobados y 237 fallidos. La puntuación histórica 257/500 permanece separada.
 ## Última candidata emparejada — PR #371
 
 - [PR #371](https://github.com/orbitalronin94/cobol2py/pull/371), lectura de registros `ORGANIZATION SEQUENTIAL` de ancho fijo; head `1a9424f6b59d18ec93b9dc1b38a32afde8f00dbc`, merge ref evaluada `ebba3a79baf6d03f7d5fe5c16282f723ac3f6005`.
@@ -62,17 +61,17 @@ El intento más reciente, [run 42844557468](https://github.com/orbitalronin94/co
 
 La cohorte antigua de 16 candidatos no se repite: sus artifacts ya cubren UNSTRING TALLYING IN, WRITE FROM literal, READ después de EOF, OPEN mixto, INSPECT REPLACING, reference modification aritmética y STRING ZEROES. Sus resultados históricos no son ganadores y no justifican volver a gastar 500 casos en las mismas hipótesis.
 
-## Siguiente hipótesis
+## Hipótesis pendiente separada: codificación CP850
 
-Reabrir de forma aislada el caso `cbl0701v01statementinspect-31f6d501b1`: GnuCOBOL emite el byte CP850 `0xDA`, mientras el resultado Python observado fue `EF BF BD`. Main ya contiene `decode_cobol_source` y `apply_cobol_output_encoding`; por tanto, antes de añadir otro parche hay que inspeccionar el fuente binario exacto, el encoding detectado y el flujo de stdout del proceso generado. El nuevo reproducer debe comparar bytes, no texto Unicode. No crear una candidata hasta localizar el punto exacto de la conversión.
+El caso `cbl0701v01statementinspect-31f6d501b1` sigue siendo una hipótesis independiente: GnuCOBOL emite el byte CP850 `0xDA` y la salida Python observada fue `EF BF BD`. No se duplica con la candidata actual. La prioridad inmediata tras el descarte de PR #400 pasa a ser `DIVIDE ... ON SIZE ERROR` / `NOT ON SIZE ERROR`.
 
-## 2026-11-20 current-main audit
+## 2026-11-20 current-main audit — actualización final
 
-- Main is `399b55e77d47cdd15367a9b17c3b116a962a39c7`. The merge since the last complete baseline changed only the manifest, this README and manifest tests; the translator blob is unchanged.
-- The last complete exact baseline remains **263/500 (52.6%)**, run [44599918790](https://github.com/orbitalronin94/cobol2py/actions/runs/44599918790), frozen on `4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133`. Exact remeasurement on `399b55e` is running in [44730370716](https://github.com/orbitalronin94/cobol2py/actions/runs/44730370716); the paired evaluation also freezes this SHA in [44731467437](https://github.com/orbitalronin94/cobol2py/actions/runs/44731467437).
-- [PR #400](https://github.com/orbitalronin94/cobol2py/pull/400) isolates digit-leading COBOL data names in `DIVIDE ... GIVING`. The fixed report identifies `nc203a-dc7f80e633` and `nc172a-3a5109e496` as generated-Python syntax failures because the shared data-reference pattern rejects names such as `25ANS` and `25REM`. Its complete unit suite passed in [44731467416](https://github.com/orbitalronin94/cobol2py/actions/runs/44731467416), and the deterministic COBOL smoke passed in [44731467364](https://github.com/orbitalronin94/cobol2py/actions/runs/44731467364). The paired 500-case result is pending; no gains or regressions are claimed yet.
-- [PR #401](https://github.com/orbitalronin94/cobol2py/pull/401) makes scheduled/push tournament runs discover all open eligible PRs instead of defaulting to closed PR #371. It also refreshes this 30-seed audit. Its manifest check passed in [44732753441](https://github.com/orbitalronin94/cobol2py/actions/runs/44732753441); unit tests passed in [44732753365](https://github.com/orbitalronin94/cobol2py/actions/runs/44732753365). Smoke remains in progress.
-- The 30 manifest branches were re-compared against main `399b55e`: **30/30 exist, 30 distinct head SHAs, 30/30 diverged, 0 ahead-only**. Seeds 11–15 have no translator/test changes; seeds 16–30 contain unrelated workflow/benchmark/documentation paths. The 30-seed workflow remains manual and blocked; no tournament was dispatched.
-- The old 16-candidate workflow still has no valid full-holdout result. The recent [run 44730370627](https://github.com/orbitalronin94/cobol2py/actions/runs/44730370627) produced 105-case auxiliary reports, not a 500-case paired holdout, so it is not used as promotion evidence.
-
-Historical main score 257/500 in run 42268813592 and the experimental 258/500 run 42266714599 remain separate from the current baseline record.
+- Main exacto: `399b55e77d47cdd15367a9b17c3b116a962a39c7`. Baseline completo [44730370716](https://github.com/orbitalronin94/cobol2py/actions/runs/44730370716): **263/500 (52,6%)**, X-COBOL v2 MD5 `cbd974caed72b0836777dc2305928ed3`, `skip=500`, `target=500`, 500 IDs y 500 fingerprints GnuCOBOL completos. El blob del traductor es `4a7562627d161580470f1b0522cda0b094f635b0`.
+- PR #400 se cerró sin merge. Sus cuatro shards completos en [44731467420](https://github.com/orbitalronin94/cobol2py/actions/runs/44731467420) cubren 500 IDs idénticos y 500 hashes de fuente idénticos al baseline. Comparación contra el oráculo congelado de main: **263/500**, una ganancia `exec84-2-03eae98697` y una regresión `nc243a-04e83cd675`; por tanto, cero ganancia neta y falla el gate absoluto de cero regresiones. Hubo nueve fingerprints GnuCOBOL variables en la ejecución candidata; el score se calculó contra los fingerprints congelados de main.
+- Los motivadores `nc203a-dc7f80e633` y `nc172a-3a5109e496` continúan fallando. El problema no es el patrón de nombres numéricos: el sufijo `ON SIZE ERROR` / `NOT ON SIZE ERROR` hace que no encaje el parser de `DIVIDE ... GIVING`, que cae al camino de receptores `INTO` y genera asignaciones inválidas como `100 = ...` y `100.50 = ...`. PR #400 no se fusiona.
+- El workflow emparejado oficial [44731467437](https://github.com/orbitalronin94/cobol2py/actions/runs/44731467437) se había iniciado con baseline SHA `399b55e` y merge SHA candidato `007e7a28`; su ejecución seguía en curso al cerrar la PR. La comparación completa independiente de artefactos ya basta para declarar no elegible la candidata; no se promociona.
+- PR #401 actualiza la competición diaria/push para descubrir PRs abiertos elegibles en vez de depender de una PR cerrada. Sus checks visibles iniciales pasaron: [suite 44733105011](https://github.com/orbitalronin94/cobol2py/actions/runs/44733105011), [smoke 44733105054](https://github.com/orbitalronin94/cobol2py/actions/runs/44733105054), [manifiesto 44733105275](https://github.com/orbitalronin94/cobol2py/actions/runs/44733105275). Esta PR solo toca workflow, manifiesto, README y tests de infraestructura; no cambia el traductor.
+- Auditoría de las 30 semillas contra main `399b55e`: **30/30 referencias existentes, 30 SHA distintos, 30/30 divergidas, 0 ahead-only**. Semillas 11–15 carecen de cambios de traductor y tests; semillas 16–30 incluyen archivos ajenos de workflow/benchmark/documentación. Readiness sigue bloqueada; no se ha iniciado el torneo de 30 semillas.
+- La cohorte antigua de 16 no se repite: sus artefactos históricos ya cubren UNSTRING TALLYING IN, WRITE FROM literal, READ tras EOF, OPEN mixto, INSPECT REPLACING, reference modification aritmética y STRING ZEROES. No hay un torneo completo de 16 con ganador verificable.
+- **Siguiente hipótesis:** soporte real de ramas imperativas `ON SIZE ERROR` y `NOT ON SIZE ERROR` para DIVIDE, con reproduceres NIST y tests que verifiquen división por cero, tamaño PIC, ejecución exclusiva de la rama correspondiente y terminación por `END-DIVIDE`/punto. Debe ser un candidato aislado y volver a comparar los 500 IDs contra el baseline congelado.
