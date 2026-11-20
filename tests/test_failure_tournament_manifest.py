@@ -75,7 +75,9 @@ class FailureTournamentManifestTests(unittest.TestCase):
     def test_current_main_pr_tournament_records_full_casewise_candidate_evaluation(self):
         tournament = MANIFEST["current_main_pr_tournament"]
         self.assertEqual(tournament["default_candidate_prs"], [])
-        self.assertTrue(tournament["auto_discover_open_prs"])
+        self.assertTrue(tournament["auto_discover_manifest_queue"])
+        self.assertFalse(tournament["auto_discover_open_prs"])
+        self.assertEqual(tournament["discovery_source"], "current_main_pr_tournament.candidate_queue")
         self.assertEqual(tournament["candidate_queue"], [])
         result = tournament["latest_candidate_evaluation"]
         self.assertEqual(result["pr"], 400)
