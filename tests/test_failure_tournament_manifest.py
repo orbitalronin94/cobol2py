@@ -74,7 +74,8 @@ class FailureTournamentManifestTests(unittest.TestCase):
 
     def test_current_main_pr_tournament_records_full_casewise_candidate_evaluation(self):
         tournament = MANIFEST["current_main_pr_tournament"]
-        self.assertEqual(tournament["default_candidate_prs"], [371])
+        self.assertEqual(tournament["default_candidate_prs"], [])
+        self.assertTrue(tournament["auto_discover_open_prs"])
         self.assertEqual(tournament["candidate_queue"], [])
         result = tournament["latest_candidate_evaluation"]
         self.assertEqual(result["pr"], 371)
@@ -106,7 +107,10 @@ class FailureTournamentManifestTests(unittest.TestCase):
 
     def test_30_seed_audit_is_fresh_and_still_blocked(self):
         audit = MANIFEST["candidate_branch_audit"]
-        self.assertEqual(audit["compared_against_main"], "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133")
+        self.assertEqual(audit["compared_against_main"], "399b55e77d47cdd15367a9b17c3b116a962a39c7")
+        self.assertEqual(audit["latest_comparison"]["distinct_branch_heads"], 30)
+        self.assertEqual(audit["latest_comparison"]["current_main_sha"], "399b55e77d47cdd15367a9b17c3b116a962a39c7")
+        self.assertEqual(MANIFEST["readiness"]["audit_main_sha"], "399b55e77d47cdd15367a9b17c3b116a962a39c7")
         self.assertTrue(audit["all_30_exist"])
         self.assertTrue(audit["all_30_diverged"])
         self.assertEqual(audit["ahead_only_candidates"], 0)
