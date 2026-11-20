@@ -16,10 +16,11 @@ class CurrentMainPRTournamentWorkflowTests(unittest.TestCase):
         self.assertNotIn('default: "371"', block)
         self.assertNotIn("|| '371'", WORKFLOW)
 
-    def test_schedule_and_push_discover_all_open_prs_when_no_list_is_supplied(self):
+    def test_schedule_and_push_discover_only_manifest_queue_when_no_list_is_supplied(self):
         self.assertIn("REQUESTED_PRS: ${{ github.event.pull_request.number || inputs.candidate_prs || '' }}", WORKFLOW)
+        self.assertIn("candidate_queue", WORKFLOW)
         self.assertIn("mapfile -t prs", WORKFLOW)
-        self.assertIn('gh api --paginate "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100"', WORKFLOW)
+        self.assertNotIn("pulls?state=open&per_page=100", WORKFLOW)
         self.assertIn("for raw in \"${prs[@]}\"; do", WORKFLOW)
 
     def test_auto_discovery_keeps_the_existing_strict_candidate_gates(self):
