@@ -86,7 +86,8 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
         self.assertIn("push:", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn(".github/workflows/current-main-pr-tournament.yml", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn('cron: "30 11 * * *"', CURRENT_MAIN_PR_WORKFLOW)
-        self.assertIn("inputs.candidate_prs || '371'", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("mapfile -t prs", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("pulls?state=open&per_page=100", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn("workflow_dispatch:", CURRENT_MAIN_PR_WORKFLOW)
 
     def test_30_seed_tournament_scores_against_frozen_main_oracle(self):
@@ -144,10 +145,12 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
         self.assertNotIn('"tests/**"', CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn('"web/index.html"', CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn('"ronin/**"', CURRENT_MAIN_PR_WORKFLOW)
-        self.assertIn("REQUESTED_PRS: ${{ github.event.pull_request.number || inputs.candidate_prs || '371' }}", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("REQUESTED_PRS: ${{ github.event.pull_request.number || inputs.candidate_prs || '' }}", CURRENT_MAIN_PR_WORKFLOW)
 
     def test_current_main_pr_tournament_defaults_to_rebuilt_candidate(self):
-        self.assertIn("inputs.candidate_prs || \'371\'", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("required: false", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn('default: ""', CURRENT_MAIN_PR_WORKFLOW)
+        self.assertNotIn("|| '371'", CURRENT_MAIN_PR_WORKFLOW)
 
     def test_legacy_16_candidate_tournament_is_manual_only_until_rebuilt(self):
         trigger_section = WORKFLOW.split("permissions:", 1)[0]
