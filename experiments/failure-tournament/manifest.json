@@ -282,7 +282,8 @@
     "status": "blocked",
     "reasons": [
       "Fresh exact-main baseline: run 44730370716 on SHA 399b55e77d47cdd15367a9b17c3b116a962a39c7, 263/500 (52.6%), X-COBOL v2 MD5 cbd974caed72b0836777dc2305928ed3, skip=500, target=500, 500 unique IDs and 500 complete GnuCOBOL fingerprints.",
-      "PR #400 complete candidate artifact comparison: 263/500 vs frozen main 263/500, one new pass (exec84-2-03eae98697), one regression (nc243a-04e83cd675), 500 comparable IDs and 9 diagnostic oracle drifts. No winner; PR closed unmerged.",
+      "Official paired PR #400 run 44731467437: 261/500 against frozen main 263/500, zero new passes, two regressions (exec84-2-03eae98697, nc243a-04e83cd675), 500 comparable IDs and 9 diagnostic oracle drifts. No winner; PR closed unmerged.",
+      "The independent sharded PR #400 run 44731467420 showed a transient exec84 pass that did not reproduce in the official full target=500 paired run; it is not counted as a gain.",
       "The PR #400 motivating NIST cases nc203a-dc7f80e633 and nc172a-3a5109e496 remain broken because DIVIDE ... GIVING is not parsed when ON SIZE ERROR / NOT ON SIZE ERROR clauses are present.",
       "Fresh audit against exact main 399b55e: all 30 manifest refs exist and resolve to 30 distinct heads; all 30 are diverged and none is ahead-only. Seeds 11-15 lack translator/tests; seeds 16-30 contain unrelated workflow/benchmark/documentation paths.",
       "The 30-seed workflow remains manual workflow_dispatch and readiness remains blocked. No 30-seed tournament has been started; discovery will recheck unique SHAs, ahead-only ancestry, translator/tests, isolation and complete artifacts.",
@@ -2582,8 +2583,8 @@
     "default_candidate_prs": [],
     "next_expected_run_utc": "2026-11-20T11:30:00Z",
     "contract": "Freeze current main and all 500 per-ID GnuCOBOL stdout SHA-256/length/return-code fingerprints; compare candidate source SHA, stdout bytes and return code on the exact same 500 IDs and archive checksum; require >=1 new pass and zero regressions.",
-    "note": "The stale default PR #371 has been removed. Scheduled and push runs discover all open eligible PRs; PR #400 was closed after a complete artifact comparison failed the zero-regression gate. No translator candidate is currently eligible.",
-    "last_schedule_check_utc": "2026-11-20T12:15:38Z",
+    "note": "The stale default PR #371 has been removed. Scheduled and push runs discover all open eligible PRs; PR #400 was closed after the official paired 500-case result showed zero gains and two regressions. No translator candidate is currently eligible.",
+    "last_schedule_check_utc": "2026-11-20T12:23:55Z",
     "last_scheduled_run_found": true,
     "latest_candidate_evaluation": {
       "pr": 400,
@@ -2592,20 +2593,21 @@
       "head_sha": "26d3ea2f355efc636979e30bb801a72515f2dca7",
       "base_sha": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
       "merge_sha": "007e7a282d79c4d2e482b9316963e4353716f92f",
-      "baseline_run": 44730370716,
+      "baseline_run": 44731467437,
       "baseline_score": 263,
-      "candidate_run": 44731467420,
-      "candidate_score": 263,
-      "candidate_score_against_frozen_oracle": 263,
+      "candidate_run": 44731467437,
+      "candidate_benchmark_run": 44731467437,
+      "independent_sharded_run": 44731467420,
+      "candidate_score": 261,
+      "candidate_score_against_frozen_oracle": 261,
       "denominator": 500,
       "comparable_cases": 500,
       "source_hash_matches": 500,
-      "new_passes": 1,
-      "new_pass_case_ids": [
-        "exec84-2-03eae98697"
-      ],
-      "regressions": 1,
+      "new_passes": 0,
+      "new_pass_case_ids": [],
+      "regressions": 2,
       "regressed_case_ids": [
+        "exec84-2-03eae98697",
         "nc243a-04e83cd675"
       ],
       "oracle_stable": false,
@@ -2621,18 +2623,18 @@
         "rock-paper-scissors-ad6321acf1",
         "rolldice-08e3de1a0e"
       ],
-      "unit_suite_run": 44731467416,
+      "unit_suite_run": 44731467437,
       "unit_suite_conclusion": "success",
       "smoke_run": 44731467364,
       "smoke_conclusion": "success",
       "independent_holdout_run": 44731467420,
       "independent_holdout_conclusion": "success",
       "paired_run": 44731467437,
-      "paired_run_status": "in_progress",
+      "paired_run_status": "completed",
       "eligible": false,
-      "decision": "ineligible_zero_regression_gate_failed",
-      "status": "artifact_comparison_complete_pair_run_in_progress",
-      "note": "Complete candidate artifacts compared against the exact 399b55e main baseline: 500/500 identical IDs and source hashes; 263/500 vs 263/500, one new pass exec84-2-03eae98697 and one regression nc243a-04e83cd675. Nine candidate-run oracle drifts are diagnostic; scoring used frozen main fingerprints. Motivating NIST cases still fail because ON SIZE ERROR / NOT ON SIZE ERROR clauses prevent DIVIDE GIVING parsing. PR #400 closed unmerged."
+      "decision": "ineligible_zero_gain_two_regressions",
+      "status": "completed",
+      "note": "Official paired run 44731467437: baseline 263/500, candidate 261/500, 500/500 same IDs/source hashes, zero new passes and two regressions (exec84-2-03eae98697, nc243a-04e83cd675). Candidate-run oracle drift was diagnostic; ranking used the frozen main oracle. The apparent exec84 pass in the independent sharded run 44731467420 did not reproduce. PR #400 closed unmerged."
     },
     "candidate_queue": [],
     "isolation_scope": {
@@ -2727,21 +2729,23 @@
     "reason": "Run 44730370716 executed the full 500-case X-COBOL v2 holdout on exact current main SHA 399b55e77d47cdd15367a9b17c3b116a962a39c7."
   },
   "latest_paired_pr_tournament": {
-    "run": 44599918790,
-    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44599918790",
-    "baseline_sha": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
+    "run": 44731467437,
+    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44731467437",
+    "baseline_sha": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
     "baseline_score": 263,
     "denominator": 500,
-    "candidate_pr": 371,
-    "candidate_head_sha": "1a9424f6b59d18ec93b9dc1b38a32afde8f00dbc",
-    "candidate_merge_sha": "ebba3a79baf6d03f7d5fe5c16282f723ac3f6005",
-    "candidate_score": 262,
+    "candidate_pr": 400,
+    "candidate_head_sha": "26d3ea2f355efc636979e30bb801a72515f2dca7",
+    "candidate_merge_sha": "007e7a282d79c4d2e482b9316963e4353716f92f",
+    "candidate_score": 261,
+    "candidate_score_against_frozen_oracle": 261,
     "comparable_cases": 500,
     "new_passes": 0,
     "new_pass_case_ids": [],
-    "regressions": 1,
+    "regressions": 2,
     "regressed_case_ids": [
-      "exec84-2-03eae98697"
+      "exec84-2-03eae98697",
+      "nc243a-04e83cd675"
     ],
     "oracle_drift_count": 9,
     "oracle_drift_case_ids": [
@@ -2755,14 +2759,14 @@
       "rock-paper-scissors-ad6321acf1",
       "rolldice-08e3de1a0e"
     ],
-    "winner": null,
     "eligible": false,
     "status": "completed",
-    "candidate_benchmark_run": 44599918790,
-    "unit_suite_run": 44527688883,
-    "smoke_run": 44527688721,
+    "candidate_benchmark_run": 44731467437,
+    "independent_sharded_run": 44731467420,
+    "unit_suite_run": 44731467437,
+    "smoke_run": 44731467364,
     "promotion": "manual; no merge is performed by this workflow",
-    "note": "Latest complete paired comparison on frozen main 4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133: baseline 263/500, candidate 262/500, 500 comparable IDs, no new passes, one regression (exec84-2-03eae98697), and nine diagnostic candidate-run GnuCOBOL oracle drifts. The earlier apparent timeout-boundary gain in run 44527688670 did not reproduce. PR #371 was closed unmerged."
+    "note": "Official paired run 44731467437: baseline 263/500, candidate 261/500, 500/500 same IDs/source hashes, zero new passes and two regressions (exec84-2-03eae98697, nc243a-04e83cd675). Candidate-run oracle drift was diagnostic; ranking used the frozen main oracle. The apparent exec84 pass in the independent sharded run 44731467420 did not reproduce. PR #400 closed unmerged."
   },
   "latest_baseline_artifact_check": {
     "run": 44730370716,
@@ -2785,25 +2789,24 @@
     "note": "Exact main baseline artifact; 500/500 IDs and complete GnuCOBOL fingerprints."
   },
   "latest_candidate_artifact_comparison": {
-    "run": 44731467420,
-    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44731467420",
-    "baseline_run": 44730370716,
-    "baseline_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44730370716",
+    "run": 44731467437,
+    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44731467437",
+    "baseline_run": 44731467437,
+    "baseline_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44731467437",
     "baseline_sha": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
     "baseline_score": 263,
     "candidate_pr": 400,
     "candidate_head_sha": "26d3ea2f355efc636979e30bb801a72515f2dca7",
     "candidate_merge_sha": "007e7a282d79c4d2e482b9316963e4353716f92f",
-    "candidate_score": 263,
-    "candidate_score_against_frozen_oracle": 263,
+    "candidate_score": 261,
+    "candidate_score_against_frozen_oracle": 261,
     "denominator": 500,
     "comparable_cases": 500,
-    "new_passes": 1,
-    "new_pass_case_ids": [
-      "exec84-2-03eae98697"
-    ],
-    "regressions": 1,
+    "new_passes": 0,
+    "new_pass_case_ids": [],
+    "regressions": 2,
     "regressed_case_ids": [
+      "exec84-2-03eae98697",
       "nc243a-04e83cd675"
     ],
     "oracle_drift_count": 9,
@@ -2818,12 +2821,12 @@
       "rock-paper-scissors-ad6321acf1",
       "rolldice-08e3de1a0e"
     ],
-    "method": "complete four-shard candidate artifact set; per-ID comparison to exact-main frozen GnuCOBOL stdout SHA-256, byte length and return code",
+    "method": "official paired workflow; frozen main GnuCOBOL stdout SHA-256, byte length and return code per ID",
     "source_hash_matches": 500,
     "archive_md5_verified": true,
     "eligible": false,
-    "decision": "ineligible_zero_regression_gate_failed",
-    "note": "Complete candidate artifacts compared against the exact 399b55e main baseline: 500/500 identical IDs and source hashes; 263/500 vs 263/500, one new pass exec84-2-03eae98697 and one regression nc243a-04e83cd675. Nine candidate-run oracle drifts are diagnostic; scoring used frozen main fingerprints. Motivating NIST cases still fail because ON SIZE ERROR / NOT ON SIZE ERROR clauses prevent DIVIDE GIVING parsing. PR #400 closed unmerged."
+    "decision": "ineligible_zero_gain_two_regressions",
+    "note": "Official paired run 44731467437: baseline 263/500, candidate 261/500, 500/500 same IDs/source hashes, zero new passes and two regressions (exec84-2-03eae98697, nc243a-04e83cd675). Candidate-run oracle drift was diagnostic; ranking used the frozen main oracle. The apparent exec84 pass in the independent sharded run 44731467420 did not reproduce. PR #400 closed unmerged."
   },
   "latest_main_holdout_run": 44730370716,
   "branch_comparisons": [
@@ -3160,12 +3163,36 @@
     "candidate_pr": 400,
     "candidate_head_sha": "26d3ea2f355efc636979e30bb801a72515f2dca7",
     "candidate_merge_sha": "007e7a282d79c4d2e482b9316963e4353716f92f",
+    "candidate_score": 261,
+    "candidate_score_against_frozen_oracle": 261,
+    "comparable_cases": 500,
+    "new_passes": 0,
+    "new_pass_case_ids": [],
+    "regressions": 2,
+    "regressed_case_ids": [
+      "exec84-2-03eae98697",
+      "nc243a-04e83cd675"
+    ],
+    "oracle_drift_count": 9,
+    "oracle_drift_case_ids": [
+      "cob-simpleinventory-6af451140a",
+      "collatz-6e335e6eda",
+      "date1-f31ce2734d",
+      "intrdate-0517c3d81c",
+      "pullydis-9e45af6c84",
+      "randombingo-e50339cc12",
+      "randomnumbers-d8fc7ee85b",
+      "rock-paper-scissors-ad6321acf1",
+      "rolldice-08e3de1a0e"
+    ],
     "eligible": false,
-    "status": "in_progress",
-    "candidate_benchmark_run": 44731467420,
-    "unit_suite_run": 44731467416,
+    "status": "completed",
+    "candidate_benchmark_run": 44731467437,
+    "independent_sharded_run": 44731467420,
+    "unit_suite_run": 44731467437,
     "smoke_run": 44731467364,
-    "note": "The official paired workflow was already running when PR #400 was closed. A complete independent artifact comparison against the exact main baseline already established one gain plus one regression and no promotion eligibility."
+    "promotion": "manual; no merge is performed by this workflow",
+    "note": "Official paired run 44731467437: baseline 263/500, candidate 261/500, 500/500 same IDs/source hashes, zero new passes and two regressions (exec84-2-03eae98697, nc243a-04e83cd675). Candidate-run oracle drift was diagnostic; ranking used the frozen main oracle. The apparent exec84 pass in the independent sharded run 44731467420 did not reproduce. PR #400 closed unmerged."
   },
   "latest_main_run": 44730370716
 }
