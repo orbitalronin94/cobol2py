@@ -2583,7 +2583,7 @@
     "default_candidate_prs": [],
     "next_expected_run_utc": "2026-11-20T11:30:00Z",
     "contract": "Freeze current main and all 500 per-ID GnuCOBOL stdout SHA-256/length/return-code fingerprints; compare candidate source SHA, stdout bytes and return code on the exact same 500 IDs and archive checksum; require >=1 new pass and zero regressions.",
-    "note": "The stale default PR #371 has been removed. Scheduled and push runs discover all open eligible PRs; PR #400 was closed after the official paired 500-case result showed zero gains and two regressions. No translator candidate is currently eligible.",
+    "note": "Scheduled/push runs discover only manifest-approved PR numbers from current_main_pr_tournament.candidate_queue; they never sweep all open PRs. This avoids duplicating legacy 16-candidate hypotheses and stale PRs. PR events and explicit workflow_dispatch candidate_prs remain scoped to the requested PR.",
     "last_schedule_check_utc": "2026-11-20T12:23:55Z",
     "last_scheduled_run_found": true,
     "latest_candidate_evaluation": {
@@ -2701,7 +2701,9 @@
       "note": "Official paired comparison: 263/500 vs 263/500, 500 comparable cases, zero new passes, zero regressions, eight oracle drifts. Both NIST motivating cases still time out. The one-off exec84 timeout-boundary pass in the independent sharded run did not reproduce as a gain in the paired run."
     },
     "latest_scheduled_run": 44730370716,
-    "auto_discover_open_prs": true
+    "auto_discover_open_prs": false,
+    "auto_discover_manifest_queue": true,
+    "discovery_source": "current_main_pr_tournament.candidate_queue"
   },
   "latest_16_candidate_tournament": {
     "run": 43595155564,
