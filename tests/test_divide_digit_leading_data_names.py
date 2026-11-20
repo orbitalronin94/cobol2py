@@ -1,3 +1,4 @@
+import re
 import unittest
 from contextlib import redirect_stdout
 from io import StringIO
@@ -21,6 +22,7 @@ MAIN.
     DISPLAY 25REM.
     STOP RUN.
 """
+        self.assertIsNotNone(re.fullmatch(cobol2py.DATA_REF_PATTERN, "0-C"))
         program = cobol2py.parse_cobol(source, source_format="free")
         generated = cobol2py.emit_python(program)
         compile(generated, "<divide-digit-leading-data-name>", "exec")
