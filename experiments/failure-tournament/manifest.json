@@ -1490,9 +1490,12 @@
     "archive_md5_verified": true,
     "sample_complete": true,
     "comparison": "exact stdout bytes and process return code against GnuCOBOL",
-    "note": "Same 500 case IDs as the 257/500 main holdout. The only score difference was exec84-2-03eae98697: translator timeout at 20.003376s in the earlier run, versus a completed translation at 19.109681s here. Treat 257/258 as timeout-boundary variance, not a model improvement. This 258/500 report is the main remeasurement from run 42272058313; run 42266714599 is an experimental-branch result and is not a main baseline.",
+    "note": "The run head branch was main and its 500-case baseline artifact completed at 258/500, but the overall 30-seed tournament workflow was cancelled. Preserve as a historical artifact, not as the official main reference. This is distinct from experimental run 42266714599.",
     "current_main_sha": "c80f7f2252e0637fde3a987f7991cbc6bdd98b5e",
-    "current_main_note": "Audited 2026-11-10. Main is two commits ahead of the frozen baseline; changes are workflow hardening and documentation/manifest/test updates only. Translator implementation is unchanged. The sole 257→258 case difference is exec84-2-03eae98697, a translator-timeout boundary variance."
+    "current_main_note": "Audited 2026-11-10. Main is two commits ahead of the frozen baseline; changes are workflow hardening and documentation/manifest/test updates only. Translator implementation is unchanged. The sole 257→258 case difference is exec84-2-03eae98697, a translator-timeout boundary variance.",
+    "workflow_conclusion": "cancelled",
+    "baseline_artifact_complete": true,
+    "kind": "historical_main_baseline_artifact_from_cancelled_tournament"
   },
   "recent_individual_candidate_evaluations": [
     {
@@ -3196,5 +3199,16 @@
     "promotion": "manual; no merge is performed by this workflow",
     "note": "Official paired run 44731467437: baseline 263/500, candidate 261/500, 500/500 same IDs/source hashes, zero new passes and two regressions (exec84-2-03eae98697, nc243a-04e83cd675). Candidate-run oracle drift was diagnostic; ranking used the frozen main oracle. The apparent exec84 pass in the independent sharded run 44731467420 did not reproduce. PR #400 closed unmerged."
   },
-  "latest_main_run": 44730370716
+  "latest_main_run": 44730370716,
+  "experimental_reference": {
+    "score": 258,
+    "denominator": 500,
+    "percent": 51.6,
+    "source_run": 42266714599,
+    "head_branch": "experiment/holdout-error-topography",
+    "head_sha": "77c50aa1ec1cfc9957fd1fd8991448eb30542bd8",
+    "event": "pull_request",
+    "kind": "experimental_only_not_main",
+    "note": "This 258/500 result is from the experimental holdout-error-topography branch; it must never be reported as a main baseline."
+  }
 }
