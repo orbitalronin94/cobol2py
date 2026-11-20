@@ -221,10 +221,10 @@
     "score": 263,
     "denominator": 500,
     "percent": 52.6,
-    "source_run": 44308154079,
-    "source_sha": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
-    "baseline_sha": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
-    "current_main_sha": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
+    "source_run": 44599918790,
+    "source_sha": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
+    "baseline_sha": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
+    "current_main_sha": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
     "base_ref": "main",
     "kind": "current_main_verified",
     "corpus": "X-COBOL v2",
@@ -249,9 +249,9 @@
         "failed": 237
       }
     ],
-    "main_sha_at_audit": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
+    "main_sha_at_audit": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
     "translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
-    "note": "Fresh exact-SHA measurement on current main. Run 44308154079 froze main at 7b55ce1d5aadc4465549c65e04d2f15bf45b25b9 and completed all 500 IDs in one target=500, skip=500 report. X-COBOL v2 MD5 verified; all 500 GnuCOBOL stdout SHA-256/length/return-code fingerprints are present. Score 263/500 (52.6%)."
+    "note": "Fresh exact-SHA measurement on current main. Run 44599918790 froze main at 4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133 and completed all 500 IDs in one target=500, skip=500 report. X-COBOL v2 MD5 verified; all 500 GnuCOBOL stdout SHA-256/length/return-code fingerprints are present. Score 263/500 (52.6%)."
   },
   "last_tournament_attempt": {
     "run": 42272058313,
@@ -278,19 +278,15 @@
   "readiness": {
     "status": "blocked",
     "reasons": [
-      "Fresh 30-way audit against main 7b55ce1d5aadc4465549c65e04d2f15bf45b25b9: all 30 manifest branches exist and have distinct head SHAs; all 30 are diverged and none is ahead-only.",
-      "Seeds 1-10 contain isolated translator and regression-test changes but are 16-212 commits behind main; they must be rebuilt on the current baseline.",
-      "Seeds 11-15 contain workflow/documentation changes only and have no translator implementation or regression reproducer.",
-      "Seeds 16-30 contain translator/tests but also unrelated workflow, benchmark, manifest or documentation changes; they must be reconstructed as isolated candidates.",
-      "The 30-seed workflow from merged PR #349 is a manual workflow_dispatch and correctly blocks while readiness is not ready. No 30-seed tournament has been started.",
-      "Exact current-main baseline: run 44308154079 on SHA 7b55ce1, 263/500 (52.6%), 500/500 IDs, skip=500, target=500, X-COBOL v2 MD5 cbd974caed72b0836777dc2305928ed3, and 500 complete GnuCOBOL fingerprints.",
-      "PR #395 candidate run 44307154327 covered four complete 125-case shards and the same 500 IDs/source hashes. Against frozen main run 44308154079 it scored 264/500 with zero regressions; the only apparent new pass is exec84-2-03eae98697, a timeout-boundary case (main translator timeout at 20.004175 s; candidate completed at 11.884421 s with the oracle's empty stdout and return code 1). It is not accepted as a semantic gain attributable to EVALUATE.",
-      "The NIST cases nc225a-a777e5ee71 and nc2254-2-73142ca32f still fail in PR #395 at runtime with NameError for level-88 condition name it_is_81. PR #398 adds condition-name lowering in EVALUATE ALSO subjects and an integration reproducer.",
-      "PR #398 paired run 44519122785 completed: main 263/500, candidate 263/500, 500 comparable cases, zero new passes, zero regressions, eight oracle drifts; ineligible. Both NIST motivating cases still time out; PR #398 was closed unmerged.",
-      "PR #371 was rebuilt as an isolated candidate on exact main 7b55ce1. It targets openfilesequential-962ba09d3d (main stdout 83 bytes versus GnuCOBOL 46 bytes); suite, smoke, four-shard holdout and paired 500-case run are in progress."
+      "Fresh exact-main baseline: run 44599918790 on SHA 4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133, 263/500 (52.6%), X-COBOL v2 MD5 cbd974caed72b0836777dc2305928ed3, skip=500, target=500, 500 unique IDs and 500 complete GnuCOBOL fingerprints.",
+      "PR #371 paired run 44599918790: candidate 262/500 against frozen main 263/500, 500 comparable IDs, zero new passes, one regression (exec84-2-03eae98697), and nine diagnostic oracle drifts. No winner.",
+      "PR #371 was closed unmerged after the later paired run failed the gain/zero-regression gate; the earlier apparent timeout-boundary gain from run 44527688670 did not reproduce.",
+      "Fresh comparison of all 30 manifest branches against current main: all 30 branch refs exist and all 30 are diverged; none is ahead-only. Seeds 1-10 contain isolated translator/tests but are stale; seeds 11-15 have no translator or tests; seeds 16-30 contain unrelated workflow/benchmark/documentation changes.",
+      "The 30-seed workflow remains manual workflow_dispatch and readiness remains blocked. No 30-seed tournament has been started; discovery will recheck 30 unique SHAs, ahead-only ancestry, translator/tests, isolation and complete artifacts before any run.",
+      "The historical 16-candidate artifacts already cover UNSTRING TALLYING IN, WRITE FROM literal, READ-after-EOF status, OPEN mixed modes, INSPECT REPLACING, arithmetic reference length and STRING ZEROES. Those hypotheses are not being duplicated."
     ],
-    "audit_date": "2026-11-19",
-    "audit_main_sha": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
+    "audit_date": "2026-11-20",
+    "audit_main_sha": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
     "candidate_branch_refs": 30,
     "candidate_branches_diverged": 30,
     "candidate_branches_ahead": [],
@@ -1526,16 +1522,25 @@
     "score": 263,
     "denominator": 500,
     "percent": 52.6,
-    "source_run": 44308154079,
-    "source_sha": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
+    "source_run": 44599918790,
+    "source_sha": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
+    "baseline_sha": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
+    "current_main_sha": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
     "base_ref": "main",
     "kind": "current_main_verified",
-    "dataset": "X-COBOL v2",
-    "dataset_url": "https://zenodo.org/records/14269462",
+    "corpus": "X-COBOL v2",
+    "skip": 500,
+    "target": 500,
     "archive_md5_expected": "cbd974caed72b0836777dc2305928ed3",
     "archive_md5_verified": true,
+    "sample_complete": true,
     "unique_case_ids": 500,
-    "exact_comparison": "stdout bytes and process return code against GnuCOBOL",
+    "comparison": "exact stdout bytes and process return code against GnuCOBOL",
+    "reference_fingerprint_coverage": {
+      "complete_cases": 500,
+      "missing_cases": 0,
+      "missing_case_ids": []
+    },
     "shards": [
       {
         "skip": 500,
@@ -1545,17 +1550,13 @@
         "failed": 237
       }
     ],
-    "main_sha_at_audit": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
+    "main_sha_at_audit": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
     "translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
-    "reference_fingerprint_coverage": {
-      "complete_cases": 500,
-      "missing_cases": 0,
-      "missing_case_ids": []
-    },
-    "skip": 500,
-    "target": 500,
-    "main_head_at_audit": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
-    "note": "Exact current-main baseline: run 44308154079 executed on SHA 7b55ce1d5aadc4465549c65e04d2f15bf45b25b9, 500/500 IDs, 263/500 (52.6%), X-COBOL v2 MD5 verified, complete frozen GnuCOBOL fingerprints. This replaces the earlier code-equivalent-only 43592015588 measurement."
+    "note": "Fresh exact-SHA measurement on current main. Run 44599918790 froze main at 4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133 and completed all 500 IDs in one target=500, skip=500 report. X-COBOL v2 MD5 verified; all 500 GnuCOBOL stdout SHA-256/length/return-code fingerprints are present. Score 263/500 (52.6%).",
+    "dataset": "X-COBOL v2",
+    "dataset_url": "https://zenodo.org/records/14269462",
+    "exact_comparison": "stdout bytes and process return code against GnuCOBOL",
+    "main_head_at_audit": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133"
   },
   "additional_candidate_evaluations": {
     "inspect_characters": {
@@ -1597,33 +1598,6 @@
     "current_main_note": "Audited 2026-11-10. Main is two commits ahead of the frozen baseline; changes are workflow hardening and documentation/manifest/test updates only. Translator implementation is unchanged. The sole 257→258 case difference is exec84-2-03eae98697, a translator-timeout boundary variance."
   },
   "recent_individual_candidate_evaluations": [
-    {
-      "pr": 371,
-      "branch": "fix/read-fixed-width-sequential",
-      "head_sha": "0b0fe21530f232f12ccd9aa0c83edf14eeafd044",
-      "unit_suite_run": 43579763976,
-      "smoke_run": 43579763984,
-      "holdout_run": 43579763992,
-      "score": 262,
-      "denominator": 500,
-      "raw_new_pass_case_ids": [],
-      "raw_regressed_case_ids": [
-        "rock-paper-scissors-ad6321acf1"
-      ],
-      "oracle_drift_count": 9,
-      "oracle_drift_case_ids": [
-        "rolldice-08e3de1a0e",
-        "randomnumbers-d8fc7ee85b",
-        "date1-f31ce2734d",
-        "collatz-6e335e6eda",
-        "randombingo-e50339cc12",
-        "intrdate-0517c3d81c",
-        "cob-simpleinventory-6af451140a",
-        "rock-paper-scissors-ad6321acf1",
-        "pullydis-9e45af6c84"
-      ],
-      "decision": "ineligible_oracle_drift_no_stable_gain"
-    },
     {
       "pr": 372,
       "branch": "fix/unstring-tallying-increment",
@@ -1832,6 +1806,52 @@
         "pullydis-9e45af6c84"
       ],
       "decision": "ineligible_stable_regression_and_oracle_drift"
+    },
+    {
+      "pr": 371,
+      "title": "[FILE I/O] Read fixed-width SEQUENTIAL records without line delimiters",
+      "branch": "fix/read-fixed-width-sequential",
+      "head_sha": "1a9424f6b59d18ec93b9dc1b38a32afde8f00dbc",
+      "base_sha": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
+      "merge_sha": "ebba3a79baf6d03f7d5fe5c16282f723ac3f6005",
+      "baseline_run": 44599918790,
+      "baseline_score": 263,
+      "candidate_run": 44599918790,
+      "candidate_score": 262,
+      "candidate_score_against_frozen_oracle": 262,
+      "denominator": 500,
+      "comparable_cases": 500,
+      "new_passes": 0,
+      "new_pass_case_ids": [],
+      "regressions": 1,
+      "regressed_case_ids": [
+        "exec84-2-03eae98697"
+      ],
+      "oracle_stable": false,
+      "oracle_drift_count": 9,
+      "oracle_drift_case_ids": [
+        "cob-simpleinventory-6af451140a",
+        "collatz-6e335e6eda",
+        "date1-f31ce2734d",
+        "intrdate-0517c3d81c",
+        "pullydis-9e45af6c84",
+        "randombingo-e50339cc12",
+        "randomnumbers-d8fc7ee85b",
+        "rock-paper-scissors-ad6321acf1",
+        "rolldice-08e3de1a0e"
+      ],
+      "unit_suite_run": 44527688883,
+      "unit_suite_conclusion": "success",
+      "smoke_run": 44527688721,
+      "smoke_conclusion": "success",
+      "independent_holdout_run": 44527688650,
+      "independent_holdout_conclusion": "success",
+      "paired_run": 44599918790,
+      "paired_conclusion": "success",
+      "eligible": false,
+      "decision": "ineligible_zero_gain_one_regression",
+      "status": "completed",
+      "note": "Latest complete paired comparison on frozen main 4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133: baseline 263/500, candidate 262/500, 500 comparable IDs, no new passes, one regression (exec84-2-03eae98697), and nine diagnostic candidate-run GnuCOBOL oracle drifts. The earlier apparent timeout-boundary gain in run 44527688670 did not reproduce. PR #371 was closed unmerged."
     }
   ],
   "previous_main_remeasurement": {
@@ -1998,17 +2018,20 @@
     ]
   },
   "candidate_branch_audit": {
-    "compared_against_main": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
+    "compared_against_main": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
     "all_30_exist": true,
     "all_30_diverged": true,
     "ahead_only_candidates": 0,
     "seed_11_to_15_change_summary": "workflow/documentation only; no cobol2py.py, web/index.html, ronin/ or tests changes",
     "latest_comparison": {
-      "compared_against_main": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
+      "compared_against_main": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
+      "current_main_sha": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
       "total_manifest_branches": 30,
       "existing_branches": 30,
       "missing_branches": [],
-      "distinct_branch_heads": 30,
+      "all_30_exist": true,
+      "all_30_diverged": true,
+      "distinct_branch_heads": null,
       "ahead_only": 0,
       "diverged": 30,
       "behind_only": 0,
@@ -2040,518 +2063,621 @@
       "extra_unmanifested_refs": [
         "experiment-failure-seed/10-syntax-evaluate-also"
       ],
-      "note": "Fresh 30-way compare against main 7b55ce1d5aadc4465549c65e04d2f15bf45b25b9: all 30 manifest refs exist and have distinct heads; all 30 are diverged and none is ahead-only. Seeds 1-10 contain isolated translator/tests but are 16-212 commits behind. Seeds 11-15 contain no translator or tests. Seeds 16-30 contain translator/tests but also unrelated workflow, benchmark or documentation changes."
+      "branch_comparisons": [
+        {
+          "seed": 1,
+          "branch": "experiment-failure-seed/01-syntax-condition-operators",
+          "status": "diverged",
+          "ahead_by": 4,
+          "behind_by": 213,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": false
+        },
+        {
+          "seed": 2,
+          "branch": "experiment-failure-seed/02-syntax-abbreviated-relations",
+          "status": "diverged",
+          "ahead_by": 3,
+          "behind_by": 209,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": false
+        },
+        {
+          "seed": 3,
+          "branch": "experiment-failure-seed/03-syntax-multidimensional-subscripts",
+          "status": "diverged",
+          "ahead_by": 3,
+          "behind_by": 209,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": false
+        },
+        {
+          "seed": 4,
+          "branch": "experiment-failure-seed/04-syntax-reference-modification",
+          "status": "diverged",
+          "ahead_by": 3,
+          "behind_by": 209,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": false
+        },
+        {
+          "seed": 5,
+          "branch": "experiment-failure-seed/05-syntax-inspect-before-after",
+          "status": "diverged",
+          "ahead_by": 3,
+          "behind_by": 213,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": false
+        },
+        {
+          "seed": 6,
+          "branch": "experiment-failure-seed/06-syntax-inspect-replacing",
+          "status": "diverged",
+          "ahead_by": 5,
+          "behind_by": 209,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": false
+        },
+        {
+          "seed": 7,
+          "branch": "experiment-failure-seed/07-syntax-string-delimited",
+          "status": "diverged",
+          "ahead_by": 3,
+          "behind_by": 209,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": false
+        },
+        {
+          "seed": 8,
+          "branch": "experiment-failure-seed/08-syntax-unstring-multiple-delimiters",
+          "status": "diverged",
+          "ahead_by": 4,
+          "behind_by": 213,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": false
+        },
+        {
+          "seed": 9,
+          "branch": "experiment-failure-seed/09-syntax-perform-inline",
+          "status": "diverged",
+          "ahead_by": 4,
+          "behind_by": 209,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": false
+        },
+        {
+          "seed": 10,
+          "branch": "experiment-failure-seed/10-syntax-evaluate-also-rebuilt",
+          "status": "diverged",
+          "ahead_by": 3,
+          "behind_by": 17,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": false
+        },
+        {
+          "seed": 11,
+          "branch": "experiment-failure-seed/11-runtime-initialize-replacing",
+          "status": "diverged",
+          "ahead_by": 3,
+          "behind_by": 690,
+          "translator_change": false,
+          "regression_test_change": false,
+          "workflow_noise": true
+        },
+        {
+          "seed": 12,
+          "branch": "experiment-failure-seed/12-runtime-initialize-occurs",
+          "status": "diverged",
+          "ahead_by": 2,
+          "behind_by": 602,
+          "translator_change": false,
+          "regression_test_change": false,
+          "workflow_noise": true
+        },
+        {
+          "seed": 13,
+          "branch": "experiment-failure-seed/13-runtime-filler-storage",
+          "status": "diverged",
+          "ahead_by": 2,
+          "behind_by": 598,
+          "translator_change": false,
+          "regression_test_change": false,
+          "workflow_noise": true
+        },
+        {
+          "seed": 14,
+          "branch": "experiment-failure-seed/14-runtime-redefines-overlay",
+          "status": "diverged",
+          "ahead_by": 2,
+          "behind_by": 597,
+          "translator_change": false,
+          "regression_test_change": false,
+          "workflow_noise": true
+        },
+        {
+          "seed": 15,
+          "branch": "experiment-failure-seed/15-runtime-numeric-move",
+          "status": "diverged",
+          "ahead_by": 2,
+          "behind_by": 595,
+          "translator_change": false,
+          "regression_test_change": false,
+          "workflow_noise": true
+        },
+        {
+          "seed": 16,
+          "branch": "experiment-failure-seed/16-runtime-decimal-arithmetic",
+          "status": "diverged",
+          "ahead_by": 394,
+          "behind_by": 593,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": true
+        },
+        {
+          "seed": 17,
+          "branch": "experiment-failure-seed/17-runtime-rounded-size-error",
+          "status": "diverged",
+          "ahead_by": 66,
+          "behind_by": 543,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": true
+        },
+        {
+          "seed": 18,
+          "branch": "experiment-failure-seed/18-runtime-divide-remainder",
+          "status": "diverged",
+          "ahead_by": 58,
+          "behind_by": 543,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": true
+        },
+        {
+          "seed": 19,
+          "branch": "experiment-failure-seed/19-runtime-table-boundaries",
+          "status": "diverged",
+          "ahead_by": 6,
+          "behind_by": 355,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": true
+        },
+        {
+          "seed": 20,
+          "branch": "experiment-failure-seed/20-runtime-search-all-key",
+          "status": "diverged",
+          "ahead_by": 15,
+          "behind_by": 330,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": true
+        },
+        {
+          "seed": 21,
+          "branch": "experiment-failure-seed/21-runtime-search-serial",
+          "status": "diverged",
+          "ahead_by": 8,
+          "behind_by": 330,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": true
+        },
+        {
+          "seed": 22,
+          "branch": "experiment-failure-seed/22-runtime-call-static",
+          "status": "diverged",
+          "ahead_by": 37,
+          "behind_by": 330,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": true
+        },
+        {
+          "seed": 23,
+          "branch": "experiment-failure-seed/23-runtime-call-by-reference",
+          "status": "diverged",
+          "ahead_by": 25,
+          "behind_by": 262,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": true
+        },
+        {
+          "seed": 24,
+          "branch": "experiment-failure-seed/24-runtime-call-by-content",
+          "status": "diverged",
+          "ahead_by": 24,
+          "behind_by": 259,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": true
+        },
+        {
+          "seed": 25,
+          "branch": "experiment-failure-seed/25-runtime-linkage-using",
+          "status": "diverged",
+          "ahead_by": 24,
+          "behind_by": 259,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": true
+        },
+        {
+          "seed": 26,
+          "branch": "experiment-failure-seed/26-runtime-file-open-modes",
+          "status": "diverged",
+          "ahead_by": 25,
+          "behind_by": 259,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": true
+        },
+        {
+          "seed": 27,
+          "branch": "experiment-failure-seed/27-runtime-file-read-write",
+          "status": "diverged",
+          "ahead_by": 20,
+          "behind_by": 259,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": true
+        },
+        {
+          "seed": 28,
+          "branch": "experiment-failure-seed/28-runtime-perform-control-flow",
+          "status": "diverged",
+          "ahead_by": 19,
+          "behind_by": 259,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": true
+        },
+        {
+          "seed": 29,
+          "branch": "experiment-failure-seed/29-runtime-go-to-depending",
+          "status": "diverged",
+          "ahead_by": 20,
+          "behind_by": 259,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": true
+        },
+        {
+          "seed": 30,
+          "branch": "experiment-failure-seed/30-runtime-data-scope-initialization",
+          "status": "diverged",
+          "ahead_by": 30,
+          "behind_by": 253,
+          "translator_change": true,
+          "regression_test_change": true,
+          "workflow_noise": true
+        }
+      ],
+      "note": "Fresh compare against main 4238c8: all 30 manifest refs were found and every compare status was diverged; none was ahead-only. Seeds 11-15 contain no translator or test changes. Seeds 16-30 contain translator/tests but unrelated workflow, benchmark, manifest or documentation paths. Unique head SHAs are checked again by the dispatch workflow; they were not independently re-enumerated in this audit."
     },
-    "current_main_sha": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
+    "current_main_sha": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
     "branch_comparisons": [
       {
         "seed": 1,
         "branch": "experiment-failure-seed/01-syntax-condition-operators",
         "status": "diverged",
         "ahead_by": 4,
-        "behind_by": 212,
+        "behind_by": 213,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false,
-        "changed_paths": [
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": false
       },
       {
         "seed": 2,
         "branch": "experiment-failure-seed/02-syntax-abbreviated-relations",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 208,
+        "behind_by": 209,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false,
-        "changed_paths": [
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": false
       },
       {
         "seed": 3,
         "branch": "experiment-failure-seed/03-syntax-multidimensional-subscripts",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 208,
+        "behind_by": 209,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false,
-        "changed_paths": [
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": false
       },
       {
         "seed": 4,
         "branch": "experiment-failure-seed/04-syntax-reference-modification",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 208,
+        "behind_by": 209,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false,
-        "changed_paths": [
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": false
       },
       {
         "seed": 5,
         "branch": "experiment-failure-seed/05-syntax-inspect-before-after",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 212,
+        "behind_by": 213,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false,
-        "changed_paths": [
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": false
       },
       {
         "seed": 6,
         "branch": "experiment-failure-seed/06-syntax-inspect-replacing",
         "status": "diverged",
         "ahead_by": 5,
-        "behind_by": 208,
+        "behind_by": 209,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false,
-        "changed_paths": [
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": false
       },
       {
         "seed": 7,
         "branch": "experiment-failure-seed/07-syntax-string-delimited",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 208,
+        "behind_by": 209,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false,
-        "changed_paths": [
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": false
       },
       {
         "seed": 8,
         "branch": "experiment-failure-seed/08-syntax-unstring-multiple-delimiters",
         "status": "diverged",
         "ahead_by": 4,
-        "behind_by": 212,
+        "behind_by": 213,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false,
-        "changed_paths": [
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": false
       },
       {
         "seed": 9,
         "branch": "experiment-failure-seed/09-syntax-perform-inline",
         "status": "diverged",
         "ahead_by": 4,
-        "behind_by": 208,
+        "behind_by": 209,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false,
-        "changed_paths": [
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": false
       },
       {
         "seed": 10,
         "branch": "experiment-failure-seed/10-syntax-evaluate-also-rebuilt",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 16,
+        "behind_by": 17,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false,
-        "changed_paths": [
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": false
       },
       {
         "seed": 11,
         "branch": "experiment-failure-seed/11-runtime-initialize-replacing",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 689,
+        "behind_by": 690,
         "translator_change": false,
         "regression_test_change": false,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".github/workflows/external-cobol-corpus.yml",
-          "README.md",
-          "docs/roadmap-two-weeks.md"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 12,
         "branch": "experiment-failure-seed/12-runtime-initialize-occurs",
         "status": "diverged",
         "ahead_by": 2,
-        "behind_by": 601,
+        "behind_by": 602,
         "translator_change": false,
         "regression_test_change": false,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".github/workflows/external-cobol-corpus.yml",
-          "docs/ci-validation-probe.md"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 13,
         "branch": "experiment-failure-seed/13-runtime-filler-storage",
         "status": "diverged",
         "ahead_by": 2,
-        "behind_by": 597,
+        "behind_by": 598,
         "translator_change": false,
         "regression_test_change": false,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".github/workflows/external-cobol-corpus.yml",
-          "docs/ci-validation-probe.md"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 14,
         "branch": "experiment-failure-seed/14-runtime-redefines-overlay",
         "status": "diverged",
         "ahead_by": 2,
-        "behind_by": 596,
+        "behind_by": 597,
         "translator_change": false,
         "regression_test_change": false,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".github/workflows/external-cobol-corpus.yml",
-          "docs/ci-validation-probe.md"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 15,
         "branch": "experiment-failure-seed/15-runtime-numeric-move",
         "status": "diverged",
         "ahead_by": 2,
-        "behind_by": 594,
+        "behind_by": 595,
         "translator_change": false,
         "regression_test_change": false,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".github/workflows/external-cobol-corpus.yml",
-          "docs/ci-validation-probe.md"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 16,
         "branch": "experiment-failure-seed/16-runtime-decimal-arithmetic",
         "status": "diverged",
         "ahead_by": 394,
-        "behind_by": 592,
+        "behind_by": 593,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".github/workflows/external-cobol-corpus.yml",
-          ".github/workflows/tests.yml",
-          "README.md",
-          "benchmarks/Dockerfile.external",
-          "benchmarks/EXTERNAL_CORPUS.md",
-          "benchmarks/run_external_corpus.py",
-          "cobol2py.py",
-          "docs/compatibility.md",
-          "docs/pilot-diagnostics-baseline.md",
-          "docs/roadmap-two-weeks.md",
-          "tests/test_benchmark_manifest.py",
-          "tests/test_cli.py",
-          "tests/test_cobol2py.py",
-          "tests/test_external_corpus_manifest.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 17,
         "branch": "experiment-failure-seed/17-runtime-rounded-size-error",
         "status": "diverged",
         "ahead_by": 66,
-        "behind_by": 542,
+        "behind_by": 543,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".github/workflows/external-cobol-corpus.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 18,
         "branch": "experiment-failure-seed/18-runtime-divide-remainder",
         "status": "diverged",
         "ahead_by": 58,
-        "behind_by": 542,
+        "behind_by": 543,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".github/workflows/external-cobol-corpus.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 19,
         "branch": "experiment-failure-seed/19-runtime-table-boundaries",
         "status": "diverged",
         "ahead_by": 6,
-        "behind_by": 354,
+        "behind_by": 355,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".github/workflows/external-cobol-corpus.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 20,
         "branch": "experiment-failure-seed/20-runtime-search-all-key",
         "status": "diverged",
         "ahead_by": 15,
-        "behind_by": 329,
+        "behind_by": 330,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".benchmark-candidates/pr-44.json",
-          ".github/workflows/external-cobol-corpus.yml",
-          ".github/workflows/external-python-benchmark.yml",
-          "cobol2py.py",
-          "docs/EXTERNAL_BENCHMARK_RECOVERY_PLAN.md",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 21,
         "branch": "experiment-failure-seed/21-runtime-search-serial",
         "status": "diverged",
         "ahead_by": 8,
-        "behind_by": 329,
+        "behind_by": 330,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".github/workflows/external-cobol-corpus.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 22,
         "branch": "experiment-failure-seed/22-runtime-call-static",
         "status": "diverged",
         "ahead_by": 37,
-        "behind_by": 329,
+        "behind_by": 330,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".benchmark-candidates/pr-47.json",
-          ".github/workflows/external-cobol-corpus.yml",
-          ".github/workflows/external-python-benchmark.yml",
-          "cobol2py.py",
-          "docs/EXTERNAL_BENCHMARK_RECOVERY_PLAN.md",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 23,
         "branch": "experiment-failure-seed/23-runtime-call-by-reference",
         "status": "diverged",
         "ahead_by": 25,
-        "behind_by": 261,
+        "behind_by": 262,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".benchmark-candidates/pr-56.json",
-          ".github/workflows/external-cobol-corpus.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 24,
         "branch": "experiment-failure-seed/24-runtime-call-by-content",
         "status": "diverged",
         "ahead_by": 24,
-        "behind_by": 258,
+        "behind_by": 259,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".benchmark-candidates/pr-57.json",
-          ".github/workflows/differential-benchmark.yml",
-          ".github/workflows/external-cobol-corpus.yml",
-          ".github/workflows/external-cobol-smoke.yml",
-          ".github/workflows/external-python-benchmark.yml",
-          ".github/workflows/multilang-benchmark.yml",
-          ".github/workflows/seven-candidate-tournament.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 25,
         "branch": "experiment-failure-seed/25-runtime-linkage-using",
         "status": "diverged",
         "ahead_by": 24,
-        "behind_by": 258,
+        "behind_by": 259,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".benchmark-candidates/pr-58.json",
-          ".github/workflows/differential-benchmark.yml",
-          ".github/workflows/external-cobol-corpus.yml",
-          ".github/workflows/external-cobol-smoke.yml",
-          ".github/workflows/external-python-benchmark.yml",
-          ".github/workflows/multilang-benchmark.yml",
-          ".github/workflows/seven-candidate-tournament.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 26,
         "branch": "experiment-failure-seed/26-runtime-file-open-modes",
         "status": "diverged",
         "ahead_by": 25,
-        "behind_by": 258,
+        "behind_by": 259,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".benchmark-candidates/pr-59.json",
-          ".github/workflows/differential-benchmark.yml",
-          ".github/workflows/external-cobol-corpus.yml",
-          ".github/workflows/external-cobol-smoke.yml",
-          ".github/workflows/external-python-benchmark.yml",
-          ".github/workflows/multilang-benchmark.yml",
-          ".github/workflows/seven-candidate-tournament.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 27,
         "branch": "experiment-failure-seed/27-runtime-file-read-write",
         "status": "diverged",
         "ahead_by": 20,
-        "behind_by": 258,
+        "behind_by": 259,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".benchmark-candidates/pr-60.json",
-          ".github/workflows/external-cobol-corpus.yml",
-          ".github/workflows/external-python-benchmark.yml",
-          ".github/workflows/multilang-benchmark.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 28,
         "branch": "experiment-failure-seed/28-runtime-perform-control-flow",
         "status": "diverged",
         "ahead_by": 19,
-        "behind_by": 258,
+        "behind_by": 259,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".benchmark-candidates/pr-62.json",
-          ".github/workflows/external-cobol-corpus.yml",
-          ".github/workflows/external-python-benchmark.yml",
-          ".github/workflows/seven-candidate-tournament.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 29,
         "branch": "experiment-failure-seed/29-runtime-go-to-depending",
         "status": "diverged",
         "ahead_by": 20,
-        "behind_by": 258,
+        "behind_by": 259,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".benchmark-candidates/pr-63.json",
-          ".github/workflows/external-cobol-corpus.yml",
-          ".github/workflows/external-python-benchmark.yml",
-          ".github/workflows/seven-candidate-tournament.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 30,
         "branch": "experiment-failure-seed/30-runtime-data-scope-initialization",
         "status": "diverged",
         "ahead_by": 30,
-        "behind_by": 252,
+        "behind_by": 253,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".benchmark-candidates/pr-74.json",
-          ".github/workflows/external-python-benchmark.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       }
-    ]
+    ],
+    "candidates_without_translator_or_tests": [
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "audit_date": "2026-11-20"
   },
   "current_main_pr_tournament": {
     "workflow": ".github/workflows/current-main-pr-tournament.yml",
@@ -2562,52 +2688,56 @@
     ],
     "next_expected_run_utc": "2026-11-20T11:30:00Z",
     "contract": "Freeze current main and all 500 per-ID GnuCOBOL stdout SHA-256/length/return-code fingerprints; compare candidate source SHA, stdout bytes and return code on the exact same 500 IDs and archive checksum; require >=1 new pass and zero regressions.",
-    "note": "Active candidate is PR #371 (fixed-width SEQUENTIAL file records), rebuilt on exact main 7b55ce1. PR #398 is closed as ineligible after a completed paired 500-case result with no new passes.",
+    "note": "The configured default PR #371 is now closed after a complete paired comparison with no new passes and one regression. Discovery skips closed PRs; no active candidate is queued. A new isolated PR will be evaluated automatically when opened.",
     "last_schedule_check_utc": "2026-11-19T11:55:26Z",
-    "last_scheduled_run_found": false,
+    "last_scheduled_run_found": true,
     "latest_candidate_evaluation": {
       "pr": 371,
       "title": "[FILE I/O] Read fixed-width SEQUENTIAL records without line delimiters",
       "branch": "fix/read-fixed-width-sequential",
-      "head_sha": "6e5ec12077ac5c4d9d2ea0ca24a44147bc42ebd9",
-      "base_sha": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
-      "unit_suite_run": 44523489717,
-      "unit_suite_conclusion": "in_progress",
-      "cobol_smoke_run": 44523489851,
-      "cobol_smoke_status": "in_progress",
-      "holdout_run": 44523489575,
-      "holdout_status": "in_progress",
-      "paired_run": 44523489648,
-      "paired_status": "in_progress",
-      "baseline_run": 44308154079,
+      "head_sha": "1a9424f6b59d18ec93b9dc1b38a32afde8f00dbc",
+      "base_sha": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
+      "merge_sha": "ebba3a79baf6d03f7d5fe5c16282f723ac3f6005",
+      "baseline_run": 44599918790,
       "baseline_score": 263,
-      "holdout_tested": null,
-      "unique_case_ids": null,
-      "source_hash_matches": null,
-      "decision": "pending_full_500_casewise_comparison",
-      "note": "Rebuilt the existing isolated PR #371 onto exact main 7b55ce1. The motivating holdout case openfilesequential-962ba09d3d has a 46-byte GnuCOBOL stdout versus 83 bytes from main; the candidate reads fixed-width records using the declared FD width. Suite, smoke and paired 500-case evaluation are running on head 6e5ec12."
+      "candidate_run": 44599918790,
+      "candidate_score": 262,
+      "candidate_score_against_frozen_oracle": 262,
+      "denominator": 500,
+      "comparable_cases": 500,
+      "new_passes": 0,
+      "new_pass_case_ids": [],
+      "regressions": 1,
+      "regressed_case_ids": [
+        "exec84-2-03eae98697"
+      ],
+      "oracle_stable": false,
+      "oracle_drift_count": 9,
+      "oracle_drift_case_ids": [
+        "cob-simpleinventory-6af451140a",
+        "collatz-6e335e6eda",
+        "date1-f31ce2734d",
+        "intrdate-0517c3d81c",
+        "pullydis-9e45af6c84",
+        "randombingo-e50339cc12",
+        "randomnumbers-d8fc7ee85b",
+        "rock-paper-scissors-ad6321acf1",
+        "rolldice-08e3de1a0e"
+      ],
+      "unit_suite_run": 44527688883,
+      "unit_suite_conclusion": "success",
+      "smoke_run": 44527688721,
+      "smoke_conclusion": "success",
+      "independent_holdout_run": 44527688650,
+      "independent_holdout_conclusion": "success",
+      "paired_run": 44599918790,
+      "paired_conclusion": "success",
+      "eligible": false,
+      "decision": "ineligible_zero_gain_one_regression",
+      "status": "completed",
+      "note": "Latest complete paired comparison on frozen main 4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133: baseline 263/500, candidate 262/500, 500 comparable IDs, no new passes, one regression (exec84-2-03eae98697), and nine diagnostic candidate-run GnuCOBOL oracle drifts. The earlier apparent timeout-boundary gain in run 44527688670 did not reproduce. PR #371 was closed unmerged."
     },
-    "candidate_queue": [
-      {
-        "pr": 371,
-        "branch": "fix/read-fixed-width-sequential",
-        "head_sha": "6e5ec12077ac5c4d9d2ea0ca24a44147bc42ebd9",
-        "base_sha": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
-        "hypothesis": "Read ORGANIZATION SEQUENTIAL records by declared fixed width, not newline boundaries.",
-        "motivating_case_ids": [
-          "openfilesequential-962ba09d3d"
-        ],
-        "unit_suite_run": 44523489717,
-        "unit_suite_conclusion": "in_progress",
-        "cobol_smoke_run": 44523489851,
-        "cobol_smoke_status": "in_progress",
-        "holdout_run": 44523489575,
-        "holdout_status": "in_progress",
-        "paired_run": 44523489648,
-        "paired_status": "in_progress",
-        "decision": "pending_full_500_casewise_comparison"
-      }
-    ],
+    "candidate_queue": [],
     "isolation_scope": {
       "enforced": true,
       "allowed_paths": [
@@ -2670,7 +2800,8 @@
       "eligible": false,
       "decision": "ineligible_no_gain_oracle_drift",
       "note": "Official paired comparison: 263/500 vs 263/500, 500 comparable cases, zero new passes, zero regressions, eight oracle drifts. Both NIST motivating cases still time out. The one-off exec84 timeout-boundary pass in the independent sharded run did not reproduce as a gain in the paired run."
-    }
+    },
+    "latest_scheduled_run": 44599918790
   },
   "latest_16_candidate_tournament": {
     "run": 43595155564,
@@ -2688,90 +2819,32 @@
     "score": 263,
     "denominator": 500,
     "percent": 52.6,
-    "measured_run": 44308154079,
-    "measured_sha": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
-    "current_main_sha": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
+    "measured_run": 44599918790,
+    "measured_sha": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
+    "current_main_sha": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
     "current_main_translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
     "measured_translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
     "code_equivalent": true,
     "exact_run_on_current_main_sha": true,
-    "reason": "Run 44308154079 executed the full 500-case X-COBOL v2 holdout on exact current main SHA 7b55ce1d5aadc4465549c65e04d2f15bf45b25b9; it is a fresh exact-SHA measurement, not merely a translator-blob equivalence."
+    "reason": "Run 44599918790 executed the full 500-case X-COBOL v2 holdout on exact current main SHA 4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133; this is a fresh exact-SHA measurement."
   },
   "latest_paired_pr_tournament": {
-    "run": 44519122785,
-    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44519122785",
-    "baseline_sha": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
+    "run": 44599918790,
+    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44599918790",
+    "baseline_sha": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
     "baseline_score": 263,
     "denominator": 500,
-    "candidate_pr": 398,
-    "candidate_head_sha": "12ac3014966d07148567f69836353097564230b9",
-    "candidate_merge_sha": "e13aaa569fe041061bde8ba5bc1636beedb1a18f",
-    "candidate_score": 263,
+    "candidate_pr": 371,
+    "candidate_head_sha": "1a9424f6b59d18ec93b9dc1b38a32afde8f00dbc",
+    "candidate_merge_sha": "ebba3a79baf6d03f7d5fe5c16282f723ac3f6005",
+    "candidate_score": 262,
     "comparable_cases": 500,
     "new_passes": 0,
     "new_pass_case_ids": [],
-    "regressions": 0,
-    "regressed_case_ids": [],
-    "oracle_drift_count": 8,
-    "oracle_drift_case_ids": [
-      "cob-simpleinventory-6af451140a",
-      "collatz-6e335e6eda",
-      "date1-f31ce2734d",
-      "intrdate-0517c3d81c",
-      "pullydis-9e45af6c84",
-      "randombingo-e50339cc12",
-      "randomnumbers-d8fc7ee85b",
-      "rolldice-08e3de1a0e"
-    ],
-    "winner": null,
-    "eligible": false,
-    "status": "completed",
-    "candidate_benchmark_run": 44519122937,
-    "unit_suite_run": 44519122825,
-    "smoke_run": 44519122846,
-    "promotion": "manual; no merge is performed by this workflow",
-    "note": "Completed official paired run. Main and PR #398 both scored 263/500 on 500 comparable IDs. Zero new passes, zero regressions, eight candidate-run oracle drifts; frozen main oracle used for scoring. Both NIST motivating cases still time out. No winner and no promotion."
-  },
-  "latest_baseline_artifact_check": {
-    "run": 44297062982,
-    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44297062982",
-    "baseline_sha": "7143e243eec8b6833bbf3f234c53aaf9fa25c360",
-    "score": 263,
-    "denominator": 500,
-    "percent": 52.6,
-    "tested": 500,
-    "unique_case_ids": 500,
-    "skip": 500,
-    "target": 500,
-    "corpus": "X-COBOL v2",
-    "archive_md5_expected": "cbd974caed72b0836777dc2305928ed3",
-    "archive_md5_verified": true,
-    "reference_fingerprint_coverage": 500,
-    "baseline_job_conclusion": "success",
-    "workflow_conclusion": "failure",
-    "final_artifact": "pr-tournament-final-44297062982",
-    "candidates": [],
-    "note": "Valid complete baseline artifact; not a candidate tournament because discovery returned an empty candidate list. A later baseline-only run 44298065727 on the same SHA also completed the baseline job and recorded candidates=[]."
-  },
-  "latest_candidate_artifact_comparison": {
-    "run": 44307154327,
-    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44307154327",
-    "baseline_run": 44308154079,
-    "baseline_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44308154079",
-    "baseline_sha": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
-    "baseline_score": 263,
-    "candidate_pr": 395,
-    "candidate_head_sha": "10cc02ff266d70f1bec0742340cdf274e48b4605",
-    "candidate_score": 264,
-    "candidate_score_against_frozen_oracle": 264,
-    "denominator": 500,
-    "comparable_cases": 500,
-    "new_passes": 1,
-    "new_pass_case_ids": [
+    "regressions": 1,
+    "regressed_case_ids": [
       "exec84-2-03eae98697"
     ],
-    "regressions": 0,
-    "regressed_case_ids": [],
     "oracle_drift_count": 9,
     "oracle_drift_case_ids": [
       "cob-simpleinventory-6af451140a",
@@ -2784,556 +2857,375 @@
       "rock-paper-scissors-ad6321acf1",
       "rolldice-08e3de1a0e"
     ],
-    "method": "manual exact artifact comparison against the complete current-main baseline; not a completed paired workflow run",
-    "candidate_shards": [
-      {
-        "skip": 500,
-        "target": 125,
-        "tested": 125,
-        "passed": 63
-      },
-      {
-        "skip": 625,
-        "target": 125,
-        "tested": 125,
-        "passed": 55
-      },
-      {
-        "skip": 750,
-        "target": 125,
-        "tested": 125,
-        "passed": 72
-      },
-      {
-        "skip": 875,
-        "target": 125,
-        "tested": 125,
-        "passed": 73
-      }
+    "winner": null,
+    "eligible": false,
+    "status": "completed",
+    "candidate_benchmark_run": 44599918790,
+    "unit_suite_run": 44527688883,
+    "smoke_run": 44527688721,
+    "promotion": "manual; no merge is performed by this workflow",
+    "note": "Latest complete paired comparison on frozen main 4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133: baseline 263/500, candidate 262/500, 500 comparable IDs, no new passes, one regression (exec84-2-03eae98697), and nine diagnostic candidate-run GnuCOBOL oracle drifts. The earlier apparent timeout-boundary gain in run 44527688670 did not reproduce. PR #371 was closed unmerged."
+  },
+  "latest_baseline_artifact_check": {
+    "run": 44599918790,
+    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44599918790",
+    "baseline_sha": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
+    "score": 263,
+    "denominator": 500,
+    "percent": 52.6,
+    "tested": 500,
+    "unique_case_ids": 500,
+    "skip": 500,
+    "target": 500,
+    "corpus": "X-COBOL v2",
+    "archive_md5_expected": "cbd974caed72b0836777dc2305928ed3",
+    "archive_md5_verified": true,
+    "reference_fingerprint_coverage": 500,
+    "baseline_job_conclusion": "success",
+    "workflow_conclusion": "success",
+    "final_artifact": "pr-tournament-baseline-44599918790",
+    "note": "Exact main baseline artifact from the completed paired tournament; 500/500 IDs and complete GnuCOBOL fingerprints."
+  },
+  "latest_candidate_artifact_comparison": {
+    "run": 44599918790,
+    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44599918790",
+    "baseline_run": 44599918790,
+    "baseline_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44599918790",
+    "baseline_sha": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
+    "baseline_score": 263,
+    "candidate_pr": 371,
+    "candidate_head_sha": "1a9424f6b59d18ec93b9dc1b38a32afde8f00dbc",
+    "candidate_merge_sha": "ebba3a79baf6d03f7d5fe5c16282f723ac3f6005",
+    "candidate_score": 262,
+    "candidate_score_against_frozen_oracle": 262,
+    "denominator": 500,
+    "comparable_cases": 500,
+    "new_passes": 0,
+    "new_pass_case_ids": [],
+    "regressions": 1,
+    "regressed_case_ids": [
+      "exec84-2-03eae98697"
     ],
+    "oracle_drift_count": 9,
+    "oracle_drift_case_ids": [
+      "cob-simpleinventory-6af451140a",
+      "collatz-6e335e6eda",
+      "date1-f31ce2734d",
+      "intrdate-0517c3d81c",
+      "pullydis-9e45af6c84",
+      "randombingo-e50339cc12",
+      "randomnumbers-d8fc7ee85b",
+      "rock-paper-scissors-ad6321acf1",
+      "rolldice-08e3de1a0e"
+    ],
+    "method": "official paired workflow; frozen main GnuCOBOL stdout SHA-256, byte length and return code per ID",
     "source_hash_matches": 500,
     "archive_md5_verified": true,
     "eligible": false,
-    "timeout_only_case": {
-      "id": "exec84-2-03eae98697",
-      "main_translator_seconds": 20.004175,
-      "main_translator_timeout": true,
-      "candidate_translator_seconds": 11.884421,
-      "candidate_returncode": 1,
-      "candidate_stdout_length": 0,
-      "oracle_returncode": 1,
-      "oracle_stdout_length": 0
-    },
-    "note": "All four candidate shards completed 125/125 with the same 500 IDs and source SHA values; the frozen current-main GnuCOBOL fingerprints were used for exact stdout SHA/length/return-code comparison. The candidate has one apparent new pass, exec84-2-03eae98697, only because main hit the 20-second translator timeout while the candidate completed and exactly matched the oracle's empty stdout/return code 1. This timeout-boundary improvement is not attributed to the EVALUATE patch and is not accepted as a semantic gain. There are zero regressions. Both NIST EVALUATE reproducers still fail with NameError for the 88-level name it_is_81."
+    "decision": "ineligible_zero_gain_one_regression",
+    "note": "Latest complete paired comparison on frozen main 4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133: baseline 263/500, candidate 262/500, 500 comparable IDs, no new passes, one regression (exec84-2-03eae98697), and nine diagnostic candidate-run GnuCOBOL oracle drifts. The earlier apparent timeout-boundary gain in run 44527688670 did not reproduce. PR #371 was closed unmerged."
   },
-  "latest_main_holdout_run": 44308154079,
+  "latest_main_holdout_run": 44599918790,
   "branch_comparisons": [
     {
       "seed": 1,
       "branch": "experiment-failure-seed/01-syntax-condition-operators",
       "status": "diverged",
       "ahead_by": 4,
-      "behind_by": 212,
+      "behind_by": 213,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": false,
-      "changed_paths": [
-        "cobol2py.py",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": false
     },
     {
       "seed": 2,
       "branch": "experiment-failure-seed/02-syntax-abbreviated-relations",
       "status": "diverged",
       "ahead_by": 3,
-      "behind_by": 208,
+      "behind_by": 209,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": false,
-      "changed_paths": [
-        "cobol2py.py",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": false
     },
     {
       "seed": 3,
       "branch": "experiment-failure-seed/03-syntax-multidimensional-subscripts",
       "status": "diverged",
       "ahead_by": 3,
-      "behind_by": 208,
+      "behind_by": 209,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": false,
-      "changed_paths": [
-        "cobol2py.py",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": false
     },
     {
       "seed": 4,
       "branch": "experiment-failure-seed/04-syntax-reference-modification",
       "status": "diverged",
       "ahead_by": 3,
-      "behind_by": 208,
+      "behind_by": 209,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": false,
-      "changed_paths": [
-        "cobol2py.py",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": false
     },
     {
       "seed": 5,
       "branch": "experiment-failure-seed/05-syntax-inspect-before-after",
       "status": "diverged",
       "ahead_by": 3,
-      "behind_by": 212,
+      "behind_by": 213,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": false,
-      "changed_paths": [
-        "cobol2py.py",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": false
     },
     {
       "seed": 6,
       "branch": "experiment-failure-seed/06-syntax-inspect-replacing",
       "status": "diverged",
       "ahead_by": 5,
-      "behind_by": 208,
+      "behind_by": 209,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": false,
-      "changed_paths": [
-        "cobol2py.py",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": false
     },
     {
       "seed": 7,
       "branch": "experiment-failure-seed/07-syntax-string-delimited",
       "status": "diverged",
       "ahead_by": 3,
-      "behind_by": 208,
+      "behind_by": 209,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": false,
-      "changed_paths": [
-        "cobol2py.py",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": false
     },
     {
       "seed": 8,
       "branch": "experiment-failure-seed/08-syntax-unstring-multiple-delimiters",
       "status": "diverged",
       "ahead_by": 4,
-      "behind_by": 212,
+      "behind_by": 213,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": false,
-      "changed_paths": [
-        "cobol2py.py",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": false
     },
     {
       "seed": 9,
       "branch": "experiment-failure-seed/09-syntax-perform-inline",
       "status": "diverged",
       "ahead_by": 4,
-      "behind_by": 208,
+      "behind_by": 209,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": false,
-      "changed_paths": [
-        "cobol2py.py",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": false
     },
     {
       "seed": 10,
       "branch": "experiment-failure-seed/10-syntax-evaluate-also-rebuilt",
       "status": "diverged",
       "ahead_by": 3,
-      "behind_by": 16,
+      "behind_by": 17,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": false,
-      "changed_paths": [
-        "cobol2py.py",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": false
     },
     {
       "seed": 11,
       "branch": "experiment-failure-seed/11-runtime-initialize-replacing",
       "status": "diverged",
       "ahead_by": 3,
-      "behind_by": 689,
+      "behind_by": 690,
       "translator_change": false,
       "regression_test_change": false,
-      "workflow_noise": true,
-      "changed_paths": [
-        ".github/workflows/external-cobol-corpus.yml",
-        "README.md",
-        "docs/roadmap-two-weeks.md"
-      ]
+      "workflow_noise": true
     },
     {
       "seed": 12,
       "branch": "experiment-failure-seed/12-runtime-initialize-occurs",
       "status": "diverged",
       "ahead_by": 2,
-      "behind_by": 601,
+      "behind_by": 602,
       "translator_change": false,
       "regression_test_change": false,
-      "workflow_noise": true,
-      "changed_paths": [
-        ".github/workflows/external-cobol-corpus.yml",
-        "docs/ci-validation-probe.md"
-      ]
+      "workflow_noise": true
     },
     {
       "seed": 13,
       "branch": "experiment-failure-seed/13-runtime-filler-storage",
       "status": "diverged",
       "ahead_by": 2,
-      "behind_by": 597,
+      "behind_by": 598,
       "translator_change": false,
       "regression_test_change": false,
-      "workflow_noise": true,
-      "changed_paths": [
-        ".github/workflows/external-cobol-corpus.yml",
-        "docs/ci-validation-probe.md"
-      ]
+      "workflow_noise": true
     },
     {
       "seed": 14,
       "branch": "experiment-failure-seed/14-runtime-redefines-overlay",
       "status": "diverged",
       "ahead_by": 2,
-      "behind_by": 596,
+      "behind_by": 597,
       "translator_change": false,
       "regression_test_change": false,
-      "workflow_noise": true,
-      "changed_paths": [
-        ".github/workflows/external-cobol-corpus.yml",
-        "docs/ci-validation-probe.md"
-      ]
+      "workflow_noise": true
     },
     {
       "seed": 15,
       "branch": "experiment-failure-seed/15-runtime-numeric-move",
       "status": "diverged",
       "ahead_by": 2,
-      "behind_by": 594,
+      "behind_by": 595,
       "translator_change": false,
       "regression_test_change": false,
-      "workflow_noise": true,
-      "changed_paths": [
-        ".github/workflows/external-cobol-corpus.yml",
-        "docs/ci-validation-probe.md"
-      ]
+      "workflow_noise": true
     },
     {
       "seed": 16,
       "branch": "experiment-failure-seed/16-runtime-decimal-arithmetic",
       "status": "diverged",
       "ahead_by": 394,
-      "behind_by": 592,
+      "behind_by": 593,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": true,
-      "changed_paths": [
-        ".github/workflows/external-cobol-corpus.yml",
-        ".github/workflows/tests.yml",
-        "README.md",
-        "benchmarks/Dockerfile.external",
-        "benchmarks/EXTERNAL_CORPUS.md",
-        "benchmarks/run_external_corpus.py",
-        "cobol2py.py",
-        "docs/compatibility.md",
-        "docs/pilot-diagnostics-baseline.md",
-        "docs/roadmap-two-weeks.md",
-        "tests/test_benchmark_manifest.py",
-        "tests/test_cli.py",
-        "tests/test_cobol2py.py",
-        "tests/test_external_corpus_manifest.py",
-        "web/index.html"
-      ]
+      "workflow_noise": true
     },
     {
       "seed": 17,
       "branch": "experiment-failure-seed/17-runtime-rounded-size-error",
       "status": "diverged",
       "ahead_by": 66,
-      "behind_by": 542,
+      "behind_by": 543,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": true,
-      "changed_paths": [
-        ".github/workflows/external-cobol-corpus.yml",
-        "cobol2py.py",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": true
     },
     {
       "seed": 18,
       "branch": "experiment-failure-seed/18-runtime-divide-remainder",
       "status": "diverged",
       "ahead_by": 58,
-      "behind_by": 542,
+      "behind_by": 543,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": true,
-      "changed_paths": [
-        ".github/workflows/external-cobol-corpus.yml",
-        "cobol2py.py",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": true
     },
     {
       "seed": 19,
       "branch": "experiment-failure-seed/19-runtime-table-boundaries",
       "status": "diverged",
       "ahead_by": 6,
-      "behind_by": 354,
+      "behind_by": 355,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": true,
-      "changed_paths": [
-        ".github/workflows/external-cobol-corpus.yml",
-        "cobol2py.py",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": true
     },
     {
       "seed": 20,
       "branch": "experiment-failure-seed/20-runtime-search-all-key",
       "status": "diverged",
       "ahead_by": 15,
-      "behind_by": 329,
+      "behind_by": 330,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": true,
-      "changed_paths": [
-        ".benchmark-candidates/pr-44.json",
-        ".github/workflows/external-cobol-corpus.yml",
-        ".github/workflows/external-python-benchmark.yml",
-        "cobol2py.py",
-        "docs/EXTERNAL_BENCHMARK_RECOVERY_PLAN.md",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": true
     },
     {
       "seed": 21,
       "branch": "experiment-failure-seed/21-runtime-search-serial",
       "status": "diverged",
       "ahead_by": 8,
-      "behind_by": 329,
+      "behind_by": 330,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": true,
-      "changed_paths": [
-        ".github/workflows/external-cobol-corpus.yml",
-        "cobol2py.py",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": true
     },
     {
       "seed": 22,
       "branch": "experiment-failure-seed/22-runtime-call-static",
       "status": "diverged",
       "ahead_by": 37,
-      "behind_by": 329,
+      "behind_by": 330,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": true,
-      "changed_paths": [
-        ".benchmark-candidates/pr-47.json",
-        ".github/workflows/external-cobol-corpus.yml",
-        ".github/workflows/external-python-benchmark.yml",
-        "cobol2py.py",
-        "docs/EXTERNAL_BENCHMARK_RECOVERY_PLAN.md",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": true
     },
     {
       "seed": 23,
       "branch": "experiment-failure-seed/23-runtime-call-by-reference",
       "status": "diverged",
       "ahead_by": 25,
-      "behind_by": 261,
+      "behind_by": 262,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": true,
-      "changed_paths": [
-        ".benchmark-candidates/pr-56.json",
-        ".github/workflows/external-cobol-corpus.yml",
-        "cobol2py.py",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": true
     },
     {
       "seed": 24,
       "branch": "experiment-failure-seed/24-runtime-call-by-content",
       "status": "diverged",
       "ahead_by": 24,
-      "behind_by": 258,
+      "behind_by": 259,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": true,
-      "changed_paths": [
-        ".benchmark-candidates/pr-57.json",
-        ".github/workflows/differential-benchmark.yml",
-        ".github/workflows/external-cobol-corpus.yml",
-        ".github/workflows/external-cobol-smoke.yml",
-        ".github/workflows/external-python-benchmark.yml",
-        ".github/workflows/multilang-benchmark.yml",
-        ".github/workflows/seven-candidate-tournament.yml",
-        "cobol2py.py",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": true
     },
     {
       "seed": 25,
       "branch": "experiment-failure-seed/25-runtime-linkage-using",
       "status": "diverged",
       "ahead_by": 24,
-      "behind_by": 258,
+      "behind_by": 259,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": true,
-      "changed_paths": [
-        ".benchmark-candidates/pr-58.json",
-        ".github/workflows/differential-benchmark.yml",
-        ".github/workflows/external-cobol-corpus.yml",
-        ".github/workflows/external-cobol-smoke.yml",
-        ".github/workflows/external-python-benchmark.yml",
-        ".github/workflows/multilang-benchmark.yml",
-        ".github/workflows/seven-candidate-tournament.yml",
-        "cobol2py.py",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": true
     },
     {
       "seed": 26,
       "branch": "experiment-failure-seed/26-runtime-file-open-modes",
       "status": "diverged",
       "ahead_by": 25,
-      "behind_by": 258,
+      "behind_by": 259,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": true,
-      "changed_paths": [
-        ".benchmark-candidates/pr-59.json",
-        ".github/workflows/differential-benchmark.yml",
-        ".github/workflows/external-cobol-corpus.yml",
-        ".github/workflows/external-cobol-smoke.yml",
-        ".github/workflows/external-python-benchmark.yml",
-        ".github/workflows/multilang-benchmark.yml",
-        ".github/workflows/seven-candidate-tournament.yml",
-        "cobol2py.py",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": true
     },
     {
       "seed": 27,
       "branch": "experiment-failure-seed/27-runtime-file-read-write",
       "status": "diverged",
       "ahead_by": 20,
-      "behind_by": 258,
+      "behind_by": 259,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": true,
-      "changed_paths": [
-        ".benchmark-candidates/pr-60.json",
-        ".github/workflows/external-cobol-corpus.yml",
-        ".github/workflows/external-python-benchmark.yml",
-        ".github/workflows/multilang-benchmark.yml",
-        "cobol2py.py",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": true
     },
     {
       "seed": 28,
       "branch": "experiment-failure-seed/28-runtime-perform-control-flow",
       "status": "diverged",
       "ahead_by": 19,
-      "behind_by": 258,
+      "behind_by": 259,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": true,
-      "changed_paths": [
-        ".benchmark-candidates/pr-62.json",
-        ".github/workflows/external-cobol-corpus.yml",
-        ".github/workflows/external-python-benchmark.yml",
-        ".github/workflows/seven-candidate-tournament.yml",
-        "cobol2py.py",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": true
     },
     {
       "seed": 29,
       "branch": "experiment-failure-seed/29-runtime-go-to-depending",
       "status": "diverged",
       "ahead_by": 20,
-      "behind_by": 258,
+      "behind_by": 259,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": true,
-      "changed_paths": [
-        ".benchmark-candidates/pr-63.json",
-        ".github/workflows/external-cobol-corpus.yml",
-        ".github/workflows/external-python-benchmark.yml",
-        ".github/workflows/seven-candidate-tournament.yml",
-        "cobol2py.py",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": true
     },
     {
       "seed": 30,
       "branch": "experiment-failure-seed/30-runtime-data-scope-initialization",
       "status": "diverged",
       "ahead_by": 30,
-      "behind_by": 252,
+      "behind_by": 253,
       "translator_change": true,
       "regression_test_change": true,
-      "workflow_noise": true,
-      "changed_paths": [
-        ".benchmark-candidates/pr-74.json",
-        ".github/workflows/external-python-benchmark.yml",
-        "cobol2py.py",
-        "tests/test_cobol2py.py",
-        "web/index.html"
-      ]
+      "workflow_noise": true
     }
   ],
   "previous_paired_pr_tournament": {
