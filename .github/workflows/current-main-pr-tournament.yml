@@ -65,7 +65,9 @@ jobs:
           if [ -n "$REQUESTED_PRS" ]; then
             IFS=',' read -ra prs <<< "$REQUESTED_PRS"
           else
-            mapfile -t prs < <(gh api --paginate "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" --jq '.[].number')
+            # Scheduled/push runs use only the curated manifest queue. Do not sweep
+            # every open PR: stale 16/30-seed cohort PRs would duplicate old hypotheses.
+            mapfile -t prs < <(python -c 'import json; from pathlib import Path; m=json.loads(Path("experiments/failure-tournament/manifest.json").read_text()); q=m.get("current_main_pr_tournament",{}).get("candidate_queue",[]); [print(x.get("pr") if isinstance(x,dict) else x) for x in q]')
           fi
           for raw in "${prs[@]}"; do
             pr=$(echo "$raw" | tr -d '[:space:]')
