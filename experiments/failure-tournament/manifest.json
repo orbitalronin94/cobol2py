@@ -2578,7 +2578,7 @@
   },
   "current_main_pr_tournament": {
     "workflow": ".github/workflows/current-main-pr-tournament.yml",
-    "workflow_sha": "92fab14a99d73b1a75a35e19d9fb2c90ada0225e",
+    "workflow_sha": "627197f0fa18d25b582b59431501b68e0cab06df",
     "schedule_utc": "30 11 * * *",
     "default_candidate_prs": [],
     "next_expected_run_utc": "2026-11-20T11:30:00Z",
