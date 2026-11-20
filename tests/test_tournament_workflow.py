@@ -87,7 +87,8 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
         self.assertIn(".github/workflows/current-main-pr-tournament.yml", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn('cron: "30 11 * * *"', CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn("mapfile -t prs", CURRENT_MAIN_PR_WORKFLOW)
-        self.assertIn("pulls?state=open&per_page=100", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertIn("candidate_queue", CURRENT_MAIN_PR_WORKFLOW)
+        self.assertNotIn("pulls?state=open&per_page=100", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn("workflow_dispatch:", CURRENT_MAIN_PR_WORKFLOW)
 
     def test_30_seed_tournament_scores_against_frozen_main_oracle(self):
