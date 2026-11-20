@@ -252,7 +252,9 @@
         "failed": 237
       }
     ],
-    "note": "Fresh exact-SHA measurement: run 44730370716 executed all 500 X-COBOL v2 cases on main 399b55e77d47cdd15367a9b17c3b116a962a39c7; archive MD5 verified and all 500 GnuCOBOL stdout SHA-256/length/return-code fingerprints are present."
+    "note": "Fresh exact-SHA measurement: run 44730370716 executed all 500 X-COBOL v2 cases on main 399b55e77d47cdd15367a9b17c3b116a962a39c7; archive MD5 verified and all 500 GnuCOBOL stdout SHA-256/length/return-code fingerprints are present.",
+    "main_sha_at_audit": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
+    "main_head_at_audit": "399b55e77d47cdd15367a9b17c3b116a962a39c7"
   },
   "last_tournament_attempt": {
     "run": 42272058313,
@@ -1448,7 +1450,9 @@
         "failed": 237
       }
     ],
-    "note": "Fresh exact-SHA measurement: run 44730370716 executed all 500 X-COBOL v2 cases on main 399b55e77d47cdd15367a9b17c3b116a962a39c7; archive MD5 verified and all 500 GnuCOBOL stdout SHA-256/length/return-code fingerprints are present."
+    "note": "Fresh exact-SHA measurement: run 44730370716 executed all 500 X-COBOL v2 cases on main 399b55e77d47cdd15367a9b17c3b116a962a39c7; archive MD5 verified and all 500 GnuCOBOL stdout SHA-256/length/return-code fingerprints are present.",
+    "main_sha_at_audit": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
+    "main_head_at_audit": "399b55e77d47cdd15367a9b17c3b116a962a39c7"
   },
   "additional_candidate_evaluations": {
     "inspect_characters": {
