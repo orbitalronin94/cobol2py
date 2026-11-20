@@ -4,12 +4,19 @@
 
 ## Baseline vigente de main
 
-- **261/500 (52,2%)** — [run 42844666181](https://github.com/orbitalronin94/cobol2py/actions/runs/42844666181).
-- SHA medido: \`17f219460fb7a3e75bd462cd3be73faa17a1a64b\`. Main actual: \`4d89d51b658c2f721afe0affdeb1a5ad61c9b65f\` tras mergear #366; el blob del traductor sigue idéntico (\`b2b7605281141cb7c9df50611dfce18b52322c2c\`), por lo que 261/500 continúa siendo el baseline de código.
-- Corpus X-COBOL v2, MD5 esperado y verificado \`cbd974caed72b0836777dc2305928ed3\`.
-- Comparación exacta: bytes de stdout y código de retorno del proceso frente a GnuCOBOL.
-- Cuatro shards completos de 125 casos (\`skip=500,625,750,875\`), 500 IDs únicos, sin duplicados. Recuento: 63 + 54 + 71 + 73 = 261.
-- El artifact histórico 42844666181 no contiene fingerprints del oráculo en 28 filas donde el traductor termina en timeout/error de sintaxis: el runner ejecuta GnuCOBOL primero, pero antes solo copiaba hash/longitud/código de retorno cuando la traducción llegaba a ejecutar Python. La rama #368 corrige esto y exige fingerprints completos para los 500 IDs; el baseline debe regenerarse desde main después de integrar el arreglo.
+- **263/500 (52,6%)** — [run 44599918790](https://github.com/orbitalronin94/cobol2py/actions/runs/44599918790), ejecutado sobre el SHA exacto `4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133`.
+- Traductor: `4a7562627d161580470f1b0522cda0b094f635b0`; 500 IDs únicos, 500 fingerprints completos de GnuCOBOL.
+- Corpus X-COBOL v2, MD5 esperado y verificado `cbd974caed72b0836777dc2305928ed3`.
+- `skip=500`, `target=500`, comparación exacta de stdout bytes y código de retorno.
+- Un único reporte completo de 500 casos; 263 aprobados y 237 fallidos.
+
+## Última candidata emparejada — PR #371
+
+- [PR #371](https://github.com/orbitalronin94/cobol2py/pull/371), lectura de registros `ORGANIZATION SEQUENTIAL` de ancho fijo; head `1a9424f6b59d18ec93b9dc1b38a32afde8f00dbc`, merge ref evaluada `ebba3a79baf6d03f7d5fe5c16282f723ac3f6005`.
+- [Torneo emparejado 44599918790](https://github.com/orbitalronin94/cobol2py/actions/runs/44599918790): main **263/500**, candidata **262/500**, 500 IDs comparables.
+- Ganancias: ninguna. Regresión: `exec84-2-03eae98697`.
+- Deriva diagnóstica del oráculo en nueve IDs: `cob-simpleinventory-6af451140a`, `collatz-6e335e6eda`, `date1-f31ce2734d`, `intrdate-0517c3d81c`, `pullydis-9e45af6c84`, `randombingo-e50339cc12`, `randomnumbers-d8fc7ee85b`, `rock-paper-scissors-ad6321acf1`, `rolldice-08e3de1a0e`.
+- La ejecución anterior [44527688670](https://github.com/orbitalronin94/cobol2py/actions/runs/44527688670) mostró una ganancia aparente de timeout que no se reprodujo en la nueva comparación. PR #371 cerrada sin merge; no hay ganador.
 
 ## Récord histórico separado
 
@@ -44,16 +51,18 @@ La regresión de #359 es \`exec84-2-03eae98697\`. #362 conserva el mismo conjunt
 
 El intento más reciente, [run 42844557468](https://github.com/orbitalronin94/cobol2py/actions/runs/42844557468), falló en descubrimiento: el manifiesto esperaba 15 PRs no fusionadas y encontró solo 10. No se ejecutaron candidatos ni se generaron artifacts de torneo. Hay resultados históricos de candidatos individuales en PRs previas, pero no constituyen una comparación pareada vigente; no se vuelve a lanzar esa cohorte sin reconciliar sus PRs y SHA.
 
-## Auditoría de las 30 semillas
+## Auditoría de las 30 semillas — 20 de noviembre de 2026
 
-- [PR #349](https://github.com/orbitalronin94/cobol2py/pull/349) integró el arnés de torneo. [PR #366](https://github.com/orbitalronin94/cobol2py/pull/366) ya está mergeada en main ([commit 4d89d51](https://github.com/orbitalronin94/cobol2py/commit/4d89d51b658c2f721afe0affdeb1a5ad61c9b65f)): verifica SHA únicos, identidad real del checkout, tests y evidencia completa por caso, y rechaza artifacts parciales.
-- Las 30 ramas existen, pero las 30 están divergidas del main actual `4d89d51b658c2f721afe0affdeb1a5ad61c9b65f`. La semilla 10 también está divergida: su rama reconstruida conserva como merge-base el SHA anterior `17f219460fb7a3e75bd462cd3be73faa17a1a64b`.
-- Las semillas 11–15 carecen de cambios de traductor y tests/reproducers. Las demás necesitan reconstrucción aislada desde el main actual y auditoría de que el diff implementa la hipótesis declarada.
-- El workflow continúa manual (`workflow_dispatch`); no se ha lanzado un torneo de 30 semillas. La integración disponible permite inspeccionar Actions, pero no despachar el workflow directamente.
-- La comparación por estado de pase no basta: el oráculo GnuCOBOL también puede variar entre ejecuciones. [PR #368](https://github.com/orbitalronin94/cobol2py/pull/368) exige `reference_stdout_sha256`, longitud de stdout y `reference_returncode` por cada ID; cualquier deriva invalida la elegibilidad aunque la puntuación bruta suba. Además, el workflow de main volverá a medir cuando cambie el runner o su imagen Docker.
+- Las 30 referencias declaradas existen y las 30 comparaciones contra main `4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133` están divergidas; ninguna es ahead-only.
+- Semillas 1–10: traductor y tests aislados, pero entre 17 y 213 commits por detrás.
+- Semillas 11–15: solo cambios de workflow/documentación; sin implementación del traductor ni tests/reproducer.
+- Semillas 16–30: cambios de traductor/tests mezclados con workflows, benchmarks o documentación; entre 253 y 593 commits por detrás.
+- El workflow [failure-directed-30-seed-tournament.yml](https://github.com/orbitalronin94/cobol2py/blob/main/.github/workflows/failure-directed-30-seed-tournament.yml) sigue siendo manual (`workflow_dispatch`) y bloquea mientras `readiness.status != ready`. No se ha iniciado ningún torneo de 30 semillas.
+- La discovery vuelve a comprobar 30 SHA únicos, ramas ahead-only, tests/reproducers, aislamiento de archivos y artifacts completos antes de ejecutar.
 
-No se ha promovido ningún candidato de la cohorte de 30. La preparación sigue **bloqueada** hasta reconstruir las 30 ramas y ejecutar suite + holdout completo con oráculo estable.
+La cohorte antigua de 16 candidatos no se repite: sus artifacts ya cubren UNSTRING TALLYING IN, WRITE FROM literal, READ después de EOF, OPEN mixto, INSPECT REPLACING, reference modification aritmética y STRING ZEROES. Sus resultados históricos no son ganadores y no justifican volver a gastar 500 casos en las mismas hipótesis.
 
 ## Siguiente hipótesis
 
-Separar la codificación del fuente COBOL de la codificación de stdout. El caso `cbl0701v01statementinspect-31f6d501b1` contiene un literal con byte CP850 `0xDA`; el lector UTF-8 actual lo convierte en U+FFFD y Python emite tres bytes UTF-8 en lugar del byte original. Crear un candidato aislado de detección/preservación de codificación (sin mezclarlo con INSPECT), añadir un reproducer binario CP850 y exigir el holdout completo con oráculo estable.
+Reabrir de forma aislada el caso `cbl0701v01statementinspect-31f6d501b1`: GnuCOBOL emite el byte CP850 `0xDA`, mientras el resultado Python observado fue `EF BF BD`. Main ya contiene `decode_cobol_source` y `apply_cobol_output_encoding`; por tanto, antes de añadir otro parche hay que inspeccionar el fuente binario exacto, el encoding detectado y el flujo de stdout del proceso generado. El nuevo reproducer debe comparar bytes, no texto Unicode. No crear una candidata hasta localizar el punto exacto de la conversión.
+
