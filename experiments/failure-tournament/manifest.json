@@ -334,19 +334,22 @@
         "decision": "closed_unmerged_inconclusive_oracle_drift"
       }
     ],
-    "latest_main_holdout_run": 44308154079,
+    "latest_main_holdout_run": 44599918790,
     "candidate_branch_audit": {
-      "compared_against_main": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
+      "compared_against_main": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
       "all_30_exist": true,
       "all_30_diverged": true,
       "ahead_only_candidates": 0,
       "seed_11_to_15_change_summary": "workflow/documentation only; no cobol2py.py, web/index.html, ronin/ or tests changes",
       "latest_comparison": {
-        "compared_against_main": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
+        "compared_against_main": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
+        "current_main_sha": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
         "total_manifest_branches": 30,
         "existing_branches": 30,
         "missing_branches": [],
-        "distinct_branch_heads": 30,
+        "all_30_exist": true,
+        "all_30_diverged": true,
+        "distinct_branch_heads": null,
         "ahead_only": 0,
         "diverged": 30,
         "behind_only": 0,
@@ -378,1027 +381,915 @@
         "extra_unmanifested_refs": [
           "experiment-failure-seed/10-syntax-evaluate-also"
         ],
-        "note": "Fresh 30-way compare against main 7b55ce1d5aadc4465549c65e04d2f15bf45b25b9: all 30 manifest refs exist and have distinct heads; all 30 are diverged and none is ahead-only. Seeds 1-10 contain isolated translator/tests but are 16-212 commits behind. Seeds 11-15 contain no translator or tests. Seeds 16-30 contain translator/tests but also unrelated workflow, benchmark or documentation changes."
+        "branch_comparisons": [
+          {
+            "seed": 1,
+            "branch": "experiment-failure-seed/01-syntax-condition-operators",
+            "status": "diverged",
+            "ahead_by": 4,
+            "behind_by": 213,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": false
+          },
+          {
+            "seed": 2,
+            "branch": "experiment-failure-seed/02-syntax-abbreviated-relations",
+            "status": "diverged",
+            "ahead_by": 3,
+            "behind_by": 209,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": false
+          },
+          {
+            "seed": 3,
+            "branch": "experiment-failure-seed/03-syntax-multidimensional-subscripts",
+            "status": "diverged",
+            "ahead_by": 3,
+            "behind_by": 209,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": false
+          },
+          {
+            "seed": 4,
+            "branch": "experiment-failure-seed/04-syntax-reference-modification",
+            "status": "diverged",
+            "ahead_by": 3,
+            "behind_by": 209,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": false
+          },
+          {
+            "seed": 5,
+            "branch": "experiment-failure-seed/05-syntax-inspect-before-after",
+            "status": "diverged",
+            "ahead_by": 3,
+            "behind_by": 213,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": false
+          },
+          {
+            "seed": 6,
+            "branch": "experiment-failure-seed/06-syntax-inspect-replacing",
+            "status": "diverged",
+            "ahead_by": 5,
+            "behind_by": 209,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": false
+          },
+          {
+            "seed": 7,
+            "branch": "experiment-failure-seed/07-syntax-string-delimited",
+            "status": "diverged",
+            "ahead_by": 3,
+            "behind_by": 209,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": false
+          },
+          {
+            "seed": 8,
+            "branch": "experiment-failure-seed/08-syntax-unstring-multiple-delimiters",
+            "status": "diverged",
+            "ahead_by": 4,
+            "behind_by": 213,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": false
+          },
+          {
+            "seed": 9,
+            "branch": "experiment-failure-seed/09-syntax-perform-inline",
+            "status": "diverged",
+            "ahead_by": 4,
+            "behind_by": 209,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": false
+          },
+          {
+            "seed": 10,
+            "branch": "experiment-failure-seed/10-syntax-evaluate-also-rebuilt",
+            "status": "diverged",
+            "ahead_by": 3,
+            "behind_by": 17,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": false
+          },
+          {
+            "seed": 11,
+            "branch": "experiment-failure-seed/11-runtime-initialize-replacing",
+            "status": "diverged",
+            "ahead_by": 3,
+            "behind_by": 690,
+            "translator_change": false,
+            "regression_test_change": false,
+            "workflow_noise": true
+          },
+          {
+            "seed": 12,
+            "branch": "experiment-failure-seed/12-runtime-initialize-occurs",
+            "status": "diverged",
+            "ahead_by": 2,
+            "behind_by": 602,
+            "translator_change": false,
+            "regression_test_change": false,
+            "workflow_noise": true
+          },
+          {
+            "seed": 13,
+            "branch": "experiment-failure-seed/13-runtime-filler-storage",
+            "status": "diverged",
+            "ahead_by": 2,
+            "behind_by": 598,
+            "translator_change": false,
+            "regression_test_change": false,
+            "workflow_noise": true
+          },
+          {
+            "seed": 14,
+            "branch": "experiment-failure-seed/14-runtime-redefines-overlay",
+            "status": "diverged",
+            "ahead_by": 2,
+            "behind_by": 597,
+            "translator_change": false,
+            "regression_test_change": false,
+            "workflow_noise": true
+          },
+          {
+            "seed": 15,
+            "branch": "experiment-failure-seed/15-runtime-numeric-move",
+            "status": "diverged",
+            "ahead_by": 2,
+            "behind_by": 595,
+            "translator_change": false,
+            "regression_test_change": false,
+            "workflow_noise": true
+          },
+          {
+            "seed": 16,
+            "branch": "experiment-failure-seed/16-runtime-decimal-arithmetic",
+            "status": "diverged",
+            "ahead_by": 394,
+            "behind_by": 593,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": true
+          },
+          {
+            "seed": 17,
+            "branch": "experiment-failure-seed/17-runtime-rounded-size-error",
+            "status": "diverged",
+            "ahead_by": 66,
+            "behind_by": 543,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": true
+          },
+          {
+            "seed": 18,
+            "branch": "experiment-failure-seed/18-runtime-divide-remainder",
+            "status": "diverged",
+            "ahead_by": 58,
+            "behind_by": 543,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": true
+          },
+          {
+            "seed": 19,
+            "branch": "experiment-failure-seed/19-runtime-table-boundaries",
+            "status": "diverged",
+            "ahead_by": 6,
+            "behind_by": 355,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": true
+          },
+          {
+            "seed": 20,
+            "branch": "experiment-failure-seed/20-runtime-search-all-key",
+            "status": "diverged",
+            "ahead_by": 15,
+            "behind_by": 330,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": true
+          },
+          {
+            "seed": 21,
+            "branch": "experiment-failure-seed/21-runtime-search-serial",
+            "status": "diverged",
+            "ahead_by": 8,
+            "behind_by": 330,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": true
+          },
+          {
+            "seed": 22,
+            "branch": "experiment-failure-seed/22-runtime-call-static",
+            "status": "diverged",
+            "ahead_by": 37,
+            "behind_by": 330,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": true
+          },
+          {
+            "seed": 23,
+            "branch": "experiment-failure-seed/23-runtime-call-by-reference",
+            "status": "diverged",
+            "ahead_by": 25,
+            "behind_by": 262,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": true
+          },
+          {
+            "seed": 24,
+            "branch": "experiment-failure-seed/24-runtime-call-by-content",
+            "status": "diverged",
+            "ahead_by": 24,
+            "behind_by": 259,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": true
+          },
+          {
+            "seed": 25,
+            "branch": "experiment-failure-seed/25-runtime-linkage-using",
+            "status": "diverged",
+            "ahead_by": 24,
+            "behind_by": 259,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": true
+          },
+          {
+            "seed": 26,
+            "branch": "experiment-failure-seed/26-runtime-file-open-modes",
+            "status": "diverged",
+            "ahead_by": 25,
+            "behind_by": 259,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": true
+          },
+          {
+            "seed": 27,
+            "branch": "experiment-failure-seed/27-runtime-file-read-write",
+            "status": "diverged",
+            "ahead_by": 20,
+            "behind_by": 259,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": true
+          },
+          {
+            "seed": 28,
+            "branch": "experiment-failure-seed/28-runtime-perform-control-flow",
+            "status": "diverged",
+            "ahead_by": 19,
+            "behind_by": 259,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": true
+          },
+          {
+            "seed": 29,
+            "branch": "experiment-failure-seed/29-runtime-go-to-depending",
+            "status": "diverged",
+            "ahead_by": 20,
+            "behind_by": 259,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": true
+          },
+          {
+            "seed": 30,
+            "branch": "experiment-failure-seed/30-runtime-data-scope-initialization",
+            "status": "diverged",
+            "ahead_by": 30,
+            "behind_by": 253,
+            "translator_change": true,
+            "regression_test_change": true,
+            "workflow_noise": true
+          }
+        ],
+        "note": "Fresh compare against main 4238c8: all 30 manifest refs were found and every compare status was diverged; none was ahead-only. Seeds 11-15 contain no translator or test changes. Seeds 16-30 contain translator/tests but unrelated workflow, benchmark, manifest or documentation paths. Unique head SHAs are checked again by the dispatch workflow; they were not independently re-enumerated in this audit."
       },
-      "current_main_sha": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
+      "current_main_sha": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
       "branch_comparisons": [
         {
           "seed": 1,
           "branch": "experiment-failure-seed/01-syntax-condition-operators",
           "status": "diverged",
           "ahead_by": 4,
-          "behind_by": 212,
+          "behind_by": 213,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": false,
-          "changed_paths": [
-            "cobol2py.py",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": false
         },
         {
           "seed": 2,
           "branch": "experiment-failure-seed/02-syntax-abbreviated-relations",
           "status": "diverged",
           "ahead_by": 3,
-          "behind_by": 208,
+          "behind_by": 209,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": false,
-          "changed_paths": [
-            "cobol2py.py",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": false
         },
         {
           "seed": 3,
           "branch": "experiment-failure-seed/03-syntax-multidimensional-subscripts",
           "status": "diverged",
           "ahead_by": 3,
-          "behind_by": 208,
+          "behind_by": 209,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": false,
-          "changed_paths": [
-            "cobol2py.py",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": false
         },
         {
           "seed": 4,
           "branch": "experiment-failure-seed/04-syntax-reference-modification",
           "status": "diverged",
           "ahead_by": 3,
-          "behind_by": 208,
+          "behind_by": 209,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": false,
-          "changed_paths": [
-            "cobol2py.py",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": false
         },
         {
           "seed": 5,
           "branch": "experiment-failure-seed/05-syntax-inspect-before-after",
           "status": "diverged",
           "ahead_by": 3,
-          "behind_by": 212,
+          "behind_by": 213,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": false,
-          "changed_paths": [
-            "cobol2py.py",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": false
         },
         {
           "seed": 6,
           "branch": "experiment-failure-seed/06-syntax-inspect-replacing",
           "status": "diverged",
           "ahead_by": 5,
-          "behind_by": 208,
+          "behind_by": 209,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": false,
-          "changed_paths": [
-            "cobol2py.py",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": false
         },
         {
           "seed": 7,
           "branch": "experiment-failure-seed/07-syntax-string-delimited",
           "status": "diverged",
           "ahead_by": 3,
-          "behind_by": 208,
+          "behind_by": 209,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": false,
-          "changed_paths": [
-            "cobol2py.py",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": false
         },
         {
           "seed": 8,
           "branch": "experiment-failure-seed/08-syntax-unstring-multiple-delimiters",
           "status": "diverged",
           "ahead_by": 4,
-          "behind_by": 212,
+          "behind_by": 213,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": false,
-          "changed_paths": [
-            "cobol2py.py",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": false
         },
         {
           "seed": 9,
           "branch": "experiment-failure-seed/09-syntax-perform-inline",
           "status": "diverged",
           "ahead_by": 4,
-          "behind_by": 208,
+          "behind_by": 209,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": false,
-          "changed_paths": [
-            "cobol2py.py",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": false
         },
         {
           "seed": 10,
           "branch": "experiment-failure-seed/10-syntax-evaluate-also-rebuilt",
           "status": "diverged",
           "ahead_by": 3,
-          "behind_by": 16,
+          "behind_by": 17,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": false,
-          "changed_paths": [
-            "cobol2py.py",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": false
         },
         {
           "seed": 11,
           "branch": "experiment-failure-seed/11-runtime-initialize-replacing",
           "status": "diverged",
           "ahead_by": 3,
-          "behind_by": 689,
+          "behind_by": 690,
           "translator_change": false,
           "regression_test_change": false,
-          "workflow_noise": true,
-          "changed_paths": [
-            ".github/workflows/external-cobol-corpus.yml",
-            "README.md",
-            "docs/roadmap-two-weeks.md"
-          ]
+          "workflow_noise": true
         },
         {
           "seed": 12,
           "branch": "experiment-failure-seed/12-runtime-initialize-occurs",
           "status": "diverged",
           "ahead_by": 2,
-          "behind_by": 601,
+          "behind_by": 602,
           "translator_change": false,
           "regression_test_change": false,
-          "workflow_noise": true,
-          "changed_paths": [
-            ".github/workflows/external-cobol-corpus.yml",
-            "docs/ci-validation-probe.md"
-          ]
+          "workflow_noise": true
         },
         {
           "seed": 13,
           "branch": "experiment-failure-seed/13-runtime-filler-storage",
           "status": "diverged",
           "ahead_by": 2,
-          "behind_by": 597,
+          "behind_by": 598,
           "translator_change": false,
           "regression_test_change": false,
-          "workflow_noise": true,
-          "changed_paths": [
-            ".github/workflows/external-cobol-corpus.yml",
-            "docs/ci-validation-probe.md"
-          ]
+          "workflow_noise": true
         },
         {
           "seed": 14,
           "branch": "experiment-failure-seed/14-runtime-redefines-overlay",
           "status": "diverged",
           "ahead_by": 2,
-          "behind_by": 596,
+          "behind_by": 597,
           "translator_change": false,
           "regression_test_change": false,
-          "workflow_noise": true,
-          "changed_paths": [
-            ".github/workflows/external-cobol-corpus.yml",
-            "docs/ci-validation-probe.md"
-          ]
+          "workflow_noise": true
         },
         {
           "seed": 15,
           "branch": "experiment-failure-seed/15-runtime-numeric-move",
           "status": "diverged",
           "ahead_by": 2,
-          "behind_by": 594,
+          "behind_by": 595,
           "translator_change": false,
           "regression_test_change": false,
-          "workflow_noise": true,
-          "changed_paths": [
-            ".github/workflows/external-cobol-corpus.yml",
-            "docs/ci-validation-probe.md"
-          ]
+          "workflow_noise": true
         },
         {
           "seed": 16,
           "branch": "experiment-failure-seed/16-runtime-decimal-arithmetic",
           "status": "diverged",
           "ahead_by": 394,
-          "behind_by": 592,
+          "behind_by": 593,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": true,
-          "changed_paths": [
-            ".github/workflows/external-cobol-corpus.yml",
-            ".github/workflows/tests.yml",
-            "README.md",
-            "benchmarks/Dockerfile.external",
-            "benchmarks/EXTERNAL_CORPUS.md",
-            "benchmarks/run_external_corpus.py",
-            "cobol2py.py",
-            "docs/compatibility.md",
-            "docs/pilot-diagnostics-baseline.md",
-            "docs/roadmap-two-weeks.md",
-            "tests/test_benchmark_manifest.py",
-            "tests/test_cli.py",
-            "tests/test_cobol2py.py",
-            "tests/test_external_corpus_manifest.py",
-            "web/index.html"
-          ]
+          "workflow_noise": true
         },
         {
           "seed": 17,
           "branch": "experiment-failure-seed/17-runtime-rounded-size-error",
           "status": "diverged",
           "ahead_by": 66,
-          "behind_by": 542,
+          "behind_by": 543,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": true,
-          "changed_paths": [
-            ".github/workflows/external-cobol-corpus.yml",
-            "cobol2py.py",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": true
         },
         {
           "seed": 18,
           "branch": "experiment-failure-seed/18-runtime-divide-remainder",
           "status": "diverged",
           "ahead_by": 58,
-          "behind_by": 542,
+          "behind_by": 543,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": true,
-          "changed_paths": [
-            ".github/workflows/external-cobol-corpus.yml",
-            "cobol2py.py",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": true
         },
         {
           "seed": 19,
           "branch": "experiment-failure-seed/19-runtime-table-boundaries",
           "status": "diverged",
           "ahead_by": 6,
-          "behind_by": 354,
+          "behind_by": 355,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": true,
-          "changed_paths": [
-            ".github/workflows/external-cobol-corpus.yml",
-            "cobol2py.py",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": true
         },
         {
           "seed": 20,
           "branch": "experiment-failure-seed/20-runtime-search-all-key",
           "status": "diverged",
           "ahead_by": 15,
-          "behind_by": 329,
+          "behind_by": 330,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": true,
-          "changed_paths": [
-            ".benchmark-candidates/pr-44.json",
-            ".github/workflows/external-cobol-corpus.yml",
-            ".github/workflows/external-python-benchmark.yml",
-            "cobol2py.py",
-            "docs/EXTERNAL_BENCHMARK_RECOVERY_PLAN.md",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": true
         },
         {
           "seed": 21,
           "branch": "experiment-failure-seed/21-runtime-search-serial",
           "status": "diverged",
           "ahead_by": 8,
-          "behind_by": 329,
+          "behind_by": 330,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": true,
-          "changed_paths": [
-            ".github/workflows/external-cobol-corpus.yml",
-            "cobol2py.py",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": true
         },
         {
           "seed": 22,
           "branch": "experiment-failure-seed/22-runtime-call-static",
           "status": "diverged",
           "ahead_by": 37,
-          "behind_by": 329,
+          "behind_by": 330,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": true,
-          "changed_paths": [
-            ".benchmark-candidates/pr-47.json",
-            ".github/workflows/external-cobol-corpus.yml",
-            ".github/workflows/external-python-benchmark.yml",
-            "cobol2py.py",
-            "docs/EXTERNAL_BENCHMARK_RECOVERY_PLAN.md",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": true
         },
         {
           "seed": 23,
           "branch": "experiment-failure-seed/23-runtime-call-by-reference",
           "status": "diverged",
           "ahead_by": 25,
-          "behind_by": 261,
+          "behind_by": 262,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": true,
-          "changed_paths": [
-            ".benchmark-candidates/pr-56.json",
-            ".github/workflows/external-cobol-corpus.yml",
-            "cobol2py.py",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": true
         },
         {
           "seed": 24,
           "branch": "experiment-failure-seed/24-runtime-call-by-content",
           "status": "diverged",
           "ahead_by": 24,
-          "behind_by": 258,
+          "behind_by": 259,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": true,
-          "changed_paths": [
-            ".benchmark-candidates/pr-57.json",
-            ".github/workflows/differential-benchmark.yml",
-            ".github/workflows/external-cobol-corpus.yml",
-            ".github/workflows/external-cobol-smoke.yml",
-            ".github/workflows/external-python-benchmark.yml",
-            ".github/workflows/multilang-benchmark.yml",
-            ".github/workflows/seven-candidate-tournament.yml",
-            "cobol2py.py",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": true
         },
         {
           "seed": 25,
           "branch": "experiment-failure-seed/25-runtime-linkage-using",
           "status": "diverged",
           "ahead_by": 24,
-          "behind_by": 258,
+          "behind_by": 259,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": true,
-          "changed_paths": [
-            ".benchmark-candidates/pr-58.json",
-            ".github/workflows/differential-benchmark.yml",
-            ".github/workflows/external-cobol-corpus.yml",
-            ".github/workflows/external-cobol-smoke.yml",
-            ".github/workflows/external-python-benchmark.yml",
-            ".github/workflows/multilang-benchmark.yml",
-            ".github/workflows/seven-candidate-tournament.yml",
-            "cobol2py.py",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": true
         },
         {
           "seed": 26,
           "branch": "experiment-failure-seed/26-runtime-file-open-modes",
           "status": "diverged",
           "ahead_by": 25,
-          "behind_by": 258,
+          "behind_by": 259,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": true,
-          "changed_paths": [
-            ".benchmark-candidates/pr-59.json",
-            ".github/workflows/differential-benchmark.yml",
-            ".github/workflows/external-cobol-corpus.yml",
-            ".github/workflows/external-cobol-smoke.yml",
-            ".github/workflows/external-python-benchmark.yml",
-            ".github/workflows/multilang-benchmark.yml",
-            ".github/workflows/seven-candidate-tournament.yml",
-            "cobol2py.py",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": true
         },
         {
           "seed": 27,
           "branch": "experiment-failure-seed/27-runtime-file-read-write",
           "status": "diverged",
           "ahead_by": 20,
-          "behind_by": 258,
+          "behind_by": 259,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": true,
-          "changed_paths": [
-            ".benchmark-candidates/pr-60.json",
-            ".github/workflows/external-cobol-corpus.yml",
-            ".github/workflows/external-python-benchmark.yml",
-            ".github/workflows/multilang-benchmark.yml",
-            "cobol2py.py",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": true
         },
         {
           "seed": 28,
           "branch": "experiment-failure-seed/28-runtime-perform-control-flow",
           "status": "diverged",
           "ahead_by": 19,
-          "behind_by": 258,
+          "behind_by": 259,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": true,
-          "changed_paths": [
-            ".benchmark-candidates/pr-62.json",
-            ".github/workflows/external-cobol-corpus.yml",
-            ".github/workflows/external-python-benchmark.yml",
-            ".github/workflows/seven-candidate-tournament.yml",
-            "cobol2py.py",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": true
         },
         {
           "seed": 29,
           "branch": "experiment-failure-seed/29-runtime-go-to-depending",
           "status": "diverged",
           "ahead_by": 20,
-          "behind_by": 258,
+          "behind_by": 259,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": true,
-          "changed_paths": [
-            ".benchmark-candidates/pr-63.json",
-            ".github/workflows/external-cobol-corpus.yml",
-            ".github/workflows/external-python-benchmark.yml",
-            ".github/workflows/seven-candidate-tournament.yml",
-            "cobol2py.py",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": true
         },
         {
           "seed": 30,
           "branch": "experiment-failure-seed/30-runtime-data-scope-initialization",
           "status": "diverged",
           "ahead_by": 30,
-          "behind_by": 252,
+          "behind_by": 253,
           "translator_change": true,
           "regression_test_change": true,
-          "workflow_noise": true,
-          "changed_paths": [
-            ".benchmark-candidates/pr-74.json",
-            ".github/workflows/external-python-benchmark.yml",
-            "cobol2py.py",
-            "tests/test_cobol2py.py",
-            "web/index.html"
-          ]
+          "workflow_noise": true
         }
       ]
     },
-    "current_main_sha": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
+    "current_main_sha": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
     "branch_comparisons": [
       {
         "seed": 1,
         "branch": "experiment-failure-seed/01-syntax-condition-operators",
         "status": "diverged",
         "ahead_by": 4,
-        "behind_by": 211,
+        "behind_by": 213,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false,
-        "changed_paths": [
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": false
       },
       {
         "seed": 2,
         "branch": "experiment-failure-seed/02-syntax-abbreviated-relations",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 207,
+        "behind_by": 209,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false,
-        "changed_paths": [
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": false
       },
       {
         "seed": 3,
         "branch": "experiment-failure-seed/03-syntax-multidimensional-subscripts",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 207,
+        "behind_by": 209,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false,
-        "changed_paths": [
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": false
       },
       {
         "seed": 4,
         "branch": "experiment-failure-seed/04-syntax-reference-modification",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 207,
+        "behind_by": 209,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false,
-        "changed_paths": [
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": false
       },
       {
         "seed": 5,
         "branch": "experiment-failure-seed/05-syntax-inspect-before-after",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 211,
+        "behind_by": 213,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false,
-        "changed_paths": [
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": false
       },
       {
         "seed": 6,
         "branch": "experiment-failure-seed/06-syntax-inspect-replacing",
         "status": "diverged",
         "ahead_by": 5,
-        "behind_by": 207,
+        "behind_by": 209,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false,
-        "changed_paths": [
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": false
       },
       {
         "seed": 7,
         "branch": "experiment-failure-seed/07-syntax-string-delimited",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 207,
+        "behind_by": 209,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false,
-        "changed_paths": [
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": false
       },
       {
         "seed": 8,
         "branch": "experiment-failure-seed/08-syntax-unstring-multiple-delimiters",
         "status": "diverged",
         "ahead_by": 4,
-        "behind_by": 211,
+        "behind_by": 213,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false,
-        "changed_paths": [
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": false
       },
       {
         "seed": 9,
         "branch": "experiment-failure-seed/09-syntax-perform-inline",
         "status": "diverged",
         "ahead_by": 4,
-        "behind_by": 207,
+        "behind_by": 209,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false,
-        "changed_paths": [
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": false
       },
       {
         "seed": 10,
         "branch": "experiment-failure-seed/10-syntax-evaluate-also-rebuilt",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 15,
+        "behind_by": 17,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false,
-        "changed_paths": [
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": false
       },
       {
         "seed": 11,
         "branch": "experiment-failure-seed/11-runtime-initialize-replacing",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 688,
+        "behind_by": 690,
         "translator_change": false,
         "regression_test_change": false,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".github/workflows/external-cobol-corpus.yml",
-          "README.md",
-          "docs/roadmap-two-weeks.md"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 12,
         "branch": "experiment-failure-seed/12-runtime-initialize-occurs",
         "status": "diverged",
         "ahead_by": 2,
-        "behind_by": 600,
+        "behind_by": 602,
         "translator_change": false,
         "regression_test_change": false,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".github/workflows/external-cobol-corpus.yml",
-          "docs/ci-validation-probe.md"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 13,
         "branch": "experiment-failure-seed/13-runtime-filler-storage",
         "status": "diverged",
         "ahead_by": 2,
-        "behind_by": 596,
+        "behind_by": 598,
         "translator_change": false,
         "regression_test_change": false,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".github/workflows/external-cobol-corpus.yml",
-          "docs/ci-validation-probe.md"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 14,
         "branch": "experiment-failure-seed/14-runtime-redefines-overlay",
         "status": "diverged",
         "ahead_by": 2,
-        "behind_by": 595,
+        "behind_by": 597,
         "translator_change": false,
         "regression_test_change": false,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".github/workflows/external-cobol-corpus.yml",
-          "docs/ci-validation-probe.md"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 15,
         "branch": "experiment-failure-seed/15-runtime-numeric-move",
         "status": "diverged",
         "ahead_by": 2,
-        "behind_by": 593,
+        "behind_by": 595,
         "translator_change": false,
         "regression_test_change": false,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".github/workflows/external-cobol-corpus.yml",
-          "docs/ci-validation-probe.md"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 16,
         "branch": "experiment-failure-seed/16-runtime-decimal-arithmetic",
         "status": "diverged",
         "ahead_by": 394,
-        "behind_by": 591,
+        "behind_by": 593,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".github/workflows/external-cobol-corpus.yml",
-          ".github/workflows/tests.yml",
-          "README.md",
-          "benchmarks/Dockerfile.external",
-          "benchmarks/EXTERNAL_CORPUS.md",
-          "benchmarks/run_external_corpus.py",
-          "cobol2py.py",
-          "docs/compatibility.md",
-          "docs/pilot-diagnostics-baseline.md",
-          "docs/roadmap-two-weeks.md",
-          "tests/test_benchmark_manifest.py",
-          "tests/test_cli.py",
-          "tests/test_cobol2py.py",
-          "tests/test_external_corpus_manifest.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 17,
         "branch": "experiment-failure-seed/17-runtime-rounded-size-error",
         "status": "diverged",
         "ahead_by": 66,
-        "behind_by": 541,
+        "behind_by": 543,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".github/workflows/external-cobol-corpus.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 18,
         "branch": "experiment-failure-seed/18-runtime-divide-remainder",
         "status": "diverged",
         "ahead_by": 58,
-        "behind_by": 541,
+        "behind_by": 543,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".github/workflows/external-cobol-corpus.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 19,
         "branch": "experiment-failure-seed/19-runtime-table-boundaries",
         "status": "diverged",
         "ahead_by": 6,
-        "behind_by": 353,
+        "behind_by": 355,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".github/workflows/external-cobol-corpus.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 20,
         "branch": "experiment-failure-seed/20-runtime-search-all-key",
         "status": "diverged",
         "ahead_by": 15,
-        "behind_by": 328,
+        "behind_by": 330,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".benchmark-candidates/pr-44.json",
-          ".github/workflows/external-cobol-corpus.yml",
-          ".github/workflows/external-python-benchmark.yml",
-          "cobol2py.py",
-          "docs/EXTERNAL_BENCHMARK_RECOVERY_PLAN.md",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 21,
         "branch": "experiment-failure-seed/21-runtime-search-serial",
         "status": "diverged",
         "ahead_by": 8,
-        "behind_by": 328,
+        "behind_by": 330,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".github/workflows/external-cobol-corpus.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 22,
         "branch": "experiment-failure-seed/22-runtime-call-static",
         "status": "diverged",
         "ahead_by": 37,
-        "behind_by": 328,
+        "behind_by": 330,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".benchmark-candidates/pr-47.json",
-          ".github/workflows/external-cobol-corpus.yml",
-          ".github/workflows/external-python-benchmark.yml",
-          "cobol2py.py",
-          "docs/EXTERNAL_BENCHMARK_RECOVERY_PLAN.md",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 23,
         "branch": "experiment-failure-seed/23-runtime-call-by-reference",
         "status": "diverged",
         "ahead_by": 25,
-        "behind_by": 260,
+        "behind_by": 262,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".benchmark-candidates/pr-56.json",
-          ".github/workflows/external-cobol-corpus.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 24,
         "branch": "experiment-failure-seed/24-runtime-call-by-content",
         "status": "diverged",
         "ahead_by": 24,
-        "behind_by": 257,
+        "behind_by": 259,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".benchmark-candidates/pr-57.json",
-          ".github/workflows/differential-benchmark.yml",
-          ".github/workflows/external-cobol-corpus.yml",
-          ".github/workflows/external-cobol-smoke.yml",
-          ".github/workflows/external-python-benchmark.yml",
-          ".github/workflows/multilang-benchmark.yml",
-          ".github/workflows/seven-candidate-tournament.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 25,
         "branch": "experiment-failure-seed/25-runtime-linkage-using",
         "status": "diverged",
         "ahead_by": 24,
-        "behind_by": 257,
+        "behind_by": 259,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".benchmark-candidates/pr-58.json",
-          ".github/workflows/differential-benchmark.yml",
-          ".github/workflows/external-cobol-corpus.yml",
-          ".github/workflows/external-cobol-smoke.yml",
-          ".github/workflows/external-python-benchmark.yml",
-          ".github/workflows/multilang-benchmark.yml",
-          ".github/workflows/seven-candidate-tournament.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 26,
         "branch": "experiment-failure-seed/26-runtime-file-open-modes",
         "status": "diverged",
         "ahead_by": 25,
-        "behind_by": 257,
+        "behind_by": 259,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".benchmark-candidates/pr-59.json",
-          ".github/workflows/differential-benchmark.yml",
-          ".github/workflows/external-cobol-corpus.yml",
-          ".github/workflows/external-cobol-smoke.yml",
-          ".github/workflows/external-python-benchmark.yml",
-          ".github/workflows/multilang-benchmark.yml",
-          ".github/workflows/seven-candidate-tournament.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 27,
         "branch": "experiment-failure-seed/27-runtime-file-read-write",
         "status": "diverged",
         "ahead_by": 20,
-        "behind_by": 257,
+        "behind_by": 259,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".benchmark-candidates/pr-60.json",
-          ".github/workflows/external-cobol-corpus.yml",
-          ".github/workflows/external-python-benchmark.yml",
-          ".github/workflows/multilang-benchmark.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 28,
         "branch": "experiment-failure-seed/28-runtime-perform-control-flow",
         "status": "diverged",
         "ahead_by": 19,
-        "behind_by": 257,
+        "behind_by": 259,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".benchmark-candidates/pr-62.json",
-          ".github/workflows/external-cobol-corpus.yml",
-          ".github/workflows/external-python-benchmark.yml",
-          ".github/workflows/seven-candidate-tournament.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 29,
         "branch": "experiment-failure-seed/29-runtime-go-to-depending",
         "status": "diverged",
         "ahead_by": 20,
-        "behind_by": 257,
+        "behind_by": 259,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".benchmark-candidates/pr-63.json",
-          ".github/workflows/external-cobol-corpus.yml",
-          ".github/workflows/external-python-benchmark.yml",
-          ".github/workflows/seven-candidate-tournament.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       },
       {
         "seed": 30,
         "branch": "experiment-failure-seed/30-runtime-data-scope-initialization",
         "status": "diverged",
         "ahead_by": 30,
-        "behind_by": 251,
+        "behind_by": 253,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true,
-        "changed_paths": [
-          ".benchmark-candidates/pr-74.json",
-          ".github/workflows/external-python-benchmark.yml",
-          "cobol2py.py",
-          "tests/test_cobol2py.py",
-          "web/index.html"
-        ]
+        "workflow_noise": true
       }
     ],
     "workflow_isolation_audit": {
@@ -1421,14 +1312,14 @@
       "manifest_branches_expected": 30,
       "manifest_branches_found": 30,
       "search_extra_branch": "experiment-failure-seed/10-syntax-evaluate-also",
-      "latest_full_compare_main_sha": "293fc04c4dc4d825b4063e8b2b121b919de2c018",
-      "current_main_sha": "293fc04c4dc4d825b4063e8b2b121b919de2c018",
+      "latest_full_compare_main_sha": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
+      "current_main_sha": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
       "current_main_full_30_branch_compare_performed": true,
       "last_known_compare": {
         "all_30_exist": true,
         "all_30_diverged": true,
         "missing_branches": 0,
-        "distinct_branch_heads": 30,
+        "distinct_branch_heads": null,
         "ahead_only": 0,
         "diverged": 30,
         "behind_only": 0,
@@ -1456,21 +1347,21 @@
           29,
           30
         ],
-        "note": "Fresh 30-way compare against main 293fc04c4dc4d825b4063e8b2b121b919de2c018: all 30 refs exist and are distinct; all 30 diverged; none is ahead-only. Seeds 11-15 have no translator or tests/reproducer. Seeds 16-30 contain unrelated workflow/benchmark/documentation changes."
+        "note": "Fresh compare against current main: all 30 refs exist and all 30 diverged; none is ahead-only. Head-SHA uniqueness is revalidated by workflow discovery at dispatch and was not independently enumerated in this pass."
       },
-      "note": "All 30 manifest refs were found in the current branch search. The last complete ahead/behind and path-isolation audit was against bba24a11, not 41db26b; no fresh 30-way compare was run against the latter."
+      "note": "All 30 manifest refs were found; each compare against the current main SHA is diverged. The dispatch workflow remains the final authority for distinct head SHAs and ahead-only readiness."
     },
-    "latest_main_baseline_artifact_run": 44297062982,
+    "latest_main_baseline_artifact_run": 44599918790,
     "targeted_candidate_prs": [
       {
-        "pr": 398,
-        "head_sha": "12ac3014966d07148567f69836353097564230b9",
-        "base_sha": "7b55ce1d5aadc4465549c65e04d2f15bf45b25b9",
-        "paired_run": 44519122785,
-        "holdout_run": 44519122937,
-        "unit_suite_run": 44519122825,
-        "smoke_run": 44519122846,
-        "decision": "pending_full_500_casewise_comparison"
+        "pr": 371,
+        "head_sha": "1a9424f6b59d18ec93b9dc1b38a32afde8f00dbc",
+        "base_sha": "4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133",
+        "paired_run": 44599918790,
+        "holdout_run": 44527688650,
+        "unit_suite_run": 44527688883,
+        "smoke_run": 44527688721,
+        "decision": "ineligible_zero_gain_one_regression"
       }
     ]
   },
