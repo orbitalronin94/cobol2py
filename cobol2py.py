@@ -4536,6 +4536,7 @@ def translate_divide_with_size_error(
     stmt: str,
     variables: Optional[dict[str, CobolVar]],
     indent: int,
+    scope_id: int,
 ) -> Optional[list[str]]:
     """Translate DIVIDE INTO ... GIVING with ON/NOT ON SIZE ERROR branches."""
     text = stmt.strip().rstrip(".").strip()
@@ -4557,23 +4558,29 @@ def translate_divide_with_size_error(
 
     dividend, target, remainder, rounded = giving.groups()
     variable_map = variables or {}
+    suffix = f"_{scope_id}"
+    dividend_name = f"_cobol_divide_dividend{suffix}"
+    divisor_name = f"_cobol_divide_divisor{suffix}"
+    quotient_name = f"_cobol_divide_quotient{suffix}"
+    remainder_name = f"_cobol_divide_remainder{suffix}"
+    size_error_name = f"_cobol_divide_size_error{suffix}"
     quotient_expression = (
-        "int((float(_cobol_divide_dividend) / float(_cobol_divide_divisor)) + "
-        "(0.5 if (_cobol_divide_dividend / _cobol_divide_divisor) >= 0 else -0.5))"
+        f"int((float({dividend_name}) / float({divisor_name})) + "
+        f"(0.5 if ({dividend_name} / {divisor_name}) >= 0 else -0.5))"
         if rounded
-        else "int(float(_cobol_divide_dividend) / float(_cobol_divide_divisor))"
+        else f"int(float({dividend_name}) / float({divisor_name}))"
     )
     remainder_expression = (
-        "int(float(_cobol_divide_dividend)) - "
-        "int(float(_cobol_divide_dividend) / float(_cobol_divide_divisor)) * "
-        "int(float(_cobol_divide_divisor))"
+        f"int(float({dividend_name})) - "
+        f"int(float({dividend_name}) / float({divisor_name})) * "
+        f"int(float({divisor_name}))"
     )
     overflow_terms = [
-        _numeric_pic_size_error_expression("_cobol_divide_quotient", target, variable_map)
+        _numeric_pic_size_error_expression(quotient_name, target, variable_map)
     ]
     if remainder:
         overflow_terms.append(
-            _numeric_pic_size_error_expression("_cobol_divide_remainder", remainder, variable_map)
+            _numeric_pic_size_error_expression(remainder_name, remainder, variable_map)
         )
     overflow_condition = " or ".join(overflow_terms) if overflow_terms else "False"
 
@@ -4581,30 +4588,30 @@ def translate_divide_with_size_error(
     level1 = "    " * (indent + 1)
     level2 = "    " * (indent + 2)
     lines = [
-        prefix + "_cobol_divide_size_error = False",
-        prefix + f"_cobol_divide_dividend = {translate_literal(dividend, variable_map)}",
-        prefix + f"_cobol_divide_divisor = {translate_literal(divisor, variable_map)}",
-        prefix + "if _cobol_divide_divisor == 0:",
-        level1 + "_cobol_divide_size_error = True",
+        prefix + f"{size_error_name} = False",
+        prefix + f"{dividend_name} = {translate_literal(dividend, variable_map)}",
+        prefix + f"{divisor_name} = {translate_literal(divisor, variable_map)}",
+        prefix + f"if {divisor_name} == 0:",
+        level1 + f"{size_error_name} = True",
         prefix + "else:",
-        level1 + f"_cobol_divide_quotient = {quotient_expression}",
+        level1 + f"{quotient_name} = {quotient_expression}",
     ]
     if remainder:
-        lines.append(level1 + f"_cobol_divide_remainder = {remainder_expression}")
+        lines.append(level1 + f"{remainder_name} = {remainder_expression}")
     lines.extend([
         level1 + f"if {overflow_condition}:",
-        level2 + "_cobol_divide_size_error = True",
+        level2 + f"{size_error_name} = True",
         level1 + "else:",
         level2 + emit_assignment(
             target,
-            fit_numeric_expression("_cobol_divide_quotient", target, variable_map),
+            fit_numeric_expression(quotient_name, target, variable_map),
             variable_map,
         ),
     ])
     if remainder:
         lines.append(level2 + emit_assignment(
             remainder,
-            fit_numeric_expression("_cobol_divide_remainder", remainder, variable_map),
+            fit_numeric_expression(remainder_name, remainder, variable_map),
             variable_map,
         ))
     return lines
@@ -4622,13 +4629,14 @@ def translate_nodes(
     for node in nodes:
         if node.kind == "divide":
             prefix = "    " * indent
-            lines = translate_divide_with_size_error(node.text, variables, indent)
+            size_error_name = f"_cobol_divide_size_error_{node.line}"
+            lines = translate_divide_with_size_error(node.text, variables, indent, node.line)
             if lines is None:
                 out.append(prefix + f"# DIVIDE ON SIZE ERROR no traducido: {node.text}")
                 continue
             out.extend(lines)
             if node.then_branch:
-                out.append(prefix + "if _cobol_divide_size_error:")
+                out.append(prefix + f"if {size_error_name}:")
                 on_body = translate_nodes(
                     node.then_branch, paragraphs, indent + 1, variables, current_paragraph, condition_names
                 )
@@ -4636,7 +4644,7 @@ def translate_nodes(
                     on_body = ["    " * (indent + 1) + "pass"]
                 out.extend(on_body)
             if node.else_branch:
-                out.append(prefix + "if not _cobol_divide_size_error:")
+                out.append(prefix + f"if not {size_error_name}:")
                 not_on_body = translate_nodes(
                     node.else_branch, paragraphs, indent + 1, variables, current_paragraph, condition_names
                 )
