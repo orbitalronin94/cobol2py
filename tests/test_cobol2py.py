@@ -4707,3 +4707,115 @@ MAIN.
                 os.chdir(previous)
         self.assertEqual(output.getvalue(), "", generated)
         self.assertEqual(written, "ABCD\n", generated)
+
+
+class DivideSizeErrorControlFlowTests(unittest.TestCase):
+    def run_program(self, divisor, dividend=100, initial_result=7):
+        source = f"""IDENTIFICATION DIVISION.
+PROGRAM-ID. MAIN.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-DIVISOR PIC 9 VALUE {divisor}.
+01 WS-DIVIDEND PIC 999 VALUE {dividend}.
+01 WS-RESULT PIC 99 VALUE {initial_result}.
+01 WS-FLAG PIC X VALUE SPACE.
+PROCEDURE DIVISION.
+MAIN.
+    DIVIDE WS-DIVISOR INTO WS-DIVIDEND GIVING WS-RESULT
+        ON SIZE ERROR
+            MOVE "E" TO WS-FLAG
+        NOT ON SIZE ERROR
+            MOVE "N" TO WS-FLAG
+    END-DIVIDE.
+    DISPLAY WS-RESULT WS-FLAG.
+"""
+        generated = cobol2py.emit_python(
+            cobol2py.parse_cobol(source, source_format="free")
+        )
+        compile(generated, "<divide-size-error>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        from contextlib import redirect_stdout
+        from io import StringIO
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        return output.getvalue(), generated
+
+    def test_divide_zero_runs_only_on_size_error_and_preserves_receivers(self):
+        output, generated = self.run_program(divisor=0, initial_result=7)
+        self.assertEqual(output, "07E\n", generated)
+
+    def test_divide_overflow_runs_on_size_error_and_preserves_receiver(self):
+        output, generated = self.run_program(divisor=1, dividend=100, initial_result=7)
+        self.assertEqual(output, "07E\n", generated)
+
+    def test_divide_without_size_error_runs_not_on_branch(self):
+        output, generated = self.run_program(divisor=2, dividend=100, initial_result=7)
+        self.assertEqual(output, "50N\n", generated)
+
+    def test_period_terminates_divide_size_error_scope_without_end_divide(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. MAIN.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-DIVISOR PIC 9 VALUE 0.
+01 WS-DIVIDEND PIC 999 VALUE 100.
+01 WS-RESULT PIC 99 VALUE 7.
+01 WS-FLAG PIC X VALUE SPACE.
+PROCEDURE DIVISION.
+MAIN.
+    DIVIDE WS-DIVISOR INTO WS-DIVIDEND GIVING WS-RESULT
+        ON SIZE ERROR
+            MOVE "E" TO WS-FLAG.
+    DISPLAY WS-RESULT WS-FLAG.
+"""
+        generated = cobol2py.emit_python(
+            cobol2py.parse_cobol(source, source_format="free")
+        )
+        compile(generated, "<divide-size-error-period>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        from contextlib import redirect_stdout
+        from io import StringIO
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "07E\n", generated)
+
+
+    def test_nested_divide_does_not_overwrite_outer_size_error_flag(self):
+        source = """IDENTIFICATION DIVISION.
+PROGRAM-ID. MAIN.
+DATA DIVISION.
+WORKING-STORAGE SECTION.
+01 WS-DIVISOR PIC 9 VALUE 0.
+01 WS-DIVIDEND PIC 999 VALUE 100.
+01 WS-RESULT PIC 99 VALUE 7.
+01 WS-INNER PIC 99 VALUE 1.
+01 WS-FLAG PIC X VALUE SPACE.
+PROCEDURE DIVISION.
+MAIN.
+    DIVIDE WS-DIVISOR INTO WS-DIVIDEND GIVING WS-RESULT
+        ON SIZE ERROR
+            MOVE "E" TO WS-FLAG
+            DIVIDE 1 INTO 1 GIVING WS-INNER
+                ON SIZE ERROR MOVE "I" TO WS-FLAG
+            END-DIVIDE
+        NOT ON SIZE ERROR
+            MOVE "N" TO WS-FLAG
+    END-DIVIDE.
+    DISPLAY WS-RESULT WS-FLAG.
+"""
+        generated = cobol2py.emit_python(
+            cobol2py.parse_cobol(source, source_format="free")
+        )
+        compile(generated, "<nested-divide-size-error>", "exec")
+        namespace = {"__name__": "generated_test"}
+        exec(generated, namespace)
+        from contextlib import redirect_stdout
+        from io import StringIO
+        output = StringIO()
+        with redirect_stdout(output):
+            namespace["main"]()
+        self.assertEqual(output.getvalue(), "07E\n", generated)

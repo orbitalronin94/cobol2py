@@ -870,26 +870,51 @@ SCOPE_END_NOOPS = frozenset({
 
 def split_concat_statements(text: str) -> list[str]:
     """
-    Divide un buffer que contiene varias sentencias COBOL concatenadas.
-    Heurística: un nuevo statement empieza donde aparece un verbo COBOL
-    que no es el primero del buffer.
+    Split concatenated COBOL statements while keeping imperative SIZE ERROR
+    clauses as structural markers. Quoted literals remain atomic.
     """
-    # Keep quoted literals atomic: they may contain spaces, verbs, terminators,
-    # or the inline-comment marker, none of which should split a statement.
     tokens = re.findall(r"""'(?:''|[^'])*'|"(?:\"\"|[^"])*"|\S+""", text)
     if not tokens:
         return []
     statements: list[str] = []
-    current = [tokens[0]]
-    for tok in tokens[1:]:
-        clean = tok.upper().strip(".,")
-        if clean in STATEMENT_VERBS:
+    current: list[str] = []
+
+    def flush_current() -> None:
+        nonlocal current
+        if current:
             statements.append(" ".join(current))
-            current = [tok]
-        else:
-            current.append(tok)
-    if current:
-        statements.append(" ".join(current))
+            current = []
+
+    i = 0
+    while i < len(tokens):
+        token = tokens[i]
+        clean = token.upper().strip(".,")
+        if (
+            i + 3 < len(tokens)
+            and clean == "NOT"
+            and tokens[i + 1].upper().strip(".,") == "ON"
+            and tokens[i + 2].upper().strip(".,") == "SIZE"
+            and tokens[i + 3].upper().strip(".,") == "ERROR"
+        ):
+            flush_current()
+            statements.append("NOT ON SIZE ERROR")
+            i += 4
+            continue
+        if (
+            i + 2 < len(tokens)
+            and clean == "ON"
+            and tokens[i + 1].upper().strip(".,") == "SIZE"
+            and tokens[i + 2].upper().strip(".,") == "ERROR"
+        ):
+            flush_current()
+            statements.append("ON SIZE ERROR")
+            i += 3
+            continue
+        if clean in STATEMENT_VERBS and current:
+            flush_current()
+        current.append(token)
+        i += 1
+    flush_current()
     return statements
 
 
@@ -902,10 +927,15 @@ def split_paragraph_into_units(lines: list[tuple[int, str]]) -> list[tuple[int, 
         nonlocal buffer, buffer_start
         if not buffer:
             return
+        period_terminated = buffer[-1].rstrip().endswith(".")
         text = " ".join(buffer)
         for i, stmt in enumerate(split_concat_statements(text)):
             line = buffer_start + i  # aproximación: numera por offset
             units.append((line, stmt))
+        if period_terminated:
+            # A COBOL period terminates every open imperative scope, including
+            # an arithmetic ON SIZE ERROR block without END-DIVIDE.
+            units.append((buffer_start, "__COBOL_PERIOD__"))
         buffer = []
 
     for num, raw in lines:
@@ -974,9 +1004,23 @@ def build_tree(units: list[tuple[int, str]]) -> list[Node]:
     # Each frame stores (block kind, opening node, list to resume after closing).
     stack: list[tuple[str, Node, list[Node]]] = []
 
-    for line, text in units:
+    for unit_index, (line, text) in enumerate(units):
         normalized = text.strip().rstrip(".").strip()
         upper = normalized.upper()
+        next_upper = (
+            units[unit_index + 1][1].strip().upper().rstrip(".")
+            if unit_index + 1 < len(units) else ""
+        )
+        if (
+            upper.startswith("DIVIDE ")
+            and re.search(r"\bINTO\b.*\bGIVING\b", normalized, re.IGNORECASE)
+            and next_upper in ("ON SIZE ERROR", "NOT ON SIZE ERROR")
+        ):
+            node = Node(kind="divide", text=normalized, line=line)
+            current_list.append(node)
+            stack.append(("divide", node, current_list))
+            current_list = node.then_branch
+            continue
 
         if upper == "ELSE":
             if stack and stack[-1][0] == "if":
@@ -1016,6 +1060,38 @@ def build_tree(units: list[tuple[int, str]]) -> list[Node]:
                     current_list.append(Node(kind="stmt", text=action, line=line))
             else:
                 current_list.append(Node(kind="malformed", text=f"{normalized} without matching READ", line=line))
+            continue
+
+        if upper in ("ON SIZE ERROR", "NOT ON SIZE ERROR"):
+            divide_index = next(
+                (i for i in range(len(stack) - 1, -1, -1) if stack[i][0] == "divide"),
+                None,
+            )
+            if divide_index is None:
+                current_list.append(Node(
+                    kind="malformed",
+                    text=f"{upper} without matching DIVIDE",
+                    line=line,
+                ))
+            else:
+                divide_node = stack[divide_index][1]
+                del stack[divide_index + 1:]
+                current_list = (
+                    divide_node.then_branch
+                    if upper == "ON SIZE ERROR"
+                    else divide_node.else_branch
+                )
+            continue
+
+        if upper in ("END-DIVIDE", "__COBOL_PERIOD__"):
+            divide_index = next(
+                (i for i in range(len(stack) - 1, -1, -1) if stack[i][0] == "divide"),
+                None,
+            )
+            if divide_index is not None:
+                _, _, parent_list = stack[divide_index]
+                del stack[divide_index:]
+                current_list = parent_list
             continue
 
         if upper in ("END-IF", "END-PERFORM", "END-EVALUATE", "END-SEARCH", "END-READ"):
@@ -4634,6 +4710,112 @@ def translate_statement(
     return [f"# COBOL no traducido: {s}"]
 
 
+def _numeric_pic_size_error_expression(
+    value_expression: str,
+    target: str,
+    variables: dict[str, CobolVar],
+) -> str:
+    """Return a conservative overflow predicate for a simple numeric DISPLAY PIC."""
+    target_match = re.match(r"([A-Za-z0-9_-]+)", target.strip())
+    variable = variables.get(target_match.group(1).upper()) if target_match else None
+    if variable is None or not variable.pic:
+        return "False"
+    pic = variable.pic.upper()
+    if "9" not in pic or "P" in pic:
+        return "False"
+    digits = pic_digit_count(pic)
+    if not digits:
+        return "False"
+    scale = pic_digit_count(pic.split("V", 1)[1]) if "V" in pic else 0
+    maximum = (10 ** digits - 1) / (10 ** scale)
+    return f"(abs(float({value_expression})) > {maximum:.12g})"
+
+
+def translate_divide_with_size_error(
+    stmt: str,
+    variables: Optional[dict[str, CobolVar]],
+    indent: int,
+    scope_id: int,
+) -> Optional[list[str]]:
+    """Translate DIVIDE INTO ... GIVING with ON/NOT ON SIZE ERROR branches."""
+    text = stmt.strip().rstrip(".").strip()
+    divide_into = re.fullmatch(
+        r"DIVIDE\s+(.+?)\s+INTO\s+(.+?)(?:\s+END-DIVIDE)?",
+        text,
+        re.IGNORECASE,
+    )
+    if divide_into is None:
+        return None
+    divisor, receiving_text = divide_into.groups()
+    giving = re.fullmatch(
+        rf"(.+?)\s+GIVING\s+({DATA_REF_PATTERN})(?:\s+REMAINDER\s+({DATA_REF_PATTERN}))?(\s+ROUNDED)?",
+        receiving_text,
+        re.IGNORECASE,
+    )
+    if giving is None:
+        return None
+
+    dividend, target, remainder, rounded = giving.groups()
+    variable_map = variables or {}
+    suffix = f"_{scope_id}"
+    dividend_name = f"_cobol_divide_dividend{suffix}"
+    divisor_name = f"_cobol_divide_divisor{suffix}"
+    quotient_name = f"_cobol_divide_quotient{suffix}"
+    remainder_name = f"_cobol_divide_remainder{suffix}"
+    size_error_name = f"_cobol_divide_size_error{suffix}"
+    quotient_expression = (
+        f"int((float({dividend_name}) / float({divisor_name})) + "
+        f"(0.5 if ({dividend_name} / {divisor_name}) >= 0 else -0.5))"
+        if rounded
+        else f"int(float({dividend_name}) / float({divisor_name}))"
+    )
+    remainder_expression = (
+        f"int(float({dividend_name})) - "
+        f"int(float({dividend_name}) / float({divisor_name})) * "
+        f"int(float({divisor_name}))"
+    )
+    overflow_terms = [
+        _numeric_pic_size_error_expression(quotient_name, target, variable_map)
+    ]
+    if remainder:
+        overflow_terms.append(
+            _numeric_pic_size_error_expression(remainder_name, remainder, variable_map)
+        )
+    overflow_condition = " or ".join(overflow_terms) if overflow_terms else "False"
+
+    prefix = "    " * indent
+    level1 = "    " * (indent + 1)
+    level2 = "    " * (indent + 2)
+    lines = [
+        prefix + f"{size_error_name} = False",
+        prefix + f"{dividend_name} = {translate_literal(dividend, variable_map)}",
+        prefix + f"{divisor_name} = {translate_literal(divisor, variable_map)}",
+        prefix + f"if {divisor_name} == 0:",
+        level1 + f"{size_error_name} = True",
+        prefix + "else:",
+        level1 + f"{quotient_name} = {quotient_expression}",
+    ]
+    if remainder:
+        lines.append(level1 + f"{remainder_name} = {remainder_expression}")
+    lines.extend([
+        level1 + f"if {overflow_condition}:",
+        level2 + f"{size_error_name} = True",
+        level1 + "else:",
+        level2 + emit_assignment(
+            target,
+            fit_numeric_expression(quotient_name, target, variable_map),
+            variable_map,
+        ),
+    ])
+    if remainder:
+        lines.append(level2 + emit_assignment(
+            remainder,
+            fit_numeric_expression(remainder_name, remainder, variable_map),
+            variable_map,
+        ))
+    return lines
+
+
 def translate_nodes(
     nodes: list[Node],
     paragraphs: set[str],
@@ -4644,7 +4826,32 @@ def translate_nodes(
 ) -> list[str]:
     out: list[str] = []
     for node in nodes:
-        if node.kind == "stmt":
+        if node.kind == "divide":
+            prefix = "    " * indent
+            size_error_name = f"_cobol_divide_size_error_{node.line}"
+            lines = translate_divide_with_size_error(node.text, variables, indent, node.line)
+            if lines is None:
+                out.append(prefix + f"# DIVIDE ON SIZE ERROR no traducido: {node.text}")
+                continue
+            out.extend(lines)
+            if node.then_branch:
+                out.append(prefix + f"if {size_error_name}:")
+                on_body = translate_nodes(
+                    node.then_branch, paragraphs, indent + 1, variables, current_paragraph, condition_names
+                )
+                if not on_body or all(not line.strip() or line.strip().startswith("#") for line in on_body):
+                    on_body = ["    " * (indent + 1) + "pass"]
+                out.extend(on_body)
+            if node.else_branch:
+                out.append(prefix + f"if not {size_error_name}:")
+                not_on_body = translate_nodes(
+                    node.else_branch, paragraphs, indent + 1, variables, current_paragraph, condition_names
+                )
+                if not not_on_body or all(not line.strip() or line.strip().startswith("#") for line in not_on_body):
+                    not_on_body = ["    " * (indent + 1) + "pass"]
+                out.extend(not_on_body)
+
+        elif node.kind == "stmt":
             lines = translate_statement(node.text, paragraphs, variables, current_paragraph, condition_names)
             if lines:
                 opens_block = lines[0].rstrip().endswith(":")
