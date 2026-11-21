@@ -22,7 +22,7 @@ on:
   workflow_dispatch:
     inputs:
       candidate_prs:
-        description: "Optional PR numbers; leave blank to discover all open eligible candidates"
+        description: "Optional PR numbers; leave blank to use the manifest curated candidate_queue"
         required: false
         default: ""
         type: string
