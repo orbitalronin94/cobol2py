@@ -38,10 +38,10 @@ class FailureTournamentManifestTests(unittest.TestCase):
         self.assertEqual(latest["target"], 500)
         self.assertTrue(latest["archive_md5_verified"])
         self.assertEqual(latest["reference_fingerprint_coverage"]["complete_cases"], 500)
-        self.assertEqual(latest["current_main_sha"], "399b55e77d47cdd15367a9b17c3b116a962a39c7")
+        self.assertEqual(latest["current_main_sha"], "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc")
         self.assertEqual(MANIFEST["current_baseline"]["source_run"], 44933960078)
         self.assertEqual(MANIFEST["current_baseline"]["score"], 263)
-        self.assertEqual(MANIFEST["current_baseline"]["main_sha_at_audit"], "399b55e77d47cdd15367a9b17c3b116a962a39c7")
+        self.assertEqual(MANIFEST["current_baseline"]["main_sha_at_audit"], "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc")
         self.assertTrue(MANIFEST["latest_verified_code_equivalent_main"]["exact_run_on_current_main_sha"])
         self.assertEqual(MANIFEST["post_merge_casewise_comparison"]["new_pass_case_ids"], ["sq206a-3536dcf7c2"])
         self.assertEqual(MANIFEST["post_merge_casewise_comparison"]["regressed_case_ids"], ["exec84-2-03eae98697"])
@@ -116,10 +116,10 @@ class FailureTournamentManifestTests(unittest.TestCase):
 
     def test_30_seed_audit_is_fresh_and_still_blocked(self):
         audit = MANIFEST["candidate_branch_audit"]
-        self.assertEqual(audit["compared_against_main"], "399b55e77d47cdd15367a9b17c3b116a962a39c7")
+        self.assertEqual(audit["compared_against_main"], "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc")
         self.assertEqual(audit["latest_comparison"]["distinct_branch_heads"], 30)
-        self.assertEqual(audit["latest_comparison"]["current_main_sha"], "399b55e77d47cdd15367a9b17c3b116a962a39c7")
-        self.assertEqual(MANIFEST["readiness"]["audit_main_sha"], "399b55e77d47cdd15367a9b17c3b116a962a39c7")
+        self.assertEqual(audit["latest_comparison"]["current_main_sha"], "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc")
+        self.assertEqual(MANIFEST["readiness"]["audit_main_sha"], "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc")
         self.assertTrue(audit["all_30_exist"])
         self.assertTrue(audit["all_30_diverged"])
         self.assertEqual(audit["ahead_only_candidates"], 0)
@@ -134,6 +134,26 @@ class FailureTournamentManifestTests(unittest.TestCase):
         self.assertIn("candidate_shas", workflow)
         self.assertNotIn("gh pr merge", workflow)
 
+
+    def test_current_main_head_waits_for_exact_sha_remeasurement(self):
+        head = MANIFEST["current_main_head"]
+        self.assertEqual(head["sha"], "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc")
+        self.assertEqual(head["translator_blob_sha"], "4a7562627d161580470f1b0522cda0b094f635b0")
+        self.assertTrue(head["translator_blob_unchanged_since_previous_exact_baseline"])
+        self.assertFalse(head["exact_500_case_run_on_this_sha"])
+        pending = MANIFEST["pending_main_remeasurement"]
+        self.assertEqual(pending["status"], "pending")
+        self.assertTrue(pending["queue_empty"])
+        self.assertEqual(pending["skip"], 500)
+        self.assertEqual(pending["target"], 500)
+
+    def test_legacy_105_case_screen_is_manual_only_after_pr_403(self):
+        merged = MANIFEST["latest_infrastructure_merge"]
+        self.assertEqual(merged["pr"], 403)
+        self.assertTrue(merged["merged"])
+        self.assertFalse(merged["translator_changed"])
+        self.assertTrue(merged["checks"]["all_success"])
+        self.assertTrue(merged["followup_main_checks"]["all_success"])
 
 
 if __name__ == "__main__":
