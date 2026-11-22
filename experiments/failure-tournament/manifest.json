@@ -3448,33 +3448,18 @@
     "translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
     "note": "Previous exact-SHA measurement of the same main and translator; superseded as the latest baseline by run 44800200895."
   },
-  "current_main_head": {
-    "sha": "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc",
-    "previous_exact_baseline_sha": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
-    "translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
-    "translator_blob_unchanged_since_previous_exact_baseline": true,
-    "changed_since_previous_exact_baseline": [
-      ".github/workflows/current-main-pr-tournament.yml",
-      ".github/workflows/pending-pr-main-competition.yml",
-      "experiments/failure-tournament/README.md",
-      "experiments/failure-tournament/manifest.json",
-      "tests/test_current_main_pr_tournament_workflow.py",
-      "tests/test_failure_tournament_manifest.py",
-      "tests/test_tournament_workflow.py"
-    ],
-    "exact_500_case_run_on_this_sha": false
-  },
   "pending_main_remeasurement": {
     "status": "pending",
-    "trigger": "push to main changing experiments/failure-tournament/manifest.json",
+    "trigger": "push to main after PR #404 merges the manifest update",
     "workflow": ".github/workflows/current-main-pr-tournament.yml",
-    "expected_base_sha": "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc",
+    "base_sha_at_pr_creation": "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc",
+    "target": "the resulting PR #404 merge commit SHA, resolved by the workflow",
     "queue_empty": true,
     "expected_mode": "baseline-only",
     "corpus": "X-COBOL v2",
     "archive_md5_expected": "cbd974caed72b0836777dc2305928ed3",
     "skip": 500,
-    "target": 500,
+    "target_count": 500,
     "comparison": "exact stdout bytes and process return code against frozen GnuCOBOL fingerprints"
   },
   "latest_infrastructure_merge": {
@@ -3495,5 +3480,22 @@
       "all_success": true
     },
     "note": "Legacy pending-pr-main-competition.yml now has workflow_dispatch only; the fixed 105-case screen is diagnostic and non-authoritative."
+  },
+  "audited_main_head": {
+    "sha": "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc",
+    "previous_exact_baseline_sha": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
+    "translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
+    "translator_blob_unchanged_since_previous_exact_baseline": true,
+    "changed_since_previous_exact_baseline": [
+      ".github/workflows/current-main-pr-tournament.yml",
+      ".github/workflows/pending-pr-main-competition.yml",
+      "experiments/failure-tournament/README.md",
+      "experiments/failure-tournament/manifest.json",
+      "tests/test_current_main_pr_tournament_workflow.py",
+      "tests/test_failure_tournament_manifest.py",
+      "tests/test_tournament_workflow.py"
+    ],
+    "exact_500_case_run_on_this_sha": false,
+    "note": "Main SHA observed at the start of this audit and used for the 30-branch comparison. PR #404 itself changes only documentation, manifest and tests; its merge creates a new main SHA."
   }
 }
