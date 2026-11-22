@@ -135,7 +135,7 @@ class FailureTournamentManifestTests(unittest.TestCase):
         self.assertNotIn("gh pr merge", workflow)
 
 
-    def test_current_main_head_waits_for_exact_sha_remeasurement(self):
+    def test_audited_main_head_waits_for_exact_sha_remeasurement(self):
         head = MANIFEST["audited_main_head"]
         self.assertEqual(head["sha"], "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc")
         self.assertEqual(head["translator_blob_sha"], "4a7562627d161580470f1b0522cda0b094f635b0")
