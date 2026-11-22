@@ -4,7 +4,7 @@
 
 ## Baseline vigente de main
 
-- **Última medición completa: 263/500 (52,6%)** — [run 44933960078](https://github.com/orbitalronin94/cobol2py/actions/runs/44933960078), ejecutado sobre el SHA exacto `399b55e77d47cdd15367a9b17c3b116a962a39c7`.
+- **Última medición exacta: 263/500 (52,6%)** — [run 45018142254](https://github.com/orbitalronin94/cobol2py/actions/runs/45018142254), ejecutado sobre el SHA exacto `585bb618373189c657fd5cec43671b6ebb3c9e0e`.
 - Repetición exacta anterior sobre el mismo SHA: [run 44730370716](https://github.com/orbitalronin94/cobol2py/actions/runs/44730370716), también 263/500; queda como medición previa.
 - Traductor: `4a7562627d161580470f1b0522cda0b094f635b0`; 500 IDs únicos, 500 fingerprints completos de GnuCOBOL.
 - Main al inicio de la auditoría, tras PR #403: `9fb72b514c74cef4b5fb10d01b4d0110e9e985fc`. Desde el último baseline exacto en `399b55e77d47cdd15367a9b17c3b116a962a39c7` solo cambiaron workflows, manifiesto, README y tests de infraestructura; el blob del traductor es idéntico. **No se presenta 263/500 como una ejecución exacta sobre `9fb72b514c74cef4b5fb10d01b4d0110e9e985fc`**. PR #404, si se fusiona, activará la re-medición sobre su propio SHA de merge.
@@ -120,3 +120,10 @@ El baseline 44933960078 contiene fallos nuevos no cubiertos por la cohorte antig
 - `nc238a-715c9f78af` y `nc238a-64f4610536`: `UnboundLocalError` de índice de búsqueda.
 
 La implementación actual de SEARCH ALL asume una referencia de clave de una sola dimensión y construye el acceso como `table[index][key]`. La próxima candidata debe preservar todos los subíndices anidados y sustituir solo el índice controlado por SEARCH; se añadirá primero un reproducer NIST fijo y se evaluará como candidata aislada.
+
+
+## Re-medición exacta de main — run 45018142254
+
+- Main medido: `585bb618373189c657fd5cec43671b6ebb3c9e0e`; [run 45018142254](https://github.com/orbitalronin94/cobol2py/actions/runs/45018142254) completó el job **Current main — 500 holdout cases** y el ranking final. El artifact `pr-tournament-baseline-45018142254` contiene 500 resultados, 500 IDs únicos, 500 fingerprints GnuCOBOL completos, MD5 `cbd974caed72b0836777dc2305928ed3`, 263 aprobados y 237 fallidos. El resumen final registra `baseline_sha=585bb618373189c657fd5cec43671b6ebb3c9e0e`, 500 probados, sin candidatos y sin ganador.
+- Main al inicio de esta auditoría: `9fb72b514c74cef4b5fb10d01b4d0110e9e985fc`. Su blob de traductor coincide exactamente con el medido (`4a7562627d161580470f1b0522cda0b094f635b0`); PR #403 solo cambió el workflow legado y documentación. Por ello 263/500 es code-equivalent para ese main, pero no se etiqueta como una ejecución exacta sobre `9fb72b514c74cef4b5fb10d01b4d0110e9e985fc`.
+- Comparando las dos mediciones completas 44933960078 y 45018142254: mismos 500 IDs, mismos 500 hashes de fuente y misma puntuación 263/500. Hubo 13 fingerprints stdout de GnuCOBOL distintos entre ejecuciones independientes; dos salidas del traductor también variaron en programas terminados por timeout. No hubo cambios de estado aprobado/fallido. Son derivas inter-ejecución, no ganancias ni regresiones de una candidata. El torneo debe seguir congelando el oráculo de main dentro de cada ejecución.
