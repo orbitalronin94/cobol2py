@@ -252,7 +252,9 @@
         "failed": 237
       }
     ],
-    "note": "Current-main push tournament run 45018142254 executed all 500 X-COBOL v2 cases on exact main SHA 585bb618373189c657fd5cec43671b6ebb3c9e0e; archive MD5 cbd974caed72b0836777dc2305928ed3 verified, 500 unique IDs and 500 complete GnuCOBOL stdout SHA-256/length/return-code fingerprints; 263 passed and 237 failed."
+    "note": "Current-main push tournament run 45018142254 executed all 500 X-COBOL v2 cases on exact main SHA 585bb618373189c657fd5cec43671b6ebb3c9e0e; archive MD5 cbd974caed72b0836777dc2305928ed3 verified, 500 unique IDs and 500 complete GnuCOBOL stdout SHA-256/length/return-code fingerprints; 263 passed and 237 failed.",
+    "main_sha_at_audit": "585bb618373189c657fd5cec43671b6ebb3c9e0e",
+    "main_head_at_audit": "585bb618373189c657fd5cec43671b6ebb3c9e0e"
   },
   "last_tournament_attempt": {
     "run": 42272058313,
@@ -1459,7 +1461,9 @@
         "failed": 237
       }
     ],
-    "note": "Current-main push tournament run 45018142254 executed all 500 X-COBOL v2 cases on exact main SHA 585bb618373189c657fd5cec43671b6ebb3c9e0e; archive MD5 cbd974caed72b0836777dc2305928ed3 verified, 500 unique IDs and 500 complete GnuCOBOL stdout SHA-256/length/return-code fingerprints; 263 passed and 237 failed."
+    "note": "Current-main push tournament run 45018142254 executed all 500 X-COBOL v2 cases on exact main SHA 585bb618373189c657fd5cec43671b6ebb3c9e0e; archive MD5 cbd974caed72b0836777dc2305928ed3 verified, 500 unique IDs and 500 complete GnuCOBOL stdout SHA-256/length/return-code fingerprints; 263 passed and 237 failed.",
+    "main_sha_at_audit": "585bb618373189c657fd5cec43671b6ebb3c9e0e",
+    "main_head_at_audit": "585bb618373189c657fd5cec43671b6ebb3c9e0e"
   },
   "additional_candidate_evaluations": {
     "inspect_characters": {
