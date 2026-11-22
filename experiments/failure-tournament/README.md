@@ -1,13 +1,13 @@
 # 30-seed failure-directed repair tournament
 
-**Estado: bloqueado.** Main actual: `9fb72b514c74cef4b5fb10d01b4d0110e9e985fc`. El último holdout completo es 263/500 sobre `399b55e77d47cdd15367a9b17c3b116a962a39c7`; el blob del traductor no ha cambiado, pero falta una re-medición sobre el SHA exacto actual. La cohorte de 30 ramas sigue sin estar lista. La auditoría reproducible se mantiene aquí y en [manifest.json](./manifest.json).
+**Estado: bloqueado.** Main al inicio de esta auditoría: `9fb72b514c74cef4b5fb10d01b4d0110e9e985fc`. El último holdout completo es 263/500 sobre `399b55e77d47cdd15367a9b17c3b116a962a39c7`; el blob del traductor no ha cambiado. PR #404 actualiza solo manifiesto, documentación y tests; su merge disparará el baseline-only de 500 casos sobre el SHA de merge resultante. La cohorte de 30 ramas sigue bloqueada.
 
 ## Baseline vigente de main
 
 - **Última medición completa: 263/500 (52,6%)** — [run 44933960078](https://github.com/orbitalronin94/cobol2py/actions/runs/44933960078), ejecutado sobre el SHA exacto `399b55e77d47cdd15367a9b17c3b116a962a39c7`.
 - Repetición exacta anterior sobre el mismo SHA: [run 44730370716](https://github.com/orbitalronin94/cobol2py/actions/runs/44730370716), también 263/500; queda como medición previa.
 - Traductor: `4a7562627d161580470f1b0522cda0b094f635b0`; 500 IDs únicos, 500 fingerprints completos de GnuCOBOL.
-- Main actual tras PR #403: `9fb72b514c74cef4b5fb10d01b4d0110e9e985fc`. Comparación Git confirma que desde `399b55e77d47cdd15367a9b17c3b116a962a39c7` solo cambiaron workflows, manifiesto, README y tests de infraestructura; el blob del traductor es idéntico. **No se presenta 263/500 como una ejecución exacta sobre `9fb72b514c74cef4b5fb10d01b4d0110e9e985fc`**: queda pendiente la re-medición disparada por este cambio de manifiesto.
+- Main al inicio de la auditoría, tras PR #403: `9fb72b514c74cef4b5fb10d01b4d0110e9e985fc`. Desde el último baseline exacto en `399b55e77d47cdd15367a9b17c3b116a962a39c7` solo cambiaron workflows, manifiesto, README y tests de infraestructura; el blob del traductor es idéntico. **No se presenta 263/500 como una ejecución exacta sobre `9fb72b514c74cef4b5fb10d01b4d0110e9e985fc`**. PR #404, si se fusiona, activará la re-medición sobre su propio SHA de merge.
 - Corpus X-COBOL v2, MD5 esperado y verificado `cbd974caed72b0836777dc2305928ed3`.
 - `skip=500`, `target=500`, comparación exacta de stdout bytes y código de retorno.
 - Artefacto de baseline-only programado: 500/500 resultados completos; 263 aprobados y 237 fallidos. La cola de candidatos estaba vacía. La puntuación histórica oficial de main **257/500** permanece separada. El **258/500** de [run 42266714599](https://github.com/orbitalronin94/cobol2py/actions/runs/42266714599) pertenece a `experiment/holdout-error-topography` y no es main. El 258/500 de [run 42272058313](https://github.com/orbitalronin94/cobol2py/actions/runs/42272058313) fue un artifact completo de baseline sobre la rama main dentro de un workflow global cancelado; se conserva como registro histórico separado, no como referencia oficial.
@@ -94,12 +94,12 @@ El caso `cbl0701v01statementinspect-31f6d501b1` sigue siendo una hipótesis inde
 `.github/workflows/pending-pr-main-competition.yml` was an older push-triggered matrix over a fixed list of ten historical PRs (241, 242, 243, 259–265), using `benchmarks/cases.json` and 105 cases. It is not the external X-COBOL v2 holdout, does not compare the required fixed 500 IDs/fingerprints, and must never be used for candidate promotion. The merge of infrastructure PR #401 triggered [run 45018142264](https://github.com/orbitalronin94/cobol2py/actions/runs/45018142264); this already-started legacy run is diagnostic only. PR #403 has merged and changed the workflow to manual `workflow_dispatch`; future main pushes no longer repeat the stale 10-PR screen. Its PR checks (manifest, tests, and 50-case smoke) all passed. The authoritative path remains `current-main-pr-tournament.yml` with the manifest queue and exact 500-case casewise gate.
 
 
-## Main actual y re-medición exacta pendiente — 2026-11-22
+## Main al inicio de auditoría y re-medición exacta pendiente — 2026-11-22
 
-- Main: `9fb72b514c74cef4b5fb10d01b4d0110e9e985fc`; PR #403 se fusionó para retirar el disparo automático del screening legado de 105 casos. No tocó el traductor.
+- Main al abrir esta auditoría: `9fb72b514c74cef4b5fb10d01b4d0110e9e985fc`; PR #403 se fusionó para retirar el disparo automático del screening legado de 105 casos. No tocó el traductor. PR #404 tiene este SHA como base y, al fusionarse, creará un nuevo SHA de main.
 - Los checks del PR #403 terminaron correctamente: [manifiesto 45018537217](https://github.com/orbitalronin94/cobol2py/actions/runs/45018537217), [tests 45018537273](https://github.com/orbitalronin94/cobol2py/actions/runs/45018537273), [smoke COBOL 45018537218](https://github.com/orbitalronin94/cobol2py/actions/runs/45018537218). Los checks post-merge también pasaron: [manifiesto 45019320370](https://github.com/orbitalronin94/cobol2py/actions/runs/45019320370), [tests 45019320352](https://github.com/orbitalronin94/cobol2py/actions/runs/45019320352).
 - El screening legado [45018142264](https://github.com/orbitalronin94/cobol2py/actions/runs/45018142264) fue un smoke diagnóstico de 105 casos, no una comparación promocionable. Desde PR #403 solo se ejecutará manualmente.
-- La última puntuación completa sigue siendo 263/500 en `399b55e77d47cdd15367a9b17c3b116a962a39c7`. El blob del traductor es idéntico en `9fb72b514c74cef4b5fb10d01b4d0110e9e985fc`, pero la cifra no se etiqueta como exacta para el nuevo SHA hasta que termine el baseline de 500 casos.
+- La última puntuación completa sigue siendo 263/500 en `399b55e77d47cdd15367a9b17c3b116a962a39c7`. El blob del traductor es idéntico en `9fb72b514c74cef4b5fb10d01b4d0110e9e985fc`, pero la cifra no se etiqueta como exacta para ese SHA. PR #404 dejará en cola un baseline-only para el SHA que produzca su merge.
 
 ## Auditoría actualizada de las 30 semillas — 2026-11-22
 
