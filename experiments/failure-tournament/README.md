@@ -1,12 +1,13 @@
 # 30-seed failure-directed repair tournament
 
-**Estado: bloqueado.** El baseline vigente de main ya se ha revalidado; la cohorte de 30 ramas aún no está lista para ejecutarse. La auditoría reproducible y sus enlaces se mantienen aquí y en [manifest.json](./manifest.json).
+**Estado: bloqueado.** Main actual: `9fb72b514c74cef4b5fb10d01b4d0110e9e985fc`. El último holdout completo es 263/500 sobre `399b55e77d47cdd15367a9b17c3b116a962a39c7`; el blob del traductor no ha cambiado, pero falta una re-medición sobre el SHA exacto actual. La cohorte de 30 ramas sigue sin estar lista. La auditoría reproducible se mantiene aquí y en [manifest.json](./manifest.json).
 
 ## Baseline vigente de main
 
-- **263/500 (52,6%)** — [run 44800200895](https://github.com/orbitalronin94/cobol2py/actions/runs/44800200895), ejecutado sobre el SHA exacto `399b55e77d47cdd15367a9b17c3b116a962a39c7`.
+- **Última medición completa: 263/500 (52,6%)** — [run 44933960078](https://github.com/orbitalronin94/cobol2py/actions/runs/44933960078), ejecutado sobre el SHA exacto `399b55e77d47cdd15367a9b17c3b116a962a39c7`.
 - Repetición exacta anterior sobre el mismo SHA: [run 44730370716](https://github.com/orbitalronin94/cobol2py/actions/runs/44730370716), también 263/500; queda como medición previa.
 - Traductor: `4a7562627d161580470f1b0522cda0b094f635b0`; 500 IDs únicos, 500 fingerprints completos de GnuCOBOL.
+- Main actual tras PR #403: `9fb72b514c74cef4b5fb10d01b4d0110e9e985fc`. Comparación Git confirma que desde `399b55e77d47cdd15367a9b17c3b116a962a39c7` solo cambiaron workflows, manifiesto, README y tests de infraestructura; el blob del traductor es idéntico. **No se presenta 263/500 como una ejecución exacta sobre `9fb72b514c74cef4b5fb10d01b4d0110e9e985fc`**: queda pendiente la re-medición disparada por este cambio de manifiesto.
 - Corpus X-COBOL v2, MD5 esperado y verificado `cbd974caed72b0836777dc2305928ed3`.
 - `skip=500`, `target=500`, comparación exacta de stdout bytes y código de retorno.
 - Artefacto de baseline-only programado: 500/500 resultados completos; 263 aprobados y 237 fallidos. La cola de candidatos estaba vacía. La puntuación histórica oficial de main **257/500** permanece separada. El **258/500** de [run 42266714599](https://github.com/orbitalronin94/cobol2py/actions/runs/42266714599) pertenece a `experiment/holdout-error-topography` y no es main. El 258/500 de [run 42272058313](https://github.com/orbitalronin94/cobol2py/actions/runs/42272058313) fue un artifact completo de baseline sobre la rama main dentro de un workflow global cancelado; se conserva como registro histórico separado, no como referencia oficial.
@@ -75,7 +76,7 @@ El caso `cbl0701v01statementinspect-31f6d501b1` sigue siendo una hipótesis inde
 - PR #401 actualiza la competición diaria/push para descubrir únicamente las PRs aprobadas en `current_main_pr_tournament.candidate_queue`. No barre todas las PRs abiertas: así evita duplicar hipótesis ya cubiertas por los artifacts de la cohorte antigua de 16 y por ramas históricas. La cola está vacía tras cerrar #400, por lo que el siguiente ciclo será baseline-only hasta que se encole una candidata aislada. La PR solo toca workflow, manifiesto, README y tests de infraestructura; no cambia el traductor.
 - Auditoría renovada el 2026-11-21 de las 30 semillas contra main `399b55e`: **30/30 referencias existentes, 30 SHA distintos, 30/30 divergidas, 0 ahead-only**. Semillas 11–15 carecen de cambios de traductor y tests; semillas 16–30 incluyen archivos ajenos de workflow/benchmark/documentación. Readiness sigue bloqueada; no se ha iniciado el torneo de 30 semillas.
 - La cohorte antigua de 16 no se repite: sus artefactos históricos ya cubren UNSTRING TALLYING IN, WRITE FROM literal, READ tras EOF, OPEN mixto, INSPECT REPLACING, reference modification aritmética y STRING ZEROES. No hay un torneo completo de 16 con ganador verificable.
-- **Candidata abierta:** PR #402 implementa soporte aislado de ramas imperativas `ON SIZE ERROR` y `NOT ON SIZE ERROR` para DIVIDE, con reproduceres unitarios de división por cero, overflow PIC, rama exclusiva y terminación por `END-DIVIDE`/punto. Suite y holdout emparejado pendientes; todavía no hay ganancias ni regresiones atribuibles.
+- **PR #402 — DIVIDE SIZE ERROR:** evaluación oficial terminada en [run 44901501025](https://github.com/orbitalronin94/cobol2py/actions/runs/44901501025). Main 263/500, candidata 263/500, 500 IDs y hashes de fuente comparables, 0 ganancias y 0 regresiones. No elegible por falta de +1; cerrada sin merge. Los motivadores `nc203a-dc7f80e633` y `nc172a-3a5109e496` siguen fallando: `UnboundLocalError` en el receptor `giving` y `ZeroDivisionError` respectivamente. Siete derivas de oráculo fueron diagnósticas, no ganancias.
 
 
 ## 2026-11-22 — remeasurement and PR #402 decision
@@ -90,4 +91,32 @@ El caso `cbl0701v01statementinspect-31f6d501b1` sigue siendo una hipótesis inde
 
 ## Legacy 105-case PR screen — diagnostic only
 
-`.github/workflows/pending-pr-main-competition.yml` was an older push-triggered matrix over a fixed list of ten historical PRs (241, 242, 243, 259–265), using `benchmarks/cases.json` and 105 cases. It is not the external X-COBOL v2 holdout, does not compare the required fixed 500 IDs/fingerprints, and must never be used for candidate promotion. The merge of infrastructure PR #401 triggered [run 45018142264](https://github.com/orbitalronin94/cobol2py/actions/runs/45018142264); this already-started legacy run is diagnostic only. The workflow is being changed to manual `workflow_dispatch` so future main pushes do not repeat the stale 10-PR screen. The authoritative path remains `current-main-pr-tournament.yml` with the manifest queue and exact 500-case casewise gate.
+`.github/workflows/pending-pr-main-competition.yml` was an older push-triggered matrix over a fixed list of ten historical PRs (241, 242, 243, 259–265), using `benchmarks/cases.json` and 105 cases. It is not the external X-COBOL v2 holdout, does not compare the required fixed 500 IDs/fingerprints, and must never be used for candidate promotion. The merge of infrastructure PR #401 triggered [run 45018142264](https://github.com/orbitalronin94/cobol2py/actions/runs/45018142264); this already-started legacy run is diagnostic only. PR #403 has merged and changed the workflow to manual `workflow_dispatch`; future main pushes no longer repeat the stale 10-PR screen. Its PR checks (manifest, tests, and 50-case smoke) all passed. The authoritative path remains `current-main-pr-tournament.yml` with the manifest queue and exact 500-case casewise gate.
+
+
+## Main actual y re-medición exacta pendiente — 2026-11-22
+
+- Main: `9fb72b514c74cef4b5fb10d01b4d0110e9e985fc`; PR #403 se fusionó para retirar el disparo automático del screening legado de 105 casos. No tocó el traductor.
+- Los checks del PR #403 terminaron correctamente: [manifiesto 45018537217](https://github.com/orbitalronin94/cobol2py/actions/runs/45018537217), [tests 45018537273](https://github.com/orbitalronin94/cobol2py/actions/runs/45018537273), [smoke COBOL 45018537218](https://github.com/orbitalronin94/cobol2py/actions/runs/45018537218). Los checks post-merge también pasaron: [manifiesto 45019320370](https://github.com/orbitalronin94/cobol2py/actions/runs/45019320370), [tests 45019320352](https://github.com/orbitalronin94/cobol2py/actions/runs/45019320352).
+- El screening legado [45018142264](https://github.com/orbitalronin94/cobol2py/actions/runs/45018142264) fue un smoke diagnóstico de 105 casos, no una comparación promocionable. Desde PR #403 solo se ejecutará manualmente.
+- La última puntuación completa sigue siendo 263/500 en `399b55e77d47cdd15367a9b17c3b116a962a39c7`. El blob del traductor es idéntico en `9fb72b514c74cef4b5fb10d01b4d0110e9e985fc`, pero la cifra no se etiqueta como exacta para el nuevo SHA hasta que termine el baseline de 500 casos.
+
+## Auditoría actualizada de las 30 semillas — 2026-11-22
+
+- Comparación contra `9fb72b514c74cef4b5fb10d01b4d0110e9e985fc`: 30/30 ramas existen, 30 heads distintos, 30 divergidas, 0 ahead-only. No se ha iniciado el torneo.
+- Semillas 1–10: contienen traductor, pruebas y sincronización web, pero están obsoletas (20–216 commits por detrás). Deben reconstruirse desde main antes de competir.
+- Semillas 11–15: solo cambios de workflow/documentación; no tienen cambios de traductor ni pruebas.
+- Semillas 16–30: contienen cambios de traductor/pruebas, pero mezclados con workflows, benchmarks o documentación no permitidos.
+- Existe una referencia adicional fuera del manifiesto: `experiment-failure-seed/10-syntax-evaluate-also`.
+- La cohorte de 16 no se repite; sus artifacts ya cubren UNSTRING TALLYING IN, WRITE FROM literal, READ tras EOF, OPEN mixto, INSPECT REPLACING, reference modification aritmética y STRING ZEROES.
+
+## Siguiente hipótesis: SEARCH ALL sobre tablas anidadas
+
+El baseline 44933960078 contiene fallos nuevos no cubiertos por la cohorte antigua de 16:
+
+- `nc233a-933ce1010e` y `nc2334-2-4c65f37e93`: `KeyError` al generar la clave de búsqueda de una tabla multidimensional.
+- `nc233a-aed140c18a`: misma familia de acceso a tabla anidada.
+- `nc235a-51f79a11be`: fallo de tipo en la condición generada de SEARCH ALL.
+- `nc238a-715c9f78af` y `nc238a-64f4610536`: `UnboundLocalError` de índice de búsqueda.
+
+La implementación actual de SEARCH ALL asume una referencia de clave de una sola dimensión y construye el acceso como `table[index][key]`. La próxima candidata debe preservar todos los subíndices anidados y sustituir solo el índice controlado por SEARCH; se añadirá primero un reproducer NIST fijo y se evaluará como candidata aislada.
