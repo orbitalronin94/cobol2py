@@ -3453,13 +3453,12 @@
     "trigger": "push to main after PR #404 merges the manifest update",
     "workflow": ".github/workflows/current-main-pr-tournament.yml",
     "base_sha_at_pr_creation": "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc",
-    "target": "the resulting PR #404 merge commit SHA, resolved by the workflow",
+    "target": 500,
     "queue_empty": true,
     "expected_mode": "baseline-only",
     "corpus": "X-COBOL v2",
     "archive_md5_expected": "cbd974caed72b0836777dc2305928ed3",
     "skip": 500,
-    "target_count": 500,
     "comparison": "exact stdout bytes and process return code against frozen GnuCOBOL fingerprints"
   },
   "latest_infrastructure_merge": {
