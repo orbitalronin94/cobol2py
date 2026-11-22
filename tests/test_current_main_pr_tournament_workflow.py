@@ -6,6 +6,9 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = (ROOT / ".github" / "workflows" / "current-main-pr-tournament.yml").read_text(
     encoding="utf-8"
 )
+LEGACY_WORKFLOW = (ROOT / ".github" / "workflows" / "pending-pr-main-competition.yml").read_text(
+    encoding="utf-8"
+)
 
 
 class CurrentMainPRTournamentWorkflowTests(unittest.TestCase):
@@ -22,6 +25,13 @@ class CurrentMainPRTournamentWorkflowTests(unittest.TestCase):
         self.assertIn("mapfile -t prs", WORKFLOW)
         self.assertNotIn("pulls?state=open&per_page=100", WORKFLOW)
         self.assertIn("for raw in \"${prs[@]}\"; do", WORKFLOW)
+
+    def test_legacy_105_case_screen_is_manual_and_non_authoritative(self):
+        self.assertIn("workflow_dispatch:", LEGACY_WORKFLOW)
+        self.assertNotIn("\\n  push:", LEGACY_WORKFLOW)
+        self.assertIn("legacy 105-case smoke", LEGACY_WORKFLOW)
+        self.assertIn("not the fixed 500-case gate", LEGACY_WORKFLOW)
+        self.assertIn("Promotion requires the paired X-COBOL v2 target=500 workflow", LEGACY_WORKFLOW)
 
     def test_auto_discovery_keeps_the_existing_strict_candidate_gates(self):
         self.assertIn('if [ "$comparison_status" != "ahead" ]', WORKFLOW)
