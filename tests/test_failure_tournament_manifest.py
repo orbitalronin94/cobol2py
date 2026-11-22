@@ -136,13 +136,14 @@ class FailureTournamentManifestTests(unittest.TestCase):
 
 
     def test_current_main_head_waits_for_exact_sha_remeasurement(self):
-        head = MANIFEST["current_main_head"]
+        head = MANIFEST["audited_main_head"]
         self.assertEqual(head["sha"], "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc")
         self.assertEqual(head["translator_blob_sha"], "4a7562627d161580470f1b0522cda0b094f635b0")
         self.assertTrue(head["translator_blob_unchanged_since_previous_exact_baseline"])
         self.assertFalse(head["exact_500_case_run_on_this_sha"])
         pending = MANIFEST["pending_main_remeasurement"]
         self.assertEqual(pending["status"], "pending")
+        self.assertEqual(pending["base_sha_at_pr_creation"], "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc")
         self.assertTrue(pending["queue_empty"])
         self.assertEqual(pending["skip"], 500)
         self.assertEqual(pending["target"], 500)
