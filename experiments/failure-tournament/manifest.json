@@ -3459,7 +3459,8 @@
     "corpus": "X-COBOL v2",
     "archive_md5_expected": "cbd974caed72b0836777dc2305928ed3",
     "skip": 500,
-    "comparison": "exact stdout bytes and process return code against frozen GnuCOBOL fingerprints"
+    "comparison": "exact stdout bytes and process return code against frozen GnuCOBOL fingerprints",
+    "target_sha_policy": "the resulting PR #404 merge commit SHA, resolved by the workflow"
   },
   "latest_infrastructure_merge": {
     "pr": 403,
