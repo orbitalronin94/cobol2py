@@ -1,19 +1,19 @@
-name: pending-pr-main-competition
+name: legacy pending-PR 105-case smoke (manual, non-authoritative)
 
 on:
-  push:
-    branches: [main]
+  # This legacy 105-case screen is diagnostic only; it is not the fixed 500-case gate.
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: pending-pr-main-competition-${{ github.sha }}
+  group: legacy-pending-pr-main-competition-${{ github.sha }}
   cancel-in-progress: false
 
 jobs:
   compare:
-    name: PR #${{ matrix.pr }} vs current main
+    name: PR #${{ matrix.pr }} — legacy 105-case smoke only
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -60,7 +60,8 @@ jobs:
             echo "- PR head: ${PR_SHA}"
             echo "- Candidate source: ${KIND}"
           } >> "$GITHUB_STEP_SUMMARY"
-      - name: Run identical 105-case differential benchmark
+      # Diagnostic subset only. Promotion requires the paired X-COBOL v2 target=500 workflow.
+      - name: Run legacy 105-case differential smoke
         shell: bash
         env:
           PR_NUMBER: ${{ matrix.pr }}
