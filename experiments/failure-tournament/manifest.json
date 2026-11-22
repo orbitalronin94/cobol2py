@@ -221,7 +221,7 @@
     "score": 263,
     "denominator": 500,
     "percent": 52.6,
-    "source_run": 44800200895,
+    "source_run": 44933960078,
     "source_sha": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
     "baseline_sha": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
     "current_main_sha": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
@@ -252,7 +252,7 @@
         "failed": 237
       }
     ],
-    "note": "Baseline-only scheduled tournament run 44800200895 executed all 500 X-COBOL v2 cases on exact main SHA 399b55e77d47cdd15367a9b17c3b116a962a39c7; archive MD5 cbd974caed72b0836777dc2305928ed3 verified, 500 unique IDs and 500 complete GnuCOBOL stdout SHA-256/length/return-code fingerprints; 263 passed and 237 failed.",
+    "note": "Baseline-only scheduled tournament run 44933960078 executed all 500 X-COBOL v2 cases on exact main SHA 399b55e77d47cdd15367a9b17c3b116a962a39c7; archive MD5 cbd974caed72b0836777dc2305928ed3 verified, 500 unique IDs and 500 complete GnuCOBOL stdout SHA-256/length/return-code fingerprints; 263 passed and 237 failed.",
     "main_sha_at_audit": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
     "main_head_at_audit": "399b55e77d47cdd15367a9b17c3b116a962a39c7"
   },
@@ -281,6 +281,8 @@
   "readiness": {
     "status": "blocked",
     "reasons": [
+      "Fresh exact-main baseline: run 44933960078 on SHA 399b55e77d47cdd15367a9b17c3b116a962a39c7, 263/500 (52.6%), X-COBOL v2 MD5 cbd974caed72b0836777dc2305928ed3, skip=500, target=500, 500 unique IDs and 500 complete GnuCOBOL fingerprints.",
+      "Official paired PR #402 run 44901501025: candidate 263/500 vs frozen main 263/500, 500 comparable IDs/source hashes, zero gains and zero regressions; seven diagnostic GnuCOBOL oracle drifts. Ineligible because minimum +1 gain was not met; both motivating cases remain failing (nc203a UnboundLocalError; nc172a ZeroDivisionError). PR closed unmerged.",
       "Fresh exact-main baseline: run 44800200895 on SHA 399b55e77d47cdd15367a9b17c3b116a962a39c7, 263/500 (52.6%), X-COBOL v2 MD5 cbd974caed72b0836777dc2305928ed3, skip=500, target=500, 500 unique IDs and 500 complete GnuCOBOL fingerprints; scheduled run was baseline-only because the manifest queue was empty.",
       "Official paired PR #400 run 44731467437: 261/500 against frozen main 263/500, zero new passes, two regressions (exec84-2-03eae98697, nc243a-04e83cd675), 500 comparable IDs and 9 diagnostic oracle drifts. No winner; PR closed unmerged.",
       "The independent sharded PR #400 run 44731467420 showed a transient exec84 pass that did not reproduce in the official full target=500 paired run; it is not counted as a gain.",
@@ -1420,7 +1422,7 @@
     "score": 263,
     "denominator": 500,
     "percent": 52.6,
-    "source_run": 44800200895,
+    "source_run": 44933960078,
     "source_sha": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
     "baseline_sha": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
     "current_main_sha": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
@@ -1451,7 +1453,7 @@
         "failed": 237
       }
     ],
-    "note": "Baseline-only scheduled tournament run 44800200895 executed all 500 X-COBOL v2 cases on exact main SHA 399b55e77d47cdd15367a9b17c3b116a962a39c7; archive MD5 cbd974caed72b0836777dc2305928ed3 verified, 500 unique IDs and 500 complete GnuCOBOL stdout SHA-256/length/return-code fingerprints; 263 passed and 237 failed.",
+    "note": "Baseline-only scheduled tournament run 44933960078 executed all 500 X-COBOL v2 cases on exact main SHA 399b55e77d47cdd15367a9b17c3b116a962a39c7; archive MD5 cbd974caed72b0836777dc2305928ed3 verified, 500 unique IDs and 500 complete GnuCOBOL stdout SHA-256/length/return-code fingerprints; 263 passed and 237 failed.",
     "main_sha_at_audit": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
     "main_head_at_audit": "399b55e77d47cdd15367a9b17c3b116a962a39c7"
   },
@@ -1752,24 +1754,104 @@
       "decision": "ineligible_zero_gain_one_regression",
       "status": "completed",
       "note": "Latest complete paired comparison on frozen main 4238c8da8aec9d7a1a2de6fc1abcf04ddd6c3133: baseline 263/500, candidate 262/500, 500 comparable IDs, no new passes, one regression (exec84-2-03eae98697), and nine diagnostic candidate-run GnuCOBOL oracle drifts. The earlier apparent timeout-boundary gain in run 44527688670 did not reproduce. PR #371 was closed unmerged."
+    },
+    {
+      "pr": 402,
+      "title": "[DIVIDE] Preserve ON SIZE ERROR and NOT ON SIZE ERROR branches",
+      "branch": "experiment/divide-size-error-branches",
+      "head_sha": "183cbc2852f4426d6a5ff4257759f3009b149227",
+      "base_sha": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
+      "merge_sha": "f9219305de84a74952d2b32e9f2e0e29680c9bb7",
+      "baseline_run": 44901501025,
+      "baseline_score": 263,
+      "candidate_run": 44901501025,
+      "candidate_benchmark_run": 44901501025,
+      "candidate_score": 263,
+      "candidate_score_against_frozen_oracle": 263,
+      "denominator": 500,
+      "comparable_cases": 500,
+      "source_hash_matches": 500,
+      "new_passes": 0,
+      "new_pass_case_ids": [],
+      "regressions": 0,
+      "regressed_case_ids": [],
+      "oracle_stable": false,
+      "oracle_drift_count": 7,
+      "oracle_drift_case_ids": [
+        "cob-simpleinventory-6af451140a",
+        "collatz-6e335e6eda",
+        "date1-f31ce2734d",
+        "intrdate-0517c3d81c",
+        "pullydis-9e45af6c84",
+        "randombingo-e50339cc12",
+        "randomnumbers-d8fc7ee85b"
+      ],
+      "unit_suite_run": 44901501025,
+      "unit_suite_conclusion": "success",
+      "independent_holdout_run": 44901501033,
+      "independent_holdout_conclusion": "success",
+      "paired_run": 44901501025,
+      "paired_run_status": "completed",
+      "eligible": false,
+      "decision": "ineligible_zero_gain_oracle_drift",
+      "status": "completed",
+      "closed_unmerged": true,
+      "motivating_case_results": [
+        {
+          "id": "nc203a-dc7f80e633",
+          "status": "failed",
+          "exception": "UnboundLocalError",
+          "generated_line": 740,
+          "generated_statement": "giving = int(float(giving) / float(_cobol_divide_divisor))"
+        },
+        {
+          "id": "nc172a-3a5109e496",
+          "status": "failed",
+          "exception": "ZeroDivisionError",
+          "generated_line": 1374
+        }
+      ],
+      "note": "Official paired run 44901501025: frozen main 263/500; candidate 263/500, 500 comparable IDs and source hashes, zero new passes and zero regressions. Seven candidate-run GnuCOBOL fingerprints drifted; ranking used the frozen main oracle. Both motivating cases still fail: nc203a raises UnboundLocalError in generated DIVIDE GIVING code; nc172a raises ZeroDivisionError. PR #402 closed unmerged because the minimum +1 gain gate was not met."
     }
   ],
   "previous_main_remeasurement": {
     "score": 263,
     "denominator": 500,
     "percent": 52.6,
-    "source_run": 43578366403,
-    "source_sha": "f2d944c42fa8d6855effa7d97936db843476b9bd",
-    "translator_blob_sha": "3e8a08ae175e6fd1a5d8daba8d3a77ca19dd5061",
+    "source_run": 44800200895,
+    "source_sha": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
+    "baseline_sha": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
+    "current_main_sha": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
+    "base_ref": "main",
+    "kind": "current_main_verified",
+    "corpus": "X-COBOL v2",
+    "skip": 500,
+    "target": 500,
+    "archive_md5_expected": "cbd974caed72b0836777dc2305928ed3",
+    "archive_md5_verified": true,
     "sample_complete": true,
     "unique_case_ids": 500,
-    "archive_md5_verified": true,
+    "comparison": "exact stdout bytes and process return code against GnuCOBOL",
+    "translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
+    "dataset": "X-COBOL v2",
+    "dataset_url": "https://zenodo.org/records/14269462",
     "reference_fingerprint_coverage": {
       "complete_cases": 500,
       "missing_cases": 0,
       "missing_case_ids": []
     },
-    "note": "Pre-PR #375 main baseline used for the paired candidate cohort. Four complete 125-case shards; 263/500."
+    "shards": [
+      {
+        "skip": 500,
+        "target": 500,
+        "tested": 500,
+        "passed": 263,
+        "failed": 237
+      }
+    ],
+    "note": "Baseline-only scheduled tournament run 44800200895 executed all 500 X-COBOL v2 cases on exact main SHA 399b55e77d47cdd15367a9b17c3b116a962a39c7; archive MD5 cbd974caed72b0836777dc2305928ed3 verified, 500 unique IDs and 500 complete GnuCOBOL stdout SHA-256/length/return-code fingerprints; 263 passed and 237 failed.",
+    "main_sha_at_audit": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
+    "main_head_at_audit": "399b55e77d47cdd15367a9b17c3b116a962a39c7"
   },
   "post_merge_casewise_comparison": {
     "baseline_run": 43578366403,
@@ -2743,31 +2825,27 @@
     "last_schedule_check_utc": "2026-11-20T12:23:55Z",
     "last_scheduled_run_found": true,
     "latest_candidate_evaluation": {
-      "pr": 400,
-      "title": "[DIVIDE] Accept digit-leading COBOL data names in GIVING targets",
-      "branch": "fix/divide-into-digit-leading-data-names-20261120",
-      "head_sha": "26d3ea2f355efc636979e30bb801a72515f2dca7",
+      "pr": 402,
+      "title": "[DIVIDE] Preserve ON SIZE ERROR and NOT ON SIZE ERROR branches",
+      "branch": "experiment/divide-size-error-branches",
+      "head_sha": "183cbc2852f4426d6a5ff4257759f3009b149227",
       "base_sha": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
-      "merge_sha": "007e7a282d79c4d2e482b9316963e4353716f92f",
-      "baseline_run": 44731467437,
+      "merge_sha": "f9219305de84a74952d2b32e9f2e0e29680c9bb7",
+      "baseline_run": 44901501025,
       "baseline_score": 263,
-      "candidate_run": 44731467437,
-      "candidate_benchmark_run": 44731467437,
-      "independent_sharded_run": 44731467420,
-      "candidate_score": 261,
-      "candidate_score_against_frozen_oracle": 261,
+      "candidate_run": 44901501025,
+      "candidate_benchmark_run": 44901501025,
+      "candidate_score": 263,
+      "candidate_score_against_frozen_oracle": 263,
       "denominator": 500,
       "comparable_cases": 500,
       "source_hash_matches": 500,
       "new_passes": 0,
       "new_pass_case_ids": [],
-      "regressions": 2,
-      "regressed_case_ids": [
-        "exec84-2-03eae98697",
-        "nc243a-04e83cd675"
-      ],
+      "regressions": 0,
+      "regressed_case_ids": [],
       "oracle_stable": false,
-      "oracle_drift_count": 9,
+      "oracle_drift_count": 7,
       "oracle_drift_case_ids": [
         "cob-simpleinventory-6af451140a",
         "collatz-6e335e6eda",
@@ -2775,22 +2853,34 @@
         "intrdate-0517c3d81c",
         "pullydis-9e45af6c84",
         "randombingo-e50339cc12",
-        "randomnumbers-d8fc7ee85b",
-        "rock-paper-scissors-ad6321acf1",
-        "rolldice-08e3de1a0e"
+        "randomnumbers-d8fc7ee85b"
       ],
-      "unit_suite_run": 44731467437,
+      "unit_suite_run": 44901501025,
       "unit_suite_conclusion": "success",
-      "smoke_run": 44731467364,
-      "smoke_conclusion": "success",
-      "independent_holdout_run": 44731467420,
+      "independent_holdout_run": 44901501033,
       "independent_holdout_conclusion": "success",
-      "paired_run": 44731467437,
+      "paired_run": 44901501025,
       "paired_run_status": "completed",
       "eligible": false,
-      "decision": "ineligible_zero_gain_two_regressions",
+      "decision": "ineligible_zero_gain_oracle_drift",
       "status": "completed",
-      "note": "Official paired run 44731467437: baseline 263/500, candidate 261/500, 500/500 same IDs/source hashes, zero new passes and two regressions (exec84-2-03eae98697, nc243a-04e83cd675). Candidate-run oracle drift was diagnostic; ranking used the frozen main oracle. The apparent exec84 pass in the independent sharded run 44731467420 did not reproduce. PR #400 closed unmerged."
+      "closed_unmerged": true,
+      "motivating_case_results": [
+        {
+          "id": "nc203a-dc7f80e633",
+          "status": "failed",
+          "exception": "UnboundLocalError",
+          "generated_line": 740,
+          "generated_statement": "giving = int(float(giving) / float(_cobol_divide_divisor))"
+        },
+        {
+          "id": "nc172a-3a5109e496",
+          "status": "failed",
+          "exception": "ZeroDivisionError",
+          "generated_line": 1374
+        }
+      ],
+      "note": "Official paired run 44901501025: frozen main 263/500; candidate 263/500, 500 comparable IDs and source hashes, zero new passes and zero regressions. Seven candidate-run GnuCOBOL fingerprints drifted; ranking used the frozen main oracle. Both motivating cases still fail: nc203a raises UnboundLocalError in generated DIVIDE GIVING code; nc172a raises ZeroDivisionError. PR #402 closed unmerged because the minimum +1 gain gate was not met."
     },
     "candidate_queue": [],
     "isolation_scope": {
@@ -2856,7 +2946,7 @@
       "decision": "ineligible_no_gain_oracle_drift",
       "note": "Official paired comparison: 263/500 vs 263/500, 500 comparable cases, zero new passes, zero regressions, eight oracle drifts. Both NIST motivating cases still time out. The one-off exec84 timeout-boundary pass in the independent sharded run did not reproduce as a gain in the paired run."
     },
-    "latest_scheduled_run": 44800200895,
+    "latest_scheduled_run": 44933960078,
     "auto_discover_open_prs": false,
     "auto_discover_manifest_queue": true,
     "discovery_source": "current_main_pr_tournament.candidate_queue",
@@ -2889,25 +2979,23 @@
     "reason": "Run 44800200895 executed the full 500-case X-COBOL v2 holdout on exact current main SHA 399b55e77d47cdd15367a9b17c3b116a962a39c7; the scheduled tournament had an empty candidate queue and completed baseline-only."
   },
   "latest_paired_pr_tournament": {
-    "run": 44731467437,
-    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44731467437",
+    "run": 44901501025,
+    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44901501025",
     "baseline_sha": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
     "baseline_score": 263,
     "denominator": 500,
-    "candidate_pr": 400,
-    "candidate_head_sha": "26d3ea2f355efc636979e30bb801a72515f2dca7",
-    "candidate_merge_sha": "007e7a282d79c4d2e482b9316963e4353716f92f",
-    "candidate_score": 261,
-    "candidate_score_against_frozen_oracle": 261,
+    "candidate_pr": 402,
+    "candidate_head_sha": "183cbc2852f4426d6a5ff4257759f3009b149227",
+    "candidate_merge_sha": "f9219305de84a74952d2b32e9f2e0e29680c9bb7",
+    "candidate_score": 263,
+    "candidate_score_against_frozen_oracle": 263,
     "comparable_cases": 500,
     "new_passes": 0,
     "new_pass_case_ids": [],
-    "regressions": 2,
-    "regressed_case_ids": [
-      "exec84-2-03eae98697",
-      "nc243a-04e83cd675"
-    ],
-    "oracle_drift_count": 9,
+    "regressions": 0,
+    "regressed_case_ids": [],
+    "source_hash_matches": 500,
+    "oracle_drift_count": 7,
     "oracle_drift_case_ids": [
       "cob-simpleinventory-6af451140a",
       "collatz-6e335e6eda",
@@ -2915,22 +3003,20 @@
       "intrdate-0517c3d81c",
       "pullydis-9e45af6c84",
       "randombingo-e50339cc12",
-      "randomnumbers-d8fc7ee85b",
-      "rock-paper-scissors-ad6321acf1",
-      "rolldice-08e3de1a0e"
+      "randomnumbers-d8fc7ee85b"
     ],
     "eligible": false,
     "status": "completed",
-    "candidate_benchmark_run": 44731467437,
-    "independent_sharded_run": 44731467420,
-    "unit_suite_run": 44731467437,
-    "smoke_run": 44731467364,
+    "candidate_benchmark_run": 44901501025,
+    "independent_sharded_run": 44901501033,
+    "unit_suite_run": 44901501025,
+    "unit_suite_conclusion": "success",
     "promotion": "manual; no merge is performed by this workflow",
-    "note": "Official paired run 44731467437: baseline 263/500, candidate 261/500, 500/500 same IDs/source hashes, zero new passes and two regressions (exec84-2-03eae98697, nc243a-04e83cd675). Candidate-run oracle drift was diagnostic; ranking used the frozen main oracle. The apparent exec84 pass in the independent sharded run 44731467420 did not reproduce. PR #400 closed unmerged."
+    "note": "Official paired run 44901501025: frozen main 263/500; candidate 263/500, 500 comparable IDs and source hashes, zero new passes and zero regressions. Seven candidate-run GnuCOBOL fingerprints drifted; ranking used the frozen main oracle. Both motivating cases still fail: nc203a raises UnboundLocalError in generated DIVIDE GIVING code; nc172a raises ZeroDivisionError. PR #402 closed unmerged because the minimum +1 gain gate was not met."
   },
   "latest_baseline_artifact_check": {
-    "run": 44800200895,
-    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44800200895",
+    "run": 44933960078,
+    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44933960078",
     "baseline_sha": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
     "score": 263,
     "denominator": 500,
@@ -2945,31 +3031,29 @@
     "reference_fingerprint_coverage": 500,
     "baseline_job_conclusion": "success",
     "workflow_conclusion": "success",
-    "final_artifact": "pr-tournament-baseline-44800200895",
-    "note": "Exact main baseline artifact from scheduled baseline-only run 44800200895; 500/500 IDs and complete GnuCOBOL fingerprints; 263/500 exact matches."
+    "final_artifact": "pr-tournament-baseline-44933960078",
+    "note": "Latest exact-main baseline-only run; 500/500 results and GnuCOBOL fingerprints verified; 263/500 exact matches."
   },
   "latest_candidate_artifact_comparison": {
-    "run": 44731467437,
-    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44731467437",
-    "baseline_run": 44731467437,
-    "baseline_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44731467437",
+    "run": 44901501025,
+    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44901501025",
+    "baseline_run": 44901501025,
+    "baseline_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44901501025",
     "baseline_sha": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
     "baseline_score": 263,
-    "candidate_pr": 400,
-    "candidate_head_sha": "26d3ea2f355efc636979e30bb801a72515f2dca7",
-    "candidate_merge_sha": "007e7a282d79c4d2e482b9316963e4353716f92f",
-    "candidate_score": 261,
-    "candidate_score_against_frozen_oracle": 261,
+    "candidate_pr": 402,
+    "candidate_head_sha": "183cbc2852f4426d6a5ff4257759f3009b149227",
+    "candidate_merge_sha": "f9219305de84a74952d2b32e9f2e0e29680c9bb7",
+    "candidate_score": 263,
+    "candidate_score_against_frozen_oracle": 263,
     "denominator": 500,
     "comparable_cases": 500,
+    "source_hash_matches": 500,
     "new_passes": 0,
     "new_pass_case_ids": [],
-    "regressions": 2,
-    "regressed_case_ids": [
-      "exec84-2-03eae98697",
-      "nc243a-04e83cd675"
-    ],
-    "oracle_drift_count": 9,
+    "regressions": 0,
+    "regressed_case_ids": [],
+    "oracle_drift_count": 7,
     "oracle_drift_case_ids": [
       "cob-simpleinventory-6af451140a",
       "collatz-6e335e6eda",
@@ -2977,18 +3061,15 @@
       "intrdate-0517c3d81c",
       "pullydis-9e45af6c84",
       "randombingo-e50339cc12",
-      "randomnumbers-d8fc7ee85b",
-      "rock-paper-scissors-ad6321acf1",
-      "rolldice-08e3de1a0e"
+      "randomnumbers-d8fc7ee85b"
     ],
     "method": "official paired workflow; frozen main GnuCOBOL stdout SHA-256, byte length and return code per ID",
-    "source_hash_matches": 500,
     "archive_md5_verified": true,
     "eligible": false,
-    "decision": "ineligible_zero_gain_two_regressions",
-    "note": "Official paired run 44731467437: baseline 263/500, candidate 261/500, 500/500 same IDs/source hashes, zero new passes and two regressions (exec84-2-03eae98697, nc243a-04e83cd675). Candidate-run oracle drift was diagnostic; ranking used the frozen main oracle. The apparent exec84 pass in the independent sharded run 44731467420 did not reproduce. PR #400 closed unmerged."
+    "decision": "ineligible_zero_gain_oracle_drift",
+    "note": "Official paired run 44901501025: frozen main 263/500; candidate 263/500, 500 comparable IDs and source hashes, zero new passes and zero regressions. Seven candidate-run GnuCOBOL fingerprints drifted; ranking used the frozen main oracle. Both motivating cases still fail: nc203a raises UnboundLocalError in generated DIVIDE GIVING code; nc172a raises ZeroDivisionError. PR #402 closed unmerged because the minimum +1 gain gate was not met."
   },
-  "latest_main_holdout_run": 44800200895,
+  "latest_main_holdout_run": 44933960078,
   "branch_comparisons": [
     {
       "seed": 1,
@@ -3384,7 +3465,7 @@
     "promotion": "manual; no merge is performed by this workflow",
     "note": "Official paired run 44731467437: baseline 263/500, candidate 261/500, 500/500 same IDs/source hashes, zero new passes and two regressions (exec84-2-03eae98697, nc243a-04e83cd675). Candidate-run oracle drift was diagnostic; ranking used the frozen main oracle. The apparent exec84 pass in the independent sharded run 44731467420 did not reproduce. PR #400 closed unmerged."
   },
-  "latest_main_run": 44800200895,
+  "latest_main_run": 44933960078,
   "experimental_reference": {
     "score": 258,
     "denominator": 500,
