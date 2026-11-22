@@ -22,9 +22,9 @@ on:
   workflow_dispatch:
     inputs:
       candidate_prs:
-        description: "Open experiment PR numbers, comma-separated"
-        required: true
-        default: "371"
+        description: "Optional PR numbers; leave blank to use the manifest curated candidate_queue"
+        required: false
+        default: ""
         type: string
       max_parallel:
         description: "Maximum simultaneous candidate benchmarks"
@@ -57,12 +57,18 @@ jobs:
         id: freeze
         env:
           GH_TOKEN: ${{ github.token }}
-          REQUESTED_PRS: ${{ github.event.pull_request.number || inputs.candidate_prs || '371' }}
+          REQUESTED_PRS: ${{ github.event.pull_request.number || inputs.candidate_prs || '' }}
         run: |
           set -euo pipefail
           baseline_sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
           candidates='[]'
-          IFS=',' read -ra prs <<< "$REQUESTED_PRS"
+          if [ -n "$REQUESTED_PRS" ]; then
+            IFS=',' read -ra prs <<< "$REQUESTED_PRS"
+          else
+            # Scheduled/push runs use only the curated manifest queue. Do not sweep
+            # every open PR: stale 16/30-seed cohort PRs would duplicate old hypotheses.
+            mapfile -t prs < <(python -c 'import json; from pathlib import Path; m=json.loads(Path("experiments/failure-tournament/manifest.json").read_text()); q=m.get("current_main_pr_tournament",{}).get("candidate_queue",[]); [print(x.get("pr") if isinstance(x,dict) else x) for x in q]')
+          fi
           for raw in "${prs[@]}"; do
             pr=$(echo "$raw" | tr -d '[:space:]')
             [[ "$pr" =~ ^[0-9]+$ ]] || { echo "::warning::Ignoring invalid PR value: $raw"; continue; }
