@@ -4707,3 +4707,88 @@ MAIN.
                 os.chdir(previous)
         self.assertEqual(output.getvalue(), "", generated)
         self.assertEqual(written, "ABCD\n", generated)
+
+
+class SearchAllNestedOccursReferenceRegressionTests(unittest.TestCase):
+    def test_search_all_preserves_outer_subscript_for_nested_table(self):
+        variables = {
+            "WS-OUTER": cobol2py.CobolVar(
+                level=1, name="WS-OUTER", is_group=True, is_array=True,
+                occurs=2, indexed_by="WS-OUTER-IDX",
+            ),
+            "WS-ENTRY": cobol2py.CobolVar(
+                level=5, name="WS-ENTRY", is_group=True, is_array=True,
+                occurs=3, indexed_by="WS-ENTRY-IDX",
+                ascending_key="WS-KEY", parent_name="WS-OUTER",
+            ),
+            "WS-KEY": cobol2py.CobolVar(
+                level=10, name="WS-KEY", pic="X(3)", parent_name="WS-ENTRY",
+            ),
+            "WS-TARGET": cobol2py.CobolVar(
+                level=77, name="WS-TARGET", pic="X(3)",
+            ),
+        }
+        node = cobol2py.Node(
+            kind="search_all",
+            text="SEARCH ALL WS-ENTRY(WS-OUTER-IDX)",
+            line=77,
+            body=[
+                cobol2py.Node(
+                    kind="when",
+                    text="WS-KEY(WS-ENTRY-IDX) = WS-TARGET",
+                    line=78,
+                    then_branch=[
+                        cobol2py.Node(kind="stmt", text='DISPLAY "FOUND"', line=79)
+                    ],
+                )
+            ],
+        )
+        generated = "\n".join(
+            cobol2py.translate_nodes([node], set(), 0, variables)
+        )
+        compile(generated, "<search-all-nested-occurs>", "exec")
+        self.assertIn(
+            "ws_outer[int(ws_outer_idx) - 1]['ws_entry']",
+            generated,
+        )
+        self.assertIn("['ws_key']", generated)
+        self.assertIn("ws_entry_idx =", generated)
+
+    def test_search_all_accepts_qualified_nested_table_name(self):
+        variables = {
+            "WS-OUTER": cobol2py.CobolVar(
+                level=1, name="WS-OUTER", is_group=True, is_array=True,
+                occurs=2, indexed_by="WS-OUTER-IDX",
+            ),
+            "WS-ENTRY": cobol2py.CobolVar(
+                level=5, name="WS-ENTRY", is_group=True, is_array=True,
+                occurs=3, indexed_by="WS-ENTRY-IDX",
+                ascending_key="WS-KEY", parent_name="WS-OUTER",
+            ),
+            "WS-KEY": cobol2py.CobolVar(
+                level=10, name="WS-KEY", pic="X(3)", parent_name="WS-ENTRY",
+            ),
+            "WS-TARGET": cobol2py.CobolVar(
+                level=77, name="WS-TARGET", pic="X(3)",
+            ),
+        }
+        node = cobol2py.Node(
+            kind="search_all",
+            text="SEARCH ALL WS-ENTRY OF WS-OUTER(WS-OUTER-IDX)",
+            line=87,
+            body=[
+                cobol2py.Node(
+                    kind="when",
+                    text="WS-KEY(WS-ENTRY-IDX) = WS-TARGET",
+                    line=88,
+                )
+            ],
+        )
+        generated = "\n".join(
+            cobol2py.translate_nodes([node], set(), 0, variables)
+        )
+        compile(generated, "<search-all-qualified-nested-occurs>", "exec")
+        self.assertIn(
+            "ws_outer[int(ws_outer_idx) - 1]['ws_entry']",
+            generated,
+        )
