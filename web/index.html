@@ -4773,8 +4773,20 @@ def translate_nodes(
             out.extend(body)
 
         elif node.kind == "search_all":
-            table_match = re.match(r"SEARCH\s+ALL\s+([A-Za-z0-9_-]+)", node.text, re.IGNORECASE)
-            table_name = table_match.group(1).upper() if table_match else ""
+            # SEARCH ALL may address an inner OCCURS table through an
+            # enclosing table's index, e.g. SEARCH ALL ITEM(OUTER-IDX).
+            # Preserve the complete qualified/subscripted table reference:
+            # dropping it makes the generated key path index a list as though
+            # it were a record dict (or searches the wrong outer occurrence).
+            table_match = re.match(
+                r"SEARCH\s+ALL\s+([A-Za-z0-9_-]+(?:\s*\([^()]*\))?"
+                r"(?:\s+(?:OF|IN)\s+[A-Za-z0-9_-]+(?:\s*\([^()]*\))?)*)",
+                node.text,
+                re.IGNORECASE,
+            )
+            table_reference = table_match.group(1).strip() if table_match else ""
+            table_name_match = re.match(r"([A-Za-z0-9_-]+)", table_reference)
+            table_name = table_name_match.group(1).upper() if table_name_match else ""
             table = (variables or {}).get(table_name)
             when_branch = next((branch for branch in node.body if branch.kind == "when" and branch.text.upper() != "AT END"), None)
             at_end_branch = next((branch for branch in node.body if branch.kind == "when" and branch.text.upper() == "AT END"), None)
@@ -4790,7 +4802,7 @@ def translate_nodes(
             if table is None or not table.is_array or not table.is_group or not table.ascending_key or not key_match or key_name != table.ascending_key or not index_name:
                 out.append("    " * indent + f"# SEARCH ALL no traducido: {node.text} (requiere tabla OCCURS con ASCENDING KEY y WHEN soportado)")
             else:
-                table_expr = normalize_data_reference(table_name, variables)
+                table_expr = normalize_data_reference(table_reference, variables)
                 key_expr = lambda index: f"{table_expr}[{index}][{normalize_name(key_name)!r}]"
                 target_expr = translate_literal(search_value, variables)
                 size_expr = normalize_data_reference(table.depending_on, variables) if table.depending_on else str(table.occurs or 0)
