@@ -2492,39 +2492,57 @@
         {
           "id": "nc233a-933ce1010e",
           "status": "failed",
-          "exception": "KeyError"
+          "candidate_returncode": 1,
+          "candidate_stdout_length": 0,
+          "exception": null,
+          "exception_verified": false
         },
         {
           "id": "nc2334-2-4c65f37e93",
           "status": "failed",
-          "exception": "KeyError"
+          "candidate_returncode": 1,
+          "candidate_stdout_length": 0,
+          "exception": null,
+          "exception_verified": false
         },
         {
           "id": "nc233a-aed140c18a",
           "status": "failed",
-          "exception": "KeyError"
+          "candidate_returncode": 1,
+          "candidate_stdout_length": 0,
+          "exception": null,
+          "exception_verified": false
         },
         {
           "id": "nc235a-51f79a11be",
           "status": "failed",
-          "exception": "TypeError"
+          "candidate_returncode": 1,
+          "candidate_stdout_length": 0,
+          "exception": null,
+          "exception_verified": false
         },
         {
           "id": "nc238a-715c9f78af",
           "status": "failed",
-          "exception": "UnboundLocalError"
+          "candidate_returncode": 1,
+          "candidate_stdout_length": 0,
+          "exception": null,
+          "exception_verified": false
         },
         {
           "id": "nc238a-64f4610536",
           "status": "failed",
-          "exception": "UnboundLocalError"
+          "candidate_returncode": 1,
+          "candidate_stdout_length": 0,
+          "exception": null,
+          "exception_verified": false
         }
       ],
       "eligible": false,
       "decision": "ineligible_transient_timeout_gain_motivating_cases_unfixed",
       "status": "completed",
       "closed_unmerged": true,
-      "note": "Official paired run 45022022053 initially marked the candidate eligible (+1, zero regressions) against the frozen baseline. Revalidation against a second exact-main run 45056162017 on the same base SHA shows no stable gain: candidate outputs score 263/500, 0 gains and 0 regressions against the later main oracle. The apparent exec84 gain was a baseline timeout flake; all six motivating SEARCH ALL cases still fail. PR #405 was closed without merge.",
+      "note": "Official paired run 45022022053 initially marked the candidate eligible (+1, zero regressions) against the frozen baseline. Revalidation against a second exact-main run 45056162017 on the same base SHA shows no stable gain: candidate outputs score 263/500, 0 gains and 0 regressions against the later main oracle. The apparent exec84 gain was a baseline timeout flake; all six motivating SEARCH ALL cases still fail with return code 1 and stdout length 0; the artifact contains no stderr or exception-class field, so the exact exception type is unverified. PR #405 was closed without merge.",
       "candidate_score": 264,
       "new_passes": 1,
       "new_pass_case_ids": [
@@ -2674,7 +2692,7 @@
     "revalidated_regressions": 0,
     "revalidated_regressed_case_ids": [],
     "promotion": "not promoted; candidate closed unmerged",
-    "note": "Official paired run 45022022053 initially marked the candidate eligible (+1, zero regressions) against the frozen baseline. Revalidation against a second exact-main run 45056162017 on the same base SHA shows no stable gain: candidate outputs score 263/500, 0 gains and 0 regressions against the later main oracle. The apparent exec84 gain was a baseline timeout flake; all six motivating SEARCH ALL cases still fail. PR #405 was closed without merge."
+    "note": "Official paired run 45022022053 initially marked the candidate eligible (+1, zero regressions) against the frozen baseline. Revalidation against a second exact-main run 45056162017 on the same base SHA shows no stable gain: candidate outputs score 263/500, 0 gains and 0 regressions against the later main oracle. The apparent exec84 gain was a baseline timeout flake; all six motivating SEARCH ALL cases still fail with return code 1 and stdout length 0; the artifact contains no stderr or exception-class field, so the exact exception type is unverified. PR #405 was closed without merge."
   },
   "latest_baseline_artifact_check": {
     "run": 45056162017,
@@ -2737,7 +2755,7 @@
     "archive_md5_verified": true,
     "eligible": false,
     "decision": "ineligible_transient_timeout_gain_motivating_cases_unfixed",
-    "note": "Official paired run 45022022053 initially marked the candidate eligible (+1, zero regressions) against the frozen baseline. Revalidation against a second exact-main run 45056162017 on the same base SHA shows no stable gain: candidate outputs score 263/500, 0 gains and 0 regressions against the later main oracle. The apparent exec84 gain was a baseline timeout flake; all six motivating SEARCH ALL cases still fail. PR #405 was closed without merge."
+    "note": "Official paired run 45022022053 initially marked the candidate eligible (+1, zero regressions) against the frozen baseline. Revalidation against a second exact-main run 45056162017 on the same base SHA shows no stable gain: candidate outputs score 263/500, 0 gains and 0 regressions against the later main oracle. The apparent exec84 gain was a baseline timeout flake; all six motivating SEARCH ALL cases still fail with return code 1 and stdout length 0; the artifact contains no stderr or exception-class field, so the exact exception type is unverified. PR #405 was closed without merge."
   },
   "latest_main_holdout_run": 45056162017,
   "branch_comparisons": [
