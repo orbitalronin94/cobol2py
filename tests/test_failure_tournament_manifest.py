@@ -125,7 +125,7 @@ class FailureTournamentManifestTests(unittest.TestCase):
         self.assertEqual(MANIFEST["readiness"]["audit_main_sha"], "b26cc0335708dab99737cc902c1d96186fec9f94")
         self.assertTrue(audit["all_30_exist"])
         self.assertTrue(audit["all_30_diverged"])
-        self.assertEqual(audit["ahead_only_candidates"], [])
+        self.assertEqual(audit["ahead_only_candidates"], 0)
         self.assertEqual(len(audit["branch_comparisons"]), 30)
         self.assertTrue(all(item["status"] == "diverged" for item in audit["branch_comparisons"]))
         self.assertEqual(MANIFEST["readiness"]["candidates_without_translator_or_tests"], [11, 12, 13, 14, 15])
