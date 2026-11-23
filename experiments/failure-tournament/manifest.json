@@ -2192,7 +2192,14 @@
       "decision": "ineligible_transient_timeout_gain_motivating_cases_unfixed",
       "status": "completed",
       "closed_unmerged": true,
-      "note": "Official paired run 45022022053 initially marked the candidate eligible (+1, zero regressions) against the frozen baseline. Revalidation against a second exact-main run 45056162017 on the same base SHA shows no stable gain: candidate outputs score 263/500, 0 gains and 0 regressions against the later main oracle. The apparent exec84 gain was a baseline timeout flake; all six motivating SEARCH ALL cases still fail. PR #405 was closed without merge."
+      "note": "Official paired run 45022022053 initially marked the candidate eligible (+1, zero regressions) against the frozen baseline. Revalidation against a second exact-main run 45056162017 on the same base SHA shows no stable gain: candidate outputs score 263/500, 0 gains and 0 regressions against the later main oracle. The apparent exec84 gain was a baseline timeout flake; all six motivating SEARCH ALL cases still fail. PR #405 was closed without merge.",
+      "candidate_score": 264,
+      "new_passes": 1,
+      "new_pass_case_ids": [
+        "exec84-2-03eae98697"
+      ],
+      "regressions": 0,
+      "regressed_case_ids": []
     },
     "candidate_queue": [],
     "isolation_scope": {
@@ -2829,18 +2836,22 @@
     "note": "Previous exact-SHA measurement of the same main and translator; superseded as the latest baseline by run 44800200895."
   },
   "pending_main_remeasurement": {
-    "status": "pending",
-    "trigger": "push to main after PR #404 merges the manifest update",
+    "status": "completed",
+    "trigger": "push to main after PR #404 merged",
     "workflow": ".github/workflows/current-main-pr-tournament.yml",
     "base_sha_at_pr_creation": "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc",
-    "target": 500,
+    "target_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
+    "run": 45056162017,
+    "baseline_score": 263,
+    "denominator": 500,
     "queue_empty": true,
     "expected_mode": "baseline-only",
     "corpus": "X-COBOL v2",
     "archive_md5_expected": "cbd974caed72b0836777dc2305928ed3",
     "skip": 500,
+    "target": 500,
     "comparison": "exact stdout bytes and process return code against frozen GnuCOBOL fingerprints",
-    "target_sha_policy": "the resulting PR #404 merge commit SHA, resolved by the workflow"
+    "note": "Completed successfully on exact post-PR #404 main SHA b26cc0335708dab99737cc902c1d96186fec9f94; baseline artifact has 500 unique IDs and 500 complete oracle fingerprints, 263/500. No candidate was queued."
   },
   "latest_infrastructure_merge": {
     "pr": 403,
