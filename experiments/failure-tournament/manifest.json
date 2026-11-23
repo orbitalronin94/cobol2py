@@ -221,10 +221,10 @@
     "score": 263,
     "denominator": 500,
     "percent": 52.6,
-    "source_run": 45018142254,
-    "source_sha": "585bb618373189c657fd5cec43671b6ebb3c9e0e",
-    "baseline_sha": "585bb618373189c657fd5cec43671b6ebb3c9e0e",
-    "current_main_sha": "585bb618373189c657fd5cec43671b6ebb3c9e0e",
+    "source_run": 45056162017,
+    "source_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
+    "baseline_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
+    "current_main_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
     "base_ref": "main",
     "kind": "current_main_verified",
     "corpus": "X-COBOL v2",
@@ -252,9 +252,9 @@
         "failed": 237
       }
     ],
-    "note": "Current-main push tournament run 45018142254 executed all 500 X-COBOL v2 cases on exact main SHA 585bb618373189c657fd5cec43671b6ebb3c9e0e; archive MD5 cbd974caed72b0836777dc2305928ed3 verified, 500 unique IDs and 500 complete GnuCOBOL stdout SHA-256/length/return-code fingerprints; 263 passed and 237 failed.",
-    "main_sha_at_audit": "585bb618373189c657fd5cec43671b6ebb3c9e0e",
-    "main_head_at_audit": "585bb618373189c657fd5cec43671b6ebb3c9e0e"
+    "note": "Run 45056162017 completed on exact main SHA b26cc0335708dab99737cc902c1d96186fec9f94. Artifact pr-tournament-baseline-45056162017 contains 500 unique IDs and 500 complete GnuCOBOL stdout SHA-256/length/return-code fingerprints; X-COBOL v2 MD5 verified; 263 passed and 237 failed.",
+    "main_sha_at_audit": "b26cc0335708dab99737cc902c1d96186fec9f94",
+    "main_head_at_audit": "b26cc0335708dab99737cc902c1d96186fec9f94"
   },
   "last_tournament_attempt": {
     "run": 42272058313,
@@ -292,10 +292,14 @@
       "The historical 16-candidate artifacts already cover UNSTRING TALLYING IN, WRITE FROM literal, READ-after-EOF status, OPEN mixed modes, INSPECT REPLACING, arithmetic reference length and STRING ZEROES. Those hypotheses are not duplicated.",
       "PR #403 merged as 9fb72b514c74cef4b5fb10d01b4d0110e9e985fc; it makes the legacy 105-case PR screen manual-only. PR checks and the 50-case smoke all passed; that screen is diagnostic and not a 500-case promotion result.",
       "The current-main tournament queue remains empty. A manifest-path push will invoke the existing current-main workflow for a baseline-only 500-case remeasurement; no candidate is being promoted.",
-      "Cross-run diagnostic between 44933960078 and 45018142254: same 500 IDs/source hashes and same 263/500 score, but 13 GnuCOBOL stdout fingerprints drifted across independent runs; two candidate outputs also varied on timeout-killed programs. Ranking must continue to use each run's frozen main oracle."
+      "Cross-run diagnostic between 44933960078 and 45018142254: same 500 IDs/source hashes and same 263/500 score, but 13 GnuCOBOL stdout fingerprints drifted across independent runs; two candidate outputs also varied on timeout-killed programs. Ranking must continue to use each run's frozen main oracle.",
+      "2026-11-23 exact-main baseline: run 45056162017 on SHA b26cc0335708dab99737cc902c1d96186fec9f94, 263/500 (52.6%), X-COBOL v2 MD5 cbd974caed72b0836777dc2305928ed3, skip=500, target=500, 500 unique IDs and 500 complete GnuCOBOL fingerprints.",
+      "PR #405 paired run 45022022053 initially reported +1 and zero regressions, but the only apparent gain exec84-2-03eae98697 was a 20.004698-second main translator timeout. A second exact-main run on the same SHA passed that case in 14.349943 seconds; candidate re-scored against the later main oracle is 263/500 with 0 gains and 0 regressions. All six SEARCH ALL motivating cases still fail (three KeyError, one TypeError, two UnboundLocalError). PR #405 closed unmerged.",
+      "Fresh 2026-11-23 audit against main b26cc0335708dab99737cc902c1d96186fec9f94: 30/30 manifest branches exist, 30 distinct heads, 30/30 diverged, 0 ahead-only. Seeds 1-10 are stale code/test-only branches; seeds 11-15 lack translator/tests; seeds 16-30 contain unrelated workflow/benchmark/documentation paths.",
+      "The 30-seed workflow remains manual workflow_dispatch and readiness blocked; no 30-seed tournament has been started. PR #349 added the harness only, not 30 completed candidate implementations. The historical 16-candidate artifacts are not duplicated."
     ],
-    "audit_date": "2026-11-22",
-    "audit_main_sha": "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc",
+    "audit_date": "2026-11-23",
+    "audit_main_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
     "candidate_branch_refs": 30,
     "candidate_branches_diverged": 30,
     "candidate_branches_ahead": [],
@@ -345,364 +349,53 @@
     ],
     "latest_main_holdout_run": 44800200895,
     "candidate_branch_audit": {
-      "compared_against_main": "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc",
+      "compared_against_main": "b26cc0335708dab99737cc902c1d96186fec9f94",
+      "current_main_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
+      "total_manifest_branches": 30,
+      "existing_branches": 30,
+      "missing_branches": [],
       "all_30_exist": true,
       "all_30_diverged": true,
-      "ahead_only_candidates": 0,
-      "seed_11_to_15_change_summary": "workflow/documentation only; no cobol2py.py, web/index.html, ronin/ or tests changes",
-      "latest_comparison": {
-        "compared_against_main": "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc",
-        "current_main_sha": "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc",
-        "total_manifest_branches": 30,
-        "existing_branches": 30,
-        "missing_branches": [],
-        "all_30_exist": true,
-        "all_30_diverged": true,
-        "distinct_branch_heads": 30,
-        "ahead_only": 0,
-        "diverged": 30,
-        "behind_only": 0,
-        "without_translator_or_tests": [
-          11,
-          12,
-          13,
-          14,
-          15
-        ],
-        "workflow_noise_branches": [
-          16,
-          17,
-          18,
-          19,
-          20,
-          21,
-          22,
-          23,
-          24,
-          25,
-          26,
-          27,
-          28,
-          29,
-          30
-        ],
-        "matching_prefix_refs": 31,
-        "extra_unmanifested_refs": [
-          "experiment-failure-seed/10-syntax-evaluate-also"
-        ],
-        "branch_comparisons": [
-          {
-            "seed": 1,
-            "branch": "experiment-failure-seed/01-syntax-condition-operators",
-            "status": "diverged",
-            "ahead_by": 4,
-            "behind_by": 216,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": false
-          },
-          {
-            "seed": 2,
-            "branch": "experiment-failure-seed/02-syntax-abbreviated-relations",
-            "status": "diverged",
-            "ahead_by": 3,
-            "behind_by": 212,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": false
-          },
-          {
-            "seed": 3,
-            "branch": "experiment-failure-seed/03-syntax-multidimensional-subscripts",
-            "status": "diverged",
-            "ahead_by": 3,
-            "behind_by": 212,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": false
-          },
-          {
-            "seed": 4,
-            "branch": "experiment-failure-seed/04-syntax-reference-modification",
-            "status": "diverged",
-            "ahead_by": 3,
-            "behind_by": 212,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": false
-          },
-          {
-            "seed": 5,
-            "branch": "experiment-failure-seed/05-syntax-inspect-before-after",
-            "status": "diverged",
-            "ahead_by": 3,
-            "behind_by": 216,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": false
-          },
-          {
-            "seed": 6,
-            "branch": "experiment-failure-seed/06-syntax-inspect-replacing",
-            "status": "diverged",
-            "ahead_by": 5,
-            "behind_by": 212,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": false
-          },
-          {
-            "seed": 7,
-            "branch": "experiment-failure-seed/07-syntax-string-delimited",
-            "status": "diverged",
-            "ahead_by": 3,
-            "behind_by": 212,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": false
-          },
-          {
-            "seed": 8,
-            "branch": "experiment-failure-seed/08-syntax-unstring-multiple-delimiters",
-            "status": "diverged",
-            "ahead_by": 4,
-            "behind_by": 216,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": false
-          },
-          {
-            "seed": 9,
-            "branch": "experiment-failure-seed/09-syntax-perform-inline",
-            "status": "diverged",
-            "ahead_by": 4,
-            "behind_by": 212,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": false
-          },
-          {
-            "seed": 10,
-            "branch": "experiment-failure-seed/10-syntax-evaluate-also-rebuilt",
-            "status": "diverged",
-            "ahead_by": 3,
-            "behind_by": 20,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": false
-          },
-          {
-            "seed": 11,
-            "branch": "experiment-failure-seed/11-runtime-initialize-replacing",
-            "status": "diverged",
-            "ahead_by": 3,
-            "behind_by": 693,
-            "translator_change": false,
-            "regression_test_change": false,
-            "workflow_noise": true
-          },
-          {
-            "seed": 12,
-            "branch": "experiment-failure-seed/12-runtime-initialize-occurs",
-            "status": "diverged",
-            "ahead_by": 2,
-            "behind_by": 605,
-            "translator_change": false,
-            "regression_test_change": false,
-            "workflow_noise": true
-          },
-          {
-            "seed": 13,
-            "branch": "experiment-failure-seed/13-runtime-filler-storage",
-            "status": "diverged",
-            "ahead_by": 2,
-            "behind_by": 601,
-            "translator_change": false,
-            "regression_test_change": false,
-            "workflow_noise": true
-          },
-          {
-            "seed": 14,
-            "branch": "experiment-failure-seed/14-runtime-redefines-overlay",
-            "status": "diverged",
-            "ahead_by": 2,
-            "behind_by": 600,
-            "translator_change": false,
-            "regression_test_change": false,
-            "workflow_noise": true
-          },
-          {
-            "seed": 15,
-            "branch": "experiment-failure-seed/15-runtime-numeric-move",
-            "status": "diverged",
-            "ahead_by": 2,
-            "behind_by": 598,
-            "translator_change": false,
-            "regression_test_change": false,
-            "workflow_noise": true
-          },
-          {
-            "seed": 16,
-            "branch": "experiment-failure-seed/16-runtime-decimal-arithmetic",
-            "status": "diverged",
-            "ahead_by": 394,
-            "behind_by": 596,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": true
-          },
-          {
-            "seed": 17,
-            "branch": "experiment-failure-seed/17-runtime-rounded-size-error",
-            "status": "diverged",
-            "ahead_by": 66,
-            "behind_by": 546,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": true
-          },
-          {
-            "seed": 18,
-            "branch": "experiment-failure-seed/18-runtime-divide-remainder",
-            "status": "diverged",
-            "ahead_by": 58,
-            "behind_by": 546,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": true
-          },
-          {
-            "seed": 19,
-            "branch": "experiment-failure-seed/19-runtime-table-boundaries",
-            "status": "diverged",
-            "ahead_by": 6,
-            "behind_by": 358,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": true
-          },
-          {
-            "seed": 20,
-            "branch": "experiment-failure-seed/20-runtime-search-all-key",
-            "status": "diverged",
-            "ahead_by": 15,
-            "behind_by": 333,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": true
-          },
-          {
-            "seed": 21,
-            "branch": "experiment-failure-seed/21-runtime-search-serial",
-            "status": "diverged",
-            "ahead_by": 8,
-            "behind_by": 333,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": true
-          },
-          {
-            "seed": 22,
-            "branch": "experiment-failure-seed/22-runtime-call-static",
-            "status": "diverged",
-            "ahead_by": 37,
-            "behind_by": 333,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": true
-          },
-          {
-            "seed": 23,
-            "branch": "experiment-failure-seed/23-runtime-call-by-reference",
-            "status": "diverged",
-            "ahead_by": 25,
-            "behind_by": 265,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": true
-          },
-          {
-            "seed": 24,
-            "branch": "experiment-failure-seed/24-runtime-call-by-content",
-            "status": "diverged",
-            "ahead_by": 24,
-            "behind_by": 262,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": true
-          },
-          {
-            "seed": 25,
-            "branch": "experiment-failure-seed/25-runtime-linkage-using",
-            "status": "diverged",
-            "ahead_by": 24,
-            "behind_by": 262,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": true
-          },
-          {
-            "seed": 26,
-            "branch": "experiment-failure-seed/26-runtime-file-open-modes",
-            "status": "diverged",
-            "ahead_by": 25,
-            "behind_by": 262,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": true
-          },
-          {
-            "seed": 27,
-            "branch": "experiment-failure-seed/27-runtime-file-read-write",
-            "status": "diverged",
-            "ahead_by": 20,
-            "behind_by": 262,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": true
-          },
-          {
-            "seed": 28,
-            "branch": "experiment-failure-seed/28-runtime-perform-control-flow",
-            "status": "diverged",
-            "ahead_by": 19,
-            "behind_by": 262,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": true
-          },
-          {
-            "seed": 29,
-            "branch": "experiment-failure-seed/29-runtime-go-to-depending",
-            "status": "diverged",
-            "ahead_by": 20,
-            "behind_by": 262,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": true
-          },
-          {
-            "seed": 30,
-            "branch": "experiment-failure-seed/30-runtime-data-scope-initialization",
-            "status": "diverged",
-            "ahead_by": 30,
-            "behind_by": 256,
-            "translator_change": true,
-            "regression_test_change": true,
-            "workflow_noise": true
-          }
-        ],
-        "note": "Fresh compare on 2026-11-22 against main 9fb72b514c74cef4b5fb10d01b4d0110e9e985fc: all 30 manifest branches exist, have 30 distinct heads, and all 30 are diverged; none is ahead-only. Seeds 11-15 contain only workflow/documentation changes, no translator or tests. Seeds 16-30 mix translator/tests with unrelated workflow, benchmark, or documentation paths. Seeds 1-10 are code/test-only but stale. One extra unmanifested prefix ref remains.",
-        "audit_date": "2026-11-22"
-      },
-      "current_main_sha": "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc",
+      "distinct_branch_heads": 30,
+      "ahead_only": 0,
+      "diverged": 30,
+      "behind_only": 0,
+      "without_translator_or_tests": [
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "workflow_noise_branches": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30
+      ],
+      "matching_prefix_refs": 31,
+      "extra_unmanifested_refs": [
+        "experiment-failure-seed/10-syntax-evaluate-also"
+      ],
       "branch_comparisons": [
         {
           "seed": 1,
           "branch": "experiment-failure-seed/01-syntax-condition-operators",
+          "head_sha": "37abd23b987b974db0ae06354136bc1fd004f0d5",
           "status": "diverged",
           "ahead_by": 4,
-          "behind_by": 216,
+          "behind_by": 217,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": false
@@ -710,9 +403,10 @@
         {
           "seed": 2,
           "branch": "experiment-failure-seed/02-syntax-abbreviated-relations",
+          "head_sha": "4306becb6bde2247293f78f8a12fdf4ecedac3be",
           "status": "diverged",
           "ahead_by": 3,
-          "behind_by": 212,
+          "behind_by": 213,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": false
@@ -720,9 +414,10 @@
         {
           "seed": 3,
           "branch": "experiment-failure-seed/03-syntax-multidimensional-subscripts",
+          "head_sha": "cb71da7c3aadc6af893231831124d39505aee78a",
           "status": "diverged",
           "ahead_by": 3,
-          "behind_by": 212,
+          "behind_by": 213,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": false
@@ -730,9 +425,10 @@
         {
           "seed": 4,
           "branch": "experiment-failure-seed/04-syntax-reference-modification",
+          "head_sha": "7d27fb7871fc9658bc268da00288512f45e0f22c",
           "status": "diverged",
           "ahead_by": 3,
-          "behind_by": 212,
+          "behind_by": 213,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": false
@@ -740,9 +436,10 @@
         {
           "seed": 5,
           "branch": "experiment-failure-seed/05-syntax-inspect-before-after",
+          "head_sha": "1186269c3d815ef91513d8afee3936a2ee8908f7",
           "status": "diverged",
           "ahead_by": 3,
-          "behind_by": 216,
+          "behind_by": 217,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": false
@@ -750,9 +447,10 @@
         {
           "seed": 6,
           "branch": "experiment-failure-seed/06-syntax-inspect-replacing",
+          "head_sha": "f884b1f2e33f341ea269e5d2a29aa88024b115c6",
           "status": "diverged",
           "ahead_by": 5,
-          "behind_by": 212,
+          "behind_by": 213,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": false
@@ -760,9 +458,10 @@
         {
           "seed": 7,
           "branch": "experiment-failure-seed/07-syntax-string-delimited",
+          "head_sha": "4861fcdf522bfe7358a718badf91fa978745dc9d",
           "status": "diverged",
           "ahead_by": 3,
-          "behind_by": 212,
+          "behind_by": 213,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": false
@@ -770,9 +469,10 @@
         {
           "seed": 8,
           "branch": "experiment-failure-seed/08-syntax-unstring-multiple-delimiters",
+          "head_sha": "4444a957f2dd310a3d985faa2a4e4ea536da4c75",
           "status": "diverged",
           "ahead_by": 4,
-          "behind_by": 216,
+          "behind_by": 217,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": false
@@ -780,9 +480,10 @@
         {
           "seed": 9,
           "branch": "experiment-failure-seed/09-syntax-perform-inline",
+          "head_sha": "fcca7c8cbff82f2445adb56a4347cdfb1e1009bc",
           "status": "diverged",
           "ahead_by": 4,
-          "behind_by": 212,
+          "behind_by": 213,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": false
@@ -790,9 +491,10 @@
         {
           "seed": 10,
           "branch": "experiment-failure-seed/10-syntax-evaluate-also-rebuilt",
+          "head_sha": "7aa52ae026349d076e4b04d0b160d658f95ac0e1",
           "status": "diverged",
           "ahead_by": 3,
-          "behind_by": 20,
+          "behind_by": 21,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": false
@@ -800,9 +502,10 @@
         {
           "seed": 11,
           "branch": "experiment-failure-seed/11-runtime-initialize-replacing",
+          "head_sha": "4b5b5799c034c114478684638265a1eb22d4d8db",
           "status": "diverged",
           "ahead_by": 3,
-          "behind_by": 693,
+          "behind_by": 694,
           "translator_change": false,
           "regression_test_change": false,
           "workflow_noise": true
@@ -810,9 +513,10 @@
         {
           "seed": 12,
           "branch": "experiment-failure-seed/12-runtime-initialize-occurs",
+          "head_sha": "5c7009b07939f50a81cf9f84189ce050e350bb8a",
           "status": "diverged",
           "ahead_by": 2,
-          "behind_by": 605,
+          "behind_by": 606,
           "translator_change": false,
           "regression_test_change": false,
           "workflow_noise": true
@@ -820,6 +524,18 @@
         {
           "seed": 13,
           "branch": "experiment-failure-seed/13-runtime-filler-storage",
+          "head_sha": "fa840f19225e9ed5dec40de0fec8059bc9b96eb3",
+          "status": "diverged",
+          "ahead_by": 2,
+          "behind_by": 602,
+          "translator_change": false,
+          "regression_test_change": false,
+          "workflow_noise": true
+        },
+        {
+          "seed": 14,
+          "branch": "experiment-failure-seed/14-runtime-redefines-overlay",
+          "head_sha": "764f875aa9f0787a47f5edcaaed1e5c61a24f353",
           "status": "diverged",
           "ahead_by": 2,
           "behind_by": 601,
@@ -828,21 +544,12 @@
           "workflow_noise": true
         },
         {
-          "seed": 14,
-          "branch": "experiment-failure-seed/14-runtime-redefines-overlay",
-          "status": "diverged",
-          "ahead_by": 2,
-          "behind_by": 600,
-          "translator_change": false,
-          "regression_test_change": false,
-          "workflow_noise": true
-        },
-        {
           "seed": 15,
           "branch": "experiment-failure-seed/15-runtime-numeric-move",
+          "head_sha": "10fca4d93508285814c6fbfca349aec34a305b94",
           "status": "diverged",
           "ahead_by": 2,
-          "behind_by": 598,
+          "behind_by": 599,
           "translator_change": false,
           "regression_test_change": false,
           "workflow_noise": true
@@ -850,9 +557,10 @@
         {
           "seed": 16,
           "branch": "experiment-failure-seed/16-runtime-decimal-arithmetic",
+          "head_sha": "fb3e6416709d37f229071dcfd7e1e272858dfa0a",
           "status": "diverged",
           "ahead_by": 394,
-          "behind_by": 596,
+          "behind_by": 597,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -860,9 +568,10 @@
         {
           "seed": 17,
           "branch": "experiment-failure-seed/17-runtime-rounded-size-error",
+          "head_sha": "6515c1fbba6dc44981f6d3c2754c2e627df89dd2",
           "status": "diverged",
           "ahead_by": 66,
-          "behind_by": 546,
+          "behind_by": 547,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -870,9 +579,10 @@
         {
           "seed": 18,
           "branch": "experiment-failure-seed/18-runtime-divide-remainder",
+          "head_sha": "61d5029cf5a04f1cba1bc85855c3ba4d74ca8695",
           "status": "diverged",
           "ahead_by": 58,
-          "behind_by": 546,
+          "behind_by": 547,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -880,9 +590,10 @@
         {
           "seed": 19,
           "branch": "experiment-failure-seed/19-runtime-table-boundaries",
+          "head_sha": "21fcbbb1c4fb23d5529cb68140fe7a2aeffe1174",
           "status": "diverged",
           "ahead_by": 6,
-          "behind_by": 358,
+          "behind_by": 359,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -890,9 +601,10 @@
         {
           "seed": 20,
           "branch": "experiment-failure-seed/20-runtime-search-all-key",
+          "head_sha": "a4af64d5c645e60789477f68259f174b948a2795",
           "status": "diverged",
           "ahead_by": 15,
-          "behind_by": 333,
+          "behind_by": 334,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -900,9 +612,10 @@
         {
           "seed": 21,
           "branch": "experiment-failure-seed/21-runtime-search-serial",
+          "head_sha": "8920282d5887afa03ddcc0030cda2f3ee02b7cbc",
           "status": "diverged",
           "ahead_by": 8,
-          "behind_by": 333,
+          "behind_by": 334,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -910,9 +623,10 @@
         {
           "seed": 22,
           "branch": "experiment-failure-seed/22-runtime-call-static",
+          "head_sha": "9af10c71c21857e3a8fed1a4a4e1cc1bd14b48b2",
           "status": "diverged",
           "ahead_by": 37,
-          "behind_by": 333,
+          "behind_by": 334,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -920,9 +634,10 @@
         {
           "seed": 23,
           "branch": "experiment-failure-seed/23-runtime-call-by-reference",
+          "head_sha": "72c1167b1734cbde9a562bdb84ba03671d4085f0",
           "status": "diverged",
           "ahead_by": 25,
-          "behind_by": 265,
+          "behind_by": 266,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -930,9 +645,10 @@
         {
           "seed": 24,
           "branch": "experiment-failure-seed/24-runtime-call-by-content",
+          "head_sha": "7362107d657ef268d4f3200107ba4d692c40ad32",
           "status": "diverged",
           "ahead_by": 24,
-          "behind_by": 262,
+          "behind_by": 263,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -940,9 +656,10 @@
         {
           "seed": 25,
           "branch": "experiment-failure-seed/25-runtime-linkage-using",
+          "head_sha": "44371acf2b45dcd857b919921eb4c05544490dde",
           "status": "diverged",
           "ahead_by": 24,
-          "behind_by": 262,
+          "behind_by": 263,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -950,9 +667,10 @@
         {
           "seed": 26,
           "branch": "experiment-failure-seed/26-runtime-file-open-modes",
+          "head_sha": "8b35694bedf245a4d7adbc75b5e7cd18a6c23ce3",
           "status": "diverged",
           "ahead_by": 25,
-          "behind_by": 262,
+          "behind_by": 263,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -960,9 +678,10 @@
         {
           "seed": 27,
           "branch": "experiment-failure-seed/27-runtime-file-read-write",
+          "head_sha": "1583da344a41500d0e9f3c50ab9394ec199cad20",
           "status": "diverged",
           "ahead_by": 20,
-          "behind_by": 262,
+          "behind_by": 263,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -970,9 +689,10 @@
         {
           "seed": 28,
           "branch": "experiment-failure-seed/28-runtime-perform-control-flow",
+          "head_sha": "29fa42546937ce64e540a6c2265baa9754b885b2",
           "status": "diverged",
           "ahead_by": 19,
-          "behind_by": 262,
+          "behind_by": 263,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -980,9 +700,10 @@
         {
           "seed": 29,
           "branch": "experiment-failure-seed/29-runtime-go-to-depending",
+          "head_sha": "ee8146920919bbfb44a24513cc7731d2808d8192",
           "status": "diverged",
           "ahead_by": 20,
-          "behind_by": 262,
+          "behind_by": 263,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -990,26 +711,16 @@
         {
           "seed": 30,
           "branch": "experiment-failure-seed/30-runtime-data-scope-initialization",
+          "head_sha": "400bbb88a7eed15a5a4da90411afa0bf084f1905",
           "status": "diverged",
           "ahead_by": 30,
-          "behind_by": 256,
+          "behind_by": 257,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
         }
       ],
-      "candidates_without_translator_or_tests": [
-        11,
-        12,
-        13,
-        14,
-        15
-      ],
-      "audit_date": "2026-11-22",
-      "candidate_branches_ahead": [],
-      "candidate_branches_diverged": 30,
-      "candidate_branch_refs": 30,
-      "note": "Audit 2026-11-22 against exact main 9fb72b514c74cef4b5fb10d01b4d0110e9e985fc: 30/30 branches exist, 30 distinct heads, 30 diverged, 0 ahead-only."
+      "note": "Fresh compare on 2026-11-23 against exact main b26cc0335708dab99737cc902c1d96186fec9f94: all 30 manifest branches exist, have 30 distinct heads, all are diverged and none is ahead-only. Seeds 1-10 are translator/test-only but stale; 11-15 contain no translator/tests; 16-30 mix translator/tests with unrelated workflow, benchmark or documentation paths."
     },
     "current_main_sha": "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc",
     "branch_comparisons": [
@@ -1430,10 +1141,10 @@
     "score": 263,
     "denominator": 500,
     "percent": 52.6,
-    "source_run": 45018142254,
-    "source_sha": "585bb618373189c657fd5cec43671b6ebb3c9e0e",
-    "baseline_sha": "585bb618373189c657fd5cec43671b6ebb3c9e0e",
-    "current_main_sha": "585bb618373189c657fd5cec43671b6ebb3c9e0e",
+    "source_run": 45056162017,
+    "source_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
+    "baseline_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
+    "current_main_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
     "base_ref": "main",
     "kind": "current_main_verified",
     "corpus": "X-COBOL v2",
@@ -1461,9 +1172,9 @@
         "failed": 237
       }
     ],
-    "note": "Current-main push tournament run 45018142254 executed all 500 X-COBOL v2 cases on exact main SHA 585bb618373189c657fd5cec43671b6ebb3c9e0e; archive MD5 cbd974caed72b0836777dc2305928ed3 verified, 500 unique IDs and 500 complete GnuCOBOL stdout SHA-256/length/return-code fingerprints; 263 passed and 237 failed.",
-    "main_sha_at_audit": "585bb618373189c657fd5cec43671b6ebb3c9e0e",
-    "main_head_at_audit": "585bb618373189c657fd5cec43671b6ebb3c9e0e"
+    "note": "Run 45056162017 completed on exact main SHA b26cc0335708dab99737cc902c1d96186fec9f94. Artifact pr-tournament-baseline-45056162017 contains 500 unique IDs and 500 complete GnuCOBOL stdout SHA-256/length/return-code fingerprints; X-COBOL v2 MD5 verified; 263 passed and 237 failed.",
+    "main_sha_at_audit": "b26cc0335708dab99737cc902c1d96186fec9f94",
+    "main_head_at_audit": "b26cc0335708dab99737cc902c1d96186fec9f94"
   },
   "additional_candidate_evaluations": {
     "inspect_characters": {
@@ -2008,14 +1719,14 @@
     ]
   },
   "candidate_branch_audit": {
-    "compared_against_main": "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc",
+    "compared_against_main": "b26cc0335708dab99737cc902c1d96186fec9f94",
     "all_30_exist": true,
     "all_30_diverged": true,
-    "ahead_only_candidates": 0,
+    "ahead_only_candidates": [],
     "seed_11_to_15_change_summary": "workflow/documentation only; no cobol2py.py, web/index.html, ronin/ or tests changes",
     "latest_comparison": {
-      "compared_against_main": "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc",
-      "current_main_sha": "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc",
+      "compared_against_main": "b26cc0335708dab99737cc902c1d96186fec9f94",
+      "current_main_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
       "total_manifest_branches": 30,
       "existing_branches": 30,
       "missing_branches": [],
@@ -2057,9 +1768,10 @@
         {
           "seed": 1,
           "branch": "experiment-failure-seed/01-syntax-condition-operators",
+          "head_sha": "37abd23b987b974db0ae06354136bc1fd004f0d5",
           "status": "diverged",
           "ahead_by": 4,
-          "behind_by": 216,
+          "behind_by": 217,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": false
@@ -2067,9 +1779,10 @@
         {
           "seed": 2,
           "branch": "experiment-failure-seed/02-syntax-abbreviated-relations",
+          "head_sha": "4306becb6bde2247293f78f8a12fdf4ecedac3be",
           "status": "diverged",
           "ahead_by": 3,
-          "behind_by": 212,
+          "behind_by": 213,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": false
@@ -2077,9 +1790,10 @@
         {
           "seed": 3,
           "branch": "experiment-failure-seed/03-syntax-multidimensional-subscripts",
+          "head_sha": "cb71da7c3aadc6af893231831124d39505aee78a",
           "status": "diverged",
           "ahead_by": 3,
-          "behind_by": 212,
+          "behind_by": 213,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": false
@@ -2087,9 +1801,10 @@
         {
           "seed": 4,
           "branch": "experiment-failure-seed/04-syntax-reference-modification",
+          "head_sha": "7d27fb7871fc9658bc268da00288512f45e0f22c",
           "status": "diverged",
           "ahead_by": 3,
-          "behind_by": 212,
+          "behind_by": 213,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": false
@@ -2097,9 +1812,10 @@
         {
           "seed": 5,
           "branch": "experiment-failure-seed/05-syntax-inspect-before-after",
+          "head_sha": "1186269c3d815ef91513d8afee3936a2ee8908f7",
           "status": "diverged",
           "ahead_by": 3,
-          "behind_by": 216,
+          "behind_by": 217,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": false
@@ -2107,9 +1823,10 @@
         {
           "seed": 6,
           "branch": "experiment-failure-seed/06-syntax-inspect-replacing",
+          "head_sha": "f884b1f2e33f341ea269e5d2a29aa88024b115c6",
           "status": "diverged",
           "ahead_by": 5,
-          "behind_by": 212,
+          "behind_by": 213,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": false
@@ -2117,9 +1834,10 @@
         {
           "seed": 7,
           "branch": "experiment-failure-seed/07-syntax-string-delimited",
+          "head_sha": "4861fcdf522bfe7358a718badf91fa978745dc9d",
           "status": "diverged",
           "ahead_by": 3,
-          "behind_by": 212,
+          "behind_by": 213,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": false
@@ -2127,9 +1845,10 @@
         {
           "seed": 8,
           "branch": "experiment-failure-seed/08-syntax-unstring-multiple-delimiters",
+          "head_sha": "4444a957f2dd310a3d985faa2a4e4ea536da4c75",
           "status": "diverged",
           "ahead_by": 4,
-          "behind_by": 216,
+          "behind_by": 217,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": false
@@ -2137,9 +1856,10 @@
         {
           "seed": 9,
           "branch": "experiment-failure-seed/09-syntax-perform-inline",
+          "head_sha": "fcca7c8cbff82f2445adb56a4347cdfb1e1009bc",
           "status": "diverged",
           "ahead_by": 4,
-          "behind_by": 212,
+          "behind_by": 213,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": false
@@ -2147,9 +1867,10 @@
         {
           "seed": 10,
           "branch": "experiment-failure-seed/10-syntax-evaluate-also-rebuilt",
+          "head_sha": "7aa52ae026349d076e4b04d0b160d658f95ac0e1",
           "status": "diverged",
           "ahead_by": 3,
-          "behind_by": 20,
+          "behind_by": 21,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": false
@@ -2157,9 +1878,10 @@
         {
           "seed": 11,
           "branch": "experiment-failure-seed/11-runtime-initialize-replacing",
+          "head_sha": "4b5b5799c034c114478684638265a1eb22d4d8db",
           "status": "diverged",
           "ahead_by": 3,
-          "behind_by": 693,
+          "behind_by": 694,
           "translator_change": false,
           "regression_test_change": false,
           "workflow_noise": true
@@ -2167,9 +1889,10 @@
         {
           "seed": 12,
           "branch": "experiment-failure-seed/12-runtime-initialize-occurs",
+          "head_sha": "5c7009b07939f50a81cf9f84189ce050e350bb8a",
           "status": "diverged",
           "ahead_by": 2,
-          "behind_by": 605,
+          "behind_by": 606,
           "translator_change": false,
           "regression_test_change": false,
           "workflow_noise": true
@@ -2177,6 +1900,18 @@
         {
           "seed": 13,
           "branch": "experiment-failure-seed/13-runtime-filler-storage",
+          "head_sha": "fa840f19225e9ed5dec40de0fec8059bc9b96eb3",
+          "status": "diverged",
+          "ahead_by": 2,
+          "behind_by": 602,
+          "translator_change": false,
+          "regression_test_change": false,
+          "workflow_noise": true
+        },
+        {
+          "seed": 14,
+          "branch": "experiment-failure-seed/14-runtime-redefines-overlay",
+          "head_sha": "764f875aa9f0787a47f5edcaaed1e5c61a24f353",
           "status": "diverged",
           "ahead_by": 2,
           "behind_by": 601,
@@ -2185,21 +1920,12 @@
           "workflow_noise": true
         },
         {
-          "seed": 14,
-          "branch": "experiment-failure-seed/14-runtime-redefines-overlay",
-          "status": "diverged",
-          "ahead_by": 2,
-          "behind_by": 600,
-          "translator_change": false,
-          "regression_test_change": false,
-          "workflow_noise": true
-        },
-        {
           "seed": 15,
           "branch": "experiment-failure-seed/15-runtime-numeric-move",
+          "head_sha": "10fca4d93508285814c6fbfca349aec34a305b94",
           "status": "diverged",
           "ahead_by": 2,
-          "behind_by": 598,
+          "behind_by": 599,
           "translator_change": false,
           "regression_test_change": false,
           "workflow_noise": true
@@ -2207,9 +1933,10 @@
         {
           "seed": 16,
           "branch": "experiment-failure-seed/16-runtime-decimal-arithmetic",
+          "head_sha": "fb3e6416709d37f229071dcfd7e1e272858dfa0a",
           "status": "diverged",
           "ahead_by": 394,
-          "behind_by": 596,
+          "behind_by": 597,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -2217,9 +1944,10 @@
         {
           "seed": 17,
           "branch": "experiment-failure-seed/17-runtime-rounded-size-error",
+          "head_sha": "6515c1fbba6dc44981f6d3c2754c2e627df89dd2",
           "status": "diverged",
           "ahead_by": 66,
-          "behind_by": 546,
+          "behind_by": 547,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -2227,9 +1955,10 @@
         {
           "seed": 18,
           "branch": "experiment-failure-seed/18-runtime-divide-remainder",
+          "head_sha": "61d5029cf5a04f1cba1bc85855c3ba4d74ca8695",
           "status": "diverged",
           "ahead_by": 58,
-          "behind_by": 546,
+          "behind_by": 547,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -2237,9 +1966,10 @@
         {
           "seed": 19,
           "branch": "experiment-failure-seed/19-runtime-table-boundaries",
+          "head_sha": "21fcbbb1c4fb23d5529cb68140fe7a2aeffe1174",
           "status": "diverged",
           "ahead_by": 6,
-          "behind_by": 358,
+          "behind_by": 359,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -2247,9 +1977,10 @@
         {
           "seed": 20,
           "branch": "experiment-failure-seed/20-runtime-search-all-key",
+          "head_sha": "a4af64d5c645e60789477f68259f174b948a2795",
           "status": "diverged",
           "ahead_by": 15,
-          "behind_by": 333,
+          "behind_by": 334,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -2257,9 +1988,10 @@
         {
           "seed": 21,
           "branch": "experiment-failure-seed/21-runtime-search-serial",
+          "head_sha": "8920282d5887afa03ddcc0030cda2f3ee02b7cbc",
           "status": "diverged",
           "ahead_by": 8,
-          "behind_by": 333,
+          "behind_by": 334,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -2267,9 +1999,10 @@
         {
           "seed": 22,
           "branch": "experiment-failure-seed/22-runtime-call-static",
+          "head_sha": "9af10c71c21857e3a8fed1a4a4e1cc1bd14b48b2",
           "status": "diverged",
           "ahead_by": 37,
-          "behind_by": 333,
+          "behind_by": 334,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -2277,9 +2010,10 @@
         {
           "seed": 23,
           "branch": "experiment-failure-seed/23-runtime-call-by-reference",
+          "head_sha": "72c1167b1734cbde9a562bdb84ba03671d4085f0",
           "status": "diverged",
           "ahead_by": 25,
-          "behind_by": 265,
+          "behind_by": 266,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -2287,9 +2021,10 @@
         {
           "seed": 24,
           "branch": "experiment-failure-seed/24-runtime-call-by-content",
+          "head_sha": "7362107d657ef268d4f3200107ba4d692c40ad32",
           "status": "diverged",
           "ahead_by": 24,
-          "behind_by": 262,
+          "behind_by": 263,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -2297,9 +2032,10 @@
         {
           "seed": 25,
           "branch": "experiment-failure-seed/25-runtime-linkage-using",
+          "head_sha": "44371acf2b45dcd857b919921eb4c05544490dde",
           "status": "diverged",
           "ahead_by": 24,
-          "behind_by": 262,
+          "behind_by": 263,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -2307,9 +2043,10 @@
         {
           "seed": 26,
           "branch": "experiment-failure-seed/26-runtime-file-open-modes",
+          "head_sha": "8b35694bedf245a4d7adbc75b5e7cd18a6c23ce3",
           "status": "diverged",
           "ahead_by": 25,
-          "behind_by": 262,
+          "behind_by": 263,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -2317,9 +2054,10 @@
         {
           "seed": 27,
           "branch": "experiment-failure-seed/27-runtime-file-read-write",
+          "head_sha": "1583da344a41500d0e9f3c50ab9394ec199cad20",
           "status": "diverged",
           "ahead_by": 20,
-          "behind_by": 262,
+          "behind_by": 263,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -2327,9 +2065,10 @@
         {
           "seed": 28,
           "branch": "experiment-failure-seed/28-runtime-perform-control-flow",
+          "head_sha": "29fa42546937ce64e540a6c2265baa9754b885b2",
           "status": "diverged",
           "ahead_by": 19,
-          "behind_by": 262,
+          "behind_by": 263,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -2337,9 +2076,10 @@
         {
           "seed": 29,
           "branch": "experiment-failure-seed/29-runtime-go-to-depending",
+          "head_sha": "ee8146920919bbfb44a24513cc7731d2808d8192",
           "status": "diverged",
           "ahead_by": 20,
-          "behind_by": 262,
+          "behind_by": 263,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
@@ -2347,487 +2087,51 @@
         {
           "seed": 30,
           "branch": "experiment-failure-seed/30-runtime-data-scope-initialization",
+          "head_sha": "400bbb88a7eed15a5a4da90411afa0bf084f1905",
           "status": "diverged",
           "ahead_by": 30,
-          "behind_by": 256,
+          "behind_by": 257,
           "translator_change": true,
           "regression_test_change": true,
           "workflow_noise": true
         }
       ],
-      "note": "Fresh compare on 2026-11-22 against main 9fb72b514c74cef4b5fb10d01b4d0110e9e985fc: all 30 manifest branches exist, have 30 distinct heads, and all 30 are diverged; none is ahead-only. Seeds 11-15 contain only workflow/documentation changes, no translator or tests. Seeds 16-30 mix translator/tests with unrelated workflow, benchmark, or documentation paths. Seeds 1-10 are code/test-only but stale. One extra unmanifested prefix ref remains.",
-      "audit_date": "2026-11-22",
-      "branch_head_inventory": [
-        {
-          "branch": "experiment-failure-seed/01-syntax-condition-operators",
-          "head_sha": "37abd23b987b974db0ae06354136bc1fd004f0d5"
-        },
-        {
-          "branch": "experiment-failure-seed/02-syntax-abbreviated-relations",
-          "head_sha": "4306becb6bde2247293f78f8a12fdf4ecedac3be"
-        },
-        {
-          "branch": "experiment-failure-seed/03-syntax-multidimensional-subscripts",
-          "head_sha": "cb71da7c3aadc6af893231831124d39505aee78a"
-        },
-        {
-          "branch": "experiment-failure-seed/04-syntax-reference-modification",
-          "head_sha": "7d27fb7871fc9658bc268da00288512f45e0f22c"
-        },
-        {
-          "branch": "experiment-failure-seed/05-syntax-inspect-before-after",
-          "head_sha": "1186269c3d815ef91513d8afee3936a2ee8908f7"
-        },
-        {
-          "branch": "experiment-failure-seed/06-syntax-inspect-replacing",
-          "head_sha": "f884b1f2e33f341ea269e5d2a29aa88024b115c6"
-        },
-        {
-          "branch": "experiment-failure-seed/07-syntax-string-delimited",
-          "head_sha": "4861fcdf522bfe7358a718badf91fa978745dc9d"
-        },
-        {
-          "branch": "experiment-failure-seed/08-syntax-unstring-multiple-delimiters",
-          "head_sha": "4444a957f2dd310a3d985faa2a4e4ea536da4c75"
-        },
-        {
-          "branch": "experiment-failure-seed/09-syntax-perform-inline",
-          "head_sha": "fcca7c8cbff82f2445adb56a4347cdfb1e1009bc"
-        },
-        {
-          "branch": "experiment-failure-seed/10-syntax-evaluate-also-rebuilt",
-          "head_sha": "7aa52ae026349d076e4b04d0b160d658f95ac0e1"
-        },
-        {
-          "branch": "experiment-failure-seed/11-runtime-initialize-replacing",
-          "head_sha": "4b5b5799c034c114478684638265a1eb22d4d8db"
-        },
-        {
-          "branch": "experiment-failure-seed/12-runtime-initialize-occurs",
-          "head_sha": "5c7009b07939f50a81cf9f84189ce050e350bb8a"
-        },
-        {
-          "branch": "experiment-failure-seed/13-runtime-filler-storage",
-          "head_sha": "fa840f19225e9ed5dec40de0fec8059bc9b96eb3"
-        },
-        {
-          "branch": "experiment-failure-seed/14-runtime-redefines-overlay",
-          "head_sha": "764f875aa9f0787a47f5edcaaed1e5c61a24f353"
-        },
-        {
-          "branch": "experiment-failure-seed/15-runtime-numeric-move",
-          "head_sha": "10fca4d93508285814c6fbfca349aec34a305b94"
-        },
-        {
-          "branch": "experiment-failure-seed/16-runtime-decimal-arithmetic",
-          "head_sha": "fb3e6416709d37f229071dcfd7e1e272858dfa0a"
-        },
-        {
-          "branch": "experiment-failure-seed/17-runtime-rounded-size-error",
-          "head_sha": "6515c1fbba6dc44981f6d3c2754c2e627df89dd2"
-        },
-        {
-          "branch": "experiment-failure-seed/18-runtime-divide-remainder",
-          "head_sha": "61d5029cf5a04f1cba1bc85855c3ba4d74ca8695"
-        },
-        {
-          "branch": "experiment-failure-seed/19-runtime-table-boundaries",
-          "head_sha": "21fcbbb1c4fb23d5529cb68140fe7a2aeffe1174"
-        },
-        {
-          "branch": "experiment-failure-seed/20-runtime-search-all-key",
-          "head_sha": "a4af64d5c645e60789477f68259f174b948a2795"
-        },
-        {
-          "branch": "experiment-failure-seed/21-runtime-search-serial",
-          "head_sha": "8920282d5887afa03ddcc0030cda2f3ee02b7cbc"
-        },
-        {
-          "branch": "experiment-failure-seed/22-runtime-call-static",
-          "head_sha": "9af10c71c21857e3a8fed1a4a4e1cc1bd14b48b2"
-        },
-        {
-          "branch": "experiment-failure-seed/23-runtime-call-by-reference",
-          "head_sha": "72c1167b1734cbde9a562bdb84ba03671d4085f0"
-        },
-        {
-          "branch": "experiment-failure-seed/24-runtime-call-by-content",
-          "head_sha": "7362107d657ef268d4f3200107ba4d692c40ad32"
-        },
-        {
-          "branch": "experiment-failure-seed/25-runtime-linkage-using",
-          "head_sha": "44371acf2b45dcd857b919921eb4c05544490dde"
-        },
-        {
-          "branch": "experiment-failure-seed/26-runtime-file-open-modes",
-          "head_sha": "8b35694bedf245a4d7adbc75b5e7cd18a6c23ce3"
-        },
-        {
-          "branch": "experiment-failure-seed/27-runtime-file-read-write",
-          "head_sha": "1583da344a41500d0e9f3c50ab9394ec199cad20"
-        },
-        {
-          "branch": "experiment-failure-seed/28-runtime-perform-control-flow",
-          "head_sha": "29fa42546937ce64e540a6c2265baa9754b885b2"
-        },
-        {
-          "branch": "experiment-failure-seed/29-runtime-go-to-depending",
-          "head_sha": "ee8146920919bbfb44a24513cc7731d2808d8192"
-        },
-        {
-          "branch": "experiment-failure-seed/30-runtime-data-scope-initialization",
-          "head_sha": "400bbb88a7eed15a5a4da90411afa0bf084f1905"
-        }
-      ]
+      "note": "Fresh compare on 2026-11-23 against exact main b26cc0335708dab99737cc902c1d96186fec9f94: all 30 manifest branches exist, have 30 distinct heads, all are diverged and none is ahead-only. Seeds 1-10 are translator/test-only but stale; 11-15 contain no translator/tests; 16-30 mix translator/tests with unrelated workflow, benchmark or documentation paths."
     },
-    "current_main_sha": "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc",
-    "branch_comparisons": [
-      {
-        "seed": 1,
-        "branch": "experiment-failure-seed/01-syntax-condition-operators",
-        "status": "diverged",
-        "ahead_by": 4,
-        "behind_by": 216,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": false
-      },
-      {
-        "seed": 2,
-        "branch": "experiment-failure-seed/02-syntax-abbreviated-relations",
-        "status": "diverged",
-        "ahead_by": 3,
-        "behind_by": 212,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": false
-      },
-      {
-        "seed": 3,
-        "branch": "experiment-failure-seed/03-syntax-multidimensional-subscripts",
-        "status": "diverged",
-        "ahead_by": 3,
-        "behind_by": 212,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": false
-      },
-      {
-        "seed": 4,
-        "branch": "experiment-failure-seed/04-syntax-reference-modification",
-        "status": "diverged",
-        "ahead_by": 3,
-        "behind_by": 212,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": false
-      },
-      {
-        "seed": 5,
-        "branch": "experiment-failure-seed/05-syntax-inspect-before-after",
-        "status": "diverged",
-        "ahead_by": 3,
-        "behind_by": 216,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": false
-      },
-      {
-        "seed": 6,
-        "branch": "experiment-failure-seed/06-syntax-inspect-replacing",
-        "status": "diverged",
-        "ahead_by": 5,
-        "behind_by": 212,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": false
-      },
-      {
-        "seed": 7,
-        "branch": "experiment-failure-seed/07-syntax-string-delimited",
-        "status": "diverged",
-        "ahead_by": 3,
-        "behind_by": 212,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": false
-      },
-      {
-        "seed": 8,
-        "branch": "experiment-failure-seed/08-syntax-unstring-multiple-delimiters",
-        "status": "diverged",
-        "ahead_by": 4,
-        "behind_by": 216,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": false
-      },
-      {
-        "seed": 9,
-        "branch": "experiment-failure-seed/09-syntax-perform-inline",
-        "status": "diverged",
-        "ahead_by": 4,
-        "behind_by": 212,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": false
-      },
-      {
-        "seed": 10,
-        "branch": "experiment-failure-seed/10-syntax-evaluate-also-rebuilt",
-        "status": "diverged",
-        "ahead_by": 3,
-        "behind_by": 20,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": false
-      },
-      {
-        "seed": 11,
-        "branch": "experiment-failure-seed/11-runtime-initialize-replacing",
-        "status": "diverged",
-        "ahead_by": 3,
-        "behind_by": 693,
-        "translator_change": false,
-        "regression_test_change": false,
-        "workflow_noise": true
-      },
-      {
-        "seed": 12,
-        "branch": "experiment-failure-seed/12-runtime-initialize-occurs",
-        "status": "diverged",
-        "ahead_by": 2,
-        "behind_by": 605,
-        "translator_change": false,
-        "regression_test_change": false,
-        "workflow_noise": true
-      },
-      {
-        "seed": 13,
-        "branch": "experiment-failure-seed/13-runtime-filler-storage",
-        "status": "diverged",
-        "ahead_by": 2,
-        "behind_by": 601,
-        "translator_change": false,
-        "regression_test_change": false,
-        "workflow_noise": true
-      },
-      {
-        "seed": 14,
-        "branch": "experiment-failure-seed/14-runtime-redefines-overlay",
-        "status": "diverged",
-        "ahead_by": 2,
-        "behind_by": 600,
-        "translator_change": false,
-        "regression_test_change": false,
-        "workflow_noise": true
-      },
-      {
-        "seed": 15,
-        "branch": "experiment-failure-seed/15-runtime-numeric-move",
-        "status": "diverged",
-        "ahead_by": 2,
-        "behind_by": 598,
-        "translator_change": false,
-        "regression_test_change": false,
-        "workflow_noise": true
-      },
-      {
-        "seed": 16,
-        "branch": "experiment-failure-seed/16-runtime-decimal-arithmetic",
-        "status": "diverged",
-        "ahead_by": 394,
-        "behind_by": 596,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": true
-      },
-      {
-        "seed": 17,
-        "branch": "experiment-failure-seed/17-runtime-rounded-size-error",
-        "status": "diverged",
-        "ahead_by": 66,
-        "behind_by": 546,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": true
-      },
-      {
-        "seed": 18,
-        "branch": "experiment-failure-seed/18-runtime-divide-remainder",
-        "status": "diverged",
-        "ahead_by": 58,
-        "behind_by": 546,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": true
-      },
-      {
-        "seed": 19,
-        "branch": "experiment-failure-seed/19-runtime-table-boundaries",
-        "status": "diverged",
-        "ahead_by": 6,
-        "behind_by": 358,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": true
-      },
-      {
-        "seed": 20,
-        "branch": "experiment-failure-seed/20-runtime-search-all-key",
-        "status": "diverged",
-        "ahead_by": 15,
-        "behind_by": 333,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": true
-      },
-      {
-        "seed": 21,
-        "branch": "experiment-failure-seed/21-runtime-search-serial",
-        "status": "diverged",
-        "ahead_by": 8,
-        "behind_by": 333,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": true
-      },
-      {
-        "seed": 22,
-        "branch": "experiment-failure-seed/22-runtime-call-static",
-        "status": "diverged",
-        "ahead_by": 37,
-        "behind_by": 333,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": true
-      },
-      {
-        "seed": 23,
-        "branch": "experiment-failure-seed/23-runtime-call-by-reference",
-        "status": "diverged",
-        "ahead_by": 25,
-        "behind_by": 265,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": true
-      },
-      {
-        "seed": 24,
-        "branch": "experiment-failure-seed/24-runtime-call-by-content",
-        "status": "diverged",
-        "ahead_by": 24,
-        "behind_by": 262,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": true
-      },
-      {
-        "seed": 25,
-        "branch": "experiment-failure-seed/25-runtime-linkage-using",
-        "status": "diverged",
-        "ahead_by": 24,
-        "behind_by": 262,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": true
-      },
-      {
-        "seed": 26,
-        "branch": "experiment-failure-seed/26-runtime-file-open-modes",
-        "status": "diverged",
-        "ahead_by": 25,
-        "behind_by": 262,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": true
-      },
-      {
-        "seed": 27,
-        "branch": "experiment-failure-seed/27-runtime-file-read-write",
-        "status": "diverged",
-        "ahead_by": 20,
-        "behind_by": 262,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": true
-      },
-      {
-        "seed": 28,
-        "branch": "experiment-failure-seed/28-runtime-perform-control-flow",
-        "status": "diverged",
-        "ahead_by": 19,
-        "behind_by": 262,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": true
-      },
-      {
-        "seed": 29,
-        "branch": "experiment-failure-seed/29-runtime-go-to-depending",
-        "status": "diverged",
-        "ahead_by": 20,
-        "behind_by": 262,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": true
-      },
-      {
-        "seed": 30,
-        "branch": "experiment-failure-seed/30-runtime-data-scope-initialization",
-        "status": "diverged",
-        "ahead_by": 30,
-        "behind_by": 256,
-        "translator_change": true,
-        "regression_test_change": true,
-        "workflow_noise": true
-      }
-    ],
-    "candidates_without_translator_or_tests": [
-      11,
-      12,
-      13,
-      14,
-      15
-    ],
-    "audit_date": "2026-11-22",
-    "candidate_branches_ahead": [],
-    "candidate_branches_diverged": 30,
-    "candidate_branch_refs": 30,
-    "note": "Audit 2026-11-22 against exact main 9fb72b514c74cef4b5fb10d01b4d0110e9e985fc: 30/30 branches exist, 30 distinct heads, 30 diverged, 0 ahead-only."
+    "latest_audit_date": "2026-11-23"
   },
   "current_main_pr_tournament": {
     "workflow": ".github/workflows/current-main-pr-tournament.yml",
     "workflow_sha": "627197f0fa18d25b582b59431501b68e0cab06df",
     "schedule_utc": "30 11 * * *",
     "default_candidate_prs": [],
-    "next_expected_run_utc": "2026-11-20T11:30:00Z",
+    "next_expected_run_utc": "2026-11-24T11:30:00Z",
     "contract": "Freeze current main and all 500 per-ID GnuCOBOL stdout SHA-256/length/return-code fingerprints; compare candidate source SHA, stdout bytes and return code on the exact same 500 IDs and archive checksum; require >=1 new pass and zero regressions.",
     "note": "Scheduled/push runs discover only manifest-approved PR numbers from current_main_pr_tournament.candidate_queue; they never sweep all open PRs. This avoids duplicating legacy 16-candidate hypotheses and stale PRs. PR events and explicit workflow_dispatch candidate_prs remain scoped to the requested PR.",
-    "last_schedule_check_utc": "2026-11-20T12:23:55Z",
+    "last_schedule_check_utc": "2026-11-23T11:46:10Z",
     "last_scheduled_run_found": true,
     "latest_candidate_evaluation": {
-      "pr": 402,
-      "title": "[DIVIDE] Preserve ON SIZE ERROR and NOT ON SIZE ERROR branches",
-      "branch": "experiment/divide-size-error-branches",
-      "head_sha": "183cbc2852f4426d6a5ff4257759f3009b149227",
-      "base_sha": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
-      "merge_sha": "f9219305de84a74952d2b32e9f2e0e29680c9bb7",
-      "baseline_run": 44901501025,
+      "pr": 405,
+      "title": "[SEARCH ALL] Preserve enclosing OCCURS subscript in nested table searches",
+      "branch": "experiment/search-all-nested-occurs-20261122",
+      "head_sha": "cc127791db8b92356d6ffabd36b01582868912d0",
+      "base_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
+      "merge_sha": "be4b3bdb297ac3a1228f8de883bfcccacd525962",
+      "paired_run": 45022022053,
+      "baseline_run": 45022022053,
       "baseline_score": 263,
-      "candidate_run": 44901501025,
-      "candidate_benchmark_run": 44901501025,
-      "candidate_score": 263,
-      "candidate_score_against_frozen_oracle": 263,
+      "workflow_candidate_score_against_frozen_oracle": 264,
       "denominator": 500,
       "comparable_cases": 500,
       "source_hash_matches": 500,
-      "new_passes": 0,
-      "new_pass_case_ids": [],
-      "regressions": 0,
-      "regressed_case_ids": [],
-      "oracle_stable": false,
-      "oracle_drift_count": 7,
+      "workflow_new_passes": 1,
+      "workflow_new_pass_case_ids": [
+        "exec84-2-03eae98697"
+      ],
+      "workflow_regressions": 0,
+      "workflow_regressed_case_ids": [],
+      "workflow_eligible_original_run": true,
+      "oracle_drift_count": 9,
       "oracle_drift_case_ids": [
         "cob-simpleinventory-6af451140a",
         "collatz-6e335e6eda",
@@ -2835,34 +2139,60 @@
         "intrdate-0517c3d81c",
         "pullydis-9e45af6c84",
         "randombingo-e50339cc12",
-        "randomnumbers-d8fc7ee85b"
+        "randomnumbers-d8fc7ee85b",
+        "rock-paper-scissors-ad6321acf1",
+        "rolldice-08e3de1a0e"
       ],
-      "unit_suite_run": 44901501025,
+      "unit_suite_run": 45022022053,
       "unit_suite_conclusion": "success",
-      "independent_holdout_run": 44901501033,
-      "independent_holdout_conclusion": "success",
-      "paired_run": 44901501025,
-      "paired_run_status": "completed",
-      "eligible": false,
-      "decision": "ineligible_zero_gain_oracle_drift",
-      "status": "completed",
-      "closed_unmerged": true,
+      "independent_sharded_run": 45022021994,
+      "independent_sharded_conclusion": "success",
+      "revalidation_main_run": 45056162017,
+      "revalidation_main_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
+      "revalidated_candidate_score_against_later_main_oracle": 263,
+      "revalidated_new_passes": 0,
+      "revalidated_new_pass_case_ids": [],
+      "revalidated_regressions": 0,
+      "revalidated_regressed_case_ids": [],
+      "transient_gain_case_id": "exec84-2-03eae98697",
+      "transient_gain_diagnosis": "Main timed out at 20.004698 seconds in the paired baseline, while the candidate translated in 17.103512 seconds. A second exact-main run on the same SHA passed the case in 14.349943 seconds; the apparent gain is timeout variance, not a reproducible SEARCH ALL improvement.",
       "motivating_case_results": [
         {
-          "id": "nc203a-dc7f80e633",
+          "id": "nc233a-933ce1010e",
           "status": "failed",
-          "exception": "UnboundLocalError",
-          "generated_line": 740,
-          "generated_statement": "giving = int(float(giving) / float(_cobol_divide_divisor))"
+          "exception": "KeyError"
         },
         {
-          "id": "nc172a-3a5109e496",
+          "id": "nc2334-2-4c65f37e93",
           "status": "failed",
-          "exception": "ZeroDivisionError",
-          "generated_line": 1374
+          "exception": "KeyError"
+        },
+        {
+          "id": "nc233a-aed140c18a",
+          "status": "failed",
+          "exception": "KeyError"
+        },
+        {
+          "id": "nc235a-51f79a11be",
+          "status": "failed",
+          "exception": "TypeError"
+        },
+        {
+          "id": "nc238a-715c9f78af",
+          "status": "failed",
+          "exception": "UnboundLocalError"
+        },
+        {
+          "id": "nc238a-64f4610536",
+          "status": "failed",
+          "exception": "UnboundLocalError"
         }
       ],
-      "note": "Official paired run 44901501025: frozen main 263/500; candidate 263/500, 500 comparable IDs and source hashes, zero new passes and zero regressions. Seven candidate-run GnuCOBOL fingerprints drifted; ranking used the frozen main oracle. Both motivating cases still fail: nc203a raises UnboundLocalError in generated DIVIDE GIVING code; nc172a raises ZeroDivisionError. PR #402 closed unmerged because the minimum +1 gain gate was not met."
+      "eligible": false,
+      "decision": "ineligible_transient_timeout_gain_motivating_cases_unfixed",
+      "status": "completed",
+      "closed_unmerged": true,
+      "note": "Official paired run 45022022053 initially marked the candidate eligible (+1, zero regressions) against the frozen baseline. Revalidation against a second exact-main run 45056162017 on the same base SHA shows no stable gain: candidate outputs score 263/500, 0 gains and 0 regressions against the later main oracle. The apparent exec84 gain was a baseline timeout flake; all six motivating SEARCH ALL cases still fail. PR #405 was closed without merge."
     },
     "candidate_queue": [],
     "isolation_scope": {
@@ -2928,7 +2258,7 @@
       "decision": "ineligible_no_gain_oracle_drift",
       "note": "Official paired comparison: 263/500 vs 263/500, 500 comparable cases, zero new passes, zero regressions, eight oracle drifts. Both NIST motivating cases still time out. The one-off exec84 timeout-boundary pass in the independent sharded run did not reproduce as a gain in the paired run."
     },
-    "latest_scheduled_run": 44933960078,
+    "latest_scheduled_run": 45056162017,
     "auto_discover_open_prs": false,
     "auto_discover_manifest_queue": true,
     "discovery_source": "current_main_pr_tournament.candidate_queue",
@@ -2951,33 +2281,35 @@
     "score": 263,
     "denominator": 500,
     "percent": 52.6,
-    "measured_run": 45018142254,
-    "measured_sha": "585bb618373189c657fd5cec43671b6ebb3c9e0e",
-    "current_main_sha": "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc",
+    "measured_run": 45056162017,
+    "measured_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
+    "current_main_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
     "current_main_translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
     "measured_translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
     "code_equivalent": true,
-    "exact_run_on_current_main_sha": false,
-    "reason": "The exact 500-case run 45018142254 measured 263/500 on main SHA 585bb618373189c657fd5cec43671b6ebb3c9e0e. Current main at audit 9fb72b514c74cef4b5fb10d01b4d0110e9e985fc differs only by PR #403's legacy-workflow manualization and documentation; translator blob 4a7562627d161580470f1b0522cda0b094f635b0 is unchanged. This is code-equivalent evidence, not an exact-SHA run on 9fb72b514c74cef4b5fb10d01b4d0110e9e985fc. PR #404 will trigger a baseline on its resulting merge SHA."
+    "exact_run_on_current_main_sha": true,
+    "reason": "Run 45056162017 measured the exact current main SHA and verified all 500 X-COBOL v2 cases and GnuCOBOL fingerprints."
   },
   "latest_paired_pr_tournament": {
-    "run": 44901501025,
-    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44901501025",
-    "baseline_sha": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
+    "run": 45022022053,
+    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/45022022053",
+    "baseline_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
     "baseline_score": 263,
     "denominator": 500,
-    "candidate_pr": 402,
-    "candidate_head_sha": "183cbc2852f4426d6a5ff4257759f3009b149227",
-    "candidate_merge_sha": "f9219305de84a74952d2b32e9f2e0e29680c9bb7",
-    "candidate_score": 263,
-    "candidate_score_against_frozen_oracle": 263,
+    "candidate_pr": 405,
+    "candidate_head_sha": "cc127791db8b92356d6ffabd36b01582868912d0",
+    "candidate_merge_sha": "be4b3bdb297ac3a1228f8de883bfcccacd525962",
+    "candidate_score": 264,
+    "candidate_score_against_frozen_oracle": 264,
     "comparable_cases": 500,
-    "new_passes": 0,
-    "new_pass_case_ids": [],
+    "new_passes": 1,
+    "new_pass_case_ids": [
+      "exec84-2-03eae98697"
+    ],
     "regressions": 0,
     "regressed_case_ids": [],
     "source_hash_matches": 500,
-    "oracle_drift_count": 7,
+    "oracle_drift_count": 9,
     "oracle_drift_case_ids": [
       "cob-simpleinventory-6af451140a",
       "collatz-6e335e6eda",
@@ -2985,21 +2317,30 @@
       "intrdate-0517c3d81c",
       "pullydis-9e45af6c84",
       "randombingo-e50339cc12",
-      "randomnumbers-d8fc7ee85b"
+      "randomnumbers-d8fc7ee85b",
+      "rock-paper-scissors-ad6321acf1",
+      "rolldice-08e3de1a0e"
     ],
     "eligible": false,
+    "workflow_eligible_original_run": true,
     "status": "completed",
-    "candidate_benchmark_run": 44901501025,
-    "independent_sharded_run": 44901501033,
-    "unit_suite_run": 44901501025,
+    "candidate_benchmark_run": 45022022053,
+    "unit_suite_run": 45022022053,
     "unit_suite_conclusion": "success",
-    "promotion": "manual; no merge is performed by this workflow",
-    "note": "Official paired run 44901501025: frozen main 263/500; candidate 263/500, 500 comparable IDs and source hashes, zero new passes and zero regressions. Seven candidate-run GnuCOBOL fingerprints drifted; ranking used the frozen main oracle. Both motivating cases still fail: nc203a raises UnboundLocalError in generated DIVIDE GIVING code; nc172a raises ZeroDivisionError. PR #402 closed unmerged because the minimum +1 gain gate was not met."
+    "independent_sharded_run": 45022021994,
+    "revalidation_main_run": 45056162017,
+    "revalidated_candidate_score": 263,
+    "revalidated_new_passes": 0,
+    "revalidated_new_pass_case_ids": [],
+    "revalidated_regressions": 0,
+    "revalidated_regressed_case_ids": [],
+    "promotion": "not promoted; candidate closed unmerged",
+    "note": "Official paired run 45022022053 initially marked the candidate eligible (+1, zero regressions) against the frozen baseline. Revalidation against a second exact-main run 45056162017 on the same base SHA shows no stable gain: candidate outputs score 263/500, 0 gains and 0 regressions against the later main oracle. The apparent exec84 gain was a baseline timeout flake; all six motivating SEARCH ALL cases still fail. PR #405 was closed without merge."
   },
   "latest_baseline_artifact_check": {
-    "run": 45018142254,
-    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/45018142254",
-    "baseline_sha": "585bb618373189c657fd5cec43671b6ebb3c9e0e",
+    "run": 45056162017,
+    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/45056162017",
+    "baseline_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
     "score": 263,
     "denominator": 500,
     "percent": 52.6,
@@ -3013,29 +2354,35 @@
     "reference_fingerprint_coverage": 500,
     "baseline_job_conclusion": "success",
     "workflow_conclusion": "success",
-    "final_artifact": "pr-tournament-baseline-45018142254",
-    "note": "Exact-main current-main tournament baseline; complete 500/500 case report, all 500 GnuCOBOL fingerprints present, 263/500 exact matches."
+    "final_artifact": "pr-tournament-baseline-45056162017",
+    "note": "Exact-SHA baseline artifact verified: 500/500 rows, unique IDs, full oracle fingerprints, 263/500 exact matches."
   },
   "latest_candidate_artifact_comparison": {
-    "run": 44901501025,
-    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44901501025",
-    "baseline_run": 44901501025,
-    "baseline_url": "https://github.com/orbitalronin94/cobol2py/actions/runs/44901501025",
-    "baseline_sha": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
+    "run": 45022022053,
+    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/45022022053",
+    "baseline_run": 45022022053,
+    "baseline_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
     "baseline_score": 263,
-    "candidate_pr": 402,
-    "candidate_head_sha": "183cbc2852f4426d6a5ff4257759f3009b149227",
-    "candidate_merge_sha": "f9219305de84a74952d2b32e9f2e0e29680c9bb7",
-    "candidate_score": 263,
-    "candidate_score_against_frozen_oracle": 263,
+    "candidate_pr": 405,
+    "candidate_head_sha": "cc127791db8b92356d6ffabd36b01582868912d0",
+    "candidate_merge_sha": "be4b3bdb297ac3a1228f8de883bfcccacd525962",
+    "candidate_score": 264,
+    "candidate_score_against_frozen_oracle": 264,
+    "revalidated_candidate_score": 263,
     "denominator": 500,
     "comparable_cases": 500,
     "source_hash_matches": 500,
-    "new_passes": 0,
-    "new_pass_case_ids": [],
+    "new_passes": 1,
+    "new_pass_case_ids": [
+      "exec84-2-03eae98697"
+    ],
+    "revalidated_new_passes": 0,
+    "revalidated_new_pass_case_ids": [],
     "regressions": 0,
     "regressed_case_ids": [],
-    "oracle_drift_count": 7,
+    "revalidated_regressions": 0,
+    "revalidated_regressed_case_ids": [],
+    "oracle_drift_count": 9,
     "oracle_drift_case_ids": [
       "cob-simpleinventory-6af451140a",
       "collatz-6e335e6eda",
@@ -3043,22 +2390,25 @@
       "intrdate-0517c3d81c",
       "pullydis-9e45af6c84",
       "randombingo-e50339cc12",
-      "randomnumbers-d8fc7ee85b"
+      "randomnumbers-d8fc7ee85b",
+      "rock-paper-scissors-ad6321acf1",
+      "rolldice-08e3de1a0e"
     ],
-    "method": "official paired workflow; frozen main GnuCOBOL stdout SHA-256, byte length and return code per ID",
+    "method": "official paired workflow with frozen main GnuCOBOL stdout SHA-256, byte length and return code per ID; independent cross-run stability check against second exact-main baseline",
     "archive_md5_verified": true,
     "eligible": false,
-    "decision": "ineligible_zero_gain_oracle_drift",
-    "note": "Official paired run 44901501025: frozen main 263/500; candidate 263/500, 500 comparable IDs and source hashes, zero new passes and zero regressions. Seven candidate-run GnuCOBOL fingerprints drifted; ranking used the frozen main oracle. Both motivating cases still fail: nc203a raises UnboundLocalError in generated DIVIDE GIVING code; nc172a raises ZeroDivisionError. PR #402 closed unmerged because the minimum +1 gain gate was not met."
+    "decision": "ineligible_transient_timeout_gain_motivating_cases_unfixed",
+    "note": "Official paired run 45022022053 initially marked the candidate eligible (+1, zero regressions) against the frozen baseline. Revalidation against a second exact-main run 45056162017 on the same base SHA shows no stable gain: candidate outputs score 263/500, 0 gains and 0 regressions against the later main oracle. The apparent exec84 gain was a baseline timeout flake; all six motivating SEARCH ALL cases still fail. PR #405 was closed without merge."
   },
-  "latest_main_holdout_run": 45018142254,
+  "latest_main_holdout_run": 45056162017,
   "branch_comparisons": [
     {
       "seed": 1,
       "branch": "experiment-failure-seed/01-syntax-condition-operators",
+      "head_sha": "37abd23b987b974db0ae06354136bc1fd004f0d5",
       "status": "diverged",
       "ahead_by": 4,
-      "behind_by": 216,
+      "behind_by": 217,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": false
@@ -3066,9 +2416,10 @@
     {
       "seed": 2,
       "branch": "experiment-failure-seed/02-syntax-abbreviated-relations",
+      "head_sha": "4306becb6bde2247293f78f8a12fdf4ecedac3be",
       "status": "diverged",
       "ahead_by": 3,
-      "behind_by": 212,
+      "behind_by": 213,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": false
@@ -3076,9 +2427,10 @@
     {
       "seed": 3,
       "branch": "experiment-failure-seed/03-syntax-multidimensional-subscripts",
+      "head_sha": "cb71da7c3aadc6af893231831124d39505aee78a",
       "status": "diverged",
       "ahead_by": 3,
-      "behind_by": 212,
+      "behind_by": 213,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": false
@@ -3086,9 +2438,10 @@
     {
       "seed": 4,
       "branch": "experiment-failure-seed/04-syntax-reference-modification",
+      "head_sha": "7d27fb7871fc9658bc268da00288512f45e0f22c",
       "status": "diverged",
       "ahead_by": 3,
-      "behind_by": 212,
+      "behind_by": 213,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": false
@@ -3096,9 +2449,10 @@
     {
       "seed": 5,
       "branch": "experiment-failure-seed/05-syntax-inspect-before-after",
+      "head_sha": "1186269c3d815ef91513d8afee3936a2ee8908f7",
       "status": "diverged",
       "ahead_by": 3,
-      "behind_by": 216,
+      "behind_by": 217,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": false
@@ -3106,9 +2460,10 @@
     {
       "seed": 6,
       "branch": "experiment-failure-seed/06-syntax-inspect-replacing",
+      "head_sha": "f884b1f2e33f341ea269e5d2a29aa88024b115c6",
       "status": "diverged",
       "ahead_by": 5,
-      "behind_by": 212,
+      "behind_by": 213,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": false
@@ -3116,9 +2471,10 @@
     {
       "seed": 7,
       "branch": "experiment-failure-seed/07-syntax-string-delimited",
+      "head_sha": "4861fcdf522bfe7358a718badf91fa978745dc9d",
       "status": "diverged",
       "ahead_by": 3,
-      "behind_by": 212,
+      "behind_by": 213,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": false
@@ -3126,9 +2482,10 @@
     {
       "seed": 8,
       "branch": "experiment-failure-seed/08-syntax-unstring-multiple-delimiters",
+      "head_sha": "4444a957f2dd310a3d985faa2a4e4ea536da4c75",
       "status": "diverged",
       "ahead_by": 4,
-      "behind_by": 216,
+      "behind_by": 217,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": false
@@ -3136,9 +2493,10 @@
     {
       "seed": 9,
       "branch": "experiment-failure-seed/09-syntax-perform-inline",
+      "head_sha": "fcca7c8cbff82f2445adb56a4347cdfb1e1009bc",
       "status": "diverged",
       "ahead_by": 4,
-      "behind_by": 212,
+      "behind_by": 213,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": false
@@ -3146,9 +2504,10 @@
     {
       "seed": 10,
       "branch": "experiment-failure-seed/10-syntax-evaluate-also-rebuilt",
+      "head_sha": "7aa52ae026349d076e4b04d0b160d658f95ac0e1",
       "status": "diverged",
       "ahead_by": 3,
-      "behind_by": 20,
+      "behind_by": 21,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": false
@@ -3156,9 +2515,10 @@
     {
       "seed": 11,
       "branch": "experiment-failure-seed/11-runtime-initialize-replacing",
+      "head_sha": "4b5b5799c034c114478684638265a1eb22d4d8db",
       "status": "diverged",
       "ahead_by": 3,
-      "behind_by": 693,
+      "behind_by": 694,
       "translator_change": false,
       "regression_test_change": false,
       "workflow_noise": true
@@ -3166,9 +2526,10 @@
     {
       "seed": 12,
       "branch": "experiment-failure-seed/12-runtime-initialize-occurs",
+      "head_sha": "5c7009b07939f50a81cf9f84189ce050e350bb8a",
       "status": "diverged",
       "ahead_by": 2,
-      "behind_by": 605,
+      "behind_by": 606,
       "translator_change": false,
       "regression_test_change": false,
       "workflow_noise": true
@@ -3176,6 +2537,18 @@
     {
       "seed": 13,
       "branch": "experiment-failure-seed/13-runtime-filler-storage",
+      "head_sha": "fa840f19225e9ed5dec40de0fec8059bc9b96eb3",
+      "status": "diverged",
+      "ahead_by": 2,
+      "behind_by": 602,
+      "translator_change": false,
+      "regression_test_change": false,
+      "workflow_noise": true
+    },
+    {
+      "seed": 14,
+      "branch": "experiment-failure-seed/14-runtime-redefines-overlay",
+      "head_sha": "764f875aa9f0787a47f5edcaaed1e5c61a24f353",
       "status": "diverged",
       "ahead_by": 2,
       "behind_by": 601,
@@ -3184,21 +2557,12 @@
       "workflow_noise": true
     },
     {
-      "seed": 14,
-      "branch": "experiment-failure-seed/14-runtime-redefines-overlay",
-      "status": "diverged",
-      "ahead_by": 2,
-      "behind_by": 600,
-      "translator_change": false,
-      "regression_test_change": false,
-      "workflow_noise": true
-    },
-    {
       "seed": 15,
       "branch": "experiment-failure-seed/15-runtime-numeric-move",
+      "head_sha": "10fca4d93508285814c6fbfca349aec34a305b94",
       "status": "diverged",
       "ahead_by": 2,
-      "behind_by": 598,
+      "behind_by": 599,
       "translator_change": false,
       "regression_test_change": false,
       "workflow_noise": true
@@ -3206,9 +2570,10 @@
     {
       "seed": 16,
       "branch": "experiment-failure-seed/16-runtime-decimal-arithmetic",
+      "head_sha": "fb3e6416709d37f229071dcfd7e1e272858dfa0a",
       "status": "diverged",
       "ahead_by": 394,
-      "behind_by": 596,
+      "behind_by": 597,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": true
@@ -3216,9 +2581,10 @@
     {
       "seed": 17,
       "branch": "experiment-failure-seed/17-runtime-rounded-size-error",
+      "head_sha": "6515c1fbba6dc44981f6d3c2754c2e627df89dd2",
       "status": "diverged",
       "ahead_by": 66,
-      "behind_by": 546,
+      "behind_by": 547,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": true
@@ -3226,9 +2592,10 @@
     {
       "seed": 18,
       "branch": "experiment-failure-seed/18-runtime-divide-remainder",
+      "head_sha": "61d5029cf5a04f1cba1bc85855c3ba4d74ca8695",
       "status": "diverged",
       "ahead_by": 58,
-      "behind_by": 546,
+      "behind_by": 547,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": true
@@ -3236,9 +2603,10 @@
     {
       "seed": 19,
       "branch": "experiment-failure-seed/19-runtime-table-boundaries",
+      "head_sha": "21fcbbb1c4fb23d5529cb68140fe7a2aeffe1174",
       "status": "diverged",
       "ahead_by": 6,
-      "behind_by": 358,
+      "behind_by": 359,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": true
@@ -3246,9 +2614,10 @@
     {
       "seed": 20,
       "branch": "experiment-failure-seed/20-runtime-search-all-key",
+      "head_sha": "a4af64d5c645e60789477f68259f174b948a2795",
       "status": "diverged",
       "ahead_by": 15,
-      "behind_by": 333,
+      "behind_by": 334,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": true
@@ -3256,9 +2625,10 @@
     {
       "seed": 21,
       "branch": "experiment-failure-seed/21-runtime-search-serial",
+      "head_sha": "8920282d5887afa03ddcc0030cda2f3ee02b7cbc",
       "status": "diverged",
       "ahead_by": 8,
-      "behind_by": 333,
+      "behind_by": 334,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": true
@@ -3266,9 +2636,10 @@
     {
       "seed": 22,
       "branch": "experiment-failure-seed/22-runtime-call-static",
+      "head_sha": "9af10c71c21857e3a8fed1a4a4e1cc1bd14b48b2",
       "status": "diverged",
       "ahead_by": 37,
-      "behind_by": 333,
+      "behind_by": 334,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": true
@@ -3276,9 +2647,10 @@
     {
       "seed": 23,
       "branch": "experiment-failure-seed/23-runtime-call-by-reference",
+      "head_sha": "72c1167b1734cbde9a562bdb84ba03671d4085f0",
       "status": "diverged",
       "ahead_by": 25,
-      "behind_by": 265,
+      "behind_by": 266,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": true
@@ -3286,9 +2658,10 @@
     {
       "seed": 24,
       "branch": "experiment-failure-seed/24-runtime-call-by-content",
+      "head_sha": "7362107d657ef268d4f3200107ba4d692c40ad32",
       "status": "diverged",
       "ahead_by": 24,
-      "behind_by": 262,
+      "behind_by": 263,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": true
@@ -3296,9 +2669,10 @@
     {
       "seed": 25,
       "branch": "experiment-failure-seed/25-runtime-linkage-using",
+      "head_sha": "44371acf2b45dcd857b919921eb4c05544490dde",
       "status": "diverged",
       "ahead_by": 24,
-      "behind_by": 262,
+      "behind_by": 263,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": true
@@ -3306,9 +2680,10 @@
     {
       "seed": 26,
       "branch": "experiment-failure-seed/26-runtime-file-open-modes",
+      "head_sha": "8b35694bedf245a4d7adbc75b5e7cd18a6c23ce3",
       "status": "diverged",
       "ahead_by": 25,
-      "behind_by": 262,
+      "behind_by": 263,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": true
@@ -3316,9 +2691,10 @@
     {
       "seed": 27,
       "branch": "experiment-failure-seed/27-runtime-file-read-write",
+      "head_sha": "1583da344a41500d0e9f3c50ab9394ec199cad20",
       "status": "diverged",
       "ahead_by": 20,
-      "behind_by": 262,
+      "behind_by": 263,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": true
@@ -3326,9 +2702,10 @@
     {
       "seed": 28,
       "branch": "experiment-failure-seed/28-runtime-perform-control-flow",
+      "head_sha": "29fa42546937ce64e540a6c2265baa9754b885b2",
       "status": "diverged",
       "ahead_by": 19,
-      "behind_by": 262,
+      "behind_by": 263,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": true
@@ -3336,9 +2713,10 @@
     {
       "seed": 29,
       "branch": "experiment-failure-seed/29-runtime-go-to-depending",
+      "head_sha": "ee8146920919bbfb44a24513cc7731d2808d8192",
       "status": "diverged",
       "ahead_by": 20,
-      "behind_by": 262,
+      "behind_by": 263,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": true
@@ -3346,9 +2724,10 @@
     {
       "seed": 30,
       "branch": "experiment-failure-seed/30-runtime-data-scope-initialization",
+      "head_sha": "400bbb88a7eed15a5a4da90411afa0bf084f1905",
       "status": "diverged",
       "ahead_by": 30,
-      "behind_by": 256,
+      "behind_by": 257,
       "translator_change": true,
       "regression_test_change": true,
       "workflow_noise": true
@@ -3417,7 +2796,7 @@
     "promotion": "manual; no merge is performed by this workflow",
     "note": "Official paired run 44731467437: baseline 263/500, candidate 261/500, 500/500 same IDs/source hashes, zero new passes and two regressions (exec84-2-03eae98697, nc243a-04e83cd675). Candidate-run oracle drift was diagnostic; ranking used the frozen main oracle. The apparent exec84 pass in the independent sharded run 44731467420 did not reproduce. PR #400 closed unmerged."
   },
-  "latest_main_run": 45018142254,
+  "latest_main_run": 45056162017,
   "experimental_reference": {
     "score": 258,
     "denominator": 500,
@@ -3483,21 +2862,21 @@
     "note": "Legacy pending-pr-main-competition.yml now has workflow_dispatch only; the fixed 105-case screen is diagnostic and non-authoritative."
   },
   "audited_main_head": {
-    "sha": "9fb72b514c74cef4b5fb10d01b4d0110e9e985fc",
-    "previous_exact_baseline_sha": "399b55e77d47cdd15367a9b17c3b116a962a39c7",
+    "sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
+    "previous_exact_baseline_sha": "585bb618373189c657fd5cec43671b6ebb3c9e0e",
     "translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
     "translator_blob_unchanged_since_previous_exact_baseline": true,
     "changed_since_previous_exact_baseline": [
       ".github/workflows/current-main-pr-tournament.yml",
-      ".github/workflows/pending-pr-main-competition.yml",
       "experiments/failure-tournament/README.md",
       "experiments/failure-tournament/manifest.json",
       "tests/test_current_main_pr_tournament_workflow.py",
       "tests/test_failure_tournament_manifest.py",
       "tests/test_tournament_workflow.py"
     ],
-    "exact_500_case_run_on_this_sha": false,
-    "note": "Main SHA observed at the start of this audit and used for the 30-branch comparison. PR #404 itself changes only documentation, manifest and tests; its merge creates a new main SHA."
+    "exact_500_case_run_on_this_sha": true,
+    "exact_run_id": 45056162017,
+    "note": "Main SHA b26cc0335708dab99737cc902c1d96186fec9f94 has a complete exact 500-case run; translator blob remains unchanged from the previous verified baseline."
   },
   "cross_run_diagnostic_oracle_drift": {
     "previous_run": 44933960078,
@@ -3528,5 +2907,383 @@
     ],
     "pass_fail_status_changes": 0,
     "note": "Cross-run-only diagnostic: all 500 IDs and source hashes match, and both runs score 263/500, but 13 GnuCOBOL stdout fingerprints differ across independent executions. Two candidate output fingerprints differ on timeout-killed programs. These are not candidate gains/regressions; each paired tournament must rank against its own frozen main oracle."
-  }
+  },
+  "latest_main_verified_exact_sha": true,
+  "latest_30_seed_audit": {
+    "compared_against_main": "b26cc0335708dab99737cc902c1d96186fec9f94",
+    "current_main_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
+    "total_manifest_branches": 30,
+    "existing_branches": 30,
+    "missing_branches": [],
+    "all_30_exist": true,
+    "all_30_diverged": true,
+    "distinct_branch_heads": 30,
+    "ahead_only": 0,
+    "diverged": 30,
+    "behind_only": 0,
+    "without_translator_or_tests": [
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "workflow_noise_branches": [
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30
+    ],
+    "matching_prefix_refs": 31,
+    "extra_unmanifested_refs": [
+      "experiment-failure-seed/10-syntax-evaluate-also"
+    ],
+    "branch_comparisons": [
+      {
+        "seed": 1,
+        "branch": "experiment-failure-seed/01-syntax-condition-operators",
+        "head_sha": "37abd23b987b974db0ae06354136bc1fd004f0d5",
+        "status": "diverged",
+        "ahead_by": 4,
+        "behind_by": 217,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": false
+      },
+      {
+        "seed": 2,
+        "branch": "experiment-failure-seed/02-syntax-abbreviated-relations",
+        "head_sha": "4306becb6bde2247293f78f8a12fdf4ecedac3be",
+        "status": "diverged",
+        "ahead_by": 3,
+        "behind_by": 213,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": false
+      },
+      {
+        "seed": 3,
+        "branch": "experiment-failure-seed/03-syntax-multidimensional-subscripts",
+        "head_sha": "cb71da7c3aadc6af893231831124d39505aee78a",
+        "status": "diverged",
+        "ahead_by": 3,
+        "behind_by": 213,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": false
+      },
+      {
+        "seed": 4,
+        "branch": "experiment-failure-seed/04-syntax-reference-modification",
+        "head_sha": "7d27fb7871fc9658bc268da00288512f45e0f22c",
+        "status": "diverged",
+        "ahead_by": 3,
+        "behind_by": 213,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": false
+      },
+      {
+        "seed": 5,
+        "branch": "experiment-failure-seed/05-syntax-inspect-before-after",
+        "head_sha": "1186269c3d815ef91513d8afee3936a2ee8908f7",
+        "status": "diverged",
+        "ahead_by": 3,
+        "behind_by": 217,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": false
+      },
+      {
+        "seed": 6,
+        "branch": "experiment-failure-seed/06-syntax-inspect-replacing",
+        "head_sha": "f884b1f2e33f341ea269e5d2a29aa88024b115c6",
+        "status": "diverged",
+        "ahead_by": 5,
+        "behind_by": 213,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": false
+      },
+      {
+        "seed": 7,
+        "branch": "experiment-failure-seed/07-syntax-string-delimited",
+        "head_sha": "4861fcdf522bfe7358a718badf91fa978745dc9d",
+        "status": "diverged",
+        "ahead_by": 3,
+        "behind_by": 213,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": false
+      },
+      {
+        "seed": 8,
+        "branch": "experiment-failure-seed/08-syntax-unstring-multiple-delimiters",
+        "head_sha": "4444a957f2dd310a3d985faa2a4e4ea536da4c75",
+        "status": "diverged",
+        "ahead_by": 4,
+        "behind_by": 217,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": false
+      },
+      {
+        "seed": 9,
+        "branch": "experiment-failure-seed/09-syntax-perform-inline",
+        "head_sha": "fcca7c8cbff82f2445adb56a4347cdfb1e1009bc",
+        "status": "diverged",
+        "ahead_by": 4,
+        "behind_by": 213,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": false
+      },
+      {
+        "seed": 10,
+        "branch": "experiment-failure-seed/10-syntax-evaluate-also-rebuilt",
+        "head_sha": "7aa52ae026349d076e4b04d0b160d658f95ac0e1",
+        "status": "diverged",
+        "ahead_by": 3,
+        "behind_by": 21,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": false
+      },
+      {
+        "seed": 11,
+        "branch": "experiment-failure-seed/11-runtime-initialize-replacing",
+        "head_sha": "4b5b5799c034c114478684638265a1eb22d4d8db",
+        "status": "diverged",
+        "ahead_by": 3,
+        "behind_by": 694,
+        "translator_change": false,
+        "regression_test_change": false,
+        "workflow_noise": true
+      },
+      {
+        "seed": 12,
+        "branch": "experiment-failure-seed/12-runtime-initialize-occurs",
+        "head_sha": "5c7009b07939f50a81cf9f84189ce050e350bb8a",
+        "status": "diverged",
+        "ahead_by": 2,
+        "behind_by": 606,
+        "translator_change": false,
+        "regression_test_change": false,
+        "workflow_noise": true
+      },
+      {
+        "seed": 13,
+        "branch": "experiment-failure-seed/13-runtime-filler-storage",
+        "head_sha": "fa840f19225e9ed5dec40de0fec8059bc9b96eb3",
+        "status": "diverged",
+        "ahead_by": 2,
+        "behind_by": 602,
+        "translator_change": false,
+        "regression_test_change": false,
+        "workflow_noise": true
+      },
+      {
+        "seed": 14,
+        "branch": "experiment-failure-seed/14-runtime-redefines-overlay",
+        "head_sha": "764f875aa9f0787a47f5edcaaed1e5c61a24f353",
+        "status": "diverged",
+        "ahead_by": 2,
+        "behind_by": 601,
+        "translator_change": false,
+        "regression_test_change": false,
+        "workflow_noise": true
+      },
+      {
+        "seed": 15,
+        "branch": "experiment-failure-seed/15-runtime-numeric-move",
+        "head_sha": "10fca4d93508285814c6fbfca349aec34a305b94",
+        "status": "diverged",
+        "ahead_by": 2,
+        "behind_by": 599,
+        "translator_change": false,
+        "regression_test_change": false,
+        "workflow_noise": true
+      },
+      {
+        "seed": 16,
+        "branch": "experiment-failure-seed/16-runtime-decimal-arithmetic",
+        "head_sha": "fb3e6416709d37f229071dcfd7e1e272858dfa0a",
+        "status": "diverged",
+        "ahead_by": 394,
+        "behind_by": 597,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": true
+      },
+      {
+        "seed": 17,
+        "branch": "experiment-failure-seed/17-runtime-rounded-size-error",
+        "head_sha": "6515c1fbba6dc44981f6d3c2754c2e627df89dd2",
+        "status": "diverged",
+        "ahead_by": 66,
+        "behind_by": 547,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": true
+      },
+      {
+        "seed": 18,
+        "branch": "experiment-failure-seed/18-runtime-divide-remainder",
+        "head_sha": "61d5029cf5a04f1cba1bc85855c3ba4d74ca8695",
+        "status": "diverged",
+        "ahead_by": 58,
+        "behind_by": 547,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": true
+      },
+      {
+        "seed": 19,
+        "branch": "experiment-failure-seed/19-runtime-table-boundaries",
+        "head_sha": "21fcbbb1c4fb23d5529cb68140fe7a2aeffe1174",
+        "status": "diverged",
+        "ahead_by": 6,
+        "behind_by": 359,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": true
+      },
+      {
+        "seed": 20,
+        "branch": "experiment-failure-seed/20-runtime-search-all-key",
+        "head_sha": "a4af64d5c645e60789477f68259f174b948a2795",
+        "status": "diverged",
+        "ahead_by": 15,
+        "behind_by": 334,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": true
+      },
+      {
+        "seed": 21,
+        "branch": "experiment-failure-seed/21-runtime-search-serial",
+        "head_sha": "8920282d5887afa03ddcc0030cda2f3ee02b7cbc",
+        "status": "diverged",
+        "ahead_by": 8,
+        "behind_by": 334,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": true
+      },
+      {
+        "seed": 22,
+        "branch": "experiment-failure-seed/22-runtime-call-static",
+        "head_sha": "9af10c71c21857e3a8fed1a4a4e1cc1bd14b48b2",
+        "status": "diverged",
+        "ahead_by": 37,
+        "behind_by": 334,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": true
+      },
+      {
+        "seed": 23,
+        "branch": "experiment-failure-seed/23-runtime-call-by-reference",
+        "head_sha": "72c1167b1734cbde9a562bdb84ba03671d4085f0",
+        "status": "diverged",
+        "ahead_by": 25,
+        "behind_by": 266,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": true
+      },
+      {
+        "seed": 24,
+        "branch": "experiment-failure-seed/24-runtime-call-by-content",
+        "head_sha": "7362107d657ef268d4f3200107ba4d692c40ad32",
+        "status": "diverged",
+        "ahead_by": 24,
+        "behind_by": 263,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": true
+      },
+      {
+        "seed": 25,
+        "branch": "experiment-failure-seed/25-runtime-linkage-using",
+        "head_sha": "44371acf2b45dcd857b919921eb4c05544490dde",
+        "status": "diverged",
+        "ahead_by": 24,
+        "behind_by": 263,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": true
+      },
+      {
+        "seed": 26,
+        "branch": "experiment-failure-seed/26-runtime-file-open-modes",
+        "head_sha": "8b35694bedf245a4d7adbc75b5e7cd18a6c23ce3",
+        "status": "diverged",
+        "ahead_by": 25,
+        "behind_by": 263,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": true
+      },
+      {
+        "seed": 27,
+        "branch": "experiment-failure-seed/27-runtime-file-read-write",
+        "head_sha": "1583da344a41500d0e9f3c50ab9394ec199cad20",
+        "status": "diverged",
+        "ahead_by": 20,
+        "behind_by": 263,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": true
+      },
+      {
+        "seed": 28,
+        "branch": "experiment-failure-seed/28-runtime-perform-control-flow",
+        "head_sha": "29fa42546937ce64e540a6c2265baa9754b885b2",
+        "status": "diverged",
+        "ahead_by": 19,
+        "behind_by": 263,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": true
+      },
+      {
+        "seed": 29,
+        "branch": "experiment-failure-seed/29-runtime-go-to-depending",
+        "head_sha": "ee8146920919bbfb44a24513cc7731d2808d8192",
+        "status": "diverged",
+        "ahead_by": 20,
+        "behind_by": 263,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": true
+      },
+      {
+        "seed": 30,
+        "branch": "experiment-failure-seed/30-runtime-data-scope-initialization",
+        "head_sha": "400bbb88a7eed15a5a4da90411afa0bf084f1905",
+        "status": "diverged",
+        "ahead_by": 30,
+        "behind_by": 257,
+        "translator_change": true,
+        "regression_test_change": true,
+        "workflow_noise": true
+      }
+    ],
+    "note": "Fresh compare on 2026-11-23 against exact main b26cc0335708dab99737cc902c1d96186fec9f94: all 30 manifest branches exist, have 30 distinct heads, all are diverged and none is ahead-only. Seeds 1-10 are translator/test-only but stale; 11-15 contain no translator/tests; 16-30 mix translator/tests with unrelated workflow, benchmark or documentation paths."
+  },
+  "latest_30_seed_tournament_status": "blocked_not_started",
+  "latest_30_seed_tournament_started": false,
+  "latest_30_seed_tournament_note": "Readiness remains blocked: all 30 refs exist but all are diverged; seeds 11-15 lack translator/tests and seeds 16-30 include unrelated paths. No workflow_dispatch was issued."
 }
