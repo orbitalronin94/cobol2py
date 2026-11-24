@@ -30,17 +30,17 @@ class FailureTournamentManifestTests(unittest.TestCase):
         self.assertEqual(MANIFEST["experimental_reference"]["kind"], "experimental_only_not_main")
 
         latest = MANIFEST["latest_main_remeasurement"]
-        self.assertEqual(latest["score"], 263)
+        self.assertEqual(latest["score"], 262)
         self.assertEqual(latest["denominator"], 500)
-        self.assertEqual(latest["percent"], 52.6)
-        self.assertEqual(latest["source_run"], 45056162017)
+        self.assertEqual(latest["percent"], 52.4)
+        self.assertEqual(latest["source_run"], 45283644192)
         self.assertEqual(latest["skip"], 500)
         self.assertEqual(latest["target"], 500)
         self.assertTrue(latest["archive_md5_verified"])
         self.assertEqual(latest["reference_fingerprint_coverage"]["complete_cases"], 500)
         self.assertEqual(latest["current_main_sha"], "b26cc0335708dab99737cc902c1d96186fec9f94")
-        self.assertEqual(MANIFEST["current_baseline"]["source_run"], 45056162017)
-        self.assertEqual(MANIFEST["current_baseline"]["score"], 263)
+        self.assertEqual(MANIFEST["current_baseline"]["source_run"], 45283644192)
+        self.assertEqual(MANIFEST["current_baseline"]["score"], 262)
         self.assertEqual(MANIFEST["current_baseline"]["main_sha_at_audit"], "b26cc0335708dab99737cc902c1d96186fec9f94")
         self.assertTrue(MANIFEST["latest_verified_code_equivalent_main"]["exact_run_on_current_main_sha"])
         self.assertEqual(MANIFEST["post_merge_casewise_comparison"]["new_pass_case_ids"], ["sq206a-3536dcf7c2"])
@@ -53,6 +53,19 @@ class FailureTournamentManifestTests(unittest.TestCase):
         self.assertEqual(historical["target"], 500)
         self.assertEqual(historical["workflow_conclusion"], "cancelled")
         self.assertTrue(historical["baseline_artifact_complete"])
+
+    def test_latest_exact_main_repeat_records_timeout_and_oracle_drift(self):
+        repeat = MANIFEST["latest_baseline_repeat_diagnostic"]
+        self.assertEqual(repeat["main_sha"], "b26cc0335708dab99737cc902c1d96186fec9f94")
+        self.assertEqual(repeat["previous_run"], 45056162017)
+        self.assertEqual(repeat["current_run"], 45283644192)
+        self.assertEqual(repeat["previous_score"], 263)
+        self.assertEqual(repeat["current_score"], 262)
+        self.assertTrue(repeat["same_500_case_ids"])
+        self.assertTrue(repeat["same_500_source_hashes"])
+        self.assertEqual(repeat["status_flip_case_ids"], ["exec84-2-03eae98697"])
+        self.assertEqual(repeat["oracle_drift_count"], 12)
+        self.assertEqual(repeat["status_flip_details"]["current_failure_reason"], "translator timeout")
 
     def test_zero_regression_gate_and_blocked_readiness(self):
         self.assertEqual(MANIFEST["benchmark"]["skip"], 500)
@@ -147,7 +160,7 @@ class FailureTournamentManifestTests(unittest.TestCase):
         self.assertTrue(head["exact_500_case_run_on_this_sha"])
         pending = MANIFEST["pending_main_remeasurement"]
         self.assertEqual(pending["status"], "completed")
-        self.assertEqual(MANIFEST["latest_main_remeasurement"]["source_run"], 45056162017)
+        self.assertEqual(MANIFEST["latest_main_remeasurement"]["source_run"], 45283644192)
         self.assertEqual(pending["target_sha"], "b26cc0335708dab99737cc902c1d96186fec9f94")
         self.assertTrue(pending["queue_empty"])
         self.assertEqual(pending["skip"], 500)
