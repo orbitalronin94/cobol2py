@@ -1,16 +1,26 @@
 # 30-seed failure-directed repair tournament
 
-**Estado: bloqueado.** Main al inicio de esta auditoría: `9fb72b514c74cef4b5fb10d01b4d0110e9e985fc`. El último baseline exacto completo es 263/500 sobre `585bb618373189c657fd5cec43671b6ebb3c9e0e`; el blob del traductor es idéntico en el main de auditoría. PR #404 actualiza solo manifiesto, documentación y tests; su merge disparará el baseline-only de 500 casos sobre el SHA de merge resultante. La cohorte de 30 ramas sigue bloqueada.
+**Estado: bloqueado.** Main vigente: `b26cc0335708dab99737cc902c1d96186fec9f94`. El último baseline exacto completo es **262/500 (52,4%)** en [run 45283644192](https://github.com/orbitalronin94/cobol2py/actions/runs/45283644192), ejecutado sobre ese SHA. La cohorte de 30 ramas sigue sin estar preparada y no se ha despachado.
 
 ## Baseline vigente de main
 
-- **Última medición exacta: 263/500 (52,6%)** — [run 45018142254](https://github.com/orbitalronin94/cobol2py/actions/runs/45018142254), ejecutado sobre el SHA exacto `585bb618373189c657fd5cec43671b6ebb3c9e0e`.
-- Medición completa inmediatamente anterior: [run 44933960078](https://github.com/orbitalronin94/cobol2py/actions/runs/44933960078), 263/500 sobre SHA `399b55e77d47cdd15367a9b17c3b116a962a39c7`; queda como referencia previa.
-- Traductor: `4a7562627d161580470f1b0522cda0b094f635b0`; 500 IDs únicos, 500 fingerprints completos de GnuCOBOL.
-- Main al inicio de la auditoría, tras PR #403: `9fb72b514c74cef4b5fb10d01b4d0110e9e985fc`. Desde el último baseline exacto en `585bb618373189c657fd5cec43671b6ebb3c9e0e` solo cambió PR #403 (workflow legado y documentación/tests); el blob del traductor es idéntico. **No se presenta 263/500 como una ejecución exacta sobre `9fb72b514c74cef4b5fb10d01b4d0110e9e985fc`**. PR #404, si se fusiona, activará la re-medición sobre su propio SHA de merge.
-- Corpus X-COBOL v2, MD5 esperado y verificado `cbd974caed72b0836777dc2305928ed3`.
-- `skip=500`, `target=500`, comparación exacta de stdout bytes y código de retorno.
-- Artefacto de baseline-only programado: 500/500 resultados completos; 263 aprobados y 237 fallidos. La cola de candidatos estaba vacía. La puntuación histórica oficial de main **257/500** permanece separada. El **258/500** de [run 42266714599](https://github.com/orbitalronin94/cobol2py/actions/runs/42266714599) pertenece a `experiment/holdout-error-topography` y no es main. El 258/500 de [run 42272058313](https://github.com/orbitalronin94/cobol2py/actions/runs/42272058313) fue un artifact completo de baseline sobre la rama main dentro de un workflow global cancelado; se conserva como registro histórico separado, no como referencia oficial.
+- **262/500 (52,4%)** — [run 45283644192](https://github.com/orbitalronin94/cobol2py/actions/runs/45283644192), SHA exacto `b26cc0335708dab99737cc902c1d96186fec9f94`.
+- Corpus X-COBOL v2, MD5 `cbd974caed72b0836777dc2305928ed3` verificado; `skip=500`, `target=500`; 500 IDs únicos, 500 hashes de fuente y 500 fingerprints GnuCOBOL completos; comparación exacta de stdout bytes y código de retorno.
+- El baseline anterior sobre el mismo SHA, [run 45056162017](https://github.com/orbitalronin94/cobol2py/cobol2py/actions/runs/45056162017), obtuvo 263/500. Los 500 IDs y hashes de fuente coinciden. El único cambio de estado es `exec84-2-03eae98697`: pasó en 14,349943 s y falló por timeout de traducción a 20,003706 s en la ejecución nueva. Es variación de tiempo alrededor del límite de 20 s, no una regresión de candidato. Se conserva 263/500 como medición anterior; **262/500 es la última medición exacta vigente**.
+- Doce fingerprints stdout de GnuCOBOL cambiaron entre ambas ejecuciones independientes: `cob-simpleinventory-6af451140a`, `collatz-6e335e6eda`, `date1-f31ce2734d`, `intrdate-0517c3d81c`, `pgm-f2e440bd10`, `progcob03-dd6c82c5dc`, `progcob17-6100f77c6a`, `progcobtempodecasaestruturado-930b4ab770`, `pullydis-9e45af6c84`, `randombingo-e50339cc12`, `randomnumbers-d8fc7ee85b`, `rolldice-08e3de1a0e`. El comparador debe seguir congelando el oráculo de main dentro de cada ejecución y no mezclar referencias de distintas corridas.
+- La referencia histórica de main **257/500 (51,4%)** permanece en [run 42268813592](https://github.com/orbitalronin94/cobol2py/actions/runs/42268813592). El **258/500** de [run 42266714599](https://github.com/orbitalronin94/cobol2py/actions/runs/42266714599) pertenece a una rama experimental y no es main.
+- [Run diario 45283644192](https://github.com/orbitalronin94/cobol2py/actions/runs/45283644192) completó baseline y ranking. La cola de candidatos estaba vacía: no hubo candidatos, ganancias, regresiones ni ganador.
+
+## Readiness del torneo de 30 semillas
+
+- Las 30 referencias del manifiesto existen y tienen 30 SHA distintos; las 30 están divergidas respecto a main `b26cc0335708dab99737cc902c1d96186fec9f94`, ninguna es ahead-only.
+- Semillas 1–10: cambios de traductor/tests, pero ramas obsoletas.
+- Semillas 11–15: sin cambios de traductor ni tests/reproducers.
+- Semillas 16–30: cambios mezclados con workflows, benchmarks o documentación.
+- [PR #349](https://github.com/orbitalronin94/cobol2py/pull/349) añadió el arnés de torneo, no 30 implementaciones listas.
+- `.github/workflows/failure-directed-30-seed-tournament.yml` solo permite `workflow_dispatch`, exige `readiness.status == "ready"`, verifica SHA únicos, ancestry ahead-only, cambios aislados de traductor/tests y artifacts completos. La readiness sigue bloqueada; **no se ha iniciado el torneo**.
+- La cohorte histórica de 16 candidatos no se duplica: sus artifacts ya cubren UNSTRING TALLYING IN, WRITE FROM literal, READ-after-EOF, OPEN mixto, INSPECT REPLACING, reference modification aritmética y STRING ZEROES.
+
 ## Última candidata emparejada — PR #371
 
 - [PR #371](https://github.com/orbitalronin94/cobol2py/pull/371), lectura de registros `ORGANIZATION SEQUENTIAL` de ancho fijo; head `1a9424f6b59d18ec93b9dc1b38a32afde8f00dbc`, merge ref evaluada `ebba3a79baf6d03f7d5fe5c16282f723ac3f6005`.
