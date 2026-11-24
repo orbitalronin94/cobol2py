@@ -6,6 +6,11 @@ on:
   push:
     branches: [main]
     paths:
+      # Re-measure exact main after any translator-affecting merge.
+      - "cobol2py.py"
+      - "ronin/**"
+      - "web/index.html"
+      - "tests/test_cobol2py.py"
       - ".github/workflows/current-main-pr-tournament.yml"
       - ".github/workflows/failure-directed-30-seed-tournament.yml"
       - "experiments/failure-tournament/manifest.json"

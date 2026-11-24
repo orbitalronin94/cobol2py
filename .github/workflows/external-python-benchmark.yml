@@ -6,21 +6,18 @@ on:
       - main
       - fix/regressions-unstring-delimiters-vs-48
     paths:
-      - "cobol2py.py"
-      - "web/index.html"
+      # Translator changes are measured by current-main-pr-tournament.yml.
       - "tests/test_divide_verb_compat.py"
       - "tests/test_numval_c_currency.py"
       - "benchmarks/run_external_corpus.py"
       - "benchmarks/Dockerfile.external"
-      - ".github/workflows/external-python-benchmark.yml"
   pull_request:
     paths:
-      - "cobol2py.py"
-      - "ronin/**"
+      # Translator candidate PRs use the frozen, casewise current-main tournament.
+      # Keep shard runs for benchmark-harness and dedicated SOTA-repair changes.
       - "tests/test_sota_repair.py"
       - "benchmarks/run_external_corpus.py"
       - "benchmarks/Dockerfile.external"
-      - ".github/workflows/external-python-benchmark.yml"
   # PRs and manual dispatch both evaluate the same fixed 500-case corpus.
   workflow_dispatch:
     inputs:
