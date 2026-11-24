@@ -3636,7 +3636,7 @@ def _translate_inspect_tally_replace(stmt: str, variables=None):
         if operand is not None and not tail.strip():
             return None
     simple_replace = re.fullmatch(
-        r"""INSPECT\s+[A-Za-z0-9-]+\s+REPLACING\s+ALL\s+("(?:[^"]|"")*"|'(?:[^']|'')*')\s+BY\s+("(?:[^"]|"")*")?(?:\s+END-INSPECT)?""",
+        r"""INSPECT\s+[A-Za-z0-9-]+\s+REPLACING\s+ALL\s+("(?:[^"]|"")*"|'(?:[^']|'')*')\s+BY\s+("(?:[^"]|"")*"|\'(?:[^\']|\'\')*\')(?:\s+END-INSPECT)?""",
         s,
         flags=re.IGNORECASE,
     )
