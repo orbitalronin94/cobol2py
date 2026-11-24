@@ -218,10 +218,10 @@
     }
   ],
   "latest_main_remeasurement": {
-    "score": 263,
+    "score": 262,
     "denominator": 500,
-    "percent": 52.6,
-    "source_run": 45056162017,
+    "percent": 52.4,
+    "source_run": 45283644192,
     "source_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
     "baseline_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
     "current_main_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
@@ -248,11 +248,11 @@
         "skip": 500,
         "target": 500,
         "tested": 500,
-        "passed": 263,
-        "failed": 237
+        "passed": 262,
+        "failed": 238
       }
     ],
-    "note": "Run 45056162017 completed on exact main SHA b26cc0335708dab99737cc902c1d96186fec9f94. Artifact pr-tournament-baseline-45056162017 contains 500 unique IDs and 500 complete GnuCOBOL stdout SHA-256/length/return-code fingerprints; X-COBOL v2 MD5 verified; 263 passed and 237 failed.",
+    "note": "Run 45283644192 completed on exact main SHA b26cc0335708dab99737cc902c1d96186fec9f94. Artifact pr-tournament-baseline-45283644192 contains 500 unique IDs, 500 complete GnuCOBOL stdout SHA-256/length/return-code fingerprints, X-COBOL v2 MD5 cbd974caed72b0836777dc2305928ed3 verified, skip=500 and target=500; 262 passed and 238 failed.",
     "main_sha_at_audit": "b26cc0335708dab99737cc902c1d96186fec9f94",
     "main_head_at_audit": "b26cc0335708dab99737cc902c1d96186fec9f94"
   },
@@ -296,7 +296,8 @@
       "2026-11-23 exact-main baseline: run 45056162017 on SHA b26cc0335708dab99737cc902c1d96186fec9f94, 263/500 (52.6%), X-COBOL v2 MD5 cbd974caed72b0836777dc2305928ed3, skip=500, target=500, 500 unique IDs and 500 complete GnuCOBOL fingerprints.",
       "PR #405 paired run 45022022053 initially reported +1 and zero regressions, but the only apparent gain exec84-2-03eae98697 was a 20.004698-second main translator timeout. A second exact-main run on the same SHA passed that case in 14.349943 seconds; candidate re-scored against the later main oracle is 263/500 with 0 gains and 0 regressions. All six SEARCH ALL motivating cases still fail (three KeyError, one TypeError, two UnboundLocalError). PR #405 closed unmerged.",
       "Fresh 2026-11-23 audit against main b26cc0335708dab99737cc902c1d96186fec9f94: 30/30 manifest branches exist, 30 distinct heads, 30/30 diverged, 0 ahead-only. Seeds 1-10 are stale code/test-only branches; seeds 11-15 lack translator/tests; seeds 16-30 contain unrelated workflow/benchmark/documentation paths.",
-      "The 30-seed workflow remains manual workflow_dispatch and readiness blocked; no 30-seed tournament has been started. PR #349 added the harness only, not 30 completed candidate implementations. The historical 16-candidate artifacts are not duplicated."
+      "The 30-seed workflow remains manual workflow_dispatch and readiness blocked; no 30-seed tournament has been started. PR #349 added the harness only, not 30 completed candidate implementations. The historical 16-candidate artifacts are not duplicated.",
+      "2026-11-24 repeat exact-main run 45283644192 on b26cc0335708dab99737cc902c1d96186fec9f94: 262/500 (52.4%), complete 500/500, same IDs/source hashes as run 45056162017 (263/500); only status flip is exec84-2-03eae98697 due to 20.003706-second translator timeout. Twelve GnuCOBOL reference fingerprints drift between runs; no candidate gain/regression is inferred."
     ],
     "audit_date": "2026-11-23",
     "audit_main_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
@@ -1138,10 +1139,10 @@
     }
   },
   "current_baseline": {
-    "score": 263,
+    "score": 262,
     "denominator": 500,
-    "percent": 52.6,
-    "source_run": 45056162017,
+    "percent": 52.4,
+    "source_run": 45283644192,
     "source_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
     "baseline_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
     "current_main_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
@@ -1168,11 +1169,11 @@
         "skip": 500,
         "target": 500,
         "tested": 500,
-        "passed": 263,
-        "failed": 237
+        "passed": 262,
+        "failed": 238
       }
     ],
-    "note": "Run 45056162017 completed on exact main SHA b26cc0335708dab99737cc902c1d96186fec9f94. Artifact pr-tournament-baseline-45056162017 contains 500 unique IDs and 500 complete GnuCOBOL stdout SHA-256/length/return-code fingerprints; X-COBOL v2 MD5 verified; 263 passed and 237 failed.",
+    "note": "Run 45283644192 completed on exact main SHA b26cc0335708dab99737cc902c1d96186fec9f94. Artifact pr-tournament-baseline-45283644192 contains 500 unique IDs, 500 complete GnuCOBOL stdout SHA-256/length/return-code fingerprints, X-COBOL v2 MD5 cbd974caed72b0836777dc2305928ed3 verified, skip=500 and target=500; 262 passed and 238 failed.",
     "main_sha_at_audit": "b26cc0335708dab99737cc902c1d96186fec9f94",
     "main_head_at_audit": "b26cc0335708dab99737cc902c1d96186fec9f94"
   },
@@ -2615,7 +2616,7 @@
       "decision": "ineligible_no_gain_oracle_drift",
       "note": "Official paired comparison: 263/500 vs 263/500, 500 comparable cases, zero new passes, zero regressions, eight oracle drifts. Both NIST motivating cases still time out. The one-off exec84 timeout-boundary pass in the independent sharded run did not reproduce as a gain in the paired run."
     },
-    "latest_scheduled_run": 45056162017,
+    "latest_scheduled_run": 45283644192,
     "auto_discover_open_prs": false,
     "auto_discover_manifest_queue": true,
     "discovery_source": "current_main_pr_tournament.candidate_queue",
@@ -2635,17 +2636,17 @@
     "decision": "discovery_failure_not_a_completed_tournament"
   },
   "latest_verified_code_equivalent_main": {
-    "score": 263,
+    "score": 262,
     "denominator": 500,
-    "percent": 52.6,
-    "measured_run": 45056162017,
+    "percent": 52.4,
+    "measured_run": 45283644192,
     "measured_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
     "current_main_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
     "current_main_translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
     "measured_translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
     "code_equivalent": true,
     "exact_run_on_current_main_sha": true,
-    "reason": "Run 45056162017 measured the exact current main SHA and verified all 500 X-COBOL v2 cases and GnuCOBOL fingerprints."
+    "reason": "Run 45283644192 measured the exact current main SHA and verified all 500 X-COBOL v2 cases and GnuCOBOL fingerprints."
   },
   "latest_paired_pr_tournament": {
     "run": 45022022053,
@@ -2695,12 +2696,12 @@
     "note": "Official paired run 45022022053 initially marked the candidate eligible (+1, zero regressions) against the frozen baseline. Revalidation against a second exact-main run 45056162017 on the same base SHA shows no stable gain: candidate outputs score 263/500, 0 gains and 0 regressions against the later main oracle. The apparent exec84 gain was a baseline timeout flake; all six motivating SEARCH ALL cases still fail with return code 1 and stdout length 0; the artifact contains no stderr or exception-class field, so the exact exception type is unverified. PR #405 was closed without merge."
   },
   "latest_baseline_artifact_check": {
-    "run": 45056162017,
-    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/45056162017",
+    "run": 45283644192,
+    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/45283644192",
     "baseline_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
-    "score": 263,
+    "score": 262,
     "denominator": 500,
-    "percent": 52.6,
+    "percent": 52.4,
     "tested": 500,
     "unique_case_ids": 500,
     "skip": 500,
@@ -2711,8 +2712,9 @@
     "reference_fingerprint_coverage": 500,
     "baseline_job_conclusion": "success",
     "workflow_conclusion": "success",
-    "final_artifact": "pr-tournament-baseline-45056162017",
-    "note": "Exact-SHA baseline artifact verified: 500/500 rows, unique IDs, full oracle fingerprints, 263/500 exact matches."
+    "artifact_id": 14873151966,
+    "final_artifact": "pr-tournament-baseline-45283644192",
+    "note": "Exact-SHA baseline artifact verified: 500/500 rows, unique IDs, full oracle fingerprints, 262/500 exact matches."
   },
   "latest_candidate_artifact_comparison": {
     "run": 45022022053,
@@ -2757,7 +2759,7 @@
     "decision": "ineligible_transient_timeout_gain_motivating_cases_unfixed",
     "note": "Official paired run 45022022053 initially marked the candidate eligible (+1, zero regressions) against the frozen baseline. Revalidation against a second exact-main run 45056162017 on the same base SHA shows no stable gain: candidate outputs score 263/500, 0 gains and 0 regressions against the later main oracle. The apparent exec84 gain was a baseline timeout flake; all six motivating SEARCH ALL cases still fail with return code 1 and stdout length 0; the artifact contains no stderr or exception-class field, so the exact exception type is unverified. PR #405 was closed without merge."
   },
-  "latest_main_holdout_run": 45056162017,
+  "latest_main_holdout_run": 45283644192,
   "branch_comparisons": [
     {
       "seed": 1,
@@ -3153,7 +3155,7 @@
     "promotion": "manual; no merge is performed by this workflow",
     "note": "Official paired run 44731467437: baseline 263/500, candidate 261/500, 500/500 same IDs/source hashes, zero new passes and two regressions (exec84-2-03eae98697, nc243a-04e83cd675). Candidate-run oracle drift was diagnostic; ranking used the frozen main oracle. The apparent exec84 pass in the independent sharded run 44731467420 did not reproduce. PR #400 closed unmerged."
   },
-  "latest_main_run": 45056162017,
+  "latest_main_run": 45283644192,
   "experimental_reference": {
     "score": 258,
     "denominator": 500,
@@ -3236,8 +3238,8 @@
       "tests/test_tournament_workflow.py"
     ],
     "exact_500_case_run_on_this_sha": true,
-    "exact_run_id": 45056162017,
-    "note": "Main SHA b26cc0335708dab99737cc902c1d96186fec9f94 has a complete exact 500-case run; translator blob remains unchanged from the previous verified baseline."
+    "exact_run_id": 45283644192,
+    "note": "Main SHA b26cc0335708dab99737cc902c1d96186fec9f94 has an exact 500-case run 45283644192; the translator blob remains 4a7562627d161580470f1b0522cda0b094f635b0."
   },
   "cross_run_diagnostic_oracle_drift": {
     "previous_run": 44933960078,
@@ -3646,5 +3648,47 @@
   },
   "latest_30_seed_tournament_status": "blocked_not_started",
   "latest_30_seed_tournament_started": false,
-  "latest_30_seed_tournament_note": "Readiness remains blocked: all 30 refs exist but all are diverged; seeds 11-15 lack translator/tests and seeds 16-30 include unrelated paths. No workflow_dispatch was issued."
+  "latest_30_seed_tournament_note": "Readiness remains blocked: all 30 refs exist but all are diverged; seeds 11-15 lack translator/tests and seeds 16-30 include unrelated paths. No workflow_dispatch was issued.",
+  "latest_baseline_repeat_diagnostic": {
+    "main_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
+    "previous_run": 45056162017,
+    "current_run": 45283644192,
+    "previous_score": 263,
+    "current_score": 262,
+    "denominator": 500,
+    "same_500_case_ids": true,
+    "same_500_source_hashes": true,
+    "source_hash_mismatches": 0,
+    "status_flip_case_ids": [
+      "exec84-2-03eae98697"
+    ],
+    "status_flip_details": {
+      "id": "exec84-2-03eae98697",
+      "previous_status": "passed",
+      "current_status": "failed",
+      "previous_translation_seconds": 14.349943,
+      "current_translation_seconds": 20.003706,
+      "current_failure_reason": "translator timeout",
+      "timeout_boundary_seconds": 20,
+      "interpretation": "same translator blob; run-to-run translation-time variance, not a candidate regression"
+    },
+    "oracle_drift_count": 12,
+    "oracle_drift_case_ids": [
+      "cob-simpleinventory-6af451140a",
+      "collatz-6e335e6eda",
+      "date1-f31ce2734d",
+      "intrdate-0517c3d81c",
+      "pgm-f2e440bd10",
+      "progcob03-dd6c82c5dc",
+      "progcob17-6100f77c6a",
+      "progcobtempodecasaestruturado-930b4ab770",
+      "pullydis-9e45af6c84",
+      "randombingo-e50339cc12",
+      "randomnumbers-d8fc7ee85b",
+      "rolldice-08e3de1a0e"
+    ],
+    "previous_artifact": "pr-tournament-baseline-45056162017",
+    "current_artifact": "pr-tournament-baseline-45283644192",
+    "note": "Both runs use the same exact main SHA, corpus checksum, 500 IDs and source hashes. One case flips solely because the translator reaches the 20-second timeout boundary; the latest complete exact-SHA measurement is 262/500. Twelve GnuCOBOL stdout fingerprints also differ between independent reference executions, so each paired candidate comparison must continue using the frozen main oracle."
+  }
 }
