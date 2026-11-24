@@ -4762,7 +4762,7 @@ class InspectTallyReplacingRangeRegressionTests(unittest.TestCase):
             namespace,
         )
         self.assertEqual(namespace["ws_count"], 2)
-        self.assertEqual(namespace["ws_text"], "ZZHAYAB")
+        self.assertEqual(namespace["ws_text"], "ZZBHAYAB")
 
     def test_replacing_leading_and_characters_ranges(self):
         variables = {

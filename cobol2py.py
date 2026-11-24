@@ -3723,9 +3723,9 @@ def _translate_inspect_tally_replace(stmt: str, variables=None):
     ]
     for index, (counter, _, _, _, _) in enumerate(tally_entries):
         counter_expr = normalize_data_reference(counter, variable_map)
-        lines.extend(emit_assignment(counter, f"int({counter_expr}) + _cobol_inspect_counts[{index}]", variable_map))
+        lines.append(emit_assignment(counter, f"int({counter_expr}) + _cobol_inspect_counts[{index}]", variable_map))
     if replace_entries:
-        lines.extend(emit_assignment(source, "_cobol_inspect_value", variable_map))
+        lines.append(emit_assignment(source, "_cobol_inspect_value", variable_map))
     return lines
 
 
