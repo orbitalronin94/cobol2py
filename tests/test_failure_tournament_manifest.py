@@ -109,7 +109,8 @@ class FailureTournamentManifestTests(unittest.TestCase):
         self.assertEqual(result["regressed_case_ids"], ["exec84-2-03eae98697"])
         self.assertEqual(result["revalidated_new_passes"], 3)
         self.assertEqual(result["revalidated_regressions"], 1)
-        self.assertFalse(result["closed_unmerged"])\n        self.assertEqual(result["status"], "revalidation_in_progress")
+        self.assertFalse(result["closed_unmerged"])
+        self.assertEqual(result["status"], "revalidation_in_progress")
         self.assertFalse(result["eligible"])
         self.assertEqual(result["decision"], "ineligible_timeout_regression_fastpath_revalidation_in_progress")
         previous = tournament["previous_candidate_evaluation"]
