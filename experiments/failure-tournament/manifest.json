@@ -2466,7 +2466,7 @@
     ],
     "oracle_drift_count": 8,
     "eligible": false,
-    "status": "revalidated_ineligible",
+    "status": "completed",
     "decision": "ineligible_one_timeout_regression"
   },
   "latest_baseline_artifact_check": {
