@@ -4788,3 +4788,19 @@ class InspectTallyReplacingRangeRegressionTests(unittest.TestCase):
         )
         self.assertEqual(namespace["ws_text"], "ABQQ")
 
+
+
+class InspectParserDispatchPerformanceTests(unittest.TestCase):
+    def test_non_inspect_statement_skips_range_parser(self):
+        original = cobol2py._translate_inspect_tally_replace
+
+        def unexpected_call(*args, **kwargs):
+            raise AssertionError("INSPECT range parser ran for a non-INSPECT statement")
+
+        cobol2py._translate_inspect_tally_replace = unexpected_call
+        try:
+            translated = cobol2py.translate_statement("DISPLAY 'FAST PATH'", set(), {})
+        finally:
+            cobol2py._translate_inspect_tally_replace = original
+
+        self.assertIsNotNone(translated)
