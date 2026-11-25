@@ -4060,9 +4060,12 @@ def translate_statement(
             else:
                 initialize_group(root, target_expr, set())
         return assignments or [f"# INITIALIZE sin campos traducibles: {s}"]
-    inspect_translation = _translate_inspect_tally_replace(s, variables)
-    if inspect_translation is not None:
-        return inspect_translation
+    # The range-aware INSPECT parser performs several regular-expression parses.
+    # Keep that cost off every non-INSPECT statement in large COBOL programs.
+    if s[:7].upper() == "INSPECT" and (len(s) == 7 or s[7].isspace()):
+        inspect_translation = _translate_inspect_tally_replace(s, variables)
+        if inspect_translation is not None:
+            return inspect_translation
 
     # INSPECT CONVERTING performs a character-position mapping on the
     # receiving data item. Reverse construction makes the first occurrence
