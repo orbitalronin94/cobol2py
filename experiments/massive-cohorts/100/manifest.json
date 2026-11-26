@@ -1,0 +1,817 @@
+{
+  "protocol": "docs/MASSIVE_PARALLEL_EXPERIMENT_PROTOCOL.md",
+  "cohort_size": 100,
+  "base_branch": "main",
+  "base_sha_policy": "freeze main SHA at execution start; all candidates must derive from that SHA",
+  "status": "scaffold_only_candidates_not_yet_implemented",
+  "candidates": [
+    {
+      "id": "C001",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C002",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C003",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C004",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C005",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C006",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C007",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C008",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C009",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C010",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C011",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C012",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C013",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C014",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C015",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C016",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C017",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C018",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C019",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C020",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C021",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C022",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C023",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C024",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C025",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C026",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C027",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C028",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C029",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C030",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C031",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C032",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C033",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C034",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C035",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C036",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C037",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C038",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C039",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C040",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C041",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C042",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C043",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C044",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C045",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C046",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C047",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C048",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C049",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C050",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C051",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C052",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C053",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C054",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C055",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C056",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C057",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C058",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C059",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C060",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C061",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C062",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C063",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C064",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C065",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C066",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C067",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C068",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C069",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C070",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C071",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C072",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C073",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C074",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C075",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C076",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C077",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C078",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C079",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C080",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C081",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C082",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C083",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C084",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C085",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C086",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C087",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C088",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C089",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C090",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C091",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C092",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C093",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C094",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C095",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C096",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C097",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C098",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C099",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    },
+    {
+      "id": "C100",
+      "status": "unassigned",
+      "branch": null,
+      "hypothesis": null,
+      "patch_sha": null,
+      "evidence": null
+    }
+  ],
+  "acceptance": {
+    "complete_cases": 500,
+    "minimum_score": 251,
+    "zero_regressions_against_same_run_main": true,
+    "full_test_suite_green": true,
+    "checksum_verified": true
+  },
+  "note": "Manifest scaffold only. Empty slots are not runnable candidates and must be populated with distinct, evidence-backed functional changes before dispatch."
+}
