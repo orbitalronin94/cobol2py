@@ -4804,3 +4804,38 @@ class InspectParserDispatchPerformanceTests(unittest.TestCase):
             cobol2py._translate_inspect_tally_replace = original
 
         self.assertIsNotNone(translated)
+
+class InspectRuntimeEmissionPerformanceTests(unittest.TestCase):
+    def test_runtime_helper_is_omitted_when_program_has_no_range_inspect(self):
+        program = cobol2py.Program(
+            program_id="NOINSPECT",
+            paragraphs={"__MAIN__": [cobol2py.Node("stmt", 'DISPLAY "OK"', 1)]},
+            paragraph_order=["__MAIN__"],
+        )
+        generated = cobol2py.emit_python(program)
+        self.assertNotIn("def _cobol_inspect(", generated)
+        compile(generated, "<no-inspect-runtime>", "exec")
+
+    def test_runtime_helper_is_emitted_before_entrypoint_when_inspect_uses_it(self):
+        program = cobol2py.Program(
+            program_id="WITHINSPECT",
+            variables=[
+                cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(4)"),
+                cobol2py.CobolVar(level=1, name="WS-COUNT", pic="9(2)"),
+            ],
+            paragraphs={
+                "__MAIN__": [
+                    cobol2py.Node(
+                        "stmt",
+                        'INSPECT WS-TEXT TALLYING WS-COUNT FOR CHARACTERS',
+                        1,
+                    )
+                ]
+            },
+            paragraph_order=["__MAIN__"],
+        )
+        generated = cobol2py.emit_python(program)
+        helper = generated.index("def _cobol_inspect(")
+        entrypoint = generated.index('if __name__ == "__main__":')
+        self.assertLess(helper, entrypoint)
+        compile(generated, "<inspect-runtime>", "exec")

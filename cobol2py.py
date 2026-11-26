@@ -5595,8 +5595,6 @@ def emit_python(prog: Program) -> str:
     lines.append("    number = float(text or '0')")
     lines.append("    return -number if negative else number")
     lines.append("")
-    lines.extend(COBOL_INSPECT_RUNTIME_SOURCE.strip("\n").splitlines())
-    lines.append("")
     runtime_file_specs: dict[str, dict[str, object]] = {}
     for file_name, file_spec in prog.file_specs.items():
         runtime_spec: dict[str, object] = dict(file_spec)
@@ -6067,6 +6065,10 @@ def emit_python(prog: Program) -> str:
     lines.append("            continue")
     lines.append("        index += 1")
     lines.append("")
+    if any("_cobol_inspect(" in line for line in lines):
+        lines.append("")
+        lines.extend(COBOL_INSPECT_RUNTIME_SOURCE.strip("\n").splitlines())
+        lines.append("")
     lines.append('if __name__ == "__main__":')
     if dispatch_order:
         lines.append(f"    _cobol_dispatch({dispatch_order[0]!r})")
