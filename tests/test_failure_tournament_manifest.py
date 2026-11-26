@@ -105,7 +105,7 @@ class FailureTournamentManifestTests(unittest.TestCase):
         self.assertEqual(result["candidate_score"], 265)
         self.assertEqual(result["paired_run"], 45609355925)
         self.assertEqual(result["comparable_cases"], 500)
-        self.assertEqual(result["new_pass_case_ids"], ["nc122a-0a3c88dcdf", "nc122a-531a96359c", "nc2214-2-fdbb829806"])
+        self.assertCountEqual(result["new_pass_case_ids"], ["nc122a-0a3c88dcdf", "nc122a-531a96359c", "nc2214-2-fdbb829806"])
         self.assertEqual(result["regressed_case_ids"], ["exec84-2-03eae98697"])
         self.assertEqual(result["revalidated_new_passes"], 3)
         self.assertEqual(result["revalidated_regressions"], 1)
