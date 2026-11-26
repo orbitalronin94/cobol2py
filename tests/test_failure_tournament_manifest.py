@@ -98,7 +98,7 @@ class FailureTournamentManifestTests(unittest.TestCase):
         self.assertFalse(tournament["auto_discover_open_prs"])
         self.assertEqual(tournament["discovery_source"], "current_main_pr_tournament.candidate_queue")
         self.assertRegex(tournament["workflow_sha"], r"^[0-9a-f]{40}$")
-        self.assertEqual(tournament["candidate_queue"], [])
+        self.assertEqual(tournament["candidate_queue"], [{"pr": 407, "reason": "INSPECT runtime helper emission performance recheck"}])
         result = tournament["latest_candidate_evaluation"]
         self.assertEqual(result["pr"], 407)
         self.assertEqual(result["baseline_score"], 263)

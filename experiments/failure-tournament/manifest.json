@@ -2245,7 +2245,12 @@
       ],
       "closed_unmerged": false
     },
-    "candidate_queue": [],
+    "candidate_queue": [
+      {
+        "pr": 407,
+        "reason": "INSPECT runtime helper emission performance recheck"
+      }
+    ],
     "isolation_scope": {
       "enforced": true,
       "allowed_paths": [
