@@ -2232,7 +2232,18 @@
       "eligible": false,
       "status": "completed",
       "decision": "ineligible_one_timeout_regression",
-      "note": "Completed paired evaluation; candidate has three new passes but one timeout regression. A performance-focused revision is now under a separate paired run."
+      "note": "Completed paired evaluation; candidate has three new passes but one timeout regression. A performance-focused revision is now under a separate paired run.",
+      "revalidated_new_passes": 3,
+      "revalidated_new_pass_case_ids": [
+        "nc2214-2-fdbb829806",
+        "nc122a-531a96359c",
+        "nc122a-0a3c88dcdf"
+      ],
+      "revalidated_regressions": 1,
+      "revalidated_regressed_case_ids": [
+        "exec84-2-03eae98697"
+      ],
+      "closed_unmerged": false
     },
     "candidate_queue": [],
     "isolation_scope": {
