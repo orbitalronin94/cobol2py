@@ -198,3 +198,19 @@ class DockerBuildNetworkContractTests(unittest.TestCase):
             self.assertIn("--allow-insecure-entitlement network.host", workflow)
             self.assertIn("--allow network.host --network host", workflow)
             self.assertIn("--network none", workflow)
+
+    def test_main_push_remeasures_exact_baseline_after_translator_changes(self):
+        push_section = CURRENT_MAIN_PR_WORKFLOW.split("  push:", 1)[1].split("  pull_request:", 1)[0]
+        for path in ('"cobol2py.py"', '"ronin/**"', '"web/index.html"', '"tests/test_cobol2py.py"'):
+            self.assertIn(path, push_section)
+
+    def test_external_python_shards_do_not_duplicate_translator_candidate_prs(self):
+        push_section = EXTERNAL_PYTHON_WORKFLOW.split("  push:", 1)[1].split("  pull_request:", 1)[0]
+        pr_section = EXTERNAL_PYTHON_WORKFLOW.split("  pull_request:", 1)[1].split("  workflow_dispatch:", 1)[0]
+        self.assertNotIn('"cobol2py.py"', push_section)
+        self.assertNotIn('"web/index.html"', push_section)
+        self.assertNotIn('".github/workflows/external-python-benchmark.yml"', push_section)
+        self.assertNotIn('"cobol2py.py"', pr_section)
+        self.assertNotIn('"ronin/**"', pr_section)
+        self.assertNotIn('".github/workflows/external-python-benchmark.yml"', pr_section)
+        self.assertIn('"benchmarks/run_external_corpus.py"', pr_section)
