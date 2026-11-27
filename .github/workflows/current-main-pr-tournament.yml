@@ -11,9 +11,6 @@ on:
       - "ronin/**"
       - "web/index.html"
       - "tests/test_cobol2py.py"
-      - ".github/workflows/current-main-pr-tournament.yml"
-      - ".github/workflows/failure-directed-30-seed-tournament.yml"
-      - "experiments/failure-tournament/manifest.json"
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
