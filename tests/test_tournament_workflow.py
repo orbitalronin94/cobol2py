@@ -82,9 +82,17 @@ class MassiveTournamentWorkflowContractTests(unittest.TestCase):
         self.assertIn("actual_merge_sha", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn('[ "$base_ref" != "main" ]', CURRENT_MAIN_PR_WORKFLOW)
 
-    def test_current_main_pr_tournament_runs_on_protocol_push_and_daily(self):
+    def test_current_main_pr_tournament_runs_on_translator_push_and_daily(self):
+        push_section = CURRENT_MAIN_PR_WORKFLOW.split("  push:", 1)[1].split("  pull_request:", 1)[0]
         self.assertIn("push:", CURRENT_MAIN_PR_WORKFLOW)
-        self.assertIn(".github/workflows/current-main-pr-tournament.yml", CURRENT_MAIN_PR_WORKFLOW)
+        for path in ('"cobol2py.py"', '"ronin/**"', '"web/index.html"', '"tests/test_cobol2py.py"'):
+            self.assertIn(path, push_section)
+        for docs_or_ci_path in (
+            '".github/workflows/current-main-pr-tournament.yml"',
+            '".github/workflows/failure-directed-30-seed-tournament.yml"',
+            '"experiments/failure-tournament/manifest.json"',
+        ):
+            self.assertNotIn(docs_or_ci_path, push_section)
         self.assertIn('cron: "30 11 * * *"', CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn("mapfile -t prs", CURRENT_MAIN_PR_WORKFLOW)
         self.assertIn("candidate_queue", CURRENT_MAIN_PR_WORKFLOW)
