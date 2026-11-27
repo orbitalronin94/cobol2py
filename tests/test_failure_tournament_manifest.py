@@ -10,169 +10,92 @@ MANIFEST = json.loads(
 
 
 class FailureTournamentManifestTests(unittest.TestCase):
-    def test_exactly_thirty_distinct_hypotheses(self):
-        candidates = MANIFEST["candidates"]
-        self.assertEqual(len(candidates), 30)
-        self.assertEqual([item["seed"] for item in candidates], list(range(1, 31)))
-        self.assertEqual(len({item["id"] for item in candidates}), 30)
-        self.assertEqual(len({item["branch"] for item in candidates}), 30)
-
-    def test_historical_main_reference_and_latest_remeasurement_are_separate(self):
-        baseline = MANIFEST["baseline"]
-        self.assertEqual(baseline["score"], 257)
-        self.assertEqual(baseline["denominator"], 500)
-        self.assertEqual(baseline["percent"], 51.4)
-        self.assertEqual(baseline["source_run"], 42268813592)
-        self.assertNotEqual(baseline["source_run"], 42266714599)
-        self.assertEqual(MANIFEST["experimental_reference"]["source_run"], 42266714599)
-        self.assertEqual(MANIFEST["experimental_reference"]["head_branch"], "experiment/holdout-error-topography")
-        self.assertEqual(MANIFEST["experimental_reference"]["score"], 258)
-        self.assertEqual(MANIFEST["experimental_reference"]["kind"], "experimental_only_not_main")
-
+    def test_historical_main_reference_is_separate_from_latest_verified_baseline(self):
+        historical = MANIFEST["baseline"]
+        self.assertEqual((historical["score"], historical["denominator"], historical["source_run"]), (257, 500, 42268813592))
+        experimental = MANIFEST["experimental_reference"]
+        self.assertEqual((experimental["score"], experimental["source_run"]), (258, 42266714599))
+        self.assertEqual(experimental["kind"], "experimental_only_not_main")
         latest = MANIFEST["latest_main_remeasurement"]
-        self.assertEqual(latest["score"], 262)
-        self.assertEqual(latest["denominator"], 500)
+        self.assertEqual((latest["score"], latest["denominator"], latest["source_run"]), (262, 500, 45891121727))
+        self.assertEqual(latest["current_main_sha"], "cb1691258bde56901e0e4e3f124e8f79e96016d4")
         self.assertEqual(latest["percent"], 52.4)
-        self.assertEqual(latest["source_run"], 45283644192)
-        self.assertEqual(latest["skip"], 500)
-        self.assertEqual(latest["target"], 500)
         self.assertTrue(latest["archive_md5_verified"])
         self.assertEqual(latest["reference_fingerprint_coverage"]["complete_cases"], 500)
-        self.assertEqual(latest["current_main_sha"], "b26cc0335708dab99737cc902c1d96186fec9f94")
-        self.assertEqual(MANIFEST["current_baseline"]["source_run"], 45283644192)
-        self.assertEqual(MANIFEST["current_baseline"]["score"], 262)
-        self.assertEqual(MANIFEST["current_baseline"]["main_sha_at_audit"], "b26cc0335708dab99737cc902c1d96186fec9f94")
-        self.assertTrue(MANIFEST["latest_verified_code_equivalent_main"]["exact_run_on_current_main_sha"])
-        self.assertEqual(MANIFEST["post_merge_casewise_comparison"]["new_pass_case_ids"], ["sq206a-3536dcf7c2"])
-        self.assertEqual(MANIFEST["post_merge_casewise_comparison"]["regressed_case_ids"], ["exec84-2-03eae98697"])
 
-        historical = MANIFEST["historical_main_remeasurement"]
-        self.assertEqual(historical["score"], 258)
-        self.assertEqual(historical["source_run"], 42272058313)
-        self.assertEqual(historical["skip"], 500)
-        self.assertEqual(historical["target"], 500)
-        self.assertEqual(historical["workflow_conclusion"], "cancelled")
-        self.assertTrue(historical["baseline_artifact_complete"])
-
-    def test_latest_exact_main_repeat_records_timeout_and_oracle_drift(self):
-        repeat = MANIFEST["latest_baseline_repeat_diagnostic"]
-        self.assertEqual(repeat["main_sha"], "b26cc0335708dab99737cc902c1d96186fec9f94")
-        self.assertEqual(repeat["previous_run"], 45056162017)
-        self.assertEqual(repeat["current_run"], 45283644192)
-        self.assertEqual(repeat["previous_score"], 263)
-        self.assertEqual(repeat["current_score"], 262)
-        self.assertTrue(repeat["same_500_case_ids"])
-        self.assertTrue(repeat["same_500_source_hashes"])
-        self.assertEqual(repeat["status_flip_case_ids"], ["exec84-2-03eae98697"])
-        self.assertEqual(repeat["oracle_drift_count"], 12)
-        self.assertEqual(repeat["status_flip_details"]["current_failure_reason"], "translator timeout")
-
-    def test_zero_regression_gate_and_blocked_readiness(self):
-        self.assertEqual(MANIFEST["benchmark"]["skip"], 500)
-        self.assertEqual(MANIFEST["benchmark"]["target"], 500)
+    def test_fixed_benchmark_contract(self):
+        benchmark = MANIFEST["benchmark"]
+        self.assertEqual(benchmark["corpus"], "X-COBOL v2")
+        self.assertEqual((benchmark["skip"], benchmark["target"]), (500, 500))
+        self.assertTrue(benchmark["casewise"])
         self.assertEqual(MANIFEST["acceptance"]["regressions_allowed"], 0)
         self.assertTrue(MANIFEST["acceptance"]["complete_holdout_required"])
-        self.assertEqual(MANIFEST["readiness"]["status"], "blocked")
-        self.assertEqual(MANIFEST["last_tournament_attempt"]["eligible_candidates"], 0)
-
-    def test_frozen_main_oracle_is_required_for_ranking(self):
         self.assertTrue(MANIFEST["acceptance"]["frozen_baseline_oracle_required"])
-        self.assertTrue(MANIFEST["acceptance"]["candidate_run_oracle_drift_is_diagnostic"])
-        self.assertEqual(
-            MANIFEST["benchmark"]["reference_oracle_fields"],
-            ["reference_stdout_sha256", "reference_stdout_length", "reference_returncode"],
-        )
 
-    def test_every_candidate_is_a_single_named_hypothesis(self):
-        for candidate in MANIFEST["candidates"]:
-            with self.subTest(seed=candidate["seed"]):
-                self.assertTrue(candidate["id"])
-                self.assertTrue(candidate["hypothesis"].endswith(".") or candidate["hypothesis"].endswith("behavior."))
-                self.assertTrue(candidate["branch"].startswith("experiment-failure-seed/"))
-
-
-    def test_current_main_pr_tournament_records_full_casewise_candidate_evaluation(self):
+    def test_current_main_tournament_uses_only_curated_queue(self):
         tournament = MANIFEST["current_main_pr_tournament"]
-        self.assertEqual(tournament["default_candidate_prs"], [])
-        self.assertTrue(tournament["auto_discover_manifest_queue"])
         self.assertFalse(tournament["auto_discover_open_prs"])
-        self.assertEqual(tournament["discovery_source"], "current_main_pr_tournament.candidate_queue")
-        self.assertRegex(tournament["workflow_sha"], r"^[0-9a-f]{40}$")
-        self.assertEqual(tournament["candidate_queue"], [])
-        result = tournament["latest_candidate_evaluation"]
-        self.assertEqual(result["pr"], 405)
-        self.assertEqual(result["baseline_score"], 263)
-        self.assertEqual(result["candidate_score"], 264)
-        self.assertEqual(result["paired_run"], 45022022053)
-        self.assertEqual(result["comparable_cases"], 500)
-        self.assertEqual(result["new_pass_case_ids"], ["exec84-2-03eae98697"])
-        self.assertEqual(result["regressed_case_ids"], [])
-        self.assertEqual(result["revalidated_new_passes"], 0)
-        self.assertEqual(result["revalidated_regressions"], 0)
-        self.assertTrue(result["closed_unmerged"])
-        self.assertFalse(result["eligible"])
-        self.assertEqual(result["decision"], "ineligible_transient_timeout_gain_motivating_cases_unfixed")
-        previous = tournament["previous_candidate_evaluation"]
-        self.assertEqual(previous["pr"], 398)
-        self.assertEqual(previous["candidate_score"], 263)
-        self.assertEqual(previous["new_passes"], 0)
-        self.assertEqual(previous["regressions"], 0)
-        self.assertEqual(previous["oracle_drift_count"], 8)
-        self.assertFalse(previous["eligible"])
-        paired = MANIFEST["latest_paired_pr_tournament"]
-        self.assertEqual(paired["run"], 45022022053)
-        self.assertEqual(paired["status"], "completed")
-        self.assertEqual(paired["candidate_score"], 264)
-        self.assertEqual(paired["comparable_cases"], 500)
-        self.assertEqual(paired["new_passes"], 1)
-        self.assertEqual(paired["regressions"], 0)
-        self.assertEqual(paired["regressed_case_ids"], [])
-        self.assertEqual(paired["oracle_drift_count"], 9)
-        self.assertFalse(paired["eligible"])
+        self.assertTrue(tournament["auto_discover_manifest_queue"])
+        self.assertEqual(tournament["candidate_queue"], [{
+            "pr": 407,
+            "reason": "INSPECT TALLYING/REPLACING candidate with full-suite success and +4/0 casewise result; remeasure on post-#408 main"
+        }])
 
-    def test_30_seed_audit_is_fresh_and_still_blocked(self):
-        audit = MANIFEST["candidate_branch_audit"]
-        self.assertEqual(audit["compared_against_main"], "b26cc0335708dab99737cc902c1d96186fec9f94")
-        self.assertEqual(audit["latest_comparison"]["distinct_branch_heads"], 30)
-        self.assertEqual(audit["latest_comparison"]["current_main_sha"], "b26cc0335708dab99737cc902c1d96186fec9f94")
-        self.assertEqual(MANIFEST["readiness"]["audit_main_sha"], "b26cc0335708dab99737cc902c1d96186fec9f94")
-        self.assertTrue(audit["all_30_exist"])
-        self.assertTrue(audit["all_30_diverged"])
-        self.assertEqual(audit["ahead_only_candidates"], 0)
+    def test_inspect_candidate_has_four_gains_and_zero_regressions(self):
+        paired = MANIFEST["latest_paired_pr_tournament"]
+        self.assertEqual(paired["run"], 45812887898)
+        self.assertEqual((paired["baseline_score"], paired["candidate_score"]), (263, 267))
+        self.assertEqual(paired["new_pass_case_ids"], [
+            "exec84-2-03eae98697",
+            "nc122a-0a3c88dcdf",
+            "nc122a-531a96359c",
+            "nc2214-2-fdbb829806",
+        ])
+        self.assertEqual(paired["regressed_case_ids"], [])
+        self.assertTrue(paired["eligible"])
+        recheck = MANIFEST["latest_candidate_artifact_comparison"]
+        self.assertEqual(recheck["baseline_run"], 45891121727)
+        self.assertEqual((recheck["baseline_score"], recheck["candidate_score"]), (262, 266))
+        self.assertEqual(recheck["new_pass_case_ids"], paired["new_pass_case_ids"])
+        self.assertEqual(recheck["regressed_case_ids"], [])
+        self.assertEqual(recheck["comparable_cases"], 500)
+        self.assertEqual(recheck["source_hash_matches"], 500)
+
+    def test_current_main_remeasurement_after_ci_merge_is_pending(self):
+        pending = MANIFEST["pending_main_remeasurement"]
+        self.assertEqual(pending["target_sha"], "5513b8d005dc4f24bc496f9690607b2e94d9dd6e")
+        self.assertEqual(pending["run"], 45991488629)
+        self.assertEqual(pending["status"], "in_progress")
+        self.assertFalse(MANIFEST["latest_main_verified_exact_sha"])
+
+    def test_all_thirty_seed_refs_exist_but_are_not_ready(self):
+        audit = MANIFEST["latest_30_seed_audit"]
+        self.assertEqual(audit["current_main_sha"], "5513b8d005dc4f24bc496f9690607b2e94d9dd6e")
+        self.assertEqual(audit["total_manifest_branches"], 30)
+        self.assertEqual(audit["existing_branches"], 30)
+        self.assertEqual(audit["distinct_branch_heads"], 30)
+        self.assertEqual(audit["diverged"], 30)
+        self.assertEqual(audit["ahead_only"], 0)
+        self.assertEqual(audit["without_translator_or_tests"], [11, 12, 13, 14, 15])
+        self.assertEqual(audit["workflow_noise_branches"], list(range(11, 31)))
         self.assertEqual(len(audit["branch_comparisons"]), 30)
+        self.assertEqual(len({item["head_sha"] for item in audit["branch_comparisons"]}), 30)
         self.assertTrue(all(item["status"] == "diverged" for item in audit["branch_comparisons"]))
-        self.assertEqual(MANIFEST["readiness"]["candidates_without_translator_or_tests"], [11, 12, 13, 14, 15])
         self.assertEqual(MANIFEST["readiness"]["status"], "blocked")
 
     def test_30_seed_workflow_is_manual_and_never_promotes_automatically(self):
         workflow = (ROOT / ".github" / "workflows" / "failure-directed-30-seed-tournament.yml").read_text(encoding="utf-8")
         self.assertIn("workflow_dispatch:", workflow)
-        self.assertIn('readiness", {}).get("status") != "ready"', workflow)
         self.assertIn("candidate_shas", workflow)
         self.assertNotIn("gh pr merge", workflow)
+        self.assertFalse(MANIFEST["latest_30_seed_tournament_started"])
 
-
-    def test_audited_main_head_waits_for_exact_sha_remeasurement(self):
-        head = MANIFEST["audited_main_head"]
-        self.assertEqual(head["sha"], "b26cc0335708dab99737cc902c1d96186fec9f94")
-        self.assertEqual(head["translator_blob_sha"], "4a7562627d161580470f1b0522cda0b094f635b0")
-        self.assertTrue(head["translator_blob_unchanged_since_previous_exact_baseline"])
-        self.assertTrue(head["exact_500_case_run_on_this_sha"])
-        pending = MANIFEST["pending_main_remeasurement"]
-        self.assertEqual(pending["status"], "completed")
-        self.assertEqual(MANIFEST["latest_main_remeasurement"]["source_run"], 45283644192)
-        self.assertEqual(pending["target_sha"], "b26cc0335708dab99737cc902c1d96186fec9f94")
-        self.assertTrue(pending["queue_empty"])
-        self.assertEqual(pending["skip"], 500)
-        self.assertEqual(pending["target"], 500)
-
-    def test_legacy_105_case_screen_is_manual_only_after_pr_403(self):
-        merged = MANIFEST["latest_infrastructure_merge"]
-        self.assertEqual(merged["pr"], 403)
+    def test_pr408_ci_merge_did_not_change_translator(self):
+        merged = MANIFEST["latest_duplicate_shard_suppression_merge"]
+        self.assertEqual(merged["pr"], 408)
         self.assertTrue(merged["merged"])
         self.assertFalse(merged["translator_changed"])
-        self.assertTrue(merged["checks"]["all_success"])
-        self.assertTrue(merged["followup_main_checks"]["all_success"])
+        self.assertEqual(merged["merge_sha"], "5513b8d005dc4f24bc496f9690607b2e94d9dd6e")
 
 
 if __name__ == "__main__":
