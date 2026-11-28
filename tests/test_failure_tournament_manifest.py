@@ -17,9 +17,9 @@ class FailureTournamentManifestTests(unittest.TestCase):
         self.assertEqual((experimental["score"], experimental["source_run"]), (258, 42266714599))
         self.assertEqual(experimental["kind"], "experimental_only_not_main")
         latest = MANIFEST["latest_main_remeasurement"]
-        self.assertEqual((latest["score"], latest["denominator"], latest["source_run"]), (262, 500, 45891121727))
-        self.assertEqual(latest["current_main_sha"], "cb1691258bde56901e0e4e3f124e8f79e96016d4")
-        self.assertEqual(latest["percent"], 52.4)
+        self.assertEqual((latest["score"], latest["denominator"], latest["source_run"]), (263, 500, 46061895588))
+        self.assertEqual(latest["current_main_sha"], "2dcf47bf3376289aca011ea98b84aa4b52c3956c")
+        self.assertEqual(latest["percent"], 52.6)
         self.assertTrue(latest["archive_md5_verified"])
         self.assertEqual(latest["reference_fingerprint_coverage"]["complete_cases"], 500)
 
@@ -36,35 +36,33 @@ class FailureTournamentManifestTests(unittest.TestCase):
         tournament = MANIFEST["current_main_pr_tournament"]
         self.assertFalse(tournament["auto_discover_open_prs"])
         self.assertTrue(tournament["auto_discover_manifest_queue"])
-        self.assertEqual(tournament["candidate_queue"], [{
-            "pr": 407,
-            "reason": "INSPECT TALLYING/REPLACING candidate with full-suite success and +4/0 casewise result; remeasure on post-#408 main"
-        }])
+        self.assertEqual(tournament["candidate_queue"], [])
 
     def test_inspect_candidate_has_four_gains_and_zero_regressions(self):
         paired = MANIFEST["latest_paired_pr_tournament"]
-        self.assertEqual(paired["run"], 45812887898)
-        self.assertEqual((paired["baseline_score"], paired["candidate_score"]), (263, 267))
+        self.assertEqual(paired["run"], 46061895588)
+        self.assertEqual((paired["baseline_score"], paired["candidate_score"]), (263, 266))
         self.assertEqual(paired["new_pass_case_ids"], [
-            "exec84-2-03eae98697",
             "nc122a-0a3c88dcdf",
             "nc122a-531a96359c",
             "nc2214-2-fdbb829806",
         ])
         self.assertEqual(paired["regressed_case_ids"], [])
         self.assertTrue(paired["eligible"])
+        self.assertEqual(paired["promotion_status"], "merged")
         recheck = MANIFEST["latest_candidate_artifact_comparison"]
-        self.assertEqual(recheck["baseline_run"], 45891121727)
-        self.assertEqual((recheck["baseline_score"], recheck["candidate_score"]), (262, 266))
+        self.assertEqual(recheck["baseline_run"], 46061895588)
+        self.assertEqual((recheck["baseline_score"], recheck["candidate_score"]), (263, 266))
         self.assertEqual(recheck["new_pass_case_ids"], paired["new_pass_case_ids"])
         self.assertEqual(recheck["regressed_case_ids"], [])
         self.assertEqual(recheck["comparable_cases"], 500)
         self.assertEqual(recheck["source_hash_matches"], 500)
+        self.assertEqual(recheck["oracle_drift_count"], 9)
 
     def test_current_main_remeasurement_after_ci_merge_is_pending(self):
         pending = MANIFEST["pending_main_remeasurement"]
-        self.assertEqual(pending["target_sha"], "5513b8d005dc4f24bc496f9690607b2e94d9dd6e")
-        self.assertEqual(pending["run"], 45991488629)
+        self.assertEqual(pending["target_sha"], "f3bcea96c6eaee446453b0f463839e75ea412d72")
+        self.assertEqual(pending["run"], 46140063118)
         self.assertEqual(pending["status"], "in_progress")
         self.assertFalse(MANIFEST["latest_main_verified_exact_sha"])
 
@@ -89,6 +87,24 @@ class FailureTournamentManifestTests(unittest.TestCase):
         self.assertIn("candidate_shas", workflow)
         self.assertNotIn("gh pr merge", workflow)
         self.assertFalse(MANIFEST["latest_30_seed_tournament_started"])
+
+    def test_inspect_winner_promotion_has_exact_evidence(self):
+        winner = MANIFEST["latest_winner_promotion"]
+        self.assertTrue(winner["merged"])
+        self.assertEqual(winner["pr"], 407)
+        self.assertEqual(winner["base_sha"], "2dcf47bf3376289aca011ea98b84aa4b52c3956c")
+        self.assertEqual(winner["merge_sha"], "f3bcea96c6eaee446453b0f463839e75ea412d72")
+        self.assertEqual((winner["baseline_score"], winner["candidate_score"]), (263, 266))
+        self.assertEqual(winner["new_passes"], 3)
+        self.assertEqual(winner["regressions"], 0)
+        self.assertEqual(winner["suite"], "success")
+
+    def test_current_baseline_is_explicitly_last_verified_before_new_main_run(self):
+        current = MANIFEST["current_baseline"]
+        self.assertEqual((current["score"], current["source_run"]), (263, 46061895588))
+        self.assertEqual(current["pending_current_main_sha"], "f3bcea96c6eaee446453b0f463839e75ea412d72")
+        self.assertEqual(current["pending_run"], 46140063118)
+        self.assertEqual(current["pending_status"], "in_progress")
 
     def test_pr408_ci_merge_did_not_change_translator(self):
         merged = MANIFEST["latest_duplicate_shard_suppression_merge"]
