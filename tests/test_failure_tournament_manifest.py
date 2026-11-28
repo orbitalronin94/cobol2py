@@ -68,7 +68,7 @@ class FailureTournamentManifestTests(unittest.TestCase):
 
     def test_all_thirty_seed_refs_exist_but_are_not_ready(self):
         audit = MANIFEST["latest_30_seed_audit"]
-        self.assertEqual(audit["current_main_sha"], "5513b8d005dc4f24bc496f9690607b2e94d9dd6e")
+        self.assertEqual(audit["current_main_sha"], "f3bcea96c6eaee446453b0f463839e75ea412d72")
         self.assertEqual(audit["total_manifest_branches"], 30)
         self.assertEqual(audit["existing_branches"], 30)
         self.assertEqual(audit["distinct_branch_heads"], 30)
