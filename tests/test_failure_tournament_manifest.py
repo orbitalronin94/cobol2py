@@ -38,7 +38,7 @@ class FailureTournamentManifestTests(unittest.TestCase):
         self.assertTrue(tournament["auto_discover_manifest_queue"])
         self.assertEqual(tournament["candidate_queue"], [])
 
-    def test_inspect_candidate_has_four_gains_and_zero_regressions(self):
+    def test_inspect_candidate_has_three_frozen_oracle_gains_and_zero_regressions(self):
         paired = MANIFEST["latest_paired_pr_tournament"]
         self.assertEqual(paired["run"], 46061895588)
         self.assertEqual((paired["baseline_score"], paired["candidate_score"]), (263, 266))
