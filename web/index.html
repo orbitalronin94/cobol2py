@@ -3778,6 +3778,156 @@ def split_move_clause(text: str) -> Optional[tuple[str, str]]:
     return None
 
 
+
+def _consume_inspect_reference(text: str):
+    text = text.lstrip()
+    match = re.match(rf"^({DATA_REF_PATTERN})", text, flags=re.IGNORECASE)
+    if not match:
+        return None, text
+    return match.group(1).strip(), text[match.end():].lstrip()
+
+
+def _consume_inspect_operand(text: str):
+    text = text.lstrip()
+    literal = re.match(
+        r"""^(?:"(?:[^"]|"")*"|'(?:[^']|'')*'|[+-]?\d+(?:\.\d+)?)""",
+        text,
+    )
+    if literal:
+        return literal.group(0), text[literal.end():].lstrip()
+    return _consume_inspect_reference(text)
+
+
+def _consume_inspect_range(text: str):
+    before = None
+    after = None
+    remaining = text.strip()
+    while True:
+        marker = re.match(r"^(BEFORE|AFTER)\s+(?:INITIAL\s+)?", remaining, flags=re.IGNORECASE)
+        if not marker:
+            break
+        operand, tail = _consume_inspect_operand(remaining[marker.end():])
+        if operand is None:
+            return None
+        key = marker.group(1).upper()
+        if key == "BEFORE":
+            if before is not None:
+                return None
+            before = operand
+        else:
+            if after is not None:
+                return None
+            after = operand
+        remaining = tail.strip()
+    return before, after, remaining
+
+
+def _translate_inspect_tally_replace(stmt: str, variables=None):
+    """Translate the INSPECT TALLYING/REPLACING phrase subset with ranges."""
+    s = stmt.strip().rstrip(".").strip()
+    simple_tally = re.fullmatch(
+        rf"INSPECT\s+({DATA_REF_PATTERN})\s+TALLYING\s+({DATA_REF_PATTERN})\s+FOR\s+ALL\s+(.+?)(?:\s+END-INSPECT)?",
+        s,
+        flags=re.IGNORECASE,
+    )
+    if simple_tally:
+        operand, tail = _consume_inspect_operand(simple_tally.group(3))
+        if operand is not None and not tail.strip():
+            return None
+    simple_replace = re.fullmatch(
+        r"""INSPECT\s+[A-Za-z0-9-]+\s+REPLACING\s+ALL\s+("(?:[^"]|"")*"|'(?:[^']|'')*')\s+BY\s+("(?:[^"]|"")*"|\'(?:[^\']|\'\')*\')(?:\s+END-INSPECT)?""",
+        s,
+        flags=re.IGNORECASE,
+    )
+    if simple_replace:
+        return None
+
+    head = re.match(rf"^INSPECT\s+({DATA_REF_PATTERN})\s+(.+)$", s, flags=re.IGNORECASE)
+    if not head:
+        return None
+    source = head.group(1).strip()
+    remaining = re.sub(r"\s+END-INSPECT\s*$", "", head.group(2).strip(), flags=re.IGNORECASE).strip()
+    tally_entries = []
+    replace_entries = []
+    variable_map = variables or {}
+
+    if re.match(r"^TALLYING\b", remaining, flags=re.IGNORECASE):
+        remaining = re.sub(r"^TALLYING\b", "", remaining, count=1, flags=re.IGNORECASE).strip()
+        while remaining:
+            counter, tail = _consume_inspect_reference(remaining)
+            if counter is None:
+                return None
+            mode_match = re.match(r"^FOR\s+(CHARACTERS|ALL|LEADING)\b", tail, flags=re.IGNORECASE)
+            if not mode_match:
+                return None
+            mode = mode_match.group(1).upper()
+            tail = tail[mode_match.end():].strip()
+            operand = None
+            if mode != "CHARACTERS":
+                operand, tail = _consume_inspect_operand(tail)
+                if operand is None:
+                    return None
+            parsed_range = _consume_inspect_range(tail)
+            if parsed_range is None:
+                return None
+            before, after, remaining = parsed_range
+            tally_entries.append((counter, mode, operand, before, after))
+            remaining = remaining.strip()
+            if not remaining or re.match(r"^REPLACING\b", remaining, flags=re.IGNORECASE):
+                break
+
+    if re.match(r"^REPLACING\b", remaining, flags=re.IGNORECASE):
+        remaining = re.sub(r"^REPLACING\b", "", remaining, count=1, flags=re.IGNORECASE).strip()
+        while remaining:
+            mode_match = re.match(r"^(CHARACTERS|ALL|LEADING|FIRST)\b", remaining, flags=re.IGNORECASE)
+            if not mode_match:
+                return None
+            mode = mode_match.group(1).upper()
+            tail = remaining[mode_match.end():].strip()
+            old_operand = None
+            if mode != "CHARACTERS":
+                old_operand, tail = _consume_inspect_operand(tail)
+                if old_operand is None:
+                    return None
+            by_match = re.match(r"^BY\b", tail, flags=re.IGNORECASE)
+            if not by_match:
+                return None
+            new_operand, tail = _consume_inspect_operand(tail[by_match.end():])
+            if new_operand is None:
+                return None
+            parsed_range = _consume_inspect_range(tail)
+            if parsed_range is None:
+                return None
+            before, after, remaining = parsed_range
+            replace_entries.append((mode, old_operand, new_operand, before, after))
+            remaining = remaining.strip()
+
+    if remaining or (not tally_entries and not replace_entries):
+        return None
+
+    def expression(raw):
+        return translate_literal(raw, variable_map) if raw is not None else "None"
+
+    tally_specs = "[" + ", ".join(
+        f"({mode!r}, {expression(operand)}, {expression(before)}, {expression(after)})"
+        for _, mode, operand, before, after in tally_entries
+    ) + "]"
+    replace_specs = "[" + ", ".join(
+        f"({mode!r}, {expression(old)}, {expression(new)}, {expression(before)}, {expression(after)})"
+        for mode, old, new, before, after in replace_entries
+    ) + "]"
+    source_expr = translate_literal(source, variable_map)
+    lines = [
+        f"_cobol_inspect_value, _cobol_inspect_counts = _cobol_inspect(str({source_expr}), {tally_specs}, {replace_specs})"
+    ]
+    for index, (counter, _, _, _, _) in enumerate(tally_entries):
+        counter_expr = normalize_data_reference(counter, variable_map)
+        lines.append(emit_assignment(counter, f"int({counter_expr}) + _cobol_inspect_counts[{index}]", variable_map))
+    if replace_entries:
+        lines.append(emit_assignment(source, "_cobol_inspect_value", variable_map))
+    return lines
+
+
 def translate_statement(
     stmt: str,
     paragraphs: set[str],
@@ -3910,6 +4060,13 @@ def translate_statement(
             else:
                 initialize_group(root, target_expr, set())
         return assignments or [f"# INITIALIZE sin campos traducibles: {s}"]
+    # The range-aware INSPECT parser performs several regular-expression parses.
+    # Keep that cost off every non-INSPECT statement in large COBOL programs.
+    if s[:7].upper() == "INSPECT" and (len(s) == 7 or s[7].isspace()):
+        inspect_translation = _translate_inspect_tally_replace(s, variables)
+        if inspect_translation is not None:
+            return inspect_translation
+
     # INSPECT CONVERTING performs a character-position mapping on the
     # receiving data item. Reverse construction makes the first occurrence
     # of a repeated source character win, rather than Python dict's last one.
@@ -5487,6 +5644,88 @@ def emit_java(prog: Program) -> str:
 # 5. EMISIÓN
 # ============================================================================
 
+COBOL_INSPECT_RUNTIME_SOURCE = """def _cobol_inspect(text, tally_specs, replace_specs):
+    text = str(text)
+
+    def bounds(value, before, after):
+        start = 0
+        end = len(value)
+        if after is not None and str(after):
+            delimiter = str(after)
+            found = value.find(delimiter)
+            if found < 0:
+                return len(value), len(value)
+            start = found + len(delimiter)
+        if before is not None and str(before):
+            delimiter = str(before)
+            found = value.find(delimiter, start)
+            if found >= 0:
+                end = found
+        if end < start:
+            end = start
+        return start, end
+
+    counts = []
+    for mode, operand, before, after in tally_specs:
+        start, end = bounds(text, before, after)
+        segment = text[start:end]
+        needle = str(operand) if operand is not None else ""
+        mode = str(mode).upper()
+        if mode == "CHARACTERS":
+            count = len(segment)
+        elif mode == "ALL":
+            count = segment.count(needle) if needle else 0
+        elif mode == "LEADING":
+            count = 0
+            offset = 0
+            while needle and segment.startswith(needle, offset):
+                count += 1
+                offset += len(needle)
+        else:
+            count = 0
+        counts.append(count)
+
+    prepared = []
+    for mode, old, new, before, after in replace_specs:
+        start, end = bounds(text, before, after)
+        mode = str(mode).upper()
+        old_text = str(old) if old is not None else ""
+        new_text = str(new) if new is not None else ""
+        first = text.find(old_text, start, end) if mode == "FIRST" and old_text else -1
+        leading_end = start
+        if mode == "LEADING" and old_text:
+            while leading_end + len(old_text) <= end and text.startswith(old_text, leading_end):
+                leading_end += len(old_text)
+        prepared.append((mode, old_text, new_text, start, end, first, leading_end))
+
+    output = []
+    position = 0
+    while position < len(text):
+        replaced = False
+        for mode, old_text, new_text, start, end, first, leading_end in prepared:
+            if position < start or position >= end:
+                continue
+            match_length = 0
+            if mode == "CHARACTERS":
+                match_length = 1
+            elif mode == "ALL" and old_text and position + len(old_text) <= end and text.startswith(old_text, position):
+                match_length = len(old_text)
+            elif mode == "LEADING" and old_text and position < leading_end and position + len(old_text) <= end and text.startswith(old_text, position):
+                match_length = len(old_text)
+            elif mode == "FIRST" and old_text and position == first and position + len(old_text) <= end and text.startswith(old_text, position):
+                match_length = len(old_text)
+            if match_length:
+                output.append(new_text[:1] if mode == "CHARACTERS" else new_text)
+                position += match_length
+                replaced = True
+                break
+        if not replaced:
+            output.append(text[position])
+            position += 1
+    return "".join(output), counts
+"""
+
+
 def emit_python(prog: Program) -> str:
     lines: list[str] = []
     lines.append("# -*- coding: utf-8 -*-")
@@ -5554,6 +5793,7 @@ def emit_python(prog: Program) -> str:
     lines.append("    text = text.replace(',', '')")
     lines.append("    number = float(text or '0')")
     lines.append("    return -number if negative else number")
+    lines.append("")
     runtime_file_specs: dict[str, dict[str, object]] = {}
     for file_name, file_spec in prog.file_specs.items():
         runtime_spec: dict[str, object] = dict(file_spec)
@@ -6024,6 +6264,10 @@ def emit_python(prog: Program) -> str:
     lines.append("            continue")
     lines.append("        index += 1")
     lines.append("")
+    if any("_cobol_inspect(" in line for line in lines):
+        lines.append("")
+        lines.extend(COBOL_INSPECT_RUNTIME_SOURCE.strip("\n").splitlines())
+        lines.append("")
     lines.append('if __name__ == "__main__":')
     if dispatch_order:
         lines.append(f"    _cobol_dispatch({dispatch_order[0]!r})")

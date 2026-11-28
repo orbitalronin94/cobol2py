@@ -4707,3 +4707,135 @@ MAIN.
                 os.chdir(previous)
         self.assertEqual(output.getvalue(), "", generated)
         self.assertEqual(written, "ABCD\n", generated)
+
+class InspectTallyReplacingRangeRegressionTests(unittest.TestCase):
+    def _run_inspect(self, statement, variables, namespace):
+        translated = cobol2py.translate_statement(statement, set(), variables)
+        self.assertIsNotNone(translated, statement)
+        runtime = {}
+        exec(cobol2py.COBOL_INSPECT_RUNTIME_SOURCE, runtime)
+        runtime.update(namespace)
+        exec("\n".join(translated or []), runtime)
+        namespace.update({key: value for key, value in runtime.items() if not key.startswith("__")})
+
+    def test_tally_characters_after_initial_delimiter(self):
+        variables = {
+            "WS-TEXT": cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(8)"),
+            "WS-COUNT": cobol2py.CobolVar(level=1, name="WS-COUNT", pic="9(3)"),
+        }
+        namespace = {"ws_text": "ABWXYZ  ", "ws_count": 2}
+        self._run_inspect(
+            'INSPECT WS-TEXT TALLYING WS-COUNT FOR CHARACTERS AFTER INITIAL "W"',
+            variables,
+            namespace,
+        )
+        self.assertEqual(namespace["ws_count"], 7)
+        self.assertEqual(namespace["ws_text"], "ABWXYZ  ")
+
+    def test_multiple_tally_phrases_with_before_and_after(self):
+        variables = {
+            "WS-TEXT": cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(8)"),
+            "WS-COUNT-1": cobol2py.CobolVar(level=1, name="WS-COUNT-1", pic="9(3)"),
+            "WS-COUNT-2": cobol2py.CobolVar(level=1, name="WS-COUNT-2", pic="9(3)"),
+        }
+        namespace = {"ws_text": "AABHAB  ", "ws_count_1": 0, "ws_count_2": 1}
+        self._run_inspect(
+            'INSPECT WS-TEXT TALLYING WS-COUNT-1 FOR ALL "A" BEFORE INITIAL "H" '
+            'WS-COUNT-2 FOR CHARACTERS AFTER INITIAL "H"',
+            variables,
+            namespace,
+        )
+        self.assertEqual(namespace["ws_count_1"], 2)
+        self.assertEqual(namespace["ws_count_2"], 5)
+
+    def test_combined_tally_then_multiple_replacing_phrases(self):
+        variables = {
+            "WS-TEXT": cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(8)"),
+            "WS-COUNT": cobol2py.CobolVar(level=1, name="WS-COUNT", pic="9(3)"),
+        }
+        namespace = {"ws_text": "AABHABAB", "ws_count": 0}
+        self._run_inspect(
+            'INSPECT WS-TEXT TALLYING WS-COUNT FOR ALL "A" BEFORE INITIAL "H" '
+            'REPLACING FIRST "B" BY "Y" AFTER INITIAL "H" '
+            'ALL "A" BY "Z" BEFORE INITIAL "H"',
+            variables,
+            namespace,
+        )
+        self.assertEqual(namespace["ws_count"], 2)
+        self.assertEqual(namespace["ws_text"], "ZZBHAYAB")
+
+    def test_replacing_leading_and_characters_ranges(self):
+        variables = {
+            "WS-TEXT": cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(5)"),
+        }
+        namespace = {"ws_text": "ABABX"}
+        self._run_inspect(
+            'INSPECT WS-TEXT REPLACING LEADING "AB" BY "XY" BEFORE "X"',
+            variables,
+            namespace,
+        )
+        self.assertEqual(namespace["ws_text"], "XYXYX")
+
+    def test_replacing_characters_after_delimiter(self):
+        variables = {
+            "WS-TEXT": cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(4)"),
+        }
+        namespace = {"ws_text": "ABCD"}
+        self._run_inspect(
+            'INSPECT WS-TEXT REPLACING CHARACTERS BY "Q" AFTER "B"',
+            variables,
+            namespace,
+        )
+        self.assertEqual(namespace["ws_text"], "ABQQ")
+
+
+
+class InspectParserDispatchPerformanceTests(unittest.TestCase):
+    def test_non_inspect_statement_skips_range_parser(self):
+        original = cobol2py._translate_inspect_tally_replace
+
+        def unexpected_call(*args, **kwargs):
+            raise AssertionError("INSPECT range parser ran for a non-INSPECT statement")
+
+        cobol2py._translate_inspect_tally_replace = unexpected_call
+        try:
+            translated = cobol2py.translate_statement("DISPLAY 'FAST PATH'", set(), {})
+        finally:
+            cobol2py._translate_inspect_tally_replace = original
+
+        self.assertIsNotNone(translated)
+
+class InspectRuntimeEmissionPerformanceTests(unittest.TestCase):
+    def test_runtime_helper_is_omitted_when_program_has_no_range_inspect(self):
+        program = cobol2py.Program(
+            program_id="NOINSPECT",
+            paragraphs={"__MAIN__": [cobol2py.Node("stmt", 'DISPLAY "OK"', 1)]},
+            paragraph_order=["__MAIN__"],
+        )
+        generated = cobol2py.emit_python(program)
+        self.assertNotIn("def _cobol_inspect(", generated)
+        compile(generated, "<no-inspect-runtime>", "exec")
+
+    def test_runtime_helper_is_emitted_before_entrypoint_when_inspect_uses_it(self):
+        program = cobol2py.Program(
+            program_id="WITHINSPECT",
+            variables=[
+                cobol2py.CobolVar(level=1, name="WS-TEXT", pic="X(4)"),
+                cobol2py.CobolVar(level=1, name="WS-COUNT", pic="9(2)"),
+            ],
+            paragraphs={
+                "__MAIN__": [
+                    cobol2py.Node(
+                        "stmt",
+                        'INSPECT WS-TEXT TALLYING WS-COUNT FOR CHARACTERS',
+                        1,
+                    )
+                ]
+            },
+            paragraph_order=["__MAIN__"],
+        )
+        generated = cobol2py.emit_python(program)
+        helper = generated.index("def _cobol_inspect(")
+        entrypoint = generated.index('if __name__ == "__main__":')
+        self.assertLess(helper, entrypoint)
+        compile(generated, "<inspect-runtime>", "exec")
