@@ -1,3 +1,17 @@
+## 2026-11-28 — INSPECT gana y se fusiona; baseline del nuevo main pendiente
+
+- **Último baseline exacto antes de la promoción:** [run 46061895588](https://github.com/orbitalronin94/cobol2py/actions/runs/46061895588), SHA `2dcf47bf3376289aca011ea98b84aa4b52c3956c`, **263/500 (52,6%)**. X-COBOL v2, MD5 `cbd974caed72b0836777dc2305928ed3`, `skip=500`, `target=500`, 500 IDs y fingerprints GnuCOBOL completos.
+- **PR #407 — INSPECT TALLYING/REPLACING:** [PR](https://github.com/orbitalronin94/cobol2py/pull/407), head `f2b62539e5c66f88917773698354f97f289a987b`, merge ref evaluado `e35d9c9e31c287a4dc4e579af114b514f1ee236c`. La evaluación completa [run 46061895588](https://github.com/orbitalronin94/cobol2py/actions/runs/46061895588) pasó la suite y comparó 500/500 IDs y source hashes contra el oráculo congelado de main.
+- **Resultado oficial congelado:** main 263/500; candidata **266/500**; **+3 y 0 regresiones**. Ganancias: `nc122a-0a3c88dcdf`, `nc122a-531a96359c`, `nc2214-2-fdbb829806`. Regresiones: ninguna.
+- El JSON bruto de candidata registra 267/500 contra referencias GnuCOBOL frescas. El ranking oficial usa las fingerprints congeladas de main y por eso es 266/500. Se detectaron nueve derivas de GnuCOBOL fresco: `cob-simpleinventory-6af451140a`, `collatz-6e335e6eda`, `date1-f31ce2734d`, `intrdate-0517c3d81c`, `pullydis-9e45af6c84`, `randombingo-e50339cc12`, `randomnumbers-d8fc7ee85b`, `rock-paper-scissors-ad6321acf1`, `rolldice-08e3de1a0e`. No hubo deriva de fuentes; las nueve diferencias no se contabilizaron como ganancias ni regresiones.
+- Tiempo de traducción reportado: baseline 339,92 s; candidata 300,69 s (−11,5%).
+- **Promoción:** PR #407 fusionada mediante squash como [`f3bcea96c6eaee446453b0f463839e75ea412d72`](https://github.com/orbitalronin94/cobol2py/commit/f3bcea96c6eaee446453b0f463839e75ea412d72).
+- **Baseline del nuevo main:** [run 46140063118](https://github.com/orbitalronin94/cobol2py/actions/runs/46140063118), SHA `f3bcea96c6eaee446453b0f463839e75ea412d72`, sigue en ejecución. No atribuir 263/500 al nuevo SHA hasta que termine.
+- **Torneo de 30 semillas:** bloqueado. Auditoría fresca contra `f3bcea96`: 30/30 refs del manifiesto existen, 30 heads distintos, 30 divergidas y 0 ahead-only. Semillas 11–15 no tienen cambios de traductor ni tests; 16–30 mezclan cambios del traductor/tests con archivos ajenos. Existe además una ref no manifestada `experiment-failure-seed/10-syntax-evaluate-also`. PR #349 añadió solo el arnés manual; no se ha iniciado el torneo.
+- **Siguiente hipótesis:** DIVIDE con `ON SIZE ERROR` / `NOT ON SIZE ERROR` y división por cero. PR #402 quedó en 263/500 sin ganancias; los artefactos muestran `UnboundLocalError` en `nc203a-dc7f80e633` y `ZeroDivisionError` en `nc172a-3a5109e496`.
+
+---
+
 # 30-seed failure-directed repair tournament
 
 **Estado: bloqueado.** Main vigente: `b26cc0335708dab99737cc902c1d96186fec9f94`. El último baseline exacto completo es **262/500 (52,4%)** en [run 45283644192](https://github.com/orbitalronin94/cobol2py/actions/runs/45283644192), ejecutado sobre ese SHA. La cohorte de 30 ramas sigue sin estar preparada y no se ha despachado.
