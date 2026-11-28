@@ -7,7 +7,7 @@
 - Tiempo de traducción reportado: baseline 339,92 s; candidata 300,69 s (−11,5%).
 - **Promoción:** PR #407 fusionada mediante squash como [`f3bcea96c6eaee446453b0f463839e75ea412d72`](https://github.com/orbitalronin94/cobol2py/commit/f3bcea96c6eaee446453b0f463839e75ea412d72).
 - **Baseline del nuevo main:** [run 46140063118](https://github.com/orbitalronin94/cobol2py/actions/runs/46140063118), SHA `f3bcea96c6eaee446453b0f463839e75ea412d72`, sigue en ejecución. No atribuir 263/500 al nuevo SHA hasta que termine.
-- **Torneo de 30 semillas:** bloqueado. La auditoría almacenada contra `5513b8d` encontró 30 ramas y 30 heads distintos, pero 30 divergidas y 0 ahead-only. La readiness debe revalidarse contra el main actual; PR #349 añadió solo el arnés manual.
+- **Torneo de 30 semillas:** bloqueado. Auditoría fresca contra `f3bcea96`: 30/30 refs del manifiesto existen, 30 heads distintos, 30 divergidas y 0 ahead-only. Semillas 11–15 no tienen cambios de traductor ni tests; 16–30 mezclan cambios del traductor/tests con archivos ajenos. Existe además una ref no manifestada `experiment-failure-seed/10-syntax-evaluate-also`. PR #349 añadió solo el arnés manual; no se ha iniciado el torneo.
 - **Siguiente hipótesis:** DIVIDE con `ON SIZE ERROR` / `NOT ON SIZE ERROR` y división por cero. PR #402 quedó en 263/500 sin ganancias; los artefactos muestran `UnboundLocalError` en `nc203a-dc7f80e633` y `ZeroDivisionError` en `nc172a-3a5109e496`.
 
 ---
