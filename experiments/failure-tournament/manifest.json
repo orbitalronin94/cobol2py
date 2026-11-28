@@ -218,15 +218,14 @@
     }
   ],
   "latest_main_remeasurement": {
-    "score": 262,
+    "score": 263,
     "denominator": 500,
-    "percent": 52.4,
-    "source_run": 45891121727,
-    "source_sha": "cb1691258bde56901e0e4e3f124e8f79e96016d4",
-    "baseline_sha": "cb1691258bde56901e0e4e3f124e8f79e96016d4",
-    "current_main_sha": "cb1691258bde56901e0e4e3f124e8f79e96016d4",
+    "percent": 52.6,
+    "source_run": 46061895588,
+    "source_sha": "2dcf47bf3376289aca011ea98b84aa4b52c3956c",
+    "current_main_sha": "2dcf47bf3376289aca011ea98b84aa4b52c3956c",
     "base_ref": "main",
-    "kind": "current_main_verified",
+    "kind": "current_main_verified_before_INSPECT_promotion",
     "corpus": "X-COBOL v2",
     "dataset": "X-COBOL v2",
     "dataset_url": "https://zenodo.org/records/14269462",
@@ -237,24 +236,12 @@
     "sample_complete": true,
     "unique_case_ids": 500,
     "comparison": "exact stdout bytes and process return code against GnuCOBOL",
-    "translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
     "reference_fingerprint_coverage": {
       "complete_cases": 500,
       "missing_cases": 0,
       "missing_case_ids": []
     },
-    "shards": [
-      {
-        "skip": 500,
-        "target": 500,
-        "tested": 500,
-        "passed": 262,
-        "failed": 238
-      }
-    ],
-    "note": "Run 45891121727 completed on exact main SHA cb1691258bde56901e0e4e3f124e8f79e96016d4. Artifact pr-tournament-baseline-45891121727 contains 500 unique IDs, 500 complete GnuCOBOL stdout SHA-256/length/return-code fingerprints, X-COBOL v2 MD5 cbd974caed72b0836777dc2305928ed3 verified, skip=500 and target=500; 262 passed and 238 failed.",
-    "main_sha_at_audit": "cb1691258bde56901e0e4e3f124e8f79e96016d4",
-    "main_head_at_audit": "cb1691258bde56901e0e4e3f124e8f79e96016d4"
+    "note": "Run 46061895588 completed on main SHA 2dcf47bf3376289aca011ea98b84aa4b52c3956c with 500 unique IDs and complete frozen GnuCOBOL fingerprints; 263/500. Main has since advanced to f3bcea96c6eaee446453b0f463839e75ea412d72 by merging the verified INSPECT winner; its own 500-case remeasurement is pending in run 46140063118."
   },
   "last_tournament_attempt": {
     "run": 42272058313,
@@ -281,17 +268,16 @@
   "readiness": {
     "status": "blocked",
     "reasons": [
-      "Último baseline exacto completado: run 45891121727 sobre SHA cb1691258bde56901e0e4e3f124e8f79e96016d4, 262/500 (52,4%), X-COBOL v2 MD5 cbd974caed72b0836777dc2305928ed3, skip=500, target=500, 500 IDs y 500 fingerprints GnuCOBOL completos. El récord histórico main 257/500 en run 42268813592 permanece separado; 258/500 en run 42266714599 sigue siendo experimental.",
-      "Main avanzó a 5513b8d005dc4f24bc496f9690607b2e94d9dd6e al fusionar PR #408 (solo workflows/tests, sin cambio del traductor). El run automático 45991488629 está re-midiendo ese SHA; aún no hay puntuación exacta de ese nuevo SHA.",
-      "PR #407, paired run 45812887898: baseline congelado 263/500, candidata 267/500, +4 y 0 regresiones sobre 500/500 IDs y source hashes. Re-score de la misma salida contra el baseline exacto posterior 45891121727: main 262/500, candidata 266/500, +4 y 0 regresiones. Ganancias: exec84-2-03eae98697, nc122a-0a3c88dcdf, nc122a-531a96359c, nc2214-2-fdbb829806. Nueve derivas del oráculo ocurrieron en otros IDs; las cuatro ganancias tienen fingerprint estable.",
-      "La suite completa del job de PR #407 pasó. La candidata reduce el tiempo agregado de traducción reportado de 427,46 s a 300,08 s (29,8%). No se fusiona todavía: hay que repetir la evaluación en el SHA main posterior a #408 y comprobar los checks requeridos.",
-      "Auditoría exacta de las 30 semillas contra 5513b8d005dc4f24bc496f9690607b2e94d9dd6e: 30/30 ramas existen, 30 heads distintos, 30/30 divergidas y 0 ahead-only. Semillas 1–10 tienen código/tests pero están obsoletas; 11–15 no contienen cambios de traductor ni tests; 16–30 mezclan código/tests con workflows, benchmarks o documentación.",
-      "PR #349 está fusionada, pero añadió el arnés de ejecución, no las 30 implementaciones. El workflow de 30 semillas sigue manual mediante workflow_dispatch, readiness bloqueada, y no se ha iniciado. La integración GitHub disponible no expone una acción de dispatch.",
-      "La cohorte histórica de 16 candidatos no se repite: sus artefactos ya cubren UNSTRING TALLYING, WRITE FROM, READ tras EOF, OPEN, INSPECT, reference modification y STRING ZEROES.",
-      "PR #408 se fusionó como 5513b8d005dc4f24bc496f9690607b2e94d9dd6e. Añade re-medición de main en push tras cambios del traductor y evita shards duplicados para PRs del traductor.",
-      "Siguiente hipótesis después de resolver #407: DIVIDE con nombres de datos que empiezan por dígitos y las ramas ON SIZE ERROR / NOT ON SIZE ERROR, reproduceres nc203a-dc7f80e633 y nc172a-3a5109e496."
+      "Última medición exacta completada antes de la promoción: run 46061895588, SHA 2dcf47bf3376289aca011ea98b84aa4b52c3956c, 263/500 (52,6%), X-COBOL v2 MD5 cbd974caed72b0836777dc2305928ed3, skip=500, target=500, 500 IDs y 500 fingerprints GnuCOBOL.",
+      "PR #407 fue elegible y se fusionó como f3bcea96c6eaee446453b0f463839e75ea412d72. La comparación oficial contra el oráculo congelado fue 263/500 → 266/500: +3, cero regresiones, mismas 500 IDs y hashes de fuente. Ganancias: nc122a-0a3c88dcdf, nc122a-531a96359c y nc2214-2-fdbb829806.",
+      "El artefacto bruto de candidata informó 267/500 contra fingerprints GnuCOBOL frescos; el ranking autoritativo fue 266/500 contra el oráculo congelado de main. Se registraron nueve derivas de referencia fresca en otros IDs; no hubo deriva de fuentes ni regresiones. La suite completa pasó.",
+      "El nuevo main f3bcea96 está siendo re-medido en el holdout completo por run 46140063118. No se asigna todavía puntuación al SHA actual.",
+      "La auditoría almacenada de 30 semillas contra 5513b8d005dc4f24bc496f9690607b2e94d9dd6e encontró 30/30 ramas existentes, 30 heads distintos, 30/30 divergidas y 0 ahead-only. Esa auditoría es anterior al merge de INSPECT; readiness sigue bloqueada y requiere comparación fresca contra main actual.",
+      "PR #349 añadió el arnés manual workflow_dispatch, no las 30 implementaciones. No se ha iniciado el torneo de 30 semillas.",
+      "La cohorte histórica de 16 no se repite: sus artefactos ya cubren UNSTRING TALLYING IN, WRITE FROM, READ tras EOF, OPEN, INSPECT, reference modification y STRING ZEROES.",
+      "Siguiente hipótesis: DIVIDE con ON SIZE ERROR / NOT ON SIZE ERROR y división por cero. PR #402 no fue elegible (263/500, cero ganancias); sus artefactos muestran UnboundLocalError en nc203a-dc7f80e633 y ZeroDivisionError en nc172a-3a5109e496."
     ],
-    "audit_date": "2026-11-27",
+    "audit_date": "2026-11-28",
     "audit_main_sha": "5513b8d005dc4f24bc496f9690607b2e94d9dd6e",
     "candidate_branch_refs": 30,
     "candidate_branches_diverged": 30,
@@ -787,15 +773,15 @@
     }
   },
   "current_baseline": {
-    "score": 262,
+    "score": 263,
     "denominator": 500,
-    "percent": 52.4,
-    "source_run": 45891121727,
-    "source_sha": "cb1691258bde56901e0e4e3f124e8f79e96016d4",
-    "baseline_sha": "cb1691258bde56901e0e4e3f124e8f79e96016d4",
-    "current_main_sha": "cb1691258bde56901e0e4e3f124e8f79e96016d4",
+    "percent": 52.6,
+    "source_run": 46061895588,
+    "source_sha": "2dcf47bf3376289aca011ea98b84aa4b52c3956c",
+    "baseline_sha": "2dcf47bf3376289aca011ea98b84aa4b52c3956c",
+    "current_main_sha": "2dcf47bf3376289aca011ea98b84aa4b52c3956c",
     "base_ref": "main",
-    "kind": "current_main_verified",
+    "kind": "last_verified_before_latest_translator_merge",
     "corpus": "X-COBOL v2",
     "dataset": "X-COBOL v2",
     "dataset_url": "https://zenodo.org/records/14269462",
@@ -806,24 +792,15 @@
     "sample_complete": true,
     "unique_case_ids": 500,
     "comparison": "exact stdout bytes and process return code against GnuCOBOL",
-    "translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
     "reference_fingerprint_coverage": {
       "complete_cases": 500,
       "missing_cases": 0,
       "missing_case_ids": []
     },
-    "shards": [
-      {
-        "skip": 500,
-        "target": 500,
-        "tested": 500,
-        "passed": 262,
-        "failed": 238
-      }
-    ],
-    "note": "Run 45891121727 completed on exact main SHA cb1691258bde56901e0e4e3f124e8f79e96016d4. Artifact pr-tournament-baseline-45891121727 contains 500 unique IDs, 500 complete GnuCOBOL stdout SHA-256/length/return-code fingerprints, X-COBOL v2 MD5 cbd974caed72b0836777dc2305928ed3 verified, skip=500 and target=500; 262 passed and 238 failed.",
-    "main_sha_at_audit": "cb1691258bde56901e0e4e3f124e8f79e96016d4",
-    "main_head_at_audit": "cb1691258bde56901e0e4e3f124e8f79e96016d4"
+    "pending_current_main_sha": "f3bcea96c6eaee446453b0f463839e75ea412d72",
+    "pending_run": 46140063118,
+    "pending_status": "in_progress",
+    "note": "263/500 is the last verified main baseline before the INSPECT translator promotion. Do not attribute it to current main f3bcea96 until run 46140063118 completes."
   },
   "additional_candidate_evaluations": {
     "inspect_characters": {
@@ -1905,12 +1882,7 @@
       "closed_unmerged": false,
       "note": "Paired run 45812887898 scored 267/500 against its frozen main oracle (263/500 baseline), +4 and zero regressions. Re-scoring the exact candidate outputs against later exact-main artifact run 45891121727 on the same SHA gives 266/500 vs 262/500, the same four gains and zero regressions. All four gain IDs have stable GnuCOBOL fingerprints across both baselines; nine oracle drifts occurred in other IDs. Candidate unit suite passed. Aggregate translation time fell from 427.46 s to 300.08 s (29.8%)."
     },
-    "candidate_queue": [
-      {
-        "pr": 407,
-        "reason": "INSPECT TALLYING/REPLACING candidate with full-suite success and +4/0 casewise result; remeasure on post-#408 main"
-      }
-    ],
+    "candidate_queue": [],
     "isolation_scope": {
       "enforced": true,
       "allowed_paths": [
@@ -2109,30 +2081,28 @@
     "score": 263,
     "denominator": 500,
     "percent": 52.6,
-    "measured_run": 45696510554,
-    "measured_sha": "cb1691258bde56901e0e4e3f124e8f79e96016d4",
-    "current_main_sha": "cb1691258bde56901e0e4e3f124e8f79e96016d4",
-    "current_main_translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
-    "measured_translator_blob_sha": "4a7562627d161580470f1b0522cda0b094f635b0",
-    "code_equivalent": true,
-    "exact_run_on_current_main_sha": true,
-    "reason": "Run 45696510554 measured exact main cb1691258bde56901e0e4e3f124e8f79e96016d4 with all 500 X-COBOL v2 cases and complete GnuCOBOL fingerprints."
+    "measured_run": 46061895588,
+    "measured_sha": "2dcf47bf3376289aca011ea98b84aa4b52c3956c",
+    "current_main_sha": "f3bcea96c6eaee446453b0f463839e75ea412d72",
+    "code_equivalent": false,
+    "exact_run_on_current_main_sha": false,
+    "reason": "Main advanced to f3bcea96 after merging PR #407; the exact 500-case remeasurement on that SHA is running in 46140063118."
   },
   "latest_paired_pr_tournament": {
-    "run": 45812887898,
-    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/45812887898",
-    "baseline_run": 45812887898,
-    "baseline_sha": "cb1691258bde56901e0e4e3f124e8f79e96016d4",
+    "run": 46061895588,
+    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/46061895588",
+    "baseline_run": 46061895588,
+    "baseline_sha": "2dcf47bf3376289aca011ea98b84aa4b52c3956c",
     "candidate_pr": 407,
-    "candidate_head_sha": "a431d2f8f7cac6e720a212baad76fa447e5f98ee",
-    "candidate_merge_sha": "c220e2d8b2f83c51db393eea2ced093d77f764f3",
+    "candidate_head_sha": "f2b62539e5c66f88917773698354f97f289a987b",
+    "candidate_merge_sha": "e35d9c9e31c287a4dc4e579af114b514f1ee236c",
     "baseline_score": 263,
-    "candidate_score": 267,
+    "candidate_score": 266,
+    "denominator": 500,
     "comparable_cases": 500,
     "source_hash_matches": 500,
-    "new_passes": 4,
+    "new_passes": 3,
     "new_pass_case_ids": [
-      "exec84-2-03eae98697",
       "nc122a-0a3c88dcdf",
       "nc122a-531a96359c",
       "nc2214-2-fdbb829806"
@@ -2151,10 +2121,18 @@
       "rock-paper-scissors-ad6321acf1",
       "rolldice-08e3de1a0e"
     ],
+    "candidate_report_fresh_oracle_score": 267,
+    "scoring_oracle": "frozen main GnuCOBOL stdout SHA-256, byte length and return code per case ID",
+    "candidate_translation_seconds": 300.694417,
+    "baseline_translation_seconds": 339.916215,
+    "unit_suite_conclusion": "success",
+    "archive_md5_verified": true,
     "eligible": true,
     "status": "completed",
-    "unit_suite_conclusion": "success",
-    "decision": "eligible_four_gains_zero_regressions_pending_new_main_sha_remeasurement"
+    "promotion_status": "merged",
+    "merge_commit_sha": "f3bcea96c6eaee446453b0f463839e75ea412d72",
+    "decision": "winner_merged_after_three_new_passes_and_zero_casewise_regressions",
+    "note": "The candidate report's raw passed count is 267 against freshly generated GnuCOBOL fingerprints. The authoritative frozen-main comparison is 266/500: +3 cases, 0 regressions. Nine fresh GnuCOBOL fingerprints drifted, but the scoring oracle remained the frozen main artifact; all 500 source hashes and IDs matched."
   },
   "latest_baseline_artifact_check": {
     "run": 45696510554,
@@ -2178,21 +2156,20 @@
     "note": "Exact-SHA baseline artifact downloaded and inspected: 500 rows, unique IDs, full oracle fingerprints, pinned archive verified, 263/500 exact matches."
   },
   "latest_candidate_artifact_comparison": {
-    "run": 45812887898,
-    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/45812887898",
-    "baseline_run": 45891121727,
-    "baseline_sha": "cb1691258bde56901e0e4e3f124e8f79e96016d4",
-    "baseline_score": 262,
+    "run": 46061895588,
+    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/46061895588",
+    "baseline_run": 46061895588,
+    "baseline_sha": "2dcf47bf3376289aca011ea98b84aa4b52c3956c",
+    "baseline_score": 263,
     "candidate_pr": 407,
-    "candidate_head_sha": "a431d2f8f7cac6e720a212baad76fa447e5f98ee",
-    "candidate_merge_sha": "c220e2d8b2f83c51db393eea2ced093d77f764f3",
+    "candidate_head_sha": "f2b62539e5c66f88917773698354f97f289a987b",
+    "candidate_merge_sha": "e35d9c9e31c287a4dc4e579af114b514f1ee236c",
     "candidate_score": 266,
     "denominator": 500,
     "comparable_cases": 500,
     "source_hash_matches": 500,
-    "new_passes": 4,
+    "new_passes": 3,
     "new_pass_case_ids": [
-      "exec84-2-03eae98697",
       "nc122a-0a3c88dcdf",
       "nc122a-531a96359c",
       "nc2214-2-fdbb829806"
@@ -2211,13 +2188,13 @@
       "rock-paper-scissors-ad6321acf1",
       "rolldice-08e3de1a0e"
     ],
-    "method": "re-score the exact candidate stdout SHA-256/byte length/return-code rows against the later complete exact-main artifact; verify the same 500 IDs and source SHA-256 values",
     "archive_md5_verified": true,
-    "eligible": true,
-    "decision": "eligible_four_gains_zero_regressions_pending_remeasurement_on_new_main_sha",
-    "note": "The four gain IDs have unchanged GnuCOBOL fingerprints between the paired baseline and later exact-main baseline; the nine oracle drifts are outside the gain set."
+    "method": "Compare each candidate stdout SHA-256, byte length and return code against the frozen main GnuCOBOL fingerprint for the same case ID; verify all 500 source SHA-256 values and IDs.",
+    "candidate_report_fresh_oracle_score": 267,
+    "decision": "eligible_and_merged",
+    "note": "Candidate report raw score 267 uses fresh GnuCOBOL references. Frozen-main casewise score is 266/500 versus 263/500, with exactly three new passes and zero regressions."
   },
-  "latest_main_holdout_run": 45891121727,
+  "latest_main_holdout_run": 46140063118,
   "branch_comparisons": [
     {
       "seed": 1,
@@ -2613,7 +2590,7 @@
     "promotion": "manual; no merge is performed by this workflow",
     "note": "Official paired run 44731467437: baseline 263/500, candidate 261/500, 500/500 same IDs/source hashes, zero new passes and two regressions (exec84-2-03eae98697, nc243a-04e83cd675). Candidate-run oracle drift was diagnostic; ranking used the frozen main oracle. The apparent exec84 pass in the independent sharded run 44731467420 did not reproduce. PR #400 closed unmerged."
   },
-  "latest_main_run": 45891121727,
+  "latest_main_run": 46140063118,
   "experimental_reference": {
     "score": 258,
     "denominator": 500,
@@ -2646,16 +2623,15 @@
     "note": "Previous exact-SHA measurement of the same main and translator; superseded as the latest baseline by run 44800200895."
   },
   "pending_main_remeasurement": {
+    "target_sha": "f3bcea96c6eaee446453b0f463839e75ea412d72",
+    "run": 46140063118,
     "status": "in_progress",
-    "target_sha": "5513b8d005dc4f24bc496f9690607b2e94d9dd6e",
-    "run": 45991488629,
-    "trigger": "push after PR #408 merge",
-    "baseline_job_id": 140480203886,
-    "skip": 500,
-    "target": 500,
+    "url": "https://github.com/orbitalronin94/cobol2py/actions/runs/46140063118",
+    "reason": "PR #407 winner merged; push-triggered exact current-main baseline must complete before assigning a score to the new SHA.",
     "corpus": "X-COBOL v2",
     "archive_md5_expected": "cbd974caed72b0836777dc2305928ed3",
-    "note": "Run 45991488629 was automatically triggered by the PR #408 workflow merge. It is remeasuring exact main SHA 5513b8d005dc4f24bc496f9690607b2e94d9dd6e; baseline job is in progress. A manifest push with candidate_queue [407] will supersede this baseline-only run and execute the paired candidate comparison."
+    "skip": 500,
+    "target": 500
   },
   "latest_infrastructure_merge": {
     "pr": 403,
@@ -3134,7 +3110,7 @@
   },
   "latest_30_seed_tournament_status": "blocked_not_started",
   "latest_30_seed_tournament_started": false,
-  "latest_30_seed_tournament_note": "2026-11-27: 30/30 manifest branches exist with 30 distinct heads; all are diverged against main 5513b8d005dc4f24bc496f9690607b2e94d9dd6e and none is ahead-only. Seeds 11–15 have no translator/tests; seeds 16–30 contain unrelated workflow/benchmark/documentation paths. No 30-seed run has been started.",
+  "latest_30_seed_tournament_note": "No 30-seed run is recorded. PR #349 added only the manual workflow harness. The latest stored audit found 30 existing distinct heads, all diverged and zero ahead-only; the audit base was 5513b8d005dc4f24bc496f9690607b2e94d9dd6e, so a fresh full branch comparison is still required after subsequent main commits.",
   "latest_baseline_repeat_diagnostic": {
     "main_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
     "previous_run": 45056162017,
@@ -3233,7 +3209,7 @@
     },
     "note": "Runs 45812887898 and 45891121727 use the same exact main SHA cb1691258bde56901e0e4e3f124e8f79e96016d4, 500 IDs and source hashes. Score changed from 263 to 262 because rock-paper-scissors-ad6321acf1 changed with the GnuCOBOL reference. Nine reference fingerprints drifted. The four #407 gain IDs have stable reference fingerprints across both runs."
   },
-  "latest_main_baseline_artifact_run": 45891121727,
+  "latest_main_baseline_artifact_run": 46061895588,
   "latest_main_exact_remeasurement_2026_11_27": {
     "score": 262,
     "denominator": 500,
@@ -3273,9 +3249,9 @@
     "main_sha_at_audit": "cb1691258bde56901e0e4e3f124e8f79e96016d4",
     "main_head_at_audit": "cb1691258bde56901e0e4e3f124e8f79e96016d4"
   },
-  "latest_scheduled_run": 45891121727,
+  "latest_scheduled_run": 46061895588,
   "latest_scheduled_run_conclusion": "success",
-  "latest_scheduled_run_candidate_count": 0,
+  "latest_scheduled_run_candidate_count": 1,
   "latest_duplicate_shard_suppression_merge": {
     "pr": 408,
     "merged": true,
@@ -3289,5 +3265,61 @@
     "unit_and_workflow_checks": "success",
     "smoke": "success",
     "note": "Adds main push remeasurement for translator changes and suppresses duplicate sharded runs on translator candidate PRs."
+  },
+  "latest_main_exact_remeasurement_2026_11_28": {
+    "score": 263,
+    "denominator": 500,
+    "percent": 52.6,
+    "source_run": 46061895588,
+    "source_sha": "2dcf47bf3376289aca011ea98b84aa4b52c3956c",
+    "kind": "last_verified_main_before_INSPECT_merge",
+    "archive_md5_expected": "cbd974caed72b0836777dc2305928ed3",
+    "archive_md5_verified": true,
+    "skip": 500,
+    "target": 500,
+    "unique_case_ids": 500,
+    "pending_new_main_sha": "f3bcea96c6eaee446453b0f463839e75ea412d72",
+    "pending_new_main_run": 46140063118
+  },
+  "latest_winner_promotion": {
+    "pr": 407,
+    "merged": true,
+    "base_sha": "2dcf47bf3376289aca011ea98b84aa4b52c3956c",
+    "head_sha": "f2b62539e5c66f88917773698354f97f289a987b",
+    "candidate_merge_ref": "e35d9c9e31c287a4dc4e579af114b514f1ee236c",
+    "merge_sha": "f3bcea96c6eaee446453b0f463839e75ea412d72",
+    "run": 46061895588,
+    "baseline_score": 263,
+    "candidate_score": 266,
+    "new_passes": 3,
+    "new_pass_case_ids": [
+      "nc122a-0a3c88dcdf",
+      "nc122a-531a96359c",
+      "nc2214-2-fdbb829806"
+    ],
+    "regressions": 0,
+    "regressed_case_ids": [],
+    "suite": "success",
+    "corpus": "X-COBOL v2",
+    "archive_md5": "cbd974caed72b0836777dc2305928ed3",
+    "skip": 500,
+    "target": 500,
+    "case_ids": 500,
+    "source_hashes": 500,
+    "oracle_drift_count": 9,
+    "oracle_drift_case_ids": [
+      "cob-simpleinventory-6af451140a",
+      "collatz-6e335e6eda",
+      "date1-f31ce2734d",
+      "intrdate-0517c3d81c",
+      "pullydis-9e45af6c84",
+      "randombingo-e50339cc12",
+      "randomnumbers-d8fc7ee85b",
+      "rock-paper-scissors-ad6321acf1",
+      "rolldice-08e3de1a0e"
+    ],
+    "candidate_translation_seconds": 300.694417,
+    "baseline_translation_seconds": 339.916215,
+    "promotion_decision": "merged_after_frozen_oracle_casewise_gate"
   }
 }
