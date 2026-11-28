@@ -272,7 +272,7 @@
       "PR #407 fue elegible y se fusionó como f3bcea96c6eaee446453b0f463839e75ea412d72. La comparación oficial contra el oráculo congelado fue 263/500 → 266/500: +3, cero regresiones, mismas 500 IDs y hashes de fuente. Ganancias: nc122a-0a3c88dcdf, nc122a-531a96359c y nc2214-2-fdbb829806.",
       "El artefacto bruto de candidata informó 267/500 contra fingerprints GnuCOBOL frescos; el ranking autoritativo fue 266/500 contra el oráculo congelado de main. Se registraron nueve derivas de referencia fresca en otros IDs; no hubo deriva de fuentes ni regresiones. La suite completa pasó.",
       "El nuevo main f3bcea96 está siendo re-medido en el holdout completo por run 46140063118. No se asigna todavía puntuación al SHA actual.",
-      "La auditoría almacenada de 30 semillas contra 5513b8d005dc4f24bc496f9690607b2e94d9dd6e encontró 30/30 ramas existentes, 30 heads distintos, 30/30 divergidas y 0 ahead-only. Esa auditoría es anterior al merge de INSPECT; readiness sigue bloqueada y requiere comparación fresca contra main actual.",
+      "Auditoría fresca de las 30 semillas contra f3bcea96: 30/30 refs existentes, 30 heads distintos, 30 divergidas y 0 ahead-only. Semillas 11–15 sin traductor/tests; 16–30 con archivos ajenos; existe una ref extra no manifestada 10-syntax-evaluate-also. Readiness sigue bloqueada.",
       "PR #349 añadió el arnés manual workflow_dispatch, no las 30 implementaciones. No se ha iniciado el torneo de 30 semillas.",
       "La cohorte histórica de 16 no se repite: sus artefactos ya cubren UNSTRING TALLYING IN, WRITE FROM, READ tras EOF, OPEN, INSPECT, reference modification y STRING ZEROES.",
       "Siguiente hipótesis: DIVIDE con ON SIZE ERROR / NOT ON SIZE ERROR y división por cero. PR #402 no fue elegible (263/500, cero ganancias); sus artefactos muestran UnboundLocalError en nc203a-dc7f80e633 y ZeroDivisionError en nc172a-3a5109e496."
@@ -1398,8 +1398,8 @@
     ]
   },
   "candidate_branch_audit": {
-    "compared_against_main": "5513b8d005dc4f24bc496f9690607b2e94d9dd6e",
-    "current_main_sha": "5513b8d005dc4f24bc496f9690607b2e94d9dd6e",
+    "compared_against_main": "f3bcea96c6eaee446453b0f463839e75ea412d72",
+    "current_main_sha": "f3bcea96c6eaee446453b0f463839e75ea412d72",
     "total_manifest_branches": 30,
     "existing_branches": 30,
     "missing_branches": [],
@@ -1451,10 +1451,11 @@
         "head_sha": "37abd23b987b974db0ae06354136bc1fd004f0d5",
         "status": "diverged",
         "ahead_by": 4,
-        "behind_by": 219,
+        "behind_by": 221,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false
+        "workflow_noise": false,
+        "unrelated_files": []
       },
       {
         "seed": 2,
@@ -1463,10 +1464,11 @@
         "head_sha": "4306becb6bde2247293f78f8a12fdf4ecedac3be",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 215,
+        "behind_by": 217,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false
+        "workflow_noise": false,
+        "unrelated_files": []
       },
       {
         "seed": 3,
@@ -1475,10 +1477,11 @@
         "head_sha": "cb71da7c3aadc6af893231831124d39505aee78a",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 215,
+        "behind_by": 217,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false
+        "workflow_noise": false,
+        "unrelated_files": []
       },
       {
         "seed": 4,
@@ -1487,10 +1490,11 @@
         "head_sha": "7d27fb7871fc9658bc268da00288512f45e0f22c",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 215,
+        "behind_by": 217,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false
+        "workflow_noise": false,
+        "unrelated_files": []
       },
       {
         "seed": 5,
@@ -1499,10 +1503,11 @@
         "head_sha": "1186269c3d815ef91513d8afee3936a2ee8908f7",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 219,
+        "behind_by": 221,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false
+        "workflow_noise": false,
+        "unrelated_files": []
       },
       {
         "seed": 6,
@@ -1511,10 +1516,11 @@
         "head_sha": "f884b1f2e33f341ea269e5d2a29aa88024b115c6",
         "status": "diverged",
         "ahead_by": 5,
-        "behind_by": 215,
+        "behind_by": 217,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false
+        "workflow_noise": false,
+        "unrelated_files": []
       },
       {
         "seed": 7,
@@ -1523,10 +1529,11 @@
         "head_sha": "4861fcdf522bfe7358a718badf91fa978745dc9d",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 215,
+        "behind_by": 217,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false
+        "workflow_noise": false,
+        "unrelated_files": []
       },
       {
         "seed": 8,
@@ -1535,10 +1542,11 @@
         "head_sha": "4444a957f2dd310a3d985faa2a4e4ea536da4c75",
         "status": "diverged",
         "ahead_by": 4,
-        "behind_by": 219,
+        "behind_by": 221,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false
+        "workflow_noise": false,
+        "unrelated_files": []
       },
       {
         "seed": 9,
@@ -1547,10 +1555,11 @@
         "head_sha": "fcca7c8cbff82f2445adb56a4347cdfb1e1009bc",
         "status": "diverged",
         "ahead_by": 4,
-        "behind_by": 215,
+        "behind_by": 217,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false
+        "workflow_noise": false,
+        "unrelated_files": []
       },
       {
         "seed": 10,
@@ -1559,10 +1568,11 @@
         "head_sha": "7aa52ae026349d076e4b04d0b160d658f95ac0e1",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 23,
+        "behind_by": 25,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false
+        "workflow_noise": false,
+        "unrelated_files": []
       },
       {
         "seed": 11,
@@ -1571,10 +1581,14 @@
         "head_sha": "4b5b5799c034c114478684638265a1eb22d4d8db",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 696,
+        "behind_by": 698,
         "translator_change": false,
         "regression_test_change": false,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          ".github/workflows/external-cobol-corpus.yml",
+          "docs/ci-validation-probe.md"
+        ]
       },
       {
         "seed": 12,
@@ -1583,10 +1597,14 @@
         "head_sha": "5c7009b07939f50a81cf9f84189ce050e350bb8a",
         "status": "diverged",
         "ahead_by": 2,
-        "behind_by": 608,
+        "behind_by": 610,
         "translator_change": false,
         "regression_test_change": false,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          ".github/workflows/external-cobol-corpus.yml",
+          "docs/ci-validation-probe.md"
+        ]
       },
       {
         "seed": 13,
@@ -1595,10 +1613,14 @@
         "head_sha": "fa840f19225e9ed5dec40de0fec8059bc9b96eb3",
         "status": "diverged",
         "ahead_by": 2,
-        "behind_by": 604,
+        "behind_by": 606,
         "translator_change": false,
         "regression_test_change": false,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          ".github/workflows/external-cobol-corpus.yml",
+          "docs/ci-validation-probe.md"
+        ]
       },
       {
         "seed": 14,
@@ -1607,10 +1629,14 @@
         "head_sha": "764f875aa9f0787a47f5edcaaed1e5c61a24f353",
         "status": "diverged",
         "ahead_by": 2,
-        "behind_by": 603,
+        "behind_by": 605,
         "translator_change": false,
         "regression_test_change": false,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          ".github/workflows/external-cobol-corpus.yml",
+          "docs/ci-validation-probe.md"
+        ]
       },
       {
         "seed": 15,
@@ -1619,10 +1645,14 @@
         "head_sha": "10fca4d93508285814c6fbfca349aec34a305b94",
         "status": "diverged",
         "ahead_by": 2,
-        "behind_by": 601,
+        "behind_by": 603,
         "translator_change": false,
         "regression_test_change": false,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          ".github/workflows/external-cobol-corpus.yml",
+          "docs/ci-validation-probe.md"
+        ]
       },
       {
         "seed": 16,
@@ -1631,10 +1661,13 @@
         "head_sha": "fb3e6416709d37f229071dcfd7e1e272858dfa0a",
         "status": "diverged",
         "ahead_by": 394,
-        "behind_by": 599,
+        "behind_by": 601,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 17,
@@ -1643,10 +1676,13 @@
         "head_sha": "6515c1fbba6dc44981f6d3c2754c2e627df89dd2",
         "status": "diverged",
         "ahead_by": 66,
-        "behind_by": 549,
+        "behind_by": 551,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 18,
@@ -1655,10 +1691,13 @@
         "head_sha": "61d5029cf5a04f1cba1bc85855c3ba4d74ca8695",
         "status": "diverged",
         "ahead_by": 58,
-        "behind_by": 549,
+        "behind_by": 551,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 19,
@@ -1667,10 +1706,13 @@
         "head_sha": "21fcbbb1c4fb23d5529cb68140fe7a2aeffe1174",
         "status": "diverged",
         "ahead_by": 6,
-        "behind_by": 361,
+        "behind_by": 363,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 20,
@@ -1679,10 +1721,13 @@
         "head_sha": "a4af64d5c645e60789477f68259f174b948a2795",
         "status": "diverged",
         "ahead_by": 15,
-        "behind_by": 336,
+        "behind_by": 338,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 21,
@@ -1691,10 +1736,13 @@
         "head_sha": "8920282d5887afa03ddcc0030cda2f3ee02b7cbc",
         "status": "diverged",
         "ahead_by": 8,
-        "behind_by": 336,
+        "behind_by": 338,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 22,
@@ -1703,10 +1751,13 @@
         "head_sha": "9af10c71c21857e3a8fed1a4a4e1cc1bd14b48b2",
         "status": "diverged",
         "ahead_by": 37,
-        "behind_by": 336,
+        "behind_by": 338,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 23,
@@ -1715,10 +1766,13 @@
         "head_sha": "72c1167b1734cbde9a562bdb84ba03671d4085f0",
         "status": "diverged",
         "ahead_by": 25,
-        "behind_by": 268,
+        "behind_by": 270,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 24,
@@ -1727,10 +1781,13 @@
         "head_sha": "7362107d657ef268d4f3200107ba4d692c40ad32",
         "status": "diverged",
         "ahead_by": 24,
-        "behind_by": 265,
+        "behind_by": 267,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 25,
@@ -1739,10 +1796,13 @@
         "head_sha": "44371acf2b45dcd857b919921eb4c05544490dde",
         "status": "diverged",
         "ahead_by": 24,
-        "behind_by": 265,
+        "behind_by": 267,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 26,
@@ -1751,10 +1811,13 @@
         "head_sha": "8b35694bedf245a4d7adbc75b5e7cd18a6c23ce3",
         "status": "diverged",
         "ahead_by": 25,
-        "behind_by": 265,
+        "behind_by": 267,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 27,
@@ -1763,10 +1826,13 @@
         "head_sha": "1583da344a41500d0e9f3c50ab9394ec199cad20",
         "status": "diverged",
         "ahead_by": 20,
-        "behind_by": 265,
+        "behind_by": 267,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 28,
@@ -1775,10 +1841,13 @@
         "head_sha": "29fa42546937ce64e540a6c2265baa9754b885b2",
         "status": "diverged",
         "ahead_by": 19,
-        "behind_by": 265,
+        "behind_by": 267,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 29,
@@ -1787,10 +1856,13 @@
         "head_sha": "ee8146920919bbfb44a24513cc7731d2808d8192",
         "status": "diverged",
         "ahead_by": 20,
-        "behind_by": 265,
+        "behind_by": 267,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 30,
@@ -1799,14 +1871,17 @@
         "head_sha": "400bbb88a7eed15a5a4da90411afa0bf084f1905",
         "status": "diverged",
         "ahead_by": 30,
-        "behind_by": 259,
+        "behind_by": 261,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       }
     ],
     "latest_comparison": {
-      "current_main_sha": "5513b8d005dc4f24bc496f9690607b2e94d9dd6e",
+      "current_main_sha": "f3bcea96c6eaee446453b0f463839e75ea412d72",
       "distinct_branch_heads": 30,
       "existing_branches": 30,
       "all_30_diverged": true,
@@ -2693,8 +2768,8 @@
   },
   "latest_main_verified_exact_sha": false,
   "latest_30_seed_audit": {
-    "compared_against_main": "5513b8d005dc4f24bc496f9690607b2e94d9dd6e",
-    "current_main_sha": "5513b8d005dc4f24bc496f9690607b2e94d9dd6e",
+    "compared_against_main": "f3bcea96c6eaee446453b0f463839e75ea412d72",
+    "current_main_sha": "f3bcea96c6eaee446453b0f463839e75ea412d72",
     "total_manifest_branches": 30,
     "existing_branches": 30,
     "missing_branches": [],
@@ -2746,10 +2821,11 @@
         "head_sha": "37abd23b987b974db0ae06354136bc1fd004f0d5",
         "status": "diverged",
         "ahead_by": 4,
-        "behind_by": 219,
+        "behind_by": 221,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false
+        "workflow_noise": false,
+        "unrelated_files": []
       },
       {
         "seed": 2,
@@ -2758,10 +2834,11 @@
         "head_sha": "4306becb6bde2247293f78f8a12fdf4ecedac3be",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 215,
+        "behind_by": 217,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false
+        "workflow_noise": false,
+        "unrelated_files": []
       },
       {
         "seed": 3,
@@ -2770,10 +2847,11 @@
         "head_sha": "cb71da7c3aadc6af893231831124d39505aee78a",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 215,
+        "behind_by": 217,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false
+        "workflow_noise": false,
+        "unrelated_files": []
       },
       {
         "seed": 4,
@@ -2782,10 +2860,11 @@
         "head_sha": "7d27fb7871fc9658bc268da00288512f45e0f22c",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 215,
+        "behind_by": 217,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false
+        "workflow_noise": false,
+        "unrelated_files": []
       },
       {
         "seed": 5,
@@ -2794,10 +2873,11 @@
         "head_sha": "1186269c3d815ef91513d8afee3936a2ee8908f7",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 219,
+        "behind_by": 221,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false
+        "workflow_noise": false,
+        "unrelated_files": []
       },
       {
         "seed": 6,
@@ -2806,10 +2886,11 @@
         "head_sha": "f884b1f2e33f341ea269e5d2a29aa88024b115c6",
         "status": "diverged",
         "ahead_by": 5,
-        "behind_by": 215,
+        "behind_by": 217,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false
+        "workflow_noise": false,
+        "unrelated_files": []
       },
       {
         "seed": 7,
@@ -2818,10 +2899,11 @@
         "head_sha": "4861fcdf522bfe7358a718badf91fa978745dc9d",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 215,
+        "behind_by": 217,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false
+        "workflow_noise": false,
+        "unrelated_files": []
       },
       {
         "seed": 8,
@@ -2830,10 +2912,11 @@
         "head_sha": "4444a957f2dd310a3d985faa2a4e4ea536da4c75",
         "status": "diverged",
         "ahead_by": 4,
-        "behind_by": 219,
+        "behind_by": 221,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false
+        "workflow_noise": false,
+        "unrelated_files": []
       },
       {
         "seed": 9,
@@ -2842,10 +2925,11 @@
         "head_sha": "fcca7c8cbff82f2445adb56a4347cdfb1e1009bc",
         "status": "diverged",
         "ahead_by": 4,
-        "behind_by": 215,
+        "behind_by": 217,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false
+        "workflow_noise": false,
+        "unrelated_files": []
       },
       {
         "seed": 10,
@@ -2854,10 +2938,11 @@
         "head_sha": "7aa52ae026349d076e4b04d0b160d658f95ac0e1",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 23,
+        "behind_by": 25,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": false
+        "workflow_noise": false,
+        "unrelated_files": []
       },
       {
         "seed": 11,
@@ -2866,10 +2951,14 @@
         "head_sha": "4b5b5799c034c114478684638265a1eb22d4d8db",
         "status": "diverged",
         "ahead_by": 3,
-        "behind_by": 696,
+        "behind_by": 698,
         "translator_change": false,
         "regression_test_change": false,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          ".github/workflows/external-cobol-corpus.yml",
+          "docs/ci-validation-probe.md"
+        ]
       },
       {
         "seed": 12,
@@ -2878,10 +2967,14 @@
         "head_sha": "5c7009b07939f50a81cf9f84189ce050e350bb8a",
         "status": "diverged",
         "ahead_by": 2,
-        "behind_by": 608,
+        "behind_by": 610,
         "translator_change": false,
         "regression_test_change": false,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          ".github/workflows/external-cobol-corpus.yml",
+          "docs/ci-validation-probe.md"
+        ]
       },
       {
         "seed": 13,
@@ -2890,10 +2983,14 @@
         "head_sha": "fa840f19225e9ed5dec40de0fec8059bc9b96eb3",
         "status": "diverged",
         "ahead_by": 2,
-        "behind_by": 604,
+        "behind_by": 606,
         "translator_change": false,
         "regression_test_change": false,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          ".github/workflows/external-cobol-corpus.yml",
+          "docs/ci-validation-probe.md"
+        ]
       },
       {
         "seed": 14,
@@ -2902,10 +2999,14 @@
         "head_sha": "764f875aa9f0787a47f5edcaaed1e5c61a24f353",
         "status": "diverged",
         "ahead_by": 2,
-        "behind_by": 603,
+        "behind_by": 605,
         "translator_change": false,
         "regression_test_change": false,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          ".github/workflows/external-cobol-corpus.yml",
+          "docs/ci-validation-probe.md"
+        ]
       },
       {
         "seed": 15,
@@ -2914,10 +3015,14 @@
         "head_sha": "10fca4d93508285814c6fbfca349aec34a305b94",
         "status": "diverged",
         "ahead_by": 2,
-        "behind_by": 601,
+        "behind_by": 603,
         "translator_change": false,
         "regression_test_change": false,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          ".github/workflows/external-cobol-corpus.yml",
+          "docs/ci-validation-probe.md"
+        ]
       },
       {
         "seed": 16,
@@ -2926,10 +3031,13 @@
         "head_sha": "fb3e6416709d37f229071dcfd7e1e272858dfa0a",
         "status": "diverged",
         "ahead_by": 394,
-        "behind_by": 599,
+        "behind_by": 601,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 17,
@@ -2938,10 +3046,13 @@
         "head_sha": "6515c1fbba6dc44981f6d3c2754c2e627df89dd2",
         "status": "diverged",
         "ahead_by": 66,
-        "behind_by": 549,
+        "behind_by": 551,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 18,
@@ -2950,10 +3061,13 @@
         "head_sha": "61d5029cf5a04f1cba1bc85855c3ba4d74ca8695",
         "status": "diverged",
         "ahead_by": 58,
-        "behind_by": 549,
+        "behind_by": 551,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 19,
@@ -2962,10 +3076,13 @@
         "head_sha": "21fcbbb1c4fb23d5529cb68140fe7a2aeffe1174",
         "status": "diverged",
         "ahead_by": 6,
-        "behind_by": 361,
+        "behind_by": 363,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 20,
@@ -2974,10 +3091,13 @@
         "head_sha": "a4af64d5c645e60789477f68259f174b948a2795",
         "status": "diverged",
         "ahead_by": 15,
-        "behind_by": 336,
+        "behind_by": 338,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 21,
@@ -2986,10 +3106,13 @@
         "head_sha": "8920282d5887afa03ddcc0030cda2f3ee02b7cbc",
         "status": "diverged",
         "ahead_by": 8,
-        "behind_by": 336,
+        "behind_by": 338,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 22,
@@ -2998,10 +3121,13 @@
         "head_sha": "9af10c71c21857e3a8fed1a4a4e1cc1bd14b48b2",
         "status": "diverged",
         "ahead_by": 37,
-        "behind_by": 336,
+        "behind_by": 338,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 23,
@@ -3010,10 +3136,13 @@
         "head_sha": "72c1167b1734cbde9a562bdb84ba03671d4085f0",
         "status": "diverged",
         "ahead_by": 25,
-        "behind_by": 268,
+        "behind_by": 270,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 24,
@@ -3022,10 +3151,13 @@
         "head_sha": "7362107d657ef268d4f3200107ba4d692c40ad32",
         "status": "diverged",
         "ahead_by": 24,
-        "behind_by": 265,
+        "behind_by": 267,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 25,
@@ -3034,10 +3166,13 @@
         "head_sha": "44371acf2b45dcd857b919921eb4c05544490dde",
         "status": "diverged",
         "ahead_by": 24,
-        "behind_by": 265,
+        "behind_by": 267,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 26,
@@ -3046,10 +3181,13 @@
         "head_sha": "8b35694bedf245a4d7adbc75b5e7cd18a6c23ce3",
         "status": "diverged",
         "ahead_by": 25,
-        "behind_by": 265,
+        "behind_by": 267,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 27,
@@ -3058,10 +3196,13 @@
         "head_sha": "1583da344a41500d0e9f3c50ab9394ec199cad20",
         "status": "diverged",
         "ahead_by": 20,
-        "behind_by": 265,
+        "behind_by": 267,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 28,
@@ -3070,10 +3211,13 @@
         "head_sha": "29fa42546937ce64e540a6c2265baa9754b885b2",
         "status": "diverged",
         "ahead_by": 19,
-        "behind_by": 265,
+        "behind_by": 267,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 29,
@@ -3082,10 +3226,13 @@
         "head_sha": "ee8146920919bbfb44a24513cc7731d2808d8192",
         "status": "diverged",
         "ahead_by": 20,
-        "behind_by": 265,
+        "behind_by": 267,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       },
       {
         "seed": 30,
@@ -3094,14 +3241,17 @@
         "head_sha": "400bbb88a7eed15a5a4da90411afa0bf084f1905",
         "status": "diverged",
         "ahead_by": 30,
-        "behind_by": 259,
+        "behind_by": 261,
         "translator_change": true,
         "regression_test_change": true,
-        "workflow_noise": true
+        "workflow_noise": true,
+        "unrelated_files": [
+          "workflow/benchmark/documentation files"
+        ]
       }
     ],
     "latest_comparison": {
-      "current_main_sha": "5513b8d005dc4f24bc496f9690607b2e94d9dd6e",
+      "current_main_sha": "f3bcea96c6eaee446453b0f463839e75ea412d72",
       "distinct_branch_heads": 30,
       "existing_branches": 30,
       "all_30_diverged": true,
@@ -3110,7 +3260,7 @@
   },
   "latest_30_seed_tournament_status": "blocked_not_started",
   "latest_30_seed_tournament_started": false,
-  "latest_30_seed_tournament_note": "No 30-seed run is recorded. PR #349 added only the manual workflow harness. The latest stored audit found 30 existing distinct heads, all diverged and zero ahead-only; the audit base was 5513b8d005dc4f24bc496f9690607b2e94d9dd6e, so a fresh full branch comparison is still required after subsequent main commits.",
+  "latest_30_seed_tournament_note": "Fresh full comparison against main f3bcea96: 30/30 manifest refs exist, 30 distinct heads, 30 diverged, 0 ahead-only. Seeds 11–15 have no translator/test changes; seeds 16–30 contain unrelated workflow/benchmark/documentation changes. Extra unmanifested ref experiment-failure-seed/10-syntax-evaluate-also exists. Manual tournament remains blocked and unstarted.",
   "latest_baseline_repeat_diagnostic": {
     "main_sha": "b26cc0335708dab99737cc902c1d96186fec9f94",
     "previous_run": 45056162017,
